@@ -66,13 +66,32 @@ KV_RECENT_PROCESSED_URL_LIMIT=2000
 
 ## Why this stays within the free KV write limits
 
-The Worker writes only a few KV keys per run:
+Cloudflare Workers KV free limits are small enough that NutsNews treats KV as scarce runtime capacity, especially for writes. As of the 2026 Cloudflare KV limits page, the free tier includes 100,000 reads per day, 1,000 writes per day to different keys, and 1,000 external-service operations per Worker invocation.
+
+The Worker must not use KV as per-event telemetry or as a per-article write log. The allowed production-runtime KV paths are:
 
 - one compact recent processed URL marker key per shard
-- one latest shard run state key
-- one latest successful run state key
+- one public feed edge snapshot key when the snapshot article payload changes
+- latest shard run state and latest successful run state when a refresh does real work
+- direct status/debug reads for `/kv-status` and `/public-feed-snapshot`
 
 It does **not** write one KV key per article, because that could burn through the free daily write limit quickly.
+
+Runtime code should avoid:
+
+- `KV.list()` in cron, controller, shard refresh, or request paths
+- per-event, per-log-entry, per-feed, or per-article KV writes
+- writing unchanged JSON values
+- using KV for observability that can be included in the final buffered log payload
+
+Current Worker safeguards:
+
+- KV reads are cached inside a single Worker invocation.
+- KV operation counts are tracked in memory and included in the refresh result and final buffered log flush.
+- Unchanged recent-URL cache writes are skipped.
+- Public feed edge snapshot writes are skipped when the article payload has not changed.
+- Idle scheduled refreshes skip KV run-state writes.
+- KV read/write failures, including 429 rate-limit responses, are logged and treated as cache/state misses so article refresh can continue through Supabase.
 
 ## Setup
 
