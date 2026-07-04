@@ -21,7 +21,7 @@ The web app already had CodeQL, Snyk, Dependabot npm updates, and Lighthouse CI.
 | Scan | Status | Workflow or config | Notes |
 | --- | --- | --- | --- |
 | CodeQL | Already installed and verified | `.github/workflows/codeql.yml` | Scans JavaScript/TypeScript and GitHub Actions on PR, push, weekly schedule, and manual dispatch. |
-| Dependency Review | Added | `.github/workflows/dependency-review.yml` | Fails PRs on high-severity dependency changes. |
+| Dependency Review | Added, non-blocking until Dependency graph is enabled | `.github/workflows/dependency-review.yml` | Reports high-severity dependency changes. Enable Dependency graph before making this required. |
 | Dependabot | Strengthened | `.github/dependabot.yml` | Existing npm updates kept; GitHub Actions updates added. |
 | Secret scan | Added Gitleaks; manual GitHub settings still REQUIRED | `.github/workflows/gitleaks.yml` | CI scans committed secrets; GitHub Secret Scanning and Push Protection must be enabled in repo settings. |
 | OSV-Scanner | Added | `.github/workflows/osv-scanner.yml` | Scans lockfiles and manifests recursively. |
@@ -36,11 +36,11 @@ The web app already had CodeQL, Snyk, Dependabot npm updates, and Lighthouse CI.
 | Scan | Status | Workflow or config | Notes |
 | --- | --- | --- | --- |
 | CodeQL | Added | `.github/workflows/codeql.yml` | Scans JavaScript/TypeScript and GitHub Actions. |
-| Dependency Review | Added | `.github/workflows/dependency-review.yml` | Fails PRs on high-severity dependency changes. |
+| Dependency Review | Added, non-blocking until Dependency graph is enabled | `.github/workflows/dependency-review.yml` | Reports high-severity dependency changes. Enable Dependency graph before making this required. |
 | Dependabot | Strengthened | `.github/dependabot.yml` | Existing `/worker` and `/controller` npm updates kept; GitHub Actions and `/local-ai-service` updates added. |
 | Secret scan | Added Gitleaks; manual GitHub settings still REQUIRED | `.github/workflows/gitleaks.yml` | CI scans committed secrets; GitHub Secret Scanning and Push Protection must be enabled in repo settings. |
 | OSV-Scanner | Added | `.github/workflows/osv-scanner.yml` | Scans lockfiles and manifests recursively. |
-| actionlint | Added | `.github/workflows/actionlint.yml` | Validates workflow syntax and common GitHub Actions mistakes. |
+| actionlint | Added with protected workflow exclusions | `.github/workflows/actionlint.yml` | Validates editable workflow syntax and common GitHub Actions mistakes. `worker-controller-ci.yml` and `worker-pipeline.yml` are immutable-guarded and require explicit owner approval before fixes. |
 | OpenSSF Scorecard | Added | `.github/workflows/openssf-scorecard.yml` | Publishes SARIF and OpenSSF results. |
 | Trivy | Skipped | Not applicable | No Dockerfiles, container images, or container manifests were found. |
 | Lighthouse CI | Skipped | Not applicable | Worker repo does not own public web pages. |
@@ -64,7 +64,7 @@ The web app already had CodeQL, Snyk, Dependabot npm updates, and Lighthouse CI.
 | Check | How to interpret a failure | Common response |
 | --- | --- | --- |
 | CodeQL | A code or workflow query found a security issue. | Review the SARIF alert, patch the code or workflow, and rerun. |
-| Dependency Review | A PR introduces a dependency with a high-severity advisory. | Upgrade, remove, or justify the dependency before merge. |
+| Dependency Review | A PR introduces a dependency with a high-severity advisory, or the repo Dependency graph is disabled. | Enable Dependency graph, then upgrade, remove, or justify the dependency before merge. |
 | Dependabot | A version or security update PR failed validation. | Inspect the failing project tests and adjust the dependency update. |
 | Gitleaks | A secret-like value appears in history or the PR diff. | Revoke the secret, rotate credentials, remove it from history when required, and rerun. |
 | OSV-Scanner | A manifest or lockfile resolves to a vulnerable package. | Upgrade the vulnerable package or document a temporary exception. |
@@ -79,6 +79,7 @@ The following settings are REQUIRED and must be enabled in GitHub repository set
 
 - Secret Scanning.
 - Push Protection.
+- Dependency graph.
 - Dependabot alerts.
 - Dependabot security updates.
 - Code scanning alerts.
@@ -90,10 +91,12 @@ These settings cannot be fully enforced from repository workflow files alone. A 
 - Keep workflow permissions minimal. Add write permissions only when an action needs SARIF upload or another documented write path.
 - Keep noisy scans non-blocking at first when they target deployed public URLs or produce posture scores.
 - Keep Dependency Review blocking for high-severity dependency changes.
+- Keep Dependency Review non-blocking until Dependency graph is enabled in each repository.
 - Update action versions through Dependabot GitHub Actions PRs.
 - Review OpenSSF Scorecard trends periodically instead of treating every score change as a release blocker.
 - Add Trivy only if Dockerfiles, container images, or container filesystem artifacts are introduced.
 - Add Worker ZAP only after a safe staging Worker URL exists and rate/side-effect risk is documented.
+- Fix immutable-guarded Worker workflow health issues only after the repo owner explicitly approves edits to `.github/workflows/worker-controller-ci.yml` and `.github/workflows/worker-pipeline.yml`.
 
 ## PR Security Scan Flow
 
@@ -122,6 +125,6 @@ Revert the app and Worker workflow PRs and this documentation update. If a scan 
 
 ## Related PRs
 
-- App PR: to be linked after creation.
-- Worker PR: to be linked after creation.
-- Docs PR: to be linked after creation.
+- App PR: https://github.com/ramideltoro/nutsnews/pull/152
+- Worker PR: https://github.com/ramideltoro/nutsnews-worker/pull/14
+- Docs PR: https://github.com/ramideltoro/nutsnews-docs/pull/5
