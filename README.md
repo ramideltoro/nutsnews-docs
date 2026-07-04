@@ -159,6 +159,7 @@ These docs explain the product and the system at a high level.
 | Doc | Use it for |
 | --- | --- |
 | [Web Offline E2E Regression Test](WEB_OFFLINE_E2E_REGRESSION_TEST.md) | Fully mocked public web flow test before preview deploy |
+| [Web Public Reader Smoke Test](WEB_PUBLIC_READER_SMOKE_TEST.md) | PR Playwright smoke coverage for home feed, infinite scroll, language switching, contact validation, public pages, and article detail |
 | [Vercel Preview Smoke Test](VERCEL_PREVIEW_SMOKE_TEST.md) | Live PR preview checks after Vercel deploys |
 | Worker Offline E2E Regression Test | See ramideltoro/nutsnews-worker |
 | [Worker Local AI Lock](NUTSNEWS_WORKER_LOCAL_AI_LOCK.md) | Why the Worker repo prevents accidental OpenAI-first deploys |
