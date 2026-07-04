@@ -117,6 +117,7 @@ These docs explain the product and the system at a high level.
 | --- | --- |
 | [Deployment Checklist](DEPLOYMENT_CHECKLIST.md) | Safe release steps for web, DB, and cache |
 | [Dependency Updates](DEPENDENCY_UPDATES.md) | npm audit, safe upgrades, Dependabot, and validation |
+| [Mandatory NutsNews Docs Policy](updates/README_MANDATORY_NUTSNEWS_DOCS_POLICY.md) | Required docs updates, release-note summaries, diagrams, and app/docs PR linkage for every NutsNews change |
 | [Platform Improvement Backlog](PLATFORM_IMPROVEMENT_ISSUE_BACKLOG.md) | Planned platform improvement issues |
 
 #### Monitoring and incidents
