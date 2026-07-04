@@ -48,3 +48,22 @@ When a metric enters `Watch` or `Danger`:
    - Email: tighten Turnstile/rate limiting or temporarily route messages to a queue.
    - Egress/API: increase CDN caching, reduce response sizes, or run audits manually.
 4. Verify the dashboard risk returns to `OK` before increasing load again.
+
+## Image proxy/cache guardrails
+
+Issue #105 adds design and guardrail coverage for a future optional image proxy/cache path. The production image proxy is not shipped yet, but `/admin/guardrails` now carries the quota language needed before any rollout.
+
+| Service | Free-tier or cost note | Owner action |
+| --- | --- | --- |
+| Cloudflare Workers Free | 100,000 requests/day and 10 ms CPU per invocation. A future image proxy would share this account pool with existing Worker traffic. | Check `/admin/guardrails` and Cloudflare Workers usage. Alert at 70%, shrink traffic slice at 90%, and bypass the proxy or disable proxy writes at 100%. |
+| Cloudflare R2 Standard | 10 GB-month storage/month, 1M Class A ops/month, 10M Class B ops/month, and free internet egress. Free tier does not apply to Infrequent Access storage. | Use Standard only for the initial approved-original cache. Freeze new cache writes at 90% and disable writes at 100%. |
+| Cloudflare Images Free transformations | 5,000 unique transformations/month. Cached existing transformations continue after the limit; new transformations return error `9422`; Free plan is not charged for exceeding the limit. | Keep variants fixed and small. Freeze new transform variants at 90% and disable transforms at 100%. |
+| Cloudflare Images hosted storage/delivery | Paid-only. | Do not use for the initial free-tier rollout without explicit owner approval and a billing budget. |
+
+Official references:
+
+- Cloudflare Workers pricing: https://developers.cloudflare.com/workers/platform/pricing/
+- Cloudflare R2 pricing: https://developers.cloudflare.com/r2/pricing/
+- Cloudflare Images pricing: https://developers.cloudflare.com/images/pricing/
+
+Related design: [Secure Image Proxy/Cache Design](IMAGE_PROXY_CACHE_DESIGN.md).
