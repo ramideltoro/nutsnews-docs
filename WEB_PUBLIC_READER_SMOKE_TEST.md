@@ -54,7 +54,7 @@ CI steps:
 4. Run `npm run test:e2e:public-smoke`.
 5. Upload Playwright report, trace, screenshot, and video artifacts only on failure.
 
-The public reader smoke spec is intentionally isolated to `web/playwright.public-smoke.config.ts`. The default accessibility Playwright config only selects `accessibility.spec.ts` so accessibility CI does not run smoke tests without the local mock harness.
+The public reader smoke spec is intentionally isolated to `web/playwright.public-smoke.config.ts`. Accessibility CI uses `web/playwright.accessibility.config.ts` so it only selects `accessibility.spec.ts` and does not run smoke tests without the local mock harness. The shared `web/playwright.config.ts` remains available for the Vercel preview smoke command, which passes `tests/vercel-preview-smoke.spec.ts` explicitly.
 
 ## Failure Artifacts
 
