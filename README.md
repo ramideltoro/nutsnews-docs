@@ -80,7 +80,7 @@ These docs explain the product and the system at a high level.
 | [Worker Backpressure and Lock Safety](WORKER_BACKPRESSURE_AND_LOCK_SAFETY.md) | Queue visibility, Redis lock lease safety, backpressure thresholds, and worker report counters |
 | [Public Feed Snapshot and Edge Fallback](PUBLIC_FEED_SNAPSHOT.md) | Supabase snapshot reads, Cloudflare KV fallback, headers, admin status, and recovery checks |
 | [RSS Source Quality](RSS_SOURCE_QUALITY.md) | Feed quality scoring, ranking, and source decisions |
-| [Image Delivery](IMAGE_DELIVERY.md) | Thumbnails, image optimization, cache TTL, and fallbacks |
+| [Image Delivery](IMAGE_DELIVERY.md) | Thumbnails, image optimization, cache TTL, and category-aware non-photo fallbacks |
 | [Secure Image Proxy/Cache Design](IMAGE_PROXY_CACHE_DESIGN.md) | Issue #105 design for optional Cloudflare image proxy/cache, domain controls, quotas, rollout, and kill switches |
 | [Performance and Resiliency](PERFORMANCE_AND_RESILIENCY.md) | Caching, pagination, indexes, sharding, and reliability |
 | [Homepage Performance Budget](HOMEPAGE_PERFORMANCE_BUDGET.md) | Homepage LCP, JS, CSS, image, and transfer budgets |

@@ -92,6 +92,73 @@ The fallback behavior keeps the feed readable even when one publisher image is s
 
 ---
 
+## Category-Aware Fallback Thumbnails
+
+Issue #24 adds richer fallback thumbnails for articles that reach a reader-facing card without a usable image. These fallbacks are intentionally non-photographic so they do not imply NutsNews has a real publisher image for the story.
+
+### Simple Summary
+
+When a story has no picture, NutsNews now shows a designed card that matches the story category instead of showing a generic blank image.
+
+### Intermediate Summary
+
+Article cards use a centralized fallback-thumbnail helper that maps categories such as community, animals, science, wellness, travel, culture, achievements, and uplifting stories to stable non-photo visuals. The same fallback behavior is used across main feed cards, category sections, footer search results, and article detail headers. Admin article review screens also warn when a published row is missing a thumbnail so no-image publication is easier to catch.
+
+### Expert Summary
+
+The web app centralizes fallback selection in `web/lib/fallbackThumbnails.ts` and rendering in `web/app/components/OptimizedArticleImage.tsx`. Fallbacks expose stable `data-fallback-thumbnail` IDs, accessible labels that say the image is non-photographic, category-specific monograms, and theme-consistent dark amber/accent gradients. Public feed card variants pass `article.category` into the shared image component. Footer search cards now use `OptimizedArticleImage` instead of a separate raw `<img>` branch, so missing thumbnails render consistently. The article detail page also renders the same fallback if a detail record ever lacks `image_url`, although public article queries still prefer rows with usable images. The admin article review dashboard flags published rows with missing images instead of silently treating them as normal.
+
+### Render Flow
+
+```mermaid
+flowchart TD
+    A[Article card receives article] --> B{image_url usable?}
+    B -- Yes --> C[Next Image optimized publisher image]
+    C --> D{Optimizer/image load failed?}
+    D -- No --> E[Show publisher thumbnail]
+    D -- Yes --> F[Try raw publisher image once]
+    F --> G{Raw image failed?}
+    G -- No --> E
+    B -- No --> H[Read article category]
+    G -- Yes --> H
+    H --> I[Select stable category fallback visual]
+    I --> J[Render non-photographic NutsNews fallback thumbnail]
+```
+
+### Category Mapping
+
+| Category signal | Fallback visual |
+| --- | --- |
+| `community`, `volunteer`, `kindness`, `neighbors`, `local` | Community |
+| `animal`, `wildlife`, `pet`, `rescue` | Animals |
+| `science`, `research`, `discovery`, `space`, `climate` | Science |
+| `wellness`, `health`, `healing`, `medical` | Wellness |
+| `travel`, `journey`, `destination`, `outdoor` | Travel |
+| `culture`, `art`, `music`, `creative`, `education` | Culture |
+| `achievement`, `award`, `milestone`, `sports`, `record` | Achievement |
+| No match | Uplifting |
+
+### Publishing Guardrail
+
+NutsNews still prefers not to publish no-image articles. Public article queries continue to favor records with `image_url`, and the Worker no-thumbnail rejection path remains the primary protection. The admin article review dashboard now makes accidental no-image publication more visible with a missing-thumbnail warning and a concrete next step: verify the Worker no-image rejection path and add a usable publisher image before further promotion.
+
+### Validation
+
+Local validation:
+
+```bash
+cd /Users/ramideltoro/nutsnews-fluid-cpu-reduction/web
+npm run test:fallback-thumbnails
+npm run lint
+npx tsc --noEmit
+NEXT_PUBLIC_SUPABASE_URL=https://example.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY=dummy npm run build
+npm run test:e2e:offline
+```
+
+The focused regression checks that fallback mappings are centralized, category-aware, explicitly non-photographic, used by reader-facing cards, and paired with admin no-image warnings.
+
+---
+
 ## Validation
 
 Local validation:
@@ -110,4 +177,3 @@ After deploy, open the public feed and inspect a card image in browser DevTools.
 ```
 
 The first visible article image should load eagerly. Lower cards should stay lazy-loaded.
-
