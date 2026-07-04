@@ -12,7 +12,7 @@ The production readiness dashboard helps an admin decide whether NutsNews is hea
 
 ## Expert Summary
 
-Issue #86 adds a protected Next.js admin route at `/admin/readiness`, backed by `web/lib/adminProductionReadiness.ts`. The loader uses server-side Supabase service-role reads for `articles`, `public_feed_snapshot`, `worker_runs`, and `article_summaries`; it does not expose credentials to the browser. The CI signal now also uses a server-only GitHub REST API call to `/repos/ramideltoro/nutsnews/actions/runs?branch=main&per_page=50` when `GITHUB_READONLY_TOKEN` or `GITHUB_ACTIONS_READ_TOKEN` is configured. The call sends the required GitHub API headers, is cached/revalidated for 300 seconds, matches required workflows by explicit workflow file/name mappings, and returns only sanitized workflow names, status, conclusion, updated time, and links to the admin UI. Backup freshness remains yellow because the app repository does not currently have a live backup-metrics API integration that can be queried without adding new secrets or infrastructure.
+Issue #86 adds a protected Next.js admin route at `/admin/readiness`, backed by `web/lib/adminProductionReadiness.ts`. The loader uses server-side Supabase service-role reads for `articles`, `public_feed_snapshot`, `worker_runs`, and `article_summaries`; it does not expose credentials to the browser. The CI signal now also uses a server-only GitHub REST API call to `/repos/ramideltoro/nutsnews/actions/runs?branch=main&per_page=50` when `ACTIONS_READ_TOKEN` is configured. The call sends the required GitHub API headers, is cached/revalidated for 300 seconds, matches required workflows by explicit workflow file/name mappings, and returns only sanitized workflow names, status, conclusion, branch, commit SHA, updated time, and links to the admin UI. Backup freshness remains yellow because the app repository does not currently have a live backup-metrics API integration that can be queried without adding new secrets or infrastructure.
 
 ## What Changed
 
@@ -46,7 +46,7 @@ The admin landing page now links to Production Readiness. The new page groups si
 | Translation coverage | Recent `article_summaries` rows | Recent multilingual coverage is high | Coverage is partial or unmeasurable | Coverage is low |
 | Image coverage | Recent published article thumbnails | Thumbnail coverage is high | Thumbnail coverage is thin | Thumbnail coverage is too low |
 | Backup freshness | External workflow/runbook | Not measured in app yet | Admin must verify backup workflow/runbook | Reserved for future live metric integration |
-| CI status | GitHub Actions REST API when `GITHUB_READONLY_TOKEN` or `GITHUB_ACTIONS_READ_TOKEN` is configured | Every required workflow has a latest completed successful run on `main` within the freshness window | Token is missing, a workflow is missing/pending/stale/skipped/neutral, GitHub is rate-limited, or the API is unavailable | A required workflow failed, was cancelled, timed out, or requires action |
+| CI status | GitHub Actions REST API when `ACTIONS_READ_TOKEN` is configured | Every required workflow has a latest completed successful run on `main` within the freshness window | Token is missing, a workflow is missing/pending/stale/skipped/neutral, GitHub is rate-limited, or the API is unavailable | A required workflow failed, was cancelled, timed out, or requires action |
 
 ## Live GitHub Actions CI Status
 
@@ -72,7 +72,7 @@ Status mapping:
 - Yellow: the token is missing, the workflow is missing, the latest run is queued or in progress, the latest run is stale, the conclusion is skipped or neutral, GitHub returns an API error, or GitHub rate-limits the request.
 - Red: the latest completed required workflow failed, was cancelled, timed out, or requires action.
 
-The admin UI shows each workflow name, dashboard status, GitHub status, conclusion, updated time, and link to the run when GitHub data is available. If live status is unavailable, the card keeps the manual next step: open GitHub Actions and confirm Web CI, public smoke, preview smoke, Lighthouse, axe, CodeQL, and security scans are green.
+The admin UI shows each workflow name, dashboard status, GitHub status, conclusion, branch, commit SHA, updated time, and link to the run when GitHub data is available. If live status is unavailable, the card keeps the manual next step: open GitHub Actions and confirm Web CI, public smoke, preview smoke, Lighthouse, axe, CodeQL, and security scans are green.
 
 ## Operational Steps
 
@@ -91,10 +91,9 @@ The dashboard uses existing server-side admin Supabase configuration:
 
 Optional server-only CI status configuration:
 
-- `GITHUB_READONLY_TOKEN` is preferred.
-- `GITHUB_ACTIONS_READ_TOKEN` is accepted as a fallback name.
+- `ACTIONS_READ_TOKEN`
 
-Use a read-only GitHub token with access to read repository Actions metadata for `ramideltoro/nutsnews`. The token MUST be configured only as a server/runtime secret and MUST NOT be exposed as a `NEXT_PUBLIC_*` variable. No browser-visible GitHub secret is required. No backup metrics token is introduced by this change.
+Use a read-only GitHub token with access to read repository Actions metadata for `ramideltoro/nutsnews`. The token MUST be configured only as a server/runtime secret and MUST NOT be exposed as a `NEXT_PUBLIC_*` variable. Do not create `GITHUB_ACTIONS_READ_TOKEN`; GitHub blocks custom secrets that start with `GITHUB_`. The web CI workflow maps the repository secret into the build environment as `ACTIONS_READ_TOKEN: ${{ secrets.ACTIONS_READ_TOKEN }}`. No browser-visible GitHub secret is required. No backup metrics token is introduced by this change.
 
 ## Request/Data Flow
 
@@ -129,6 +128,7 @@ flowchart TD
 | Backup freshness is still manual | It is intentionally yellow and links to the workflow/runbook until a live backup metric exists. |
 | GitHub token is missing or under-scoped | The CI card stays yellow and keeps the manual GitHub Actions verification link. |
 | GitHub API is rate-limited or unavailable | The CI card stays yellow and tells admins to verify Actions directly. |
+| A blocked `GITHUB_*` custom secret name is used | Use only `ACTIONS_READ_TOKEN`; GitHub reserves the `GITHUB_` prefix for built-in variables/secrets. |
 | Workflow names change | The code matches by explicit workflow file path first and by known workflow name second; update the mapping when workflow files are renamed. |
 | Supabase schema drift breaks the dashboard | The focused regression script protects required dashboard strings and route linkage; TypeScript/build checks catch loader type issues. |
 | Thresholds need tuning | Threshold constants live in `web/lib/adminProductionReadiness.ts` and can be adjusted without changing the UI contract. |
