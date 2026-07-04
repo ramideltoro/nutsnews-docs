@@ -122,5 +122,5 @@ Revert the app PR that adds the smoke workflow, Playwright config/spec, package 
 
 ## Related PRs
 
-- App PR: to be linked after creation.
-- Docs PR: to be linked after creation.
+- App PR: https://github.com/ramideltoro/nutsnews/pull/158
+- Docs PR: https://github.com/ramideltoro/nutsnews-docs/pull/6
