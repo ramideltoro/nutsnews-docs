@@ -93,7 +93,7 @@ Optional server-only CI status configuration:
 
 - `ACTIONS_READ_TOKEN`
 
-Use a read-only GitHub token with access to read repository Actions metadata for `ramideltoro/nutsnews`. The token MUST be configured only as a server/runtime secret and MUST NOT be exposed as a `NEXT_PUBLIC_*` variable. Do not create `GITHUB_ACTIONS_READ_TOKEN`; GitHub blocks custom secrets that start with `GITHUB_`. The web CI workflow maps the repository secret into the build environment as `ACTIONS_READ_TOKEN: ${{ secrets.ACTIONS_READ_TOKEN }}`. No browser-visible GitHub secret is required. No backup metrics token is introduced by this change.
+Use a read-only GitHub token with access to read repository Actions metadata for `ramideltoro/nutsnews`. The token MUST be configured only as a server/runtime secret and MUST NOT be exposed as a `NEXT_PUBLIC_*` variable. Do not create `GITHUB_ACTIONS_READ_TOKEN`; GitHub blocks custom secrets that start with `GITHUB_`. No GitHub Actions workflow needs this token for CI because the dashboard builds and renders the yellow missing-token fallback without it; configure `ACTIONS_READ_TOKEN` in the deployed server/runtime environment where admins load `/admin/readiness`. No browser-visible GitHub secret is required. No backup metrics token is introduced by this change.
 
 ## Request/Data Flow
 
