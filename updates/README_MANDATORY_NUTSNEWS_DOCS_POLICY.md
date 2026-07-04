@@ -97,5 +97,5 @@ Revert the app repository `AGENTS.md` change that makes docs updates mandatory a
 
 ## Related PRs And Issues
 
-- App PR: to be linked from the app repository PR for this policy update.
-- Docs PR: to be linked from the docs repository PR for this policy update.
+- App PR: https://github.com/ramideltoro/nutsnews/pull/151
+- Docs PR: https://github.com/ramideltoro/nutsnews-docs/pull/4
