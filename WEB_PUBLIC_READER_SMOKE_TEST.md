@@ -54,6 +54,8 @@ CI steps:
 4. Run `npm run test:e2e:public-smoke`.
 5. Upload Playwright report, trace, screenshot, and video artifacts only on failure.
 
+The public reader smoke spec is intentionally isolated to `web/playwright.public-smoke.config.ts`. The default accessibility Playwright config only selects `accessibility.spec.ts` so accessibility CI does not run smoke tests without the local mock harness.
+
 ## Failure Artifacts
 
 When CI fails, download the `public-reader-smoke-playwright-artifacts` artifact. It can include:
