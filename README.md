@@ -65,6 +65,7 @@ These docs explain the product and the system at a high level.
 | Doc | Use it for |
 | --- | --- |
 | [Admin Article Reviews](ADMIN_ARTICLE_REVIEWS.md) | Accepted/rejected stories, filters, and review investigation |
+| [Production Readiness Dashboard](PRODUCTION_READINESS_DASHBOARD.md) | Admin green/yellow/red scorecard for shipping readiness across public API health, Worker freshness, DB growth, translations, images, backups, and CI |
 | [Responsive Admin Dashboards](ADMIN_RESPONSIVE_DASHBOARDS.md) | Mobile-friendly admin dashboard patterns |
 | [Home Server Dashboard](HOME_SERVER_DASHBOARD.md) | `/admin/home-server` setup and troubleshooting |
 
