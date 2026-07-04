@@ -98,6 +98,26 @@ These settings cannot be fully enforced from repository workflow files alone. A 
 - Add Worker ZAP only after a safe staging Worker URL exists and rate/side-effect risk is documented.
 - Fix immutable-guarded Worker workflow health issues only after the repo owner explicitly approves edits to `.github/workflows/worker-controller-ci.yml` and `.github/workflows/worker-pipeline.yml`.
 
+### 2026-07-04 OSV Dependency Override Fix
+
+Simple Summary: OSV found a few unsafe helper packages, so the web app now tells npm to use fixed versions.
+
+Intermediate Summary: The `OSV Scanner` scheduled/push run failed on `ramideltoro/nutsnews` because `web/package-lock.json` resolved vulnerable transitive versions of `postcss`, `tmp`, and `uuid`. The app fix adds npm `overrides` in `web/package.json` and refreshes `web/package-lock.json` so the scanner sees fixed versions without changing public reader behavior.
+
+Expert Summary: Run `28718139650` failed in the `Scan repository dependencies / osv-scan` job during `Run osv-scanner-reporter`. The scanner reported `postcss@8.4.31`, `tmp@0.0.33`, `tmp@0.1.0`, and `uuid@8.3.2` from `web/package-lock.json`. `postcss` was pulled through `next`; `tmp` and `uuid` were pulled through `@lhci/cli` and its `external-editor` dependency. `@lhci/cli` was already current, so the smallest fix was to add npm overrides for `postcss`, `tmp`, and `uuid`, regenerate the lockfile, and validate with `npm ls`, `npm audit`, `lhci --version`, lint, build, and lockfile checks. Roll back by reverting the dependency override PR and rerunning `OSV Scanner`; if a future parent dependency release removes the need for overrides, remove the overrides in a normal dependency maintenance PR.
+
+```mermaid
+flowchart TD
+  A[OSV Scanner scheduled/push run] --> B[Scan web/package-lock.json]
+  B --> C{Vulnerable transitive package?}
+  C -->|Yes| D[Fail Run osv-scanner-reporter]
+  D --> E[Add npm override for fixed version]
+  E --> F[Regenerate package-lock.json]
+  F --> G[Validate npm ls and npm audit]
+  G --> H[Rerun OSV Scanner]
+  C -->|No| I[Security scan passes]
+```
+
 ## PR Security Scan Flow
 
 ```mermaid
