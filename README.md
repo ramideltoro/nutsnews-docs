@@ -150,6 +150,7 @@ These docs explain the product and the system at a high level.
 | [CodeQL Security Scan](CODEQL_SECURITY_SCAN.md) | GitHub CodeQL setup and usage |
 | [Snyk Security Scan](SNYK_SECURITY_SCAN.md) | Snyk dependency and code scanning |
 | [Security Hardening](SECURITY_HARDENING.md) | CSP, browser headers, admin no-store behavior, contact form controls, and CI validation |
+| [Security CI Scans](SECURITY_CI_SCANS.md) | CodeQL, Dependency Review, Dependabot, Gitleaks, OSV, actionlint, OpenSSF Scorecard, Lighthouse, ZAP, and manual GitHub security settings |
 | [Dependency Updates](DEPENDENCY_UPDATES.md) | Safe package update routine |
 
 #### Public web regression tests
