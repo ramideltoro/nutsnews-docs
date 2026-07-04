@@ -35,6 +35,18 @@ NUTSNEWS_PAGESPEED_30D_CALL_LIMIT=25000
 
 Most metrics warn at 70% of the configured limit and enter danger at 90%. AI cost warns earlier at 60% and enters danger at 85% so there is more time to reduce reviews or switch to local AI.
 
+## Worker ingestion backpressure guardrails
+
+Issue #93 adds Worker-side pressure controls before AI/API/database-heavy work begins.
+
+| Limit | Default | Owner action |
+| --- | ---: | --- |
+| `INGESTION_BACKPRESSURE_QUEUE_LIMIT` | `250` queued/unreviewed candidates | If exceeded, inspect `queuedBySource`, pause noisy feeds, lower manual review limits, or raise the threshold after confirming cost risk. |
+| `INGESTION_BACKPRESSURE_DB_ARTICLE_LIMIT` | `30000` article rows | If reached, review DB growth, archive/prune old content where appropriate, and confirm public feed freshness before resuming expensive ingestion. |
+| `UPSTASH_REDIS_WORKER_LOCK_TTL_SECONDS` | `600` seconds | If long runs overlap, verify Redis is enabled and increase the TTL while watching `worker.redis.worker_lock_extend_failed` logs. |
+
+Worker reports now include queued, deferred, retried, processed, and Redis lock counters. See [Worker Backpressure and Lock Safety](WORKER_BACKPRESSURE_AND_LOCK_SAFETY.md).
+
 ## Mitigation runbook
 
 When a metric enters `Watch` or `Danger`:
