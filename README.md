@@ -20,6 +20,7 @@ This folder is organized by what you are trying to do: understand the product, c
 | Check cost and quota risk | [Free-Tier Guardrails](FREE_TIER_GUARDRAILS.md) |
 | Work on translations | [Multi-language Summaries](MULTI_LANGUAGE_SUMMARIES.md); [Multilingual Quality and Fallbacks](MULTILINGUAL_QUALITY_AND_FALLBACKS.md) |
 | Work on local AI | [Worker Local AI Lock](NUTSNEWS_WORKER_LOCAL_AI_LOCK.md); see ramideltoro/nutsnews-worker |
+| Investigate worker queue pressure | [Worker Backpressure and Lock Safety](WORKER_BACKPRESSURE_AND_LOCK_SAFETY.md) |
 | Run regression tests | [Web Offline E2E](WEB_OFFLINE_E2E_REGRESSION_TEST.md); [Vercel Preview Smoke Test](VERCEL_PREVIEW_SMOKE_TEST.md); Worker tests live in ramideltoro/nutsnews-worker |
 | Review iOS notes | [iOS documentation and update notes](ios/README.md) |
 
@@ -76,6 +77,7 @@ These docs explain the product and the system at a high level.
 | Doc | Use it for |
 | --- | --- |
 | Worker ingestion, controller, and local AI | See ramideltoro/nutsnews-worker |
+| [Worker Backpressure and Lock Safety](WORKER_BACKPRESSURE_AND_LOCK_SAFETY.md) | Queue visibility, Redis lock lease safety, backpressure thresholds, and worker report counters |
 | [Public Feed Snapshot and Edge Fallback](PUBLIC_FEED_SNAPSHOT.md) | Supabase snapshot reads, Cloudflare KV fallback, headers, admin status, and recovery checks |
 | [RSS Source Quality](RSS_SOURCE_QUALITY.md) | Feed quality scoring, ranking, and source decisions |
 | [Image Delivery](IMAGE_DELIVERY.md) | Thumbnails, image optimization, cache TTL, and fallbacks |
@@ -99,6 +101,7 @@ These docs explain the product and the system at a high level.
 | Doc | Use it for |
 | --- | --- |
 | [Worker Local AI Lock](NUTSNEWS_WORKER_LOCAL_AI_LOCK.md) | Web-side note for the Worker repo local-AI deployment lock |
+| [Worker Backpressure and Lock Safety](WORKER_BACKPRESSURE_AND_LOCK_SAFETY.md) | Ingestion pressure controls, lock overlap safety, and queue/deferred report fields |
 | Worker/local AI repository | See ramideltoro/nutsnews-worker |
 | [Multi-language Summaries](MULTI_LANGUAGE_SUMMARIES.md) | Website translation display and recovery context |
 | [Multilingual Quality and Fallbacks](MULTILINGUAL_QUALITY_AND_FALLBACKS.md) | Quality gates, daily reports, admin dashboard, and fallback behavior |
