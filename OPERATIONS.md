@@ -2,6 +2,12 @@
 
 This document explains how NutsNews is operated and maintained.
 
+For the VPS GitOps operating model, CI stability layer, Ops Portal goal, home server support-node rules, email reports, and provider migration strategy, start with:
+
+```text
+docs/NUTSNEWS_INFRA_OPERATIONS_PLATFORM.md
+```
+
 ---
 
 ## Admin Portal

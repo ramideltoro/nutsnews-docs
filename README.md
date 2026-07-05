@@ -15,6 +15,7 @@ This folder is organized by what you are trying to do: understand the product, c
 | Learn what NutsNews is | [Project Overview](PROJECT.md) |
 | Understand the system | [Architecture](ARCHITECTURE.md) |
 | Run the platform | [Operations](OPERATIONS.md) |
+| Understand the VPS operating model | [Infra Operations Platform](NUTSNEWS_INFRA_OPERATIONS_PLATFORM.md) |
 | Ship a change | [Deployment Checklist](DEPLOYMENT_CHECKLIST.md) |
 | Fix a production issue | [Troubleshooting](TROUBLESHOOTING.md) |
 | Check cost and quota risk | [Free-Tier Guardrails](FREE_TIER_GUARDRAILS.md) |
@@ -38,6 +39,7 @@ These docs explain the product and the system at a high level.
 | [Project Overview](PROJECT.md) | Product story, mission, reader experience, and current status |
 | [Architecture](ARCHITECTURE.md) | System components, data flow, and repository layout |
 | [Operations](OPERATIONS.md) | Day-to-day operating model, admin portal, and maintenance tasks |
+| [Infra Operations Platform](NUTSNEWS_INFRA_OPERATIONS_PLATFORM.md) | VPS GitOps model, CI stability layer, Ops Portal goal, support-node rules, reports, and provider migration strategy |
 | [Troubleshooting](TROUBLESHOOTING.md) | Common failures, checks, and recovery steps |
 
 ### 2. Product and Reader Experience
