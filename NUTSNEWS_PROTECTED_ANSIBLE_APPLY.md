@@ -1,0 +1,150 @@
+# NutsNews Protected Ansible Apply Workflow
+
+This explains the first protected GitHub Actions workflow that can run the Ansible VPS baseline against `vps.nutsnews.com`. It is a production mutation path, so it wears a seatbelt, uses the `production-vps` Environment, and defaults to check mode because infrastructure should ask before touching the expensive-looking buttons.
+
+## Easy Summary
+
+The VPS bootstrap is no longer just a local operator ritual. We now have a manual GitHub Actions workflow that can run the Ansible baseline through the protected `production-vps` Environment.
+
+The safe default is check mode. Check mode connects to the VPS as `nutsnews_ops`, shows what Ansible would change, prints the recap, and exits without applying remote changes. Apply mode is available, but it requires an explicit `apply` selection, the confirmation text `vps.nutsnews.com`, and Environment approval.
+
+Root SSH was only for first bootstrap. From here on, root access is break-glass only: useful when things are genuinely broken, terrible as a lifestyle.
+
+## Intermediate Summary
+
+The workflow lives in `ramideltoro/nutsnews-infra` as `.github/workflows/protected-ansible-apply.yml`.
+
+It has one trigger:
+
+```text
+workflow_dispatch
+```
+
+That means no automatic apply on PR, push, or merge. A human starts it from GitHub Actions. GitHub then applies the `production-vps` Environment rules before the job receives Environment secrets.
+
+Required Environment secrets:
+
+| Secret | Purpose |
+| --- | --- |
+| `NUTSNEWS_VPS_SSH_PRIVATE_KEY` | Private key used by GitHub Actions to connect as `nutsnews_ops` |
+| `NUTSNEWS_VPS_KNOWN_HOSTS` | Verified host key entry for `65.75.202.112` |
+| `NUTSNEWS_VPS_ADMIN_AUTHORIZED_KEYS_JSON` | JSON array of approved public keys that should remain installed for `nutsnews_ops` |
+
+The public key list is stored as a secret even though public keys are not secret in the dramatic spy-movie sense. The point is simpler: keep operator-specific runtime material out of the repo so git does not become a junk drawer with commit history.
+
+## Expert Summary
+
+The workflow is intentionally narrow:
+
+- permissions are `contents: read`
+- concurrency prevents overlapping baseline runs against the same VPS
+- timeout is 30 minutes
+- job environment is `production-vps`
+- SSH user is hardcoded to `nutsnews_ops`
+- host key checking is enabled
+- the workflow validates required secrets before connecting
+- authorized keys are passed through a temporary ignored runtime extra-vars file
+- Ansible output is captured with `tee`
+- the workflow repeats the `PLAY RECAP`
+- Ansible's exit code controls workflow success or failure
+
+The playbook still manages privileged host state through sudo, but SSH does not log in as root. That distinction matters: `nutsnews_ops` is the automation door; root is the emergency hatch behind glass with a tiny hammer and a lot of paperwork.
+
+## Protected Apply Flow
+
+```mermaid
+flowchart TD
+  human["Maintainer starts workflow_dispatch"] --> mode{"run_mode"}
+  mode -- "check (default)" --> envGate["production-vps Environment gate"]
+  mode -- "apply" --> confirm["Require confirm_apply = vps.nutsnews.com"]
+  confirm --> envGate
+  envGate --> secrets["Load Environment secrets"]
+  secrets --> ssh["Prepare SSH key and verified known_hosts"]
+  ssh --> vars["Build runtime extra vars for approved public keys"]
+  vars --> ansible["Run Ansible as nutsnews_ops"]
+  ansible --> recap["Print PLAY RECAP"]
+  recap --> result{"failed=0 and unreachable=0?"}
+  result -- "Yes" --> done["Workflow succeeds"]
+  result -- "No" --> recover["Use runbook recovery path"]
+```
+
+## How To Run Check Mode
+
+Use check mode first every time. Yes, even when the change looks tiny. Especially then. Tiny changes love wearing a fake mustache.
+
+1. Open the `ramideltoro/nutsnews-infra` repository.
+2. Go to Actions.
+3. Choose `Protected Ansible Apply`.
+4. Click `Run workflow`.
+5. Keep `run_mode` as `check`.
+6. Leave `confirm_apply` blank.
+7. Approve the `production-vps` Environment gate if GitHub asks.
+8. Read the diff and final recap.
+
+Expected healthy recap:
+
+```text
+unreachable=0 failed=0
+```
+
+`changed=1` can be normal when the only changed item is the local server facts snapshot. That snapshot is useful audit confetti, but it should not be mistaken for remote drift.
+
+## How To Run Apply Mode
+
+Apply mode is for after check mode looks safe.
+
+1. Run check mode and review the output.
+2. Start `Protected Ansible Apply` again.
+3. Set `run_mode` to `apply`.
+4. Set `confirm_apply` to `vps.nutsnews.com`.
+5. Approve the `production-vps` Environment gate.
+6. Watch the final `PLAY RECAP`.
+
+If Ansible exits non-zero, the workflow fails. Do not retry apply mode repeatedly as a coping mechanism. Read the failing task, fix the source of truth, and rerun check mode.
+
+## What Can Go Wrong
+
+| Failure | Likely cause | Recovery |
+| --- | --- | --- |
+| Missing secret error | One of the required Environment secrets is absent or empty | Add the secret to `production-vps`, then rerun check mode |
+| Host key check fails | `NUTSNEWS_VPS_KNOWN_HOSTS` does not match `65.75.202.112` | Verify the host key through a trusted path and update the Environment secret |
+| SSH authentication fails | Private key does not match an authorized key for `nutsnews_ops` | Confirm the key pair and the `NUTSNEWS_VPS_ADMIN_AUTHORIZED_KEYS_JSON` public key list |
+| Sudo fails | `nutsnews_ops` lost passwordless sudo or group membership | Use break-glass access, restore the minimal sudo config, document it, rerun check mode |
+| Ansible reports failed tasks | The desired baseline no longer matches the host state or package behavior | Fix the Ansible role or recovery state through PR, then rerun |
+| `unreachable` is non-zero | Network, firewall, DNS, SSH, or host key problem | Check VPS reachability and use break-glass only if needed |
+
+## How We Avoid Lockout
+
+The workflow avoids the classic "secure the server so well nobody can use it" routine by keeping the first production apply path constrained:
+
+- It connects as the already-tested non-root user `nutsnews_ops`.
+- It requires verified `known_hosts` data instead of disabling host key checks.
+- It keeps SSH on port `22`.
+- It uses the same approved public key list every run so the automation user does not slowly drift into mystery.
+- It runs through a protected GitHub Environment before secrets are available.
+- It defaults to check mode and requires explicit confirmation for apply mode.
+- It prints the Ansible recap so failure and reachability are obvious.
+
+If `nutsnews_ops` access breaks, root SSH or provider console access is break-glass only. Use it to restore access, not to improvise long-term configuration. Then update the repo and docs, because undocumented manual fixes are just production folklore with better fonts.
+
+## What This Does Not Do
+
+This workflow does not:
+
+- deploy the NutsNews app
+- run automatically on merge
+- provision a new VPS
+- manage production application secrets
+- use root SSH
+- loosen the existing CI gates
+- replace provider console recovery
+
+It is one careful step: take the already-bootstrapped host baseline and let GitHub run it manually through the protected environment.
+
+## Related Docs
+
+- [NutsNews VPS Ansible Bootstrap](NUTSNEWS_VPS_ANSIBLE_BOOTSTRAP.md)
+- [NutsNews Infra Operations Platform](NUTSNEWS_INFRA_OPERATIONS_PLATFORM.md)
+- [Operations](OPERATIONS.md)
+- [Troubleshooting](TROUBLESHOOTING.md)
+- [Security CI Scans](SECURITY_CI_SCANS.md)

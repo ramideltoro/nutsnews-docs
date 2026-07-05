@@ -37,7 +37,7 @@ This bootstrap layer is a provider-agnostic Ubuntu baseline. It is intentionally
 - placeholder `/var/log/nutsnews/*.log` rotation
 - local ignored JSON facts snapshot for audit and rebuild context
 
-The CI layer validates Ansible syntax and linting, but it does not run the playbook against production. Future apply workflows must be protected and explicit. Today, the safe answer is still: review, dry-run, verify access, then apply from a trusted operator machine only after approval.
+The CI layer validates Ansible syntax and linting from pull requests without production secrets. Production baseline runs now have a separate protected manual workflow. It must be started intentionally, defaults to check mode, runs through the `production-vps` Environment, and connects as `nutsnews_ops` instead of root.
 
 ## Bootstrap Flow
 
@@ -53,7 +53,8 @@ flowchart TD
   fix --> ci
   review -- "Yes" --> apply["Run bootstrap from trusted operator machine"]
   apply --> verify["Open second SSH session as nutsnews_ops"]
-  verify --> facts["Save local ignored facts snapshot"]
+  verify --> protected["Use protected manual workflow for future baseline runs"]
+  protected --> facts["Save local ignored facts snapshot"]
   facts --> docs["Update docs and runbooks with lessons learned"]
 ```
 
@@ -141,7 +142,8 @@ This layer does not:
 - configure Docker Compose services
 - install production secrets
 - create deploy keys
-- run from GitHub Actions against the VPS
+- auto-apply on merge
+- use root SSH for routine operations
 - replace provider console access
 - make the home server required for production
 
@@ -150,6 +152,7 @@ That restraint is intentional. First we make the floor solid. Then we can put fu
 ## Related Docs
 
 - [NutsNews Infra Operations Platform](NUTSNEWS_INFRA_OPERATIONS_PLATFORM.md)
+- [Protected Ansible Apply](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md)
 - [Operations](OPERATIONS.md)
 - [Security CI Scans](SECURITY_CI_SCANS.md)
 - [Troubleshooting](TROUBLESHOOTING.md)

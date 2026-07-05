@@ -16,18 +16,18 @@ The platform model is strict GitOps:
 2. Open a normal pull request.
 3. Let CI scanners check repo hygiene, workflows, secrets, supply chain risk, infrastructure-as-code, runtime config, and portal code.
 4. Merge only after the required gates pass.
-5. Let automated apply workflows update the VPS later, once those workflows exist and are protected.
+5. Use protected apply workflows for production changes. The first Ansible baseline workflow is manual-only and defaults to check mode.
 
 The VPS remains provider-agnostic. Terraform/OpenTofu and Ansible should isolate provider details so moving from one VPS provider to another is annoying but survivable, not a multi-week archeological dig through shell history.
 
 ## Expert Summary
 
-`ramideltoro/nutsnews-infra` is the intended source of truth for the VPS platform state. The current stability layer is governance and validation only: no production SSH, no deploy keys, no server mutation, and no real provisioning yet. That is intentional. The first job is to make unsafe changes difficult before automation gets sharp objects.
+`ramideltoro/nutsnews-infra` is the intended source of truth for the VPS platform state. The stability layer keeps pull requests scanner-heavy and secret-free. The first production mutation path is the protected manual Ansible baseline workflow, which runs through the `production-vps` Environment and defaults to check mode.
 
 The platform is designed around these boundaries:
 
 - Pull request validation must not require production secrets.
-- Apply workflows must eventually be restricted to trusted branches or protected environments.
+- Apply workflows must be restricted to trusted branches or protected environments.
 - Manual SSH is break-glass only and must be documented after the fact.
 - Home-server automation is optional support infrastructure, never a public-serving dependency.
 - Documentation for infra changes lives here in `ramideltoro/nutsnews-docs`; infra repo docs should stay short and operational.
@@ -53,7 +53,7 @@ flowchart LR
   pass -- "No" --> fix["Fix branch"]
   fix --> ci
   pass -- "Yes" --> merge["Merge to main"]
-  merge --> apply["Future protected automated apply"]
+  merge --> apply["Protected apply workflow\nmanual for now"]
   apply --> vps["Primary NutsNews VPS"]
   vps --> report["Email report and Ops Portal status"]
   report --> docs["Document behavior and lessons in nutsnews-docs"]
@@ -215,6 +215,7 @@ Manual SSH without follow-up documentation is not "ops." It is folklore with a t
 
 - [Operations](OPERATIONS.md)
 - [VPS Ansible Bootstrap](NUTSNEWS_VPS_ANSIBLE_BOOTSTRAP.md)
+- [Protected Ansible Apply](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md)
 - [Observability](OBSERVABILITY.md)
 - [Security CI Scans](SECURITY_CI_SCANS.md)
 - [Dependency Updates](DEPENDENCY_UPDATES.md)
