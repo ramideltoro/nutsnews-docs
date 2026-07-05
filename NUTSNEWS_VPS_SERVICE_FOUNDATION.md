@@ -35,6 +35,8 @@ The protected Ansible workflow still defaults to check mode. In real apply mode,
 
 Fresh-host check mode has one classic trick: it says "sure, Docker would be installed" without actually creating the `docker` service, `docker` group, Caddy user, or `/opt/nutsnews` directories. Very impressive. Very resume-coded. The service foundation role now treats Docker package installation as the check-mode preview and skips runtime-dependent Docker/Caddy tasks until apply mode creates the real host state.
 
+The first real Caddy apply found the next layer of "computers are technically correct, which is the most annoying kind of correct." Compose reported that it started the container, but `/healthz` refused connections. The fix makes the Caddy container more explicit about its runtime: Caddy binds inside the container on `0.0.0.0`, gets writable `/config`, `/data`, `/run`, and `/tmp` locations while keeping the root filesystem read-only, and the Ansible role now prints `docker compose ps` plus Caddy logs if health still fails.
+
 ## Expert Summary
 
 This layer creates the runtime substrate without exposing a production route. The design is intentionally conservative:
@@ -131,8 +133,8 @@ ok
 | Check mode says Docker would install, then runtime tasks cannot find Docker | Check mode simulated the package install but did not create the service | Runtime-dependent service tasks are skipped in check mode; rerun apply only after reviewing the preview |
 | Docker package install fails | Ubuntu package mirror issue or package name change | Rerun check mode later, then update package vars through PR if needed |
 | Compose config fails | Invalid YAML, bad bind mount, or unsupported Compose option | Fix `compose/caddy/compose.yml` and let CI prove it |
-| Caddy container exits | Bad Caddyfile, missing mount, wrong file permissions | Check `sudo docker logs nutsnews-caddy`, fix repo files, rerun |
-| `/healthz` fails | Caddy not started or bound incorrectly | Check Compose status and Caddy config, then rerun apply after a PR fix |
+| Caddy container exits | Bad Caddyfile, missing mount, wrong file permissions, or read-only runtime paths | The role prints Compose status and Caddy logs; fix repo files, rerun check mode, then apply |
+| `/healthz` fails | Caddy not started, not listening inside the container, or unable to write runtime state | Check the printed Compose status/logs, verify `0.0.0.0:8080` and runtime mounts, then rerun after a PR fix |
 | Disk grows too fast | Container logs or future service data are noisy | Docker log caps are already set; add service-specific retention before adding heavier workloads |
 | Someone wants to expose 80/443 immediately | Understandable impatience | Make a follow-up PR with routing, TLS, health checks, and rollback notes instead of freelancing in production |
 
