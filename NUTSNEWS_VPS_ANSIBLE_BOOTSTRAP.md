@@ -114,7 +114,7 @@ Check mode, after approval and with a public key supplied outside git:
 ```bash
 cd ansible
 ansible-playbook playbooks/bootstrap.yml --check --diff \
-  --extra-vars '{"nutsnews_admin_authorized_keys":["ssh-ed25519 AAAA... operator@example"]}'
+  --extra-vars '{"vps_baseline_admin_authorized_keys":["ssh-ed25519 AAAA... operator@example"]}'
 ```
 
 The real run uses the same extra vars without `--check`, but only after review and explicit approval.
