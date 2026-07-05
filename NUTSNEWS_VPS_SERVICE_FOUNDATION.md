@@ -37,6 +37,8 @@ Fresh-host check mode has one classic trick: it says "sure, Docker would be inst
 
 The first real Caddy apply found the next layer of "computers are technically correct, which is the most annoying kind of correct." Compose reported that it started the container, but `/healthz` refused connections. The fix makes the Caddy container more explicit about its runtime: Caddy binds inside the container on `0.0.0.0`, gets writable `/config`, `/data`, `/run`, and `/tmp` locations while keeping the root filesystem read-only, and the Ansible role now prints `docker compose ps` plus Caddy logs if health still fails.
 
+Then the container taught us that hardening can go full gym-bro and become unusable. The official Caddy image carries a file capability on `/usr/bin/caddy`; combining that with `cap_drop: ALL`, `no-new-privileges`, and a non-root UID made Docker refuse to exec the binary at all. The fix keeps the container non-root, read-only, and localhost-only, but grants only `NET_BIND_SERVICE` and removes the specific `no-new-privileges` flag that blocked startup.
+
 ## Expert Summary
 
 This layer creates the runtime substrate without exposing a production route. The design is intentionally conservative:
@@ -45,7 +47,7 @@ This layer creates the runtime substrate without exposing a production route. Th
 - Caddy admin API is disabled.
 - Caddy automatic HTTPS is disabled until public domain routing is intentionally added.
 - The container runs as a dedicated numeric non-root user.
-- The container uses `read_only`, `no-new-privileges`, dropped capabilities, memory limits, PID limits, and a small tmpfs.
+- The container uses `read_only`, dropped capabilities plus only `NET_BIND_SERVICE`, memory limits, PID limits, and small tmpfs mounts.
 - Docker JSON log files are capped to avoid slow disk doom.
 - No secrets, environment files, app credentials, or production tokens are introduced.
 - Compose validation runs in CI before the PR can merge.
@@ -133,6 +135,7 @@ ok
 | Check mode says Docker would install, then runtime tasks cannot find Docker | Check mode simulated the package install but did not create the service | Runtime-dependent service tasks are skipped in check mode; rerun apply only after reviewing the preview |
 | Docker package install fails | Ubuntu package mirror issue or package name change | Rerun check mode later, then update package vars through PR if needed |
 | Compose config fails | Invalid YAML, bad bind mount, or unsupported Compose option | Fix `compose/caddy/compose.yml` and let CI prove it |
+| Caddy logs `exec /usr/bin/caddy: operation not permitted` | Over-hardening blocked the official image file capability | Keep `NET_BIND_SERVICE`, remove `no-new-privileges`, and rerun through PR |
 | Caddy container exits | Bad Caddyfile, missing mount, wrong file permissions, or read-only runtime paths | The role prints Compose status and Caddy logs; fix repo files, rerun check mode, then apply |
 | `/healthz` fails | Caddy not started, not listening inside the container, or unable to write runtime state | Check the printed Compose status/logs, verify `0.0.0.0:8080` and runtime mounts, then rerun after a PR fix |
 | Disk grows too fast | Container logs or future service data are noisy | Docker log caps are already set; add service-specific retention before adding heavier workloads |
