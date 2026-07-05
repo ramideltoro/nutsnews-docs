@@ -52,6 +52,8 @@ The workflow is intentionally narrow:
 
 The playbook still manages privileged host state through sudo, but SSH does not log in as root. That distinction matters: `nutsnews_ops` is the automation door; root is the emergency hatch behind glass with a tiny hammer and a lot of paperwork.
 
+The same protected workflow now also applies the service foundation role after the host baseline: Docker Engine, Docker Compose, the `/opt/nutsnews` layout, and a local-only Caddy placeholder. Check mode remains the first stop. Apply mode is still the button with consequences.
+
 ## Protected Apply Flow
 
 ```mermaid
@@ -146,6 +148,7 @@ It is one careful step: take the already-bootstrapped host baseline and let GitH
 ## Related Docs
 
 - [NutsNews VPS Ansible Bootstrap](NUTSNEWS_VPS_ANSIBLE_BOOTSTRAP.md)
+- [NutsNews VPS Service Foundation](NUTSNEWS_VPS_SERVICE_FOUNDATION.md)
 - [NutsNews Infra Operations Platform](NUTSNEWS_INFRA_OPERATIONS_PLATFORM.md)
 - [Operations](OPERATIONS.md)
 - [Troubleshooting](TROUBLESHOOTING.md)

@@ -28,6 +28,7 @@ The platform is designed around these boundaries:
 
 - Pull request validation must not require production secrets.
 - Apply workflows must be restricted to trusted branches or protected environments.
+- Container services should land under `/opt/nutsnews` through Ansible and Compose before public routing is exposed.
 - Manual SSH is break-glass only and must be documented after the fact.
 - Home-server automation is optional support infrastructure, never a public-serving dependency.
 - Documentation for infra changes lives here in `ramideltoro/nutsnews-docs`; infra repo docs should stay short and operational.
@@ -216,6 +217,7 @@ Manual SSH without follow-up documentation is not "ops." It is folklore with a t
 - [Operations](OPERATIONS.md)
 - [VPS Ansible Bootstrap](NUTSNEWS_VPS_ANSIBLE_BOOTSTRAP.md)
 - [Protected Ansible Apply](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md)
+- [VPS Service Foundation](NUTSNEWS_VPS_SERVICE_FOUNDATION.md)
 - [Observability](OBSERVABILITY.md)
 - [Security CI Scans](SECURITY_CI_SCANS.md)
 - [Dependency Updates](DEPENDENCY_UPDATES.md)
