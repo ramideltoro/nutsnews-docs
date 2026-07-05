@@ -6,7 +6,9 @@ This explains how the NutsNews infrastructure repo is supposed to make one small
 
 NutsNews has one primary production VPS. The infra repo is the remote control for that VPS, but changes do not go straight to the server like a mystery shell script with root access and a suspicious amount of confidence. They go through a pull request, scanners, review, merge, and then a future automated apply step.
 
-The Ops Portal is planned to become the central dashboard for service health, deploys, backups, alerts, runbooks, and email reports. The home server is optional support gear: good for encrypted backups, restore tests, private monitoring, scheduled reports, and background jobs. It is not allowed to become the secret load-bearing shoebox that keeps the public website online.
+The Ops Portal now has a v1 foundation: a read-only static dashboard, local status collector, and loopback-only Caddy route. It is still not a public authenticated dashboard yet, because "ship first, add auth later" is how dashboards become incident exhibits.
+
+The home server is optional support gear: good for encrypted backups, restore tests, private monitoring, scheduled reports, and background jobs. It is not allowed to become the secret load-bearing shoebox that keeps the public website online.
 
 ## Intermediate Summary
 
@@ -85,7 +87,7 @@ The infra repo has a first-pass GitHub Actions stability layer. It is intentiona
 | Supply Chain | Dependency Review and OSV-Scanner |
 | Infrastructure Checks | YAML linting, OpenTofu formatting/validation, TFLint, Checkov, and Ansible lint when files exist |
 | Runtime Checks | Compose validation, Hadolint, and Trivy filesystem/config scans |
-| Portal Checks | Portal install/lint/test/build when `portal/package.json` exists |
+| Portal Checks | Static portal validation now, plus install/lint/test/build when `portal/package.json` exists later |
 | Nightly Audit | Deeper scheduled workflow, dependency, and configuration scans |
 
 The workflows are scaffold-safe. If Terraform, Ansible, Compose, Dockerfile, or portal app files do not exist yet, the related jobs skip cleanly. That is not laziness; that is avoiding fake failures from folders that are still wearing name tags.
@@ -133,6 +135,8 @@ The Ops Portal should become the place to answer:
 - Did email reporting send, or did it silently wander into the swamp?
 
 Portal actions must respect GitOps. The portal should not become a sneaky manual admin console that mutates production without a commit trail. If it changes infrastructure or service state, it should create or trigger auditable repo-backed workflows.
+
+The v1 implementation is intentionally read-only. It surfaces local host, Docker, service, log, security, backup, alert, GitOps, and runbook state from a sanitized JSON file. It does not expose a shell, Docker socket, package installer, restart button, or any other "what could possibly go wrong?" shortcut.
 
 ## Alert And Reporting Flow
 
@@ -218,6 +222,7 @@ Manual SSH without follow-up documentation is not "ops." It is folklore with a t
 - [VPS Ansible Bootstrap](NUTSNEWS_VPS_ANSIBLE_BOOTSTRAP.md)
 - [Protected Ansible Apply](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md)
 - [VPS Service Foundation](NUTSNEWS_VPS_SERVICE_FOUNDATION.md)
+- [Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md)
 - [Observability](OBSERVABILITY.md)
 - [Security CI Scans](SECURITY_CI_SCANS.md)
 - [Dependency Updates](DEPENDENCY_UPDATES.md)

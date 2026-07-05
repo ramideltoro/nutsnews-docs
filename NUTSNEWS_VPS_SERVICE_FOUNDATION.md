@@ -30,6 +30,7 @@ That role runs after the existing VPS baseline role. It manages:
 - `/opt/nutsnews/portal-assets`
 - `/opt/nutsnews/health`
 - a Compose-managed Caddy placeholder service
+- the first read-only operations portal surface and local status collector
 
 The protected Ansible workflow still defaults to check mode. In real apply mode, the service role can start Caddy and verify `http://127.0.0.1:8080/healthz`. In check mode, it skips Docker Compose mutation because pretending to start containers without Docker being installed yet is how automation starts gaslighting everyone.
 
@@ -82,7 +83,7 @@ flowchart LR
   root --> data["data\ncontainer state"]
   root --> logs["logs\nservice logs and exports"]
   root --> backups["backups\nencrypted backup staging"]
-  root --> portal["portal-assets\nfuture Ops Portal assets"]
+  root --> portal["portal-assets\nOps Portal assets and status JSON"]
   root --> health["health\nstatic placeholder"]
   apps --> caddy["caddy/compose.yml"]
   config --> caddyfile["caddy/Caddyfile"]
@@ -98,7 +99,7 @@ flowchart LR
   maintainer["Maintainer over SSH"] --> loopback["127.0.0.1:8080"]
   loopback --> caddy
   caddy --> health["/healthz -> ok"]
-  caddy --> placeholder["Static placeholder page"]
+  caddy --> portal["Read-only Ops Portal"]
 ```
 
 Public HTTP and HTTPS routing are future work. The baseline firewall may allow ports `80` and `443`, but this Caddy service does not bind them yet. That means the container layer can be tested without accidentally publishing a half-built front door.
@@ -126,6 +127,13 @@ Expected health output:
 
 ```text
 ok
+```
+
+After the portal layer is applied, also verify:
+
+```bash
+curl -fsS http://127.0.0.1:8080/data/status.json
+systemctl status nutsnews-ops-portal-collector.timer
 ```
 
 ## What Can Go Wrong
@@ -159,6 +167,7 @@ It gives future services a safe landing zone. That is less glamorous than launch
 ## Related Docs
 
 - [NutsNews Protected Ansible Apply Workflow](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md)
+- [NutsNews Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md)
 - [NutsNews VPS Ansible Bootstrap](NUTSNEWS_VPS_ANSIBLE_BOOTSTRAP.md)
 - [NutsNews Infra Operations Platform](NUTSNEWS_INFRA_OPERATIONS_PLATFORM.md)
 - [Operations](OPERATIONS.md)

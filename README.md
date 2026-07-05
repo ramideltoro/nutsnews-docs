@@ -19,6 +19,7 @@ This folder is organized by what you are trying to do: understand the product, c
 | Bootstrap the VPS baseline | [VPS Ansible Bootstrap](NUTSNEWS_VPS_ANSIBLE_BOOTSTRAP.md) |
 | Run the protected VPS baseline workflow | [Protected Ansible Apply](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md) |
 | Understand the VPS service foundation | [VPS Service Foundation](NUTSNEWS_VPS_SERVICE_FOUNDATION.md) |
+| Understand the VPS operations portal | [Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md) |
 | Ship a change | [Deployment Checklist](DEPLOYMENT_CHECKLIST.md) |
 | Fix a production issue | [Troubleshooting](TROUBLESHOOTING.md) |
 | Check cost and quota risk | [Free-Tier Guardrails](FREE_TIER_GUARDRAILS.md) |
@@ -46,6 +47,7 @@ These docs explain the product and the system at a high level.
 | [VPS Ansible Bootstrap](NUTSNEWS_VPS_ANSIBLE_BOOTSTRAP.md) | First Ubuntu VPS baseline, SSH lockout prevention, firewall, updates, logging, and recovery flow |
 | [Protected Ansible Apply](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md) | Manual protected GitHub Actions workflow for check/apply runs against the VPS baseline |
 | [VPS Service Foundation](NUTSNEWS_VPS_SERVICE_FOUNDATION.md) | Docker, Compose, `/opt/nutsnews`, and local-only Caddy placeholder layer |
+| [Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md) | Read-only VPS dashboard, local collector, loopback Caddy route, status JSON, and recovery notes |
 | [Troubleshooting](TROUBLESHOOTING.md) | Common failures, checks, and recovery steps |
 
 ### 2. Product and Reader Experience
