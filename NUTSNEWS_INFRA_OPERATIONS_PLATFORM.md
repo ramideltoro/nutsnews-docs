@@ -214,6 +214,7 @@ Manual SSH without follow-up documentation is not "ops." It is folklore with a t
 ## Related Docs
 
 - [Operations](OPERATIONS.md)
+- [VPS Ansible Bootstrap](NUTSNEWS_VPS_ANSIBLE_BOOTSTRAP.md)
 - [Observability](OBSERVABILITY.md)
 - [Security CI Scans](SECURITY_CI_SCANS.md)
 - [Dependency Updates](DEPENDENCY_UPDATES.md)
