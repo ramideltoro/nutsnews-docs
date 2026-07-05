@@ -168,7 +168,7 @@ flowchart TD
 
 The current access rule is simple: the portal exists on the VPS, but it is not publicly exposed. That is less convenient than a shiny public dashboard, but also less likely to become the first page indexed by "please hack me dot com."
 
-SSH access uses a narrow tunnel exception for `nutsnews_ops`. The global SSH baseline still denies TCP forwarding, remote forwarding, gateway exposure, stream-local forwarding, and tunnel devices. The admin/operator user can create only local TCP forwards to `127.0.0.1:8080` or `localhost:8080`, which is just enough rope to view the portal and not enough rope to knit a surprise proxy farm.
+SSH access uses a narrow tunnel exception for `nutsnews_ops`. The global SSH baseline still denies TCP forwarding, remote forwarding, gateway exposure, stream-local forwarding, and tunnel devices. The admin/operator user can create only local TCP forwards to `127.0.0.1:8080` or `localhost:8080`, which is just enough rope to view the portal and not enough rope to knit a surprise proxy farm. We locked the portal behind a tunnel, then locked the tunnel too. Very secure. Very invisible.
 
 Use:
 
