@@ -73,6 +73,8 @@ The same protected workflow now also applies the service foundation role after t
 
 The workflow can also pass optional SMTP settings into Ansible extra vars for the Ops Portal reporter. Those values are never committed, and the Ansible task that writes `/etc/nutsnews/ops-reporter.env` is hidden with `no_log` so the workflow does not proudly print the password like a broken receipt printer.
 
+There is also a separate manual workflow named `Send VPS Health Report`. It uses the same `production-vps` Environment and SSH material, but it is not an apply workflow. It connects as `nutsnews_ops`, starts only `nutsnews-ops-health-report.service`, prints fixed service/reporting status, and refuses to accept arbitrary remote commands. It is the doorbell for a report, not the keys to the building.
+
 ## Protected Apply Flow
 
 ```mermaid
@@ -90,6 +92,20 @@ flowchart TD
   result -- "Yes" --> done["Workflow succeeds"]
   result -- "No" --> recover["Use runbook recovery path"]
 ```
+
+## On-Demand Report Flow
+
+```mermaid
+flowchart LR
+  human["Maintainer manually starts\nSend VPS Health Report"] --> env["production-vps\nEnvironment"]
+  env --> ssh["SSH as nutsnews_ops\nverified known_hosts"]
+  ssh --> service["Start fixed systemd unit\nnutsnews-ops-health-report.service"]
+  service --> reporter["Existing reporter sends email\nwhen configured"]
+  reporter --> status["Safe reporting-status.json"]
+  status --> output["Workflow prints success/failure fields"]
+```
+
+This workflow deliberately has no command input. If a future operation needs a button, it should get its own reviewed workflow with its own tiny seatbelt, not a general-purpose SSH slot machine.
 
 ## How To Run Check Mode
 

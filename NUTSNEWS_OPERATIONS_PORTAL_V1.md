@@ -1,12 +1,14 @@
 # NutsNews Operations Portal v1
 
-This explains the first real Ops Portal layer for the NutsNews VPS: a read-only dashboard, a local status collector, opt-in email alerts/reports, deeper resource visibility, and a Caddy route that stays on loopback until we add reviewed authentication.
+This explains the first real Ops Portal layer for the NutsNews VPS: a read-only amber dashboard, a local status collector, opt-in email alerts/reports, an on-demand report workflow, deeper resource visibility, and a Caddy route that stays on loopback until we add reviewed authentication.
 
 ## Easy Summary
 
-The VPS has a visual dashboard for boring-but-important server facts: uptime, resource usage, containers, services, logs, security posture, backups, alerts, GitOps state, and runbook links.
+The VPS has a polished amber dashboard for boring-but-important server facts: overall health, email reporting, resource pressure, processes, disk, network, services, logs, security posture, backups, GitOps state, and runbook links.
 
-This update makes the portal more useful when the server starts smelling weird. It adds top process views, cached "what is eating disk?" folder scans, honest network visibility, and opt-in email alerts plus daily health reports. Email is disabled unless the protected GitHub Environment provides SMTP settings, because surprise production email is how dashboards become tiny spam factories with charts.
+This update makes the portal easier to scan when the server starts smelling weird. It adds gauges for health score, CPU, RAM, disk, swap, and inodes; temperature-style hot spots for memory pressure, disk pressure, service health, and alert level; compact stats where the data supports them; and an email/reporting block that makes enabled/configured/next run/last run/last success/last error hard to miss.
+
+There is also a manual `Send VPS Health Report` workflow. It uses the same protected `production-vps` Environment and SSH secret pattern, connects as `nutsnews_ops`, and starts only the existing health report service. No random remote command box. No "type your shell script here." Production does not need karaoke night.
 
 The important part: it is read-only. No restart button. No "install this one tiny thing" button. No secret shell wearing a dashboard costume. If something needs to change production, it still goes through the civilized path:
 
@@ -18,13 +20,15 @@ For v1, Caddy serves the portal only on `127.0.0.1:8080` on the VPS. That means 
 
 ## Intermediate Summary
 
-The infra repo now adds five pieces:
+The infra repo now has these pieces:
 
 1. A static portal under `portal/`
 2. An Ansible-installed collector at `/usr/local/bin/nutsnews-ops-portal-collector`
 3. A systemd timer named `nutsnews-ops-portal-collector.timer`
 4. An Ansible-installed reporter at `/usr/local/bin/nutsnews-ops-portal-reporter`
 5. Alert and daily report timers named `nutsnews-ops-alert-check.timer` and `nutsnews-ops-health-report.timer`
+6. A manual GitHub Actions workflow named `Send VPS Health Report`
+7. CI guardrails that validate the portal fixture, secret redaction, read-only surface, and the no-arbitrary-command shape of the manual report workflow
 
 The collector runs locally on the VPS, reads host state, redacts obvious sensitive log patterns, and writes JSON here:
 
@@ -45,6 +49,7 @@ The reporter reads that same JSON feed and can send two kinds of email:
 
 - warning/critical alert emails with a duplicate-alert cooldown
 - scheduled daily health reports
+- on-demand health reports when GitHub Actions starts the fixed systemd report unit
 
 SMTP values live in the protected `production-vps` GitHub Environment and are rendered by Ansible into `/etc/nutsnews/ops-reporter.env` with mode `0600`. If email is disabled or missing required settings, the reporter exits successfully, writes that state for the portal, and does not improvise. Infrastructure improv is for jazz bands and outages.
 
@@ -61,6 +66,7 @@ Ops Portal v1 is intentionally simple:
 - No direct Docker socket mount in the served portal
 - No production secrets
 - No automatic apply on merge
+- No arbitrary remote command input in the manual health-report workflow
 
 The collector runs as root because it needs to read system logs, systemd state, Docker state, UFW output, open ports, and backup directory metadata. That sounds spicy, so the blast radius is kept small:
 
@@ -81,6 +87,7 @@ Resource visibility stays cheap-VPS friendly:
 - disk hot spots use `du` with a cache so the collector does not rescan heavy folders every minute
 - host network counters come from standard Linux interface stats
 - per-process network byte totals are explicitly marked unavailable unless we approve extra telemetry later
+- the UI is static HTML/CSS/JS, not a frontend framework doing jazz hands on a tiny VPS
 
 ## Portal Architecture
 
@@ -195,6 +202,36 @@ The reporter is deliberately boring. It does not restart services. It does not p
 
 Alert emails only send for warning and critical conditions. Repeated copies of the same alert are suppressed during the cooldown window, because "disk still 90%" every five minutes is not observability, it is inbox cardio.
 
+## Manual Health Report Workflow
+
+```mermaid
+sequenceDiagram
+  participant Human as Maintainer
+  participant Actions as GitHub Actions
+  participant Env as production-vps Environment
+  participant SSH as SSH (nutsnews_ops)
+  participant Systemd as systemd
+  participant Reporter as ops reporter
+  participant SMTP as SMTP provider
+  participant Portal as Ops Portal status
+
+  Human->>Actions: Run Send VPS Health Report
+  Actions->>Env: Request protected Environment secrets
+  Env-->>Actions: SSH key and verified known_hosts
+  Actions->>SSH: Connect to 65.75.202.112
+  SSH->>Systemd: sudo systemctl start nutsnews-ops-health-report.service
+  Systemd->>Reporter: Run existing report mechanism
+  Reporter->>SMTP: Send health report if enabled and configured
+  Reporter->>Portal: Write safe reporting-status.json fields
+  Actions->>Systemd: Read fixed service status properties
+  Actions->>Portal: Read safe report status fields
+  Actions-->>Human: Succeed only when report state is sent
+```
+
+This workflow is intentionally less flexible than a vending machine that only sells one sandwich. It has no dispatch inputs, no remote command parameter, no streamed shell script, and no install/restart/reconfigure controls. It starts the existing `nutsnews-ops-health-report.service` unit and then prints safe status fields: enabled, configured, SMTP host configured, recipients count, mode, status, last run, last success, and last error.
+
+If SMTP is disabled or misconfigured, the workflow fails clearly instead of pretending an email went out. That is the correct level of dramatic honesty.
+
 ## Resource Visibility Flow
 
 ```mermaid
@@ -213,18 +250,18 @@ The CPU table is useful, not omniscient. It shows a lifetime average normalized 
 
 | Section | What it shows |
 | --- | --- |
-| Overview | Hostname, uptime, public IPs, OS, kernel, deployed infra commit, last apply marker |
-| Resources | CPU sample, RAM, swap, disk, inode usage, load average, network counters |
-| Top Memory Apps | PID, app name, user, memory, CPU estimate, thread count, CPU time, elapsed time, idle time |
-| Top CPU Apps | Same process fields, sorted by best-effort CPU usage |
-| Disk Hot Spots | Cached top folder sizes across approved local roots |
-| Network Visibility | Host send/receive counters and an honest note that per-process byte totals need extra telemetry |
+| Overall Health | Health score gauge, hostname, uptime, public IPs, OS, kernel, deployed infra commit, last apply marker |
+| Alerts and Email Reporting | Email enabled/configured state, SMTP configured flag, next report run, last run, last success, last error, pending alerts, timer state |
+| Resources | Gauges for CPU, RAM, root disk, swap, and root inode usage; load stats; network counters; NutsNews disk usage |
+| Hot Spots | Temperature-style memory pressure, disk pressure, service health, and alert level |
+| Processes | Top memory and CPU apps with client-side filtering, PID, user, memory, CPU estimate, thread count, CPU time, elapsed time, idle time |
+| Disk | Cached top folder sizes across approved local roots, scan cache status, largest scanned entry |
+| Network | Host send/receive counters, interface counters, and an honest note that per-process byte totals need extra telemetry |
+| Services | `ssh`, `docker`, unattended upgrades, UFW, fail2ban or CrowdSec if present, portal collector/reporting timers |
 | Docker and Compose | Containers, health, restart count, image names, ports, compose project |
-| Linux Services | `ssh`, `docker`, unattended upgrades, UFW, fail2ban or CrowdSec if present, portal collector/reporting timers |
 | Logs | Recent Caddy logs, journal warnings, auth/security logs, with basic redaction |
 | Security | Firewall status, open ports, SSH hardening, pending updates, last reboot, failed login summary |
 | Backups and Snapshots | Backup directory usage, latest local backup placeholder, snapshot reminders |
-| Alerts | Local threshold warnings, email enabled/configured state, last alert check, last report, cooldown suppression, last error |
 | GitOps | Workflow links, deployed commit marker, last apply marker, drift warning |
 | Runbooks and Docs | Links back to the docs repo |
 
@@ -286,6 +323,9 @@ Future public access should add:
 | Email reporting says misconfigured | SMTP host, sender, recipient, or password-for-username is missing | Fix Environment secrets, rerun check mode, then apply |
 | Alert emails do not repeat | Duplicate-alert cooldown is suppressing the same warning | Check `suppressed_alerts` and `cooldown_seconds`; this is usually a feature, not a conspiracy |
 | Daily report does not arrive | Timer not running, SMTP transport failed, or provider rejected the message | Check `systemctl list-timers nutsnews-ops-health-report.timer` and `journalctl -u nutsnews-ops-health-report.service` |
+| Manual report workflow fails before SSH | Missing `production-vps` SSH key or known-hosts secret | Add/fix `NUTSNEWS_VPS_SSH_PRIVATE_KEY` and `NUTSNEWS_VPS_KNOWN_HOSTS`, then rerun |
+| Manual report workflow connects but fails | `nutsnews_ops` cannot sudo the fixed service, the service failed, or reporting status did not become `sent` | Read the service result and safe reporting snapshot printed by the workflow; fix through PR/protected apply |
+| Manual report workflow cannot run a custom command | This is by design, and also a nice little safety blanket | Add a reviewed workflow for any new operation instead of widening this one |
 | Logs show `[redacted]` | The collector saw a sensitive-looking pattern and hid it | Good. Annoying, but good. Secrets in dashboards are how incident reports get extra chapters |
 | A real secret appears in status JSON | Redaction missed something | Treat it as an incident, rotate affected credentials, remove exposure if any exists, and fix the collector through PR |
 | SSH tunnel fails with `administratively prohibited` | SSH hardening is blocking TCP forwarding or the target does not match the allowed portal destinations | Apply the baseline update that allows `nutsnews_ops` local forwarding only to `127.0.0.1:8080` or `localhost:8080`, then use the documented `ssh -L` command |
@@ -322,6 +362,19 @@ Expected status JSON behavior:
 - contains no committed secrets
 - reports email as disabled or misconfigured if SMTP secrets are not configured
 - keeps per-process network byte totals labeled unavailable unless a later PR adds approved telemetry
+
+For the manual health report workflow, verify:
+
+- workflow name is `Send VPS Health Report`
+- trigger is `workflow_dispatch` only
+- there are no dispatch inputs
+- job environment is `production-vps`
+- SSH user is `nutsnews_ops`
+- remote action is fixed to `systemctl start nutsnews-ops-health-report.service`
+- the workflow prints fixed service status and safe reporting fields
+- the workflow fails if the reporting state is not enabled, configured, `mode=report`, and `status=sent`
+
+In normal terms: the workflow can ring the report bell, read the "did it ring?" note, and then leave. It cannot wander around the server touching things because it felt inspired.
 
 ## Provider-Agnostic Impact
 
