@@ -33,6 +33,8 @@ That role runs after the existing VPS baseline role. It manages:
 
 The protected Ansible workflow still defaults to check mode. In real apply mode, the service role can start Caddy and verify `http://127.0.0.1:8080/healthz`. In check mode, it skips Docker Compose mutation because pretending to start containers without Docker being installed yet is how automation starts gaslighting everyone.
 
+Fresh-host check mode has one classic trick: it says "sure, Docker would be installed" without actually creating the `docker` service, `docker` group, Caddy user, or `/opt/nutsnews` directories. Very impressive. Very resume-coded. The service foundation role now treats Docker package installation as the check-mode preview and skips runtime-dependent Docker/Caddy tasks until apply mode creates the real host state.
+
 ## Expert Summary
 
 This layer creates the runtime substrate without exposing a production route. The design is intentionally conservative:
@@ -126,6 +128,7 @@ ok
 
 | Failure | Likely cause | Recovery |
 | --- | --- | --- |
+| Check mode says Docker would install, then runtime tasks cannot find Docker | Check mode simulated the package install but did not create the service | Runtime-dependent service tasks are skipped in check mode; rerun apply only after reviewing the preview |
 | Docker package install fails | Ubuntu package mirror issue or package name change | Rerun check mode later, then update package vars through PR if needed |
 | Compose config fails | Invalid YAML, bad bind mount, or unsupported Compose option | Fix `compose/caddy/compose.yml` and let CI prove it |
 | Caddy container exits | Bad Caddyfile, missing mount, wrong file permissions | Check `sudo docker logs nutsnews-caddy`, fix repo files, rerun |
