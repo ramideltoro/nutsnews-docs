@@ -1,10 +1,12 @@
 # NutsNews Operations Portal v1
 
-This explains the first real Ops Portal layer for the NutsNews VPS: a read-only dashboard, a local status collector, and a Caddy route that stays on loopback until we add reviewed authentication.
+This explains the first real Ops Portal layer for the NutsNews VPS: a read-only dashboard, a local status collector, opt-in email alerts/reports, deeper resource visibility, and a Caddy route that stays on loopback until we add reviewed authentication.
 
 ## Easy Summary
 
-The VPS is getting a visual dashboard for boring-but-important server facts: uptime, resource usage, containers, services, logs, security posture, backups, alerts, GitOps state, and runbook links.
+The VPS has a visual dashboard for boring-but-important server facts: uptime, resource usage, containers, services, logs, security posture, backups, alerts, GitOps state, and runbook links.
+
+This update makes the portal more useful when the server starts smelling weird. It adds top process views, cached "what is eating disk?" folder scans, honest network visibility, and opt-in email alerts plus daily health reports. Email is disabled unless the protected GitHub Environment provides SMTP settings, because surprise production email is how dashboards become tiny spam factories with charts.
 
 The important part: it is read-only. No restart button. No "install this one tiny thing" button. No secret shell wearing a dashboard costume. If something needs to change production, it still goes through the civilized path:
 
@@ -12,15 +14,17 @@ The important part: it is read-only. No restart button. No "install this one tin
 commit -> PR -> checks -> merge -> protected apply
 ```
 
-For v1, Caddy serves the portal only on `127.0.0.1:8080` on the VPS. That means there is no unauthenticated public dashboard waving at the internet like a free buffet. Public access waits for a later PR with reviewed auth and TLS.
+For v1, Caddy serves the portal only on `127.0.0.1:8080` on the VPS. That means there is no unauthenticated public dashboard waving at the internet like a free buffet. Access uses the narrow SSH tunnel path. Public access waits for a later PR with reviewed auth and TLS.
 
 ## Intermediate Summary
 
-The infra repo now adds three pieces:
+The infra repo now adds five pieces:
 
 1. A static portal under `portal/`
 2. An Ansible-installed collector at `/usr/local/bin/nutsnews-ops-portal-collector`
 3. A systemd timer named `nutsnews-ops-portal-collector.timer`
+4. An Ansible-installed reporter at `/usr/local/bin/nutsnews-ops-portal-reporter`
+5. Alert and daily report timers named `nutsnews-ops-alert-check.timer` and `nutsnews-ops-health-report.timer`
 
 The collector runs locally on the VPS, reads host state, redacts obvious sensitive log patterns, and writes JSON here:
 
@@ -36,6 +40,13 @@ http://127.0.0.1:8080/data/status.json
 ```
 
 The portal does not mount the Docker socket into a public-facing app. Docker state is collected by the local systemd service, flattened into JSON, and handed to the browser like a report card. Much safer than giving the web UI a chainsaw and hoping it only trims hedges.
+
+The reporter reads that same JSON feed and can send two kinds of email:
+
+- warning/critical alert emails with a duplicate-alert cooldown
+- scheduled daily health reports
+
+SMTP values live in the protected `production-vps` GitHub Environment and are rendered by Ansible into `/etc/nutsnews/ops-reporter.env` with mode `0600`. If email is disabled or missing required settings, the reporter exits successfully, writes that state for the portal, and does not improvise. Infrastructure improv is for jazz bands and outages.
 
 ## Expert Summary
 
@@ -61,6 +72,16 @@ The collector runs as root because it needs to read system logs, systemd state, 
 
 The protected Ansible apply workflow now passes non-secret GitHub run metadata into Ansible. After the role verifies Caddy and the portal JSON endpoint, it can stamp the deployed infra commit and last successful apply marker for the dashboard.
 
+The same workflow can also pass optional SMTP values from protected Environment secrets into Ansible extra vars. The secret-bearing reporter env file task is `no_log`, so apply diffs do not print the SMTP password into Actions logs. This is basic hygiene, but basic hygiene is also why the kitchen has soap.
+
+Resource visibility stays cheap-VPS friendly:
+
+- process rankings come from `/proc`
+- CPU percent is a best-effort lifetime average, not a live flame graph
+- disk hot spots use `du` with a cache so the collector does not rescan heavy folders every minute
+- host network counters come from standard Linux interface stats
+- per-process network byte totals are explicitly marked unavailable unless we approve extra telemetry later
+
 ## Portal Architecture
 
 ```mermaid
@@ -74,22 +95,36 @@ flowchart TB
   subgraph VPS["Primary NutsNews VPS"]
     timer["systemd timer\nnutsnews-ops-portal-collector"]
     collector["local collector\nread-only host inspection"]
+    alertTimer["systemd timer\nnutsnews-ops-alert-check"]
+    reportTimer["systemd timer\nnutsnews-ops-health-report"]
+    reporter["local reporter\nemail opt-in"]
+    env["/etc/nutsnews/ops-reporter.env\n0600, root-only"]
     json["/opt/nutsnews/portal-assets/data/status.json"]
+    reportingJson["/opt/nutsnews/portal-assets/data/reporting-status.json"]
     assets["/opt/nutsnews/portal-assets\nHTML, CSS, JS"]
     caddy["Caddy container\n127.0.0.1:8080 only"]
   end
 
   ansible --> assets
   ansible --> timer
+  ansible --> alertTimer
+  ansible --> reportTimer
+  ansible --> env
   compose --> caddy
   timer --> collector
   collector --> json
+  alertTimer --> reporter
+  reportTimer --> reporter
+  env --> reporter
+  json --> reporter
+  reporter --> reportingJson
+  reportingJson --> collector
   assets --> caddy
   json --> caddy
   caddy --> browser["Browser view\nread-only dashboard"]
 ```
 
-The key design choice is separation: the collector can inspect the host, but the served portal only reads JSON. The dashboard is a window, not a screwdriver drawer.
+The key design choice is separation: the collector can inspect the host, the reporter can send email when explicitly configured, but the served portal only reads JSON. The dashboard is a window, not a screwdriver drawer.
 
 ## GitOps Apply Flow
 
@@ -135,22 +170,65 @@ sequenceDiagram
 
 The portal is not a live shell. It is a snapshot reader. That makes it less magical, which is great, because magical production systems usually require candles and apologies.
 
+## Email Alert And Report Flow
+
+```mermaid
+flowchart TD
+  envSecrets["production-vps\nEnvironment secrets"] --> apply["Protected Ansible Apply"]
+  apply --> envFile["/etc/nutsnews/ops-reporter.env\nroot-only, 0600"]
+  collector["collector timer\nupdates status.json"] --> status["status.json"]
+  status --> alertTimer["alert timer\nusually every 5 minutes"]
+  status --> reportTimer["daily report timer"]
+  envFile --> reporter["reporter script"]
+  alertTimer --> reporter
+  reportTimer --> reporter
+  reporter --> cooldown["email-alert-state.json\nduplicate cooldown"]
+  reporter --> smtp{"Email configured?"}
+  smtp -- "No" --> disabled["write disabled/misconfigured status\nexit 0"]
+  smtp -- "Yes" --> send["SMTP send\nalerts or daily report"]
+  send --> publicStatus["reporting-status.json\nsafe portal summary"]
+  disabled --> publicStatus
+  publicStatus --> portal["Ops Portal\nemail reporting section"]
+```
+
+The reporter is deliberately boring. It does not restart services. It does not patch configs. It does not turn an alert into a shell command wearing a fake mustache. It reads the status JSON, applies cooldown rules, sends email only when configured, and writes a sanitized status file for the portal.
+
+Alert emails only send for warning and critical conditions. Repeated copies of the same alert are suppressed during the cooldown window, because "disk still 90%" every five minutes is not observability, it is inbox cardio.
+
+## Resource Visibility Flow
+
+```mermaid
+flowchart LR
+  proc["/proc\nprocess stats"] --> collector["collector"]
+  disk["du cached scan\n/opt/nutsnews, /var/log,\n/var/lib/docker, /home"] --> collector
+  net["/proc/net/dev\nhost interface counters"] --> collector
+  collector --> json["status.json"]
+  json --> ui["Portal tables\nprocesses, disk hot spots,\nnetwork note"]
+  ui --> honest["Per-process network bytes:\nnot available without extra telemetry"]
+```
+
+The CPU table is useful, not omniscient. It shows a lifetime average normalized across CPU cores, which is enough to spot "why is this thing always eating the box?" It is not a replacement for a profiler, and that is fine. The VPS is running a news platform, not auditioning for a cloud bill.
+
 ## What The Portal Shows
 
 | Section | What it shows |
 | --- | --- |
 | Overview | Hostname, uptime, public IPs, OS, kernel, deployed infra commit, last apply marker |
 | Resources | CPU sample, RAM, swap, disk, inode usage, load average, network counters |
+| Top Memory Apps | PID, app name, user, memory, CPU estimate, thread count, CPU time, elapsed time, idle time |
+| Top CPU Apps | Same process fields, sorted by best-effort CPU usage |
+| Disk Hot Spots | Cached top folder sizes across approved local roots |
+| Network Visibility | Host send/receive counters and an honest note that per-process byte totals need extra telemetry |
 | Docker and Compose | Containers, health, restart count, image names, ports, compose project |
-| Linux Services | `ssh`, `docker`, unattended upgrades, UFW, fail2ban or CrowdSec if present, portal collector timer |
+| Linux Services | `ssh`, `docker`, unattended upgrades, UFW, fail2ban or CrowdSec if present, portal collector/reporting timers |
 | Logs | Recent Caddy logs, journal warnings, auth/security logs, with basic redaction |
 | Security | Firewall status, open ports, SSH hardening, pending updates, last reboot, failed login summary |
 | Backups and Snapshots | Backup directory usage, latest local backup placeholder, snapshot reminders |
-| Alerts | Local threshold warnings and email-alert placeholder |
+| Alerts | Local threshold warnings, email enabled/configured state, last alert check, last report, cooldown suppression, last error |
 | GitOps | Workflow links, deployed commit marker, last apply marker, drift warning |
 | Runbooks and Docs | Links back to the docs repo |
 
-The email alert section is a placeholder in v1. The platform plan still wants regular email reports for deploys, health, backups, security scans, and incidents. The dashboard is now giving those future reports a sensible home instead of forcing them to live in somebody's inbox like cryptic fortune cookies.
+The email section is still intentionally humble. It reports local VPS warnings and scheduled health summaries. Future deploy, backup, security scan, and incident reporting can build on the same pattern instead of each workflow inventing a new inbox ritual with its own little hat.
 
 ## Security Model
 
@@ -201,6 +279,13 @@ Future public access should add:
 | `/data/status.json` returns 404 | Collector did not create the status file or Caddy is not serving the portal assets directory | Check `systemctl status nutsnews-ops-portal-collector.timer` and the Caddy mount |
 | Status data is stale | Timer is disabled, failed, or blocked by systemd hardening | Check `systemctl list-timers` and `journalctl -u nutsnews-ops-portal-collector.service` |
 | Docker section is empty | Docker is not installed, Docker service is down, or the collector cannot reach the local Docker socket | Check Docker service state; fix collector permissions through PR if needed |
+| Process tables are empty | `/proc` changed, permissions are unexpectedly restricted, or the collector failed mid-run | Check `journalctl -u nutsnews-ops-portal-collector.service`; fix the collector through PR |
+| Disk hot spots look stale | The cache is still valid or the scan failed and reused old data | Check `disk_usage.scanned_at`, `disk_usage.errors`, and the collector journal |
+| Per-process network table is missing | This is expected; standard Linux does not expose reliable per-process byte totals without extra telemetry | Use host-level counters for now; propose a lightweight telemetry agent later if the value beats the complexity |
+| Email reporting says disabled | `NUTSNEWS_EMAIL_ENABLED` is not set to `true` in the `production-vps` Environment | Add the optional SMTP secrets and rerun protected apply |
+| Email reporting says misconfigured | SMTP host, sender, recipient, or password-for-username is missing | Fix Environment secrets, rerun check mode, then apply |
+| Alert emails do not repeat | Duplicate-alert cooldown is suppressing the same warning | Check `suppressed_alerts` and `cooldown_seconds`; this is usually a feature, not a conspiracy |
+| Daily report does not arrive | Timer not running, SMTP transport failed, or provider rejected the message | Check `systemctl list-timers nutsnews-ops-health-report.timer` and `journalctl -u nutsnews-ops-health-report.service` |
 | Logs show `[redacted]` | The collector saw a sensitive-looking pattern and hid it | Good. Annoying, but good. Secrets in dashboards are how incident reports get extra chapters |
 | A real secret appears in status JSON | Redaction missed something | Treat it as an incident, rotate affected credentials, remove exposure if any exists, and fix the collector through PR |
 | SSH tunnel fails with `administratively prohibited` | SSH hardening is blocking TCP forwarding or the target does not match the allowed portal destinations | Apply the baseline update that allows `nutsnews_ops` local forwarding only to `127.0.0.1:8080` or `localhost:8080`, then use the documented `ssh -L` command |
@@ -217,6 +302,9 @@ On the VPS, verify:
 curl -fsS http://127.0.0.1:8080/healthz
 curl -fsS http://127.0.0.1:8080/data/status.json
 systemctl status nutsnews-ops-portal-collector.timer
+systemctl status nutsnews-ops-alert-check.timer
+systemctl status nutsnews-ops-health-report.timer
+sudo /usr/local/bin/nutsnews-ops-portal-reporter --mode report --dry-run
 sudo docker compose -f /opt/nutsnews/apps/caddy/compose.yml ps
 ```
 
@@ -230,8 +318,10 @@ Expected status JSON behavior:
 
 - contains `generated_at`
 - contains `portal.mode` set to `read-only`
-- contains host, resource, Docker, service, security, backup, alert, GitOps, and runbook sections
+- contains host, resource, process, disk, network, Docker, service, security, backup, alert, email reporting, GitOps, and runbook sections
 - contains no committed secrets
+- reports email as disabled or misconfigured if SMTP secrets are not configured
+- keeps per-process network byte totals labeled unavailable unless a later PR adds approved telemetry
 
 ## Provider-Agnostic Impact
 
@@ -244,12 +334,12 @@ Provider-specific bits should stay outside the portal unless they are optional f
 This v1 layer does not:
 
 - expose a public authenticated route
-- send email reports
 - run backups
 - restore backups
 - mutate Docker, systemd, Caddy, firewall, or packages
 - install a database
 - add a heavy observability stack
+- add true per-process network byte telemetry
 - replace Sentry, Better Stack, Supabase, or Cloudflare
 - make the home server required for production
 

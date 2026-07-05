@@ -34,6 +34,23 @@ Required Environment secrets:
 
 The public key list is stored as a secret even though public keys are not secret in the dramatic spy-movie sense. The point is simpler: keep operator-specific runtime material out of the repo so git does not become a junk drawer with commit history.
 
+Optional email reporting Environment secrets:
+
+| Secret | Purpose |
+| --- | --- |
+| `NUTSNEWS_EMAIL_ENABLED` | Set to `true` to enable alert/report email sending |
+| `NUTSNEWS_SMTP_HOST` | SMTP server hostname |
+| `NUTSNEWS_SMTP_PORT` | SMTP port, usually `587` |
+| `NUTSNEWS_SMTP_USERNAME` | SMTP username if the provider requires auth |
+| `NUTSNEWS_SMTP_PASSWORD` | SMTP password or app password if the provider requires auth |
+| `NUTSNEWS_SMTP_STARTTLS` | `true` unless the provider explicitly says otherwise |
+| `NUTSNEWS_EMAIL_FROM` | Sender address |
+| `NUTSNEWS_EMAIL_TO` | Comma-separated recipient list |
+| `NUTSNEWS_ALERT_COOLDOWN_SECONDS` | Duplicate alert cooldown, default `21600` |
+| `NUTSNEWS_REPORT_SUBJECT_PREFIX` | Optional subject prefix, default `NutsNews VPS` |
+
+If these are absent, the VPS still applies safely and the portal reports email as disabled. That is intentional. A server that sends mail before being asked is not observability; it is a newsletter with root privileges.
+
 ## Expert Summary
 
 The workflow is intentionally narrow:
@@ -53,6 +70,8 @@ The workflow is intentionally narrow:
 The playbook still manages privileged host state through sudo, but SSH does not log in as root. That distinction matters: `nutsnews_ops` is the automation door; root is the emergency hatch behind glass with a tiny hammer and a lot of paperwork.
 
 The same protected workflow now also applies the service foundation role after the host baseline: Docker Engine, Docker Compose, the `/opt/nutsnews` layout, and a local-only Caddy placeholder. Check mode remains the first stop. Apply mode is still the button with consequences.
+
+The workflow can also pass optional SMTP settings into Ansible extra vars for the Ops Portal reporter. Those values are never committed, and the Ansible task that writes `/etc/nutsnews/ops-reporter.env` is hidden with `no_log` so the workflow does not proudly print the password like a broken receipt printer.
 
 ## Protected Apply Flow
 
