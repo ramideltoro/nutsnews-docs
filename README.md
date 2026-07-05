@@ -18,6 +18,7 @@ This folder is organized by what you are trying to do: understand the product, c
 | Ship a change | [Deployment Checklist](DEPLOYMENT_CHECKLIST.md) |
 | Fix a production issue | [Troubleshooting](TROUBLESHOOTING.md) |
 | Check cost and quota risk | [Free-Tier Guardrails](FREE_TIER_GUARDRAILS.md) |
+| Validate public API contracts | [Public API Contract Tests](PUBLIC_API_CONTRACT_TESTS.md) |
 | Work on translations | [Multi-language Summaries](MULTI_LANGUAGE_SUMMARIES.md); [Multilingual Quality and Fallbacks](MULTILINGUAL_QUALITY_AND_FALLBACKS.md) |
 | Work on local AI | [Worker Local AI Lock](NUTSNEWS_WORKER_LOCAL_AI_LOCK.md); see ramideltoro/nutsnews-worker |
 | Investigate worker queue pressure | [Worker Backpressure and Lock Safety](WORKER_BACKPRESSURE_AND_LOCK_SAFETY.md) |
@@ -162,6 +163,7 @@ These docs explain the product and the system at a high level.
 
 | Doc | Use it for |
 | --- | --- |
+| [Public API Contract Tests](PUBLIC_API_CONTRACT_TESTS.md) | Mocked contract checks for `/api/articles`, `/api/search`, `/api/contact`, sitemap, and robots |
 | [Web Offline E2E Regression Test](WEB_OFFLINE_E2E_REGRESSION_TEST.md) | Fully mocked public web flow test before preview deploy |
 | [Web Public Reader Smoke Test](WEB_PUBLIC_READER_SMOKE_TEST.md) | PR Playwright smoke coverage for home feed, infinite scroll, language switching, contact validation, public pages, and article detail |
 | [Vercel Preview Smoke Test](VERCEL_PREVIEW_SMOKE_TEST.md) | Live PR preview checks after Vercel deploys |
