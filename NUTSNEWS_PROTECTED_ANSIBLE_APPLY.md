@@ -22,6 +22,8 @@ workflow_dispatch
 
 That means no automatic apply on PR, push, or merge. A human starts it from GitHub Actions. GitHub then applies the `production-vps` Environment rules before the job receives Environment secrets.
 
+Add the required secrets in GitHub under `ramideltoro/nutsnews-infra` -> Settings -> Environments -> `production-vps` -> Environment secrets. Keep the Environment protection rules enabled; the whole point is that production changes pass through a door with a lock, not a bead curtain.
+
 Required Environment secrets:
 
 | Secret | Purpose |
