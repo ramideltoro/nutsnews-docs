@@ -48,6 +48,7 @@ This layer creates the runtime substrate and one narrow production route. The de
 - Caddy publishes public ports `80` and `443` for `vps.nutsnews.com`.
 - The public host exposes only `/health` and returns `404` for all other paths.
 - Caddy keeps the Ops Portal bound to host loopback only: `127.0.0.1:8080`.
+- UFW allows the Caddy Docker network to reach the host health service on TCP `18080`.
 - Caddy admin API is disabled.
 - Caddy automatic HTTPS is enabled for the public hostname.
 - The container runs as a dedicated numeric non-root user.
@@ -109,6 +110,8 @@ flowchart LR
 ```
 
 Public HTTP and HTTPS are used only for the Better Stack-compatible health endpoint. Caddy obtains and renews certificates for `vps.nutsnews.com`; Cloudflare stays DNS-only. The portal still requires the existing SSH tunnel path.
+
+The health service listens on the host at TCP `18080`. Because UFW denies inbound traffic by default, Ansible also installs an internal-only firewall rule that allows the Caddy Docker network to reach that host port. Do not add this manually on the VPS; run the protected apply workflow so the rule is reconciled from the infra repo.
 
 ## Better Stack Infrastructure Health
 
@@ -200,6 +203,7 @@ systemctl status nutsnews-ops-portal-collector.timer
 | Caddy container exits | Bad Caddyfile, missing mount, wrong file permissions, or read-only runtime paths | The role prints Compose status and Caddy logs; fix repo files, rerun check mode, then apply |
 | `/healthz` fails | Caddy not started, not listening inside the container, or unable to write runtime state | Check the printed Compose status/logs, verify `0.0.0.0:8080` and runtime mounts, then rerun after a PR fix |
 | `https://vps.nutsnews.com/health` fails to connect | Caddy is not published on `80`/`443`, firewall rules are not applied, or the protected apply has not run | Confirm the PR is merged, run protected check/apply after approval, then verify ports and Caddy logs |
+| Public `/health` returns `502` | Caddy cannot reach the host health service, often because the internal UFW rule is missing | Run protected check/apply from the infra repo and confirm the Caddy Docker network is allowed to TCP `18080` |
 | Public `/health` returns `503` | One required service, container, or resource threshold check is failing | Check `journalctl -u nutsnews-infra-health.service` and `/opt/nutsnews/logs/health/health-failures.jsonl` |
 | Disk grows too fast | Container logs or future service data are noisy | Docker log caps are already set; add service-specific retention before adding heavier workloads |
 
