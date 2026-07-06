@@ -18,7 +18,7 @@ The important part: it is read-only. No restart button. No "install this one tin
 commit -> PR -> checks -> merge -> protected apply
 ```
 
-For v1, Caddy serves the portal only on `127.0.0.1:8080` on the VPS. That means there is no unauthenticated public dashboard waving at the internet like a free buffet. Access uses the narrow SSH tunnel path. Public access waits for a later PR with reviewed auth and TLS.
+For v1, Caddy serves the portal only on `127.0.0.1:8080` on the VPS, and every dashboard route is behind a Google OAuth gateway. The only allowed Google account is `rami.deltoro@gmail.com`. Access can still use the narrow SSH tunnel path, but a browser must complete Google sign-in before the dashboard or `/data/*` status endpoints are served.
 
 ## Intermediate Summary
 
@@ -29,9 +29,10 @@ The infra repo now has these pieces:
 3. A systemd timer named `nutsnews-ops-portal-collector.timer`
 4. An Ansible-installed reporter at `/usr/local/bin/nutsnews-ops-portal-reporter`
 5. Alert and daily report timers named `nutsnews-ops-alert-check.timer` and `nutsnews-ops-health-report.timer`
-6. A manual GitHub Actions workflow named `Send VPS Health Report`
-7. Manual backup workflows named `Run VPS Backup` and `Verify VPS Backup`
-8. CI guardrails that validate the portal fixture, secret redaction, read-only surface, backup status, and the no-arbitrary-command shape of the manual report and backup workflows
+6. A Google OAuth gateway that serves `/api/auth/signin/google`, `/api/auth/callback/google`, and all authenticated portal files
+7. A manual GitHub Actions workflow named `Send VPS Health Report`
+8. Manual backup workflows named `Run VPS Backup` and `Verify VPS Backup`
+9. CI guardrails that validate the portal fixture, Google OAuth allowlist, callback route, secret redaction, read-only surface, backup status, and the no-arbitrary-command shape of the manual report and backup workflows
 
 The collector runs locally on the VPS, reads host state, redacts obvious sensitive log patterns, and writes JSON here:
 
@@ -45,6 +46,26 @@ Caddy serves the static portal and the JSON feed from:
 http://127.0.0.1:8080/
 http://127.0.0.1:8080/data/status.json
 ```
+
+Unauthenticated requests to dashboard routes or `/data/status.json` are redirected to `/api/auth/signin/google`. The Google OAuth callback path is fixed at:
+
+```text
+/api/auth/callback/google
+```
+
+The Google OAuth authorized redirect URI must use a concrete dashboard host:
+
+```text
+https://<dashboard-domain>/api/auth/callback/google
+```
+
+Configured callback URLs:
+
+- Production: `https://ops.nutsnews.com/api/auth/callback/google`
+- Staging: `https://staging.ops.nutsnews.com/api/auth/callback/google`
+- Dev: `https://dev.ops.nutsnews.com/api/auth/callback/google`
+
+The hostless shorthand `https:///api/auth/callback/google` documents the required path shape only; runtime config must use one of the concrete URLs above.
 
 The portal does not mount the Docker socket into a public-facing app. Docker state is collected by the local systemd service, flattened into JSON, and handed to the browser like a report card. Much safer than giving the web UI a chainsaw and hoping it only trims hedges.
 
