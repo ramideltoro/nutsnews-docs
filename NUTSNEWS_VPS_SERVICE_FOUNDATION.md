@@ -467,6 +467,47 @@ Roll back through GitOps by setting `vps_service_foundation_caddy_rate_limits_en
 
 Cloudflare is currently managed in `nutsnews-infra` only for DDNS records, with proxying disabled by default. If Cloudflare proxying is enabled later, add complementary Cloudflare WAF/rate-limit rules and review Caddy client IP handling before relying on `{remote_host}`.
 
+## NutsNews App Layer
+
+The app layer is now represented in the same service fabric, but it remains staged.
+
+- Compose source: `compose/nutsnews/compose.yml`
+- Install path: `/opt/nutsnews/apps/nutsnews/compose.yml` copied by the service role
+- App env file: `/etc/nutsnews/nutsnews-app.env` rendered from protected inputs
+- Caddy route file: `/opt/nutsnews/config/caddy/app.routes`
+
+### What is staged now
+
+- App container definition exists and can be started from Ansible when `NUTSNEWS_APP_ENABLED=true`.
+- Route wiring in Caddy is optional and defaults to disabled (`NUTSNEWS_APP_ROUTE_ENABLED=false`).
+- App route path defaults to `/app-stage` and health path defaults to `/healthz`.
+- Route check is strict: if route is enabled, the app container and staged route health endpoint must answer before the workflow exits successfully.
+- No production rollout or DNS change is performed by this change.
+
+### How rollout is designed
+
+1. Stage app deployment by setting app flags and image variables while keeping `NUTSNEWS_APP_ROUTE_ENABLED=false`.
+2. Confirm app container health and environment are present in Ops Portal.
+3. In a follow-up PR and protected apply, set `NUTSNEWS_APP_ROUTE_ENABLED=true` when route cutover is intentional.
+4. Use existing GitOps path (`check mode -> review -> apply`) for all changes.
+
+The staged route is intentionally non-user-facing by default. This prevents accidental public switch-on before observability and confidence are in place.
+
+### Rollback notes
+
+- Disable route only:
+  - Set `NUTSNEWS_APP_ROUTE_ENABLED=false`.
+  - Run check mode, then apply.
+  - Public route exposure stops while compose services remain available locally.
+- Roll back a bad app release:
+  - Set `NUTSNEWS_APP_IMAGE_TAG` or `NUTSNEWS_APP_IMAGE_REPO` to the last known-good image.
+  - Run check mode, then apply.
+- Full app disable:
+  - Set `NUTSNEWS_APP_ENABLED=false`.
+  - Run check mode, then apply.
+
+Rollback operations stay within the same protected apply workflow; nothing is done via dashboard buttons.
+
 ## Validation
 
 Before merge, CI checks:

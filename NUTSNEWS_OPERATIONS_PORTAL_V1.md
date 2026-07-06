@@ -654,6 +654,7 @@ The CPU table is useful, not omniscient. It shows a lifetime average normalized 
 | Security | Firewall status, open ports, SSH hardening, pending updates, last reboot, failed login summary |
 | Backups and Snapshots | Restic/rclone backup status, latest snapshot freshness, latest snapshot verification, backup/verify timer state, protected path counts |
 | GitOps | Workflow links, deployed commit marker, last apply marker, drift warning |
+| App | App readiness, app route state, image repo/tag, secret key coverage, deploy marker |
 | Runbooks and Docs | Links back to the docs repo |
 
 The backup section now reports the restic/rclone VPS backup layer: enabled/configured state, repository path, latest snapshot age, backup/prune state, latest-snapshot verification state, backup and verify timer state, and protected path counts. Raw backup path lists and restore targets stay in root-only config, not public status JSON.
@@ -669,6 +670,18 @@ The latest-snapshot verification state is computed by comparing the last check's
 Routine verification is not a restore drill. The scheduled timer checks repository readability and latest-snapshot coverage; the full restore drill tracked in infra issue #24 still restores to staging and validates the files.
 
 The email section is still intentionally humble. It reports local VPS warnings, scheduled health summaries, and backup problems from the portal status feed. Future deploy, security scan, and incident reporting can build on the same pattern instead of each workflow inventing a new inbox ritual with its own little hat.
+
+## App Layer
+
+The portal now reports app readiness without exposing secret values:
+
+- `app.enabled` and `app.deploy_status` show whether the app compose layer is configured and running.
+- `app.routing` shows whether the staged public route is disabled, pending, or healthy.
+- `app.secrets` shows only marker metadata for required vs present secret keys and env file presence.
+- `app.marker` shows the last applied app rollout state and image references.
+- `app_links` keeps jump points to rollout status and rollback runbooks.
+
+Staged rollout remains opt-in. Route settings are separate from service enablement, so a bad app image can be updated without exposing routes until a follow-up rollout step is explicit.
 
 ## Security Model
 

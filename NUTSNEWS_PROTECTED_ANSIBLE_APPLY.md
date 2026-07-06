@@ -228,6 +228,22 @@ Operationally, treat any `unknown`, `not configured`, `failed`, `expired`, or
 staging candidate and qualification; do not edit the VPS manually to force a
 candidate through.
 
+Optional app layer Environment values:
+
+| Secret / Input | Purpose |
+| --- | --- |
+| `NUTSNEWS_APP_ENABLED` | Set `true` to configure app compose and env rendering |
+| `NUTSNEWS_APP_ROUTE_ENABLED` | Set `true` to enable staged routing checks; requires `NUTSNEWS_APP_ENABLED=true` |
+| `NUTSNEWS_APP_ROUTE_PATH` | Route path, default `/app-stage` |
+| `NUTSNEWS_APP_CONTAINER_NAME` | App container name for compose and health checks |
+| `NUTSNEWS_APP_CONTAINER_PORT` | Container port to probe, default `3000` |
+| `NUTSNEWS_APP_HEALTH_PATH` | App health path, default `/healthz` |
+| `NUTSNEWS_APP_IMAGE_REPO` | Optional image repository override |
+| `NUTSNEWS_APP_IMAGE_TAG` | Optional image tag override |
+| `NUTSNEWS_APP_SECRET_ENV_KEYS` | Comma-separated list of env keys treated as secret values |
+| `NUTSNEWS_APP_REQUIRED_SECRETS` | Comma-separated required secret keys; must be in `NUTSNEWS_APP_SECRET_ENV_KEYS` |
+| `NUTSNEWS_APP_ENVS_JSON` | JSON map of app env vars; required keys in `NUTSNEWS_APP_REQUIRED_SECRETS` must be present and non-empty |
+
 ## Expert Summary
 
 The workflow is intentionally narrow:
@@ -295,6 +311,19 @@ flowchart LR
 ```
 
 This workflow deliberately has no command input. If a future operation needs a button, it should get its own reviewed workflow with its own tiny seatbelt, not a general-purpose SSH slot machine.
+
+## NutsNews app rollout path
+
+Staged app deployment and route cutover are split into two explicit steps:
+
+1. Configure `NUTSNEWS_APP_*` values and secret metadata, keep `NUTSNEWS_APP_ROUTE_ENABLED` disabled, and run protected check/apply.
+2. When app health and collector state are stable, enable `NUTSNEWS_APP_ROUTE_ENABLED=true` in a follow-up PR.
+
+The apply command always validates:
+
+- app container starts and reports valid Docker state when enabled
+- app route health endpoint responds `200` with an `ok` body when route is enabled
+- Caddy and portal status health checks continue to pass
 
 ## How To Run Check Mode
 

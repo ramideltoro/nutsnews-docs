@@ -47,6 +47,36 @@ Quick verification command:
 
 ---
 
+## NutsNews App Rollout
+
+Use this when app layer state in the portal is not what is expected.
+
+If app rollout status is not ready:
+
+- Confirm `NUTSNEWS_APP_ENABLED` is set only when app compose and env variables are intended to be active.
+- Confirm `NUTSNEWS_APP_ROUTE_ENABLED` is still `false` while you validate service health.
+- Confirm app image repo and tag values in `NUTSNEWS_VPS` workflow/vars are correct.
+- Confirm `NUTSNEWS_APP_SECRET_ENV_KEYS` contains the expected secret key names.
+- Confirm `NUTSNEWS_APP_REQUIRED_SECRETS` keys are all present and not empty in `NUTSNEWS_APP_ENVS_JSON`.
+
+Rollback options:
+
+- Stop route cutover by setting `NUTSNEWS_APP_ROUTE_ENABLED=false`.
+- Roll app image by setting `NUTSNEWS_APP_IMAGE_TAG` (or `NUTSNEWS_APP_IMAGE_REPO`).
+- Disable staged app service by setting `NUTSNEWS_APP_ENABLED=false`.
+
+## NutsNews App Rollback
+
+Use the same three controls above in reverse for a controlled rollback:
+
+- Route disable first.
+- Pin the last known good image tag.
+- Disable app enablement only if full service rollback is required.
+
+Run protected apply and review the Ansible recap after making any change.
+
+---
+
 ## Quick Triage
 
 Start here when something looks wrong.
