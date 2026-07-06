@@ -6,7 +6,7 @@ This explains the next layer in the NutsNews VPS platform: Docker Engine, Docker
 
 The VPS now gets a small container foundation managed by Ansible. The playbook installs Docker Engine and Docker Compose from Ubuntu packages, creates the standard `/opt/nutsnews` directory layout, and starts a tiny Caddy service through Compose.
 
-Caddy is not public yet. It listens only on `127.0.0.1:8080`, serves a static placeholder page, and answers `/healthz` with `ok`. That lets us verify the service layer before adding real apps, public routing, TLS automation, and the other useful things that become less useful when introduced all at once during a caffeine incident.
+Caddy is not public yet. It listens only on `127.0.0.1:8080`, serves a static placeholder page, answers `/healthz` with `ok`, and can proxy `/health` to the local infrastructure health service. That lets us verify the service layer before adding real apps, public routing, TLS automation, and the other useful things that become less useful when introduced all at once during a caffeine incident.
 
 ## Intermediate Summary
 
@@ -31,6 +31,7 @@ That role runs after the existing VPS baseline role. It manages:
 - `/opt/nutsnews/health`
 - a Compose-managed Caddy placeholder service
 - the first read-only operations portal surface and local status collector
+- a Better Stack-compatible `/health` endpoint for infrastructure health
 
 The protected Ansible workflow still defaults to check mode. In real apply mode, the service role can start Caddy and verify `http://127.0.0.1:8080/healthz`. In check mode, it skips Docker Compose mutation because pretending to start containers without Docker being installed yet is how automation starts gaslighting everyone.
 
@@ -99,10 +100,50 @@ flowchart LR
   maintainer["Maintainer over SSH"] --> loopback["127.0.0.1:8080"]
   loopback --> caddy
   caddy --> health["/healthz -> ok"]
+  caddy --> infraHealth["/health -> infra health service"]
   caddy --> portal["Read-only Ops Portal"]
 ```
 
 Public HTTP and HTTPS routing are future work. The baseline firewall may allow ports `80` and `443`, but this Caddy service does not bind them yet. That means the container layer can be tested without accidentally publishing a half-built front door.
+
+## Better Stack Infrastructure Health
+
+The service foundation includes a small Python stdlib service named `nutsnews-infra-health.service`. Caddy routes `/health` to that local service. The endpoint is designed for Better Stack HTTP status-code monitoring and returns minimal public JSON only:
+
+```json
+{"ok":true,"service":"nutsnews-infra"}
+```
+
+It returns HTTP `200` only when required checks pass. It returns HTTP `503` when any required check fails. Failure responses stay safe for public monitoring and only include generic failed check groups.
+
+Default required checks:
+
+- CPU usage below `60%`
+- memory usage below `60%`
+- disk usage below `60%` for `/` and `/opt/nutsnews`
+- active systemd units: `ssh.service`, `docker.service`, `fail2ban.service`, `nutsnews-infra-health.service`, `nutsnews-ops-portal-collector.timer`, `nutsnews-ops-alert-check.timer`, and `nutsnews-ops-health-report.timer`
+- running and healthy Docker containers: `nutsnews-caddy`, plus `nutsnews-app` when the app layer is enabled
+
+Failure details are intentionally logged server-side instead of returned publicly. Check:
+
+```bash
+sudo journalctl -u nutsnews-infra-health.service -n 80 --no-pager
+sudo tail -n 40 /opt/nutsnews/logs/health/health-failures.jsonl
+```
+
+Each failure log entry includes timestamp, failed check, measured value, threshold, relevant service/container/path, and a short reason. The health service does not log secrets, environment values, tokens, database URLs, or stack traces.
+
+Better Stack monitor settings after public routing is approved and applied:
+
+```text
+Monitor type: HTTP status code
+URL: https://vps.nutsnews.com/health
+Expected status: 2xx
+Check frequency: 1 minute
+Alert after: 2-3 failed checks
+Suggested monitor name: NutsNews Infra Health
+Recommended regions: US East, US West, EU West
+```
 
 ## Validation
 
@@ -120,7 +161,9 @@ After apply, verify from the VPS:
 ```bash
 sudo docker compose -f /opt/nutsnews/apps/caddy/compose.yml ps
 curl -fsS http://127.0.0.1:8080/healthz
+curl -i http://127.0.0.1:8080/health
 curl -fsS http://127.0.0.1:8080/
+systemctl status nutsnews-infra-health.service
 ```
 
 Expected health output:
