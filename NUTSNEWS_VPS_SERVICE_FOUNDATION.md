@@ -121,7 +121,7 @@ Default required checks:
 - CPU usage below `60%`
 - memory usage below `60%`
 - disk usage below `60%` for `/` and `/opt/nutsnews`
-- active systemd units: `ssh.service`, `docker.service`, `fail2ban.service`, `nutsnews-infra-health.service`, `nutsnews-ops-portal-collector.timer`, `nutsnews-ops-alert-check.timer`, and `nutsnews-ops-health-report.timer`
+- active systemd units: `ssh.service`, `docker.service`, `unattended-upgrades.service`, `ufw.service`, `fail2ban.service`, `nutsnews-infra-health.service`, `nutsnews-ops-portal-collector.timer`, `nutsnews-ops-alert-check.timer`, and `nutsnews-ops-health-report.timer`
 - running and healthy Docker containers: `nutsnews-caddy`, plus `nutsnews-app` when the app layer is enabled
 
 Failure details are intentionally logged server-side instead of returned publicly. Check:
