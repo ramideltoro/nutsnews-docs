@@ -51,6 +51,23 @@ Optional email reporting Environment secrets:
 
 If these are absent, the VPS still applies safely and the portal reports email as disabled. That is intentional. A server that sends mail before being asked is not observability; it is a newsletter with root privileges.
 
+Optional encrypted VPS backup Environment secrets:
+
+| Secret | Purpose |
+| --- | --- |
+| `NUTSNEWS_BACKUP_ENABLED` | Set to `true` to enable scheduled restic backups |
+| `NUTSNEWS_BACKUP_RESTIC_PASSWORD` | Restic repository password |
+| `NUTSNEWS_BACKUP_RCLONE_CONFIG` | Complete rclone config for the dedicated `nutsnews-onedrive` OneDrive remote |
+| `NUTSNEWS_BACKUP_REPOSITORY` | Optional override, default `rclone:nutsnews-onedrive:nutsnews-backups/vps` |
+| `NUTSNEWS_BACKUP_STALE_AFTER_HOURS` | Optional stale threshold, default `30` |
+| `NUTSNEWS_BACKUP_CHECK_READ_DATA_SUBSET` | Optional verify sample, default `5%` |
+| `NUTSNEWS_BACKUP_KEEP_DAILY` | Optional daily retention, default `14` |
+| `NUTSNEWS_BACKUP_KEEP_WEEKLY` | Optional weekly retention, default `8` |
+| `NUTSNEWS_BACKUP_KEEP_MONTHLY` | Optional monthly retention, default `12` |
+| `NUTSNEWS_BACKUP_KEEP_YEARLY` | Optional yearly retention, default `2` |
+
+If `NUTSNEWS_BACKUP_ENABLED` is true, the workflow rejects missing restic/rclone secrets and rejects repositories that do not use the dedicated `nutsnews-onedrive` rclone remote. This is the right kind of annoying.
+
 ## Expert Summary
 
 The workflow is intentionally narrow:
@@ -74,6 +91,8 @@ The same protected workflow now also applies the service foundation role after t
 The workflow can also pass optional SMTP settings into Ansible extra vars for the Ops Portal reporter. Those values are never committed, and the Ansible task that writes `/etc/nutsnews/ops-reporter.env` is hidden with `no_log` so the workflow does not proudly print the password like a broken receipt printer.
 
 There is also a separate manual workflow named `Send VPS Health Report`. It uses the same `production-vps` Environment and SSH material, but it is not an apply workflow. It connects as `nutsnews_ops`, starts only `nutsnews-ops-health-report.service`, prints fixed service/reporting status, and refuses to accept arbitrary remote commands. It is the doorbell for a report, not the keys to the building.
+
+The manual backup workflows follow the same pattern: `Run VPS Backup` starts only `nutsnews-restic-backup.service`, and `Verify VPS Backup` starts only `nutsnews-restic-verify.service`. They have no command input and no arbitrary remote shell mode.
 
 ## Protected Apply Flow
 

@@ -1,14 +1,16 @@
 # NutsNews Operations Portal v1
 
-This explains the first real Ops Portal layer for the NutsNews VPS: a read-only amber dashboard, a local status collector, opt-in email alerts/reports, an on-demand report workflow, deeper resource visibility, and a Caddy route that stays on loopback until we add reviewed authentication.
+This explains the first real Ops Portal layer for the NutsNews VPS: a read-only amber dashboard, a local status collector, opt-in email alerts/reports, encrypted backup status, on-demand report and backup workflows, deeper resource visibility, and a Caddy route that stays on loopback until we add reviewed authentication.
 
 ## Easy Summary
 
-The VPS has a polished amber dashboard for boring-but-important server facts: overall health, email reporting, resource pressure, processes, disk, network, services, logs, security posture, backups, GitOps state, and runbook links.
+The VPS has a polished amber dashboard for boring-but-important server facts: overall health, email reporting, resource pressure, processes, disk, network, services, logs, security posture, encrypted restic backup status, GitOps state, and runbook links.
 
 This update makes the portal easier to scan when the server starts smelling weird. It adds gauges for health score, CPU, RAM, disk, swap, and inodes; temperature-style hot spots for memory pressure, disk pressure, service health, and alert level; compact stats where the data supports them; and an email/reporting block that makes enabled/configured/next run/last run/last success/last error hard to miss.
 
 There is also a manual `Send VPS Health Report` workflow. It uses the same protected `production-vps` Environment and SSH secret pattern, connects as `nutsnews_ops`, and starts only the existing health report service. No random remote command box. No "type your shell script here." Production does not need karaoke night.
+
+There are also manual `Run VPS Backup` and `Verify VPS Backup` workflows. They use the same protected environment pattern and start only fixed systemd units. The portal then shows backup freshness, last backup, last prune, last verify, retention, and protected path coverage.
 
 The important part: it is read-only. No restart button. No "install this one tiny thing" button. No secret shell wearing a dashboard costume. If something needs to change production, it still goes through the civilized path:
 
@@ -28,7 +30,8 @@ The infra repo now has these pieces:
 4. An Ansible-installed reporter at `/usr/local/bin/nutsnews-ops-portal-reporter`
 5. Alert and daily report timers named `nutsnews-ops-alert-check.timer` and `nutsnews-ops-health-report.timer`
 6. A manual GitHub Actions workflow named `Send VPS Health Report`
-7. CI guardrails that validate the portal fixture, secret redaction, read-only surface, and the no-arbitrary-command shape of the manual report workflow
+7. Manual backup workflows named `Run VPS Backup` and `Verify VPS Backup`
+8. CI guardrails that validate the portal fixture, secret redaction, read-only surface, backup status, and the no-arbitrary-command shape of the manual report and backup workflows
 
 The collector runs locally on the VPS, reads host state, redacts obvious sensitive log patterns, and writes JSON here:
 
@@ -265,7 +268,9 @@ The CPU table is useful, not omniscient. It shows a lifetime average normalized 
 | GitOps | Workflow links, deployed commit marker, last apply marker, drift warning |
 | Runbooks and Docs | Links back to the docs repo |
 
-The email section is still intentionally humble. It reports local VPS warnings and scheduled health summaries. Future deploy, backup, security scan, and incident reporting can build on the same pattern instead of each workflow inventing a new inbox ritual with its own little hat.
+The backup section now reports the restic/rclone VPS backup layer: enabled/configured state, repository path, latest snapshot age, backup/prune/verify state, timer state, and protected paths. Backup failures and stale snapshots flow into the same warning/critical alert list used by email reporting.
+
+The email section is still intentionally humble. It reports local VPS warnings, scheduled health summaries, and backup problems from the portal status feed. Future deploy, security scan, and incident reporting can build on the same pattern instead of each workflow inventing a new inbox ritual with its own little hat.
 
 ## Security Model
 

@@ -20,6 +20,7 @@ This folder is organized by what you are trying to do: understand the product, c
 | Run the protected VPS baseline workflow or trigger an on-demand report | [Protected Ansible Apply](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md); [Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md) |
 | Understand the VPS service foundation | [VPS Service Foundation](NUTSNEWS_VPS_SERVICE_FOUNDATION.md) |
 | Understand the VPS operations portal | [Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md) |
+| Set up or restore encrypted VPS backups | [VPS Backups](NUTSNEWS_VPS_BACKUPS.md); [VPS Restore](NUTSNEWS_VPS_RESTORE.md); [VPS Disaster Recovery](NUTSNEWS_VPS_DISASTER_RECOVERY.md) |
 | Ship a change | [Deployment Checklist](DEPLOYMENT_CHECKLIST.md) |
 | Fix a production issue | [Troubleshooting](TROUBLESHOOTING.md) |
 | Check cost and quota risk | [Free-Tier Guardrails](FREE_TIER_GUARDRAILS.md) |
@@ -48,6 +49,9 @@ These docs explain the product and the system at a high level.
 | [Protected Ansible Apply](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md) | Manual protected GitHub Actions workflow for check/apply runs against the VPS baseline, plus the separate on-demand health report workflow |
 | [VPS Service Foundation](NUTSNEWS_VPS_SERVICE_FOUNDATION.md) | Docker, Compose, `/opt/nutsnews`, and local-only Caddy placeholder layer |
 | [Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md) | Read-only VPS dashboard, local collector, loopback Caddy route, status JSON, and recovery notes |
+| [VPS Backups](NUTSNEWS_VPS_BACKUPS.md) | Encrypted restic backups to a dedicated OneDrive rclone remote, setup secrets, status, alerts, and validation |
+| [VPS Restore](NUTSNEWS_VPS_RESTORE.md) | Restoring encrypted VPS snapshots to staging, copying selected data/config, and restore testing |
+| [VPS Disaster Recovery](NUTSNEWS_VPS_DISASTER_RECOVERY.md) | Rebuilding on another VPS provider, restoring data, verifying, cutting over DNS, and rollback |
 | [Troubleshooting](TROUBLESHOOTING.md) | Common failures, checks, and recovery steps |
 
 ### 2. Product and Reader Experience
@@ -102,6 +106,9 @@ These docs explain the product and the system at a high level.
 | Doc | Use it for |
 | --- | --- |
 | [Supabase Backup Automation](NUTSNEWS_DB_BACKUPS.md) | Home-server backups to encrypted OneDrive |
+| [VPS Backups](NUTSNEWS_VPS_BACKUPS.md) | VPS restic backups to encrypted OneDrive storage through rclone |
+| [VPS Restore](NUTSNEWS_VPS_RESTORE.md) | VPS restic restore and restore-test procedure |
+| [VPS Disaster Recovery](NUTSNEWS_VPS_DISASTER_RECOVERY.md) | Provider-agnostic VPS rebuild and cutover runbook |
 | [Supabase Restore Procedure](SUPABASE_RESTORE.md) | Restore order, SQL import, and validation queries |
 | [Free-Tier Guardrails](FREE_TIER_GUARDRAILS.md) | Quota, cost, and usage warning dashboard |
 

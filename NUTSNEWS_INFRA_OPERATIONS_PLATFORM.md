@@ -8,6 +8,8 @@ NutsNews has one primary production VPS. The infra repo is the remote control fo
 
 The Ops Portal now has a v1 foundation: a read-only static dashboard, local status collector, and loopback-only Caddy route. It is still not a public authenticated dashboard yet, because "ship first, add auth later" is how dashboards become incident exhibits.
 
+The VPS backup layer now uses restic and rclone to store encrypted snapshots in OneDrive through the dedicated `nutsnews-onedrive` remote. OneDrive gets ciphertext only. The backup workflows are fixed systemd triggers, not a general-purpose SSH remote-control slot machine.
+
 The home server is optional support gear: good for encrypted backups, restore tests, private monitoring, scheduled reports, and background jobs. It is not allowed to become the secret load-bearing shoebox that keeps the public website online.
 
 ## Intermediate Summary
@@ -35,6 +37,7 @@ The platform is designed around these boundaries:
 - Home-server automation is optional support infrastructure, never a public-serving dependency.
 - Documentation for infra changes lives here in `ramideltoro/nutsnews-docs`; infra repo docs should stay short and operational.
 - Documentation-only changes in this docs repo are pushed directly to `main` and should not trigger app, Worker, VPS, or deployment workflows.
+- VPS backups must stay encrypted before leaving the server, and restore tests must be treated as part of the backup system rather than an optional motivational poster.
 
 ## What This Is Trying To Achieve
 
@@ -223,6 +226,9 @@ Manual SSH without follow-up documentation is not "ops." It is folklore with a t
 - [Protected Ansible Apply](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md)
 - [VPS Service Foundation](NUTSNEWS_VPS_SERVICE_FOUNDATION.md)
 - [Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md)
+- [VPS Backups](NUTSNEWS_VPS_BACKUPS.md)
+- [VPS Restore](NUTSNEWS_VPS_RESTORE.md)
+- [VPS Disaster Recovery](NUTSNEWS_VPS_DISASTER_RECOVERY.md)
 - [Observability](OBSERVABILITY.md)
 - [Security CI Scans](SECURITY_CI_SCANS.md)
 - [Dependency Updates](DEPENDENCY_UPDATES.md)
