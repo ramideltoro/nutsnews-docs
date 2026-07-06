@@ -1,12 +1,12 @@
 # NutsNews VPS Service Foundation
 
-This explains the next layer in the NutsNews VPS platform: Docker Engine, Docker Compose, the `/opt/nutsnews` runtime layout, and a local-only Caddy placeholder. It is not the shiny app deploy yet. It is the floor, outlets, labels, and "does this thing actually turn on?" light switch.
+This explains the next layer in the NutsNews VPS platform: Docker Engine, Docker Compose, the `/opt/nutsnews` runtime layout, Caddy, and the public infrastructure health endpoint. It is not the shiny app deploy yet. It is the floor, outlets, labels, and "does this thing actually turn on?" light switch.
 
 ## Easy Summary
 
-The VPS now gets a small container foundation managed by Ansible. The playbook installs Docker Engine and Docker Compose from Ubuntu packages, creates the standard `/opt/nutsnews` directory layout, and starts a tiny Caddy service through Compose.
+The VPS now gets a small container foundation managed by Ansible. The playbook installs Docker Engine and Docker Compose from Ubuntu packages, creates the standard `/opt/nutsnews` directory layout, and starts Caddy through Compose.
 
-Caddy is not public yet. It listens only on `127.0.0.1:8080`, serves a static placeholder page, answers `/healthz` with `ok`, and can proxy `/health` to the local infrastructure health service. That lets us verify the service layer before adding real apps, public routing, TLS automation, and the other useful things that become less useful when introduced all at once during a caffeine incident.
+Caddy now has two jobs. It keeps the Ops Portal local on `127.0.0.1:8080`, and it exposes only `https://vps.nutsnews.com/health` publicly for Better Stack. The public host returns `404` for every other path, so this adds external monitoring without publishing the portal or the future app surface.
 
 ## Intermediate Summary
 
@@ -29,7 +29,7 @@ That role runs after the existing VPS baseline role. It manages:
 - `/opt/nutsnews/backups`
 - `/opt/nutsnews/portal-assets`
 - `/opt/nutsnews/health`
-- a Compose-managed Caddy placeholder service
+- a Compose-managed Caddy edge service
 - the first read-only operations portal surface and local status collector
 - a Better Stack-compatible `/health` endpoint for infrastructure health
 
@@ -39,15 +39,17 @@ Fresh-host check mode has one classic trick: it says "sure, Docker would be inst
 
 The first real Caddy apply found the next layer of "computers are technically correct, which is the most annoying kind of correct." Compose reported that it started the container, but `/healthz` refused connections. The fix makes the Caddy container more explicit about its runtime: Caddy binds inside the container on `0.0.0.0`, gets writable `/config`, `/data`, `/run`, and `/tmp` locations while keeping the root filesystem read-only, and the Ansible role now prints `docker compose ps` plus Caddy logs if health still fails.
 
-Then the container taught us that hardening can go full gym-bro and become unusable. The official Caddy image carries a file capability on `/usr/bin/caddy`; combining that with `cap_drop: ALL`, `no-new-privileges`, and a non-root UID made Docker refuse to exec the binary at all. The fix keeps the container non-root, read-only, and localhost-only, but grants only `NET_BIND_SERVICE` and removes the specific `no-new-privileges` flag that blocked startup.
+Then the container taught us that hardening can go full gym-bro and become unusable. The official Caddy image carries a file capability on `/usr/bin/caddy`; combining that with `cap_drop: ALL`, `no-new-privileges`, and a non-root UID made Docker refuse to exec the binary at all. The fix keeps the container non-root and read-only, but grants only `NET_BIND_SERVICE` and removes the specific `no-new-privileges` flag that blocked startup.
 
 ## Expert Summary
 
-This layer creates the runtime substrate without exposing a production route. The design is intentionally conservative:
+This layer creates the runtime substrate and one narrow production route. The design is intentionally conservative:
 
-- Caddy binds to host loopback only: `127.0.0.1:8080`.
+- Caddy publishes public ports `80` and `443` for `vps.nutsnews.com`.
+- The public host exposes only `/health` and returns `404` for all other paths.
+- Caddy keeps the Ops Portal bound to host loopback only: `127.0.0.1:8080`.
 - Caddy admin API is disabled.
-- Caddy automatic HTTPS is disabled until public domain routing is intentionally added.
+- Caddy automatic HTTPS is enabled for the public hostname.
 - The container runs as a dedicated numeric non-root user.
 - The container uses `read_only`, dropped capabilities plus only `NET_BIND_SERVICE`, memory limits, PID limits, and small tmpfs mounts.
 - Docker JSON log files are capped to avoid slow disk doom.
@@ -71,8 +73,9 @@ flowchart TD
   review -- "Yes" --> apply["Protected Ansible workflow: apply mode"]
   apply --> docker["Install Docker Engine and Compose"]
   docker --> layout["Create /opt/nutsnews layout"]
-  layout --> caddy["Start local-only Caddy placeholder"]
-  caddy --> health["Verify /healthz returns ok"]
+  layout --> caddy["Start Caddy edge service"]
+  caddy --> health["Verify local /healthz returns ok"]
+  caddy --> publicHealth["Expose public /health over HTTPS"]
 ```
 
 ## Runtime Layout
@@ -96,7 +99,8 @@ This layout is boring on purpose. "Where does this service put its files?" shoul
 
 ```mermaid
 flowchart LR
-  public["Public internet"] -. "not yet" .-> caddy["Caddy container"]
+  public["Public internet"] --> publicHealth["https://vps.nutsnews.com/health"]
+  publicHealth --> caddy["Caddy container"]
   maintainer["Maintainer over SSH"] --> loopback["127.0.0.1:8080"]
   loopback --> caddy
   caddy --> health["/healthz -> ok"]
@@ -104,7 +108,7 @@ flowchart LR
   caddy --> portal["Read-only Ops Portal"]
 ```
 
-Public HTTP and HTTPS routing are future work. The baseline firewall may allow ports `80` and `443`, but this Caddy service does not bind them yet. That means the container layer can be tested without accidentally publishing a half-built front door.
+Public HTTP and HTTPS are used only for the Better Stack-compatible health endpoint. Caddy obtains and renews certificates for `vps.nutsnews.com`; Cloudflare stays DNS-only. The portal still requires the existing SSH tunnel path.
 
 ## Better Stack Infrastructure Health
 
@@ -133,7 +137,7 @@ sudo tail -n 40 /opt/nutsnews/logs/health/health-failures.jsonl
 
 Each failure log entry includes timestamp, failed check, measured value, threshold, relevant service/container/path, and a short reason. The health service does not log secrets, environment values, tokens, database URLs, or stack traces.
 
-Better Stack monitor settings after public routing is approved and applied:
+Better Stack monitor settings after the public health route is applied:
 
 ```text
 Monitor type: HTTP status code
@@ -166,7 +170,13 @@ curl -fsS http://127.0.0.1:8080/
 systemctl status nutsnews-infra-health.service
 ```
 
-Expected health output:
+Verify the public Better Stack route from outside the VPS:
+
+```bash
+curl -i https://vps.nutsnews.com/health
+```
+
+Expected `/healthz` output:
 
 ```text
 ok
@@ -189,16 +199,17 @@ systemctl status nutsnews-ops-portal-collector.timer
 | Caddy logs `exec /usr/bin/caddy: operation not permitted` | Over-hardening blocked the official image file capability | Keep `NET_BIND_SERVICE`, remove `no-new-privileges`, and rerun through PR |
 | Caddy container exits | Bad Caddyfile, missing mount, wrong file permissions, or read-only runtime paths | The role prints Compose status and Caddy logs; fix repo files, rerun check mode, then apply |
 | `/healthz` fails | Caddy not started, not listening inside the container, or unable to write runtime state | Check the printed Compose status/logs, verify `0.0.0.0:8080` and runtime mounts, then rerun after a PR fix |
+| `https://vps.nutsnews.com/health` fails to connect | Caddy is not published on `80`/`443`, firewall rules are not applied, or the protected apply has not run | Confirm the PR is merged, run protected check/apply after approval, then verify ports and Caddy logs |
+| Public `/health` returns `503` | One required service, container, or resource threshold check is failing | Check `journalctl -u nutsnews-infra-health.service` and `/opt/nutsnews/logs/health/health-failures.jsonl` |
 | Disk grows too fast | Container logs or future service data are noisy | Docker log caps are already set; add service-specific retention before adding heavier workloads |
-| Someone wants to expose 80/443 immediately | Understandable impatience | Make a follow-up PR with routing, TLS, health checks, and rollback notes instead of freelancing in production |
 
 ## What This Does Not Do
 
 This layer does not:
 
 - deploy the NutsNews web app
-- expose public Caddy routing
-- configure TLS certificates
+- expose the Ops Portal publicly
+- expose the future app route publicly
 - install production app secrets
 - add databases or queues
 - add a self-hosted observability stack
