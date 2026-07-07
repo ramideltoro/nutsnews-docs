@@ -18,7 +18,7 @@ The important part: it is read-only. No restart button. No "install this one tin
 commit -> PR -> checks -> merge -> protected apply
 ```
 
-For v1, Caddy serves the portal publicly at `https://ops.nutsnews.com` with automatic HTTPS, and every dashboard route is behind a Google OAuth gateway. The only allowed Google account is `rami.deltoro@gmail.com`. Access can still use the narrow SSH tunnel path to `127.0.0.1:8080`, but a browser must complete Google sign-in before the dashboard or `/data/*` status endpoints are served.
+For v1, Caddy serves the portal publicly at `https://ops.nutsnews.com` with automatic HTTPS, and every dashboard route is behind a Google OAuth gateway. The protected apply workflow updates the `ops.nutsnews.com` Cloudflare A record immediately when DDNS is enabled, then leaves the DDNS timer enabled for future VPS public IPv4 changes. The only allowed Google account is `rami.deltoro@gmail.com`. Access can still use the narrow SSH tunnel path to `127.0.0.1:8080`, but a browser must complete Google sign-in before the dashboard or `/data/*` status endpoints are served.
 
 ## Intermediate Summary
 
