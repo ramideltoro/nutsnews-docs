@@ -1,6 +1,6 @@
 # NutsNews Operations Portal v1
 
-This explains the first real Ops Portal layer for the NutsNews VPS: a read-only amber dashboard, a local status collector, opt-in email alerts/reports, encrypted backup status, on-demand report and backup workflows, deeper resource visibility, and a Caddy route that stays on loopback until we add reviewed authentication.
+This explains the first real Ops Portal layer for the NutsNews VPS: a read-only amber dashboard, a local status collector, opt-in email alerts/reports, encrypted backup status, on-demand report and backup workflows, deeper resource visibility, and a Caddy-managed public route protected by Google OAuth.
 
 ## Easy Summary
 
@@ -18,7 +18,7 @@ The important part: it is read-only. No restart button. No "install this one tin
 commit -> PR -> checks -> merge -> protected apply
 ```
 
-For v1, Caddy serves the portal only on `127.0.0.1:8080` on the VPS, and every dashboard route is behind a Google OAuth gateway. The only allowed Google account is `rami.deltoro@gmail.com`. Access can still use the narrow SSH tunnel path, but a browser must complete Google sign-in before the dashboard or `/data/*` status endpoints are served.
+For v1, Caddy serves the portal publicly at `https://ops.nutsnews.com` with automatic HTTPS, and every dashboard route is behind a Google OAuth gateway. The only allowed Google account is `rami.deltoro@gmail.com`. Access can still use the narrow SSH tunnel path to `127.0.0.1:8080`, but a browser must complete Google sign-in before the dashboard or `/data/*` status endpoints are served.
 
 ## Intermediate Summary
 
@@ -43,8 +43,8 @@ The collector runs locally on the VPS, reads host state, redacts obvious sensiti
 Caddy serves the static portal and the JSON feed from:
 
 ```text
-http://127.0.0.1:8080/
-http://127.0.0.1:8080/data/status.json
+https://ops.nutsnews.com/
+https://ops.nutsnews.com/data/status.json
 ```
 
 Unauthenticated requests to dashboard routes or `/data/status.json` are redirected to `/api/auth/signin/google`. The Google OAuth callback path is fixed at:
@@ -119,7 +119,7 @@ Resource visibility stays cheap-VPS friendly:
 flowchart TB
   subgraph Repo["ramideltoro/nutsnews-infra"]
     portal["portal/\nstatic UI"]
-    compose["compose/caddy\nloopback Caddy route"]
+    compose["compose/caddy\npublic OAuth route"]
     ansible["Ansible role\nservice foundation"]
   end
 
@@ -133,7 +133,7 @@ flowchart TB
     json["/opt/nutsnews/portal-assets/data/status.json"]
     reportingJson["/opt/nutsnews/portal-assets/data/reporting-status.json"]
     assets["/opt/nutsnews/portal-assets\nHTML, CSS, JS"]
-    caddy["Caddy container\n127.0.0.1:8080 only"]
+    caddy["Caddy container\nops.nutsnews.com + 127.0.0.1:8080"]
   end
 
   ansible --> assets
@@ -297,19 +297,22 @@ The email section is still intentionally humble. It reports local VPS warnings, 
 
 ```mermaid
 flowchart TD
-  internet["Public internet"] -. "no direct route in v1" .-> portal["Ops Portal"]
-  user["Maintainer"] -. "future authenticated route" .-> auth["Caddy auth/TLS layer\nfuture PR"]
-  auth -. "not added yet" .-> portal
-  vps["VPS loopback\n127.0.0.1:8080"] --> portal
+  internet["Public internet"] --> caddy["Caddy TLS\nops.nutsnews.com"]
+  user["Maintainer"] --> google["Google OAuth\nallowlisted account"]
+  google --> caddy
+  caddy --> portal["Ops Portal"]
+  user -. "fallback" .-> ssh["SSH tunnel"]
+  ssh --> vps["VPS loopback\n127.0.0.1:8080"]
+  vps --> portal
   portal --> json["Static status JSON"]
   collector["Local collector"] --> json
   collector --> host["Host state"]
   portal -. "no shell\nno Docker socket\nno mutation API" .-> host
 ```
 
-The current access rule is simple: the portal exists on the VPS, but it is not publicly exposed. That is less convenient than a shiny public dashboard, but also less likely to become the first page indexed by "please hack me dot com."
+The current access rule is simple: the portal is public only through `https://ops.nutsnews.com`, Caddy TLS, and the Google OAuth gateway. Direct `/data/*` access is not public; unauthenticated browsers are sent to sign in first.
 
-SSH access uses a narrow tunnel exception for `nutsnews_ops`. The global SSH baseline still denies TCP forwarding, remote forwarding, gateway exposure, stream-local forwarding, and tunnel devices. The admin/operator user can create only local TCP forwards to `127.0.0.1:8080` or `localhost:8080`, which is just enough rope to view the portal and not enough rope to knit a surprise proxy farm. We locked the portal behind a tunnel, then locked the tunnel too. Very secure. Very invisible.
+SSH access still uses a narrow tunnel exception for `nutsnews_ops` as a fallback. The global SSH baseline denies remote forwarding, gateway exposure, stream-local forwarding, tunnel devices, and broad forwarding. The admin/operator user can create only local TCP forwards to `127.0.0.1:8080` or `localhost:8080`.
 
 The first tunnel fix kept `AllowTcpForwarding no` and `PermitOpen none` in the global SSH baseline while trying to override them later. That was admirably cautious and also too shy to actually tunnel. The policy now lives in explicit `Match` blocks: `nutsnews_ops` gets local-only access to the portal targets, and everyone else gets `AllowTcpForwarding no` plus `PermitOpen none`.
 

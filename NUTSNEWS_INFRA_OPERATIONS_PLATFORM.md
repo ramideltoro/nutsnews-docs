@@ -6,7 +6,7 @@ This explains how the NutsNews infrastructure repo is supposed to make one small
 
 NutsNews has one primary production VPS. The infra repo is the remote control for that VPS, but changes do not go straight to the server like a mystery shell script with root access and a suspicious amount of confidence. They go through a pull request, scanners, review, merge, and then a future automated apply step.
 
-The Ops Portal now has a v1 foundation: a read-only static dashboard, local status collector, and loopback-only Caddy route. It is still not a public authenticated dashboard yet, because "ship first, add auth later" is how dashboards become incident exhibits.
+The Ops Portal now has a v1 foundation: a read-only static dashboard, local status collector, and public Caddy route at `https://ops.nutsnews.com` protected by Google OAuth. The loopback listener remains available for private health checks and SSH tunnel fallback.
 
 The VPS backup layer now uses restic and rclone to store encrypted snapshots in OneDrive through the dedicated `nutsnews-onedrive` remote. OneDrive gets ciphertext only. The backup workflows are fixed systemd triggers, not a general-purpose SSH remote-control slot machine.
 

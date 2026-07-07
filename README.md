@@ -49,7 +49,7 @@ These docs explain the product and the system at a high level.
 | [VPS Ansible Bootstrap](NUTSNEWS_VPS_ANSIBLE_BOOTSTRAP.md) | First Ubuntu VPS baseline, SSH lockout prevention, firewall, updates, logging, and recovery flow |
 | [Protected Ansible Apply](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md) | Manual protected GitHub Actions workflow for check/apply runs against the VPS baseline, plus the separate on-demand health report workflow |
 | [VPS Service Foundation](NUTSNEWS_VPS_SERVICE_FOUNDATION.md) | Docker, Compose, `/opt/nutsnews`, Caddy, and public infrastructure health routing |
-| [Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md) | Read-only VPS dashboard, local collector, loopback Caddy route, status JSON, and recovery notes |
+| [Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md) | Read-only VPS dashboard, local collector, public Google OAuth route, status JSON, and recovery notes |
 | [VPS Backups](NUTSNEWS_VPS_BACKUPS.md) | Encrypted restic backups to a dedicated OneDrive rclone remote, setup secrets, status, alerts, and validation |
 | [VPS Restore](NUTSNEWS_VPS_RESTORE.md) | Restoring encrypted VPS snapshots to staging, copying selected data/config, and restore testing |
 | [VPS Disaster Recovery](NUTSNEWS_VPS_DISASTER_RECOVERY.md) | Rebuilding on another VPS provider, restoring data, verifying, cutting over DNS, and rollback |
