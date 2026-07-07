@@ -1,12 +1,12 @@
 # NutsNews VPS Service Foundation
 
-This explains the next layer in the NutsNews VPS platform: Docker Engine, Docker Compose, the `/opt/nutsnews` runtime layout, Caddy, and the public infrastructure health endpoint. It is not the shiny app deploy yet. It is the floor, outlets, labels, and "does this thing actually turn on?" light switch.
+This explains the next layer in the NutsNews VPS platform: Docker Engine, Docker Compose, the `/opt/nutsnews` runtime layout, Caddy, public infrastructure health, the protected Ops Portal route, and Caddy rate limiting.
 
 ## Easy Summary
 
 The VPS now gets a small container foundation managed by Ansible. The playbook installs Docker Engine and Docker Compose from Ubuntu packages, creates the standard `/opt/nutsnews` directory layout, and starts Caddy through Compose.
 
-Caddy now has two jobs. It keeps the Ops Portal local on `127.0.0.1:8080`, and it exposes only `https://vps.nutsnews.com/health` publicly for Better Stack. The public host returns `404` for every other path, so this adds external monitoring without publishing the portal or the future app surface.
+Caddy now has three jobs. It exposes `https://vps.nutsnews.com/health` publicly for Better Stack, serves the Google OAuth-protected Ops Portal at `https://ops.nutsnews.com`, and keeps `127.0.0.1:8080` available for local health checks and SSH tunnel fallback. It also enforces free Caddy-based rate limiting before traffic reaches health, portal, API, auth, admin, ops, or future app handlers.
 
 ## Intermediate Summary
 
@@ -30,6 +30,8 @@ That role runs after the existing VPS baseline role. It manages:
 - `/opt/nutsnews/portal-assets`
 - `/opt/nutsnews/health`
 - a Compose-managed Caddy edge service
+- a pinned Caddy build with the free `mholt/caddy-ratelimit` module
+- generated Caddy rate-limit config under `/opt/nutsnews/config/caddy/rate-limits`
 - the first read-only operations portal surface and local status collector
 - a Better Stack-compatible `/health` endpoint for infrastructure health
 
@@ -47,7 +49,9 @@ This layer creates the runtime substrate and one narrow production route. The de
 
 - Caddy publishes public ports `80` and `443` for `vps.nutsnews.com`.
 - The public host exposes only `/health` and returns `404` for all other paths.
-- Caddy keeps the Ops Portal bound to host loopback only: `127.0.0.1:8080`.
+- Caddy exposes `ops.nutsnews.com` publicly behind the Ops Portal Google OAuth gateway.
+- Caddy keeps the loopback listener available on host `127.0.0.1:8080`.
+- Caddy applies rate limits keyed by client remote host, with IPv6 clients grouped by `/64`.
 - UFW allows the Caddy Docker network to reach the host health service on TCP `18080`.
 - Caddy admin API is disabled.
 - Caddy automatic HTTPS is enabled for the public hostname.
@@ -101,15 +105,17 @@ This layout is boring on purpose. "Where does this service put its files?" shoul
 ```mermaid
 flowchart LR
   public["Public internet"] --> publicHealth["https://vps.nutsnews.com/health"]
+  public --> publicOps["https://ops.nutsnews.com"]
   publicHealth --> caddy["Caddy container"]
+  publicOps --> caddy
   maintainer["Maintainer over SSH"] --> loopback["127.0.0.1:8080"]
   loopback --> caddy
   caddy --> health["/healthz -> ok"]
   caddy --> infraHealth["/health -> infra health service"]
-  caddy --> portal["Read-only Ops Portal"]
+  caddy --> portal["OAuth-protected read-only Ops Portal"]
 ```
 
-Public HTTP and HTTPS are used only for the Better Stack-compatible health endpoint. Caddy obtains and renews certificates for `vps.nutsnews.com`; Cloudflare stays DNS-only. The portal still requires the existing SSH tunnel path.
+Public HTTP and HTTPS are used for the Better Stack-compatible health endpoint and the OAuth-protected Ops Portal. Caddy obtains and renews certificates for `vps.nutsnews.com` and `ops.nutsnews.com`; Cloudflare stays DNS-only unless a future PR deliberately enables proxying.
 
 The health service listens on the host at TCP `18080`. Because UFW denies inbound traffic by default, Ansible also installs an internal-only firewall rule that allows the Caddy Docker network to reach that host port. Do not add this manually on the VPS; run the protected apply workflow so the rule is reconciled from the infra repo.
 
@@ -152,6 +158,42 @@ Suggested monitor name: NutsNews Infra Health
 Recommended regions: US East, US West, EU West
 ```
 
+## Caddy Rate Limiting
+
+The VPS uses Caddy as its public edge, so the rate limiter lives there instead of adding another service. The infra repo builds a custom Caddy image from `compose/caddy/Dockerfile` with the pinned free `mholt/caddy-ratelimit` module, copies a generated Caddy snippet to `/opt/nutsnews/config/caddy/rate-limits`, mounts it read-only into the Caddy container, and imports it in every Caddy server block.
+
+Default limits:
+
+| Route group | Paths | Limit |
+| --- | --- | --- |
+| Health-sensitive endpoints | `/health`, `/healthz` | 30 requests per minute |
+| Auth/admin/ops-sensitive routes | `/api/auth/*`, `/login*`, `/admin*`, `/ops*` | 20 requests per minute |
+| API routes | `/api/*` | 60 requests per minute |
+| Public/default content | `/*` | 600 requests per minute |
+
+The zones are cumulative. For example, `/api/auth/*` is covered by the auth-sensitive zone, the API zone, and the public/default zone. Normal public reading and crawler traffic gets the broadest bucket, while health and auth-like paths get tighter buckets.
+
+Limits are configurable in `ansible/roles/vps_service_foundation/defaults/main.yml` through:
+
+- `vps_service_foundation_caddy_rate_limits_enabled`
+- `vps_service_foundation_caddy_rate_limit_key`
+- `vps_service_foundation_caddy_rate_limit_ipv6_prefix`
+- `vps_service_foundation_caddy_rate_limit_jitter_percent`
+- `vps_service_foundation_caddy_rate_limit_zones`
+
+Requests over the limit return HTTP `429` with `Retry-After`. Caddy writes access logs to Docker stdout, and the rate-limit module logs the key when a request is rejected.
+
+Verify rate limiting after deployment:
+
+```bash
+for i in $(seq 1 35); do curl -sk -o /dev/null -w "%{http_code}\n" https://vps.nutsnews.com/health; done
+sudo docker logs nutsnews-caddy --since 10m | grep -E 'status=429|rate'
+```
+
+Roll back through GitOps by setting `vps_service_foundation_caddy_rate_limits_enabled: false`, merging the infra PR, and running the protected Ansible apply workflow. Do not hand-edit `/opt/nutsnews/config/caddy/rate-limits` on the VPS.
+
+Cloudflare is currently managed in `nutsnews-infra` only for DDNS records, with proxying disabled by default. If Cloudflare proxying is enabled later, add complementary Cloudflare WAF/rate-limit rules and review Caddy client IP handling before relying on `{remote_host}`.
+
 ## Validation
 
 Before merge, CI checks:
@@ -161,6 +203,7 @@ Before merge, CI checks:
 - explicit service foundation role wiring
 - required Compose service files
 - `docker compose config` for the Caddy bundle
+- Caddy rate-limit guardrails, generated config wiring, and Compose rebuild behavior
 - broader workflow, secret, supply-chain, runtime, and config scanners
 
 After apply, verify from the VPS:
@@ -171,6 +214,7 @@ curl -fsS http://127.0.0.1:8080/healthz
 curl -i http://127.0.0.1:8080/health
 curl -fsS http://127.0.0.1:8080/
 systemctl status nutsnews-infra-health.service
+sudo docker logs nutsnews-caddy --since 10m | grep -E 'status=429|rate'
 ```
 
 Verify the public Better Stack route from outside the VPS:
@@ -205,6 +249,8 @@ systemctl status nutsnews-ops-portal-collector.timer
 | `https://vps.nutsnews.com/health` fails to connect | Caddy is not published on `80`/`443`, firewall rules are not applied, or the protected apply has not run | Confirm the PR is merged, run protected check/apply after approval, then verify ports and Caddy logs |
 | Public `/health` returns `502` | Caddy cannot reach the host health service, often because the internal UFW rule is missing | Run protected check/apply from the infra repo and confirm the Caddy Docker network is allowed to TCP `18080` |
 | Public `/health` returns `503` | One required service, container, or resource threshold check is failing | Check `journalctl -u nutsnews-infra-health.service` and `/opt/nutsnews/logs/health/health-failures.jsonl` |
+| Expected traffic gets HTTP `429` | Caddy rate-limit zones are too strict for the observed traffic pattern | Tune `vps_service_foundation_caddy_rate_limit_zones` through an infra PR, run protected check mode, then apply |
+| Caddy build fails during apply | Docker cannot fetch the pinned Caddy base image or Go module, or the module pin is invalid | Rerun check/apply after network recovery, or update the Caddy/module pin through PR |
 | Disk grows too fast | Container logs or future service data are noisy | Docker log caps are already set; add service-specific retention before adding heavier workloads |
 
 ## What This Does Not Do
