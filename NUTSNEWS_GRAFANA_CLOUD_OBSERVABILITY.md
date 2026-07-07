@@ -154,6 +154,8 @@ Synthetic Monitoring is optional and configured through protected variables, not
 
 Synthetic checks use a separate Grafana Synthetic Monitoring API token. The Grafana service account token manages folders, dashboards, and alert rules, but the Terraform provider needs `GRAFANA_SM_ACCESS_TOKEN` for `grafana_synthetic_monitoring_check` resources. In GitHub this is stored as `NUTSNEWS_GRAFANA_SYNTHETIC_MONITORING_ACCESS_TOKEN`.
 
+Set `NUTSNEWS_GRAFANA_SYNTHETIC_HTTP_CHECKS_JSON` to `{}` to temporarily disable Synthetic Monitoring resources while still applying dashboards and quota alerts.
+
 Recommended first checks:
 
 | Check type | What to verify |
