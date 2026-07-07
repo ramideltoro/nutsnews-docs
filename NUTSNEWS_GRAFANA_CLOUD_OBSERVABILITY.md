@@ -152,6 +152,8 @@ OpenTofu also manages quota alert rules at roughly 70%, 85%, and 95% for configu
 
 Synthetic Monitoring is optional and configured through protected variables, not committed target URLs.
 
+Synthetic checks use a separate Grafana Synthetic Monitoring API token. The Grafana service account token manages folders, dashboards, and alert rules, but the Terraform provider needs `GRAFANA_SM_ACCESS_TOKEN` for `grafana_synthetic_monitoring_check` resources. In GitHub this is stored as `NUTSNEWS_GRAFANA_SYNTHETIC_MONITORING_ACCESS_TOKEN`.
+
 Recommended first checks:
 
 | Check type | What to verify |
@@ -232,6 +234,7 @@ Optional Synthetic Monitoring secrets:
 
 | Secret | Purpose |
 | --- | --- |
+| `NUTSNEWS_GRAFANA_SYNTHETIC_MONITORING_ACCESS_TOKEN` | Synthetic Monitoring API token; required when probe IDs and enabled HTTP checks are configured |
 | `NUTSNEWS_GRAFANA_SYNTHETIC_PROBE_IDS_JSON` | JSON array of probe IDs |
 | `NUTSNEWS_GRAFANA_SYNTHETIC_HTTP_CHECKS_JSON` | JSON object of safe HTTP checks |
 
