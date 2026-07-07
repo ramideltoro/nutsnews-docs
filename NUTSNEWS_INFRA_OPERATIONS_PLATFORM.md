@@ -10,6 +10,8 @@ The Ops Portal now has a v1 foundation: a read-only static dashboard, local stat
 
 The VPS backup layer now uses restic and rclone to store encrypted snapshots in OneDrive through the dedicated `nutsnews-onedrive` remote. OneDrive gets ciphertext only. The backup workflows are fixed systemd triggers, not a general-purpose SSH remote-control slot machine.
 
+The Grafana Cloud observability layer adds Alloy on the VPS plus OpenTofu-managed Grafana folders, dashboards, quota alerts, and optional Synthetic Monitoring. It is still read-only on the server side: no portal mutation buttons, no arbitrary remote shell, and no broad workflow command runner.
+
 The home server is optional support gear: good for encrypted backups, restore tests, private monitoring, scheduled reports, and background jobs. It is not allowed to become the secret load-bearing shoebox that keeps the public website online.
 
 ## Intermediate Summary
@@ -38,6 +40,7 @@ The platform is designed around these boundaries:
 - Documentation for infra changes lives here in `ramideltoro/nutsnews-docs`; infra repo docs should stay short and operational.
 - Documentation-only changes in this docs repo are pushed directly to `main` and should not trigger app, Worker, VPS, or deployment workflows.
 - VPS backups must stay encrypted before leaving the server, and restore tests must be treated as part of the backup system rather than an optional motivational poster.
+- Observability must stay useful without becoming a cost leak: separate write and automation tokens, keep targets and tenant-specific values out of Git, and check free-tier guardrails before enabling more telemetry.
 
 ## What This Is Trying To Achieve
 
@@ -154,6 +157,7 @@ sequenceDiagram
 
   VPS->>Checks: Emit health, backup, deploy, and scan signals
   Checks->>Portal: Update dashboard state
+  Checks->>Grafana: Send metrics and logs through Alloy
   Checks->>Email: Send summary or alert
   Email->>Human: "Here is what broke, or what did not"
   Human->>Portal: Inspect state and runbooks
@@ -229,6 +233,7 @@ Manual SSH without follow-up documentation is not "ops." It is folklore with a t
 - [VPS Backups](NUTSNEWS_VPS_BACKUPS.md)
 - [VPS Restore](NUTSNEWS_VPS_RESTORE.md)
 - [VPS Disaster Recovery](NUTSNEWS_VPS_DISASTER_RECOVERY.md)
+- [Grafana Cloud Observability](NUTSNEWS_GRAFANA_CLOUD_OBSERVABILITY.md)
 - [Observability](OBSERVABILITY.md)
 - [Security CI Scans](SECURITY_CI_SCANS.md)
 - [Dependency Updates](DEPENDENCY_UPDATES.md)

@@ -199,7 +199,7 @@ event:api.log_test.completed
 
 ## Grafana Cloud
 
-Grafana Cloud is used for Prometheus metrics that are better represented as time series than logs.
+Grafana Cloud is used for Prometheus-style metrics, Loki logs, dashboards, alert rules, and low-frequency Synthetic Monitoring where time-series visibility is more useful than raw logs.
 
 Current home-server backup monitoring uses this Prometheus data source:
 
@@ -218,6 +218,19 @@ Confirmed value meaning:
 ```text
 1 = last backup succeeded
 0 = last backup failed
+```
+
+The VPS observability layer is managed from `ramideltoro/nutsnews-infra`:
+
+- Ansible installs and configures Grafana Alloy on the VPS when explicitly enabled.
+- OpenTofu manages the Grafana Cloud folder, dashboards, quota guardrail alerts, and optional Synthetic Monitoring checks.
+- Grafana Cloud telemetry write credentials and Grafana automation credentials are separate.
+- Real Grafana URLs, usernames, tokens, tenant IDs, Synthetic Monitoring targets, and backend config stay out of Git.
+
+Detailed setup lives in:
+
+```text
+NUTSNEWS_GRAFANA_CLOUD_OBSERVABILITY.md
 ```
 
 Detailed Grafana Explore queries, dashboard setup, and alert ideas live in:

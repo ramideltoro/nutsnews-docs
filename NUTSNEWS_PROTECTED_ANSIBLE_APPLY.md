@@ -68,6 +68,18 @@ Optional encrypted VPS backup Environment secrets:
 
 If `NUTSNEWS_BACKUP_ENABLED` is true, the workflow rejects missing restic/rclone secrets and rejects repositories that do not use the dedicated `nutsnews-onedrive` rclone remote. This is the right kind of annoying.
 
+Optional Grafana Alloy Environment secrets:
+
+| Secret | Purpose |
+| --- | --- |
+| `NUTSNEWS_GRAFANA_CLOUD_METRICS_URL` | Grafana Cloud metrics remote write endpoint |
+| `NUTSNEWS_GRAFANA_CLOUD_METRICS_USERNAME` | Grafana Cloud metrics username |
+| `NUTSNEWS_GRAFANA_CLOUD_LOGS_URL` | Grafana Cloud logs push endpoint |
+| `NUTSNEWS_GRAFANA_CLOUD_LOGS_USERNAME` | Grafana Cloud logs username |
+| `NUTSNEWS_GRAFANA_CLOUD_ACCESS_POLICY_TOKEN` | Access Policy token for telemetry writes |
+
+These are required only when the workflow input `enable_grafana_alloy` is `true`. Grafana Cloud dashboard and alert automation uses a separate Grafana service account token in the Grafana Cloud OpenTofu workflows, not in the Ansible telemetry-write path.
+
 ## Expert Summary
 
 The workflow is intentionally narrow:
@@ -89,6 +101,8 @@ The playbook still manages privileged host state through sudo, but SSH does not 
 The same protected workflow now also applies the service foundation role after the host baseline: Docker Engine, Docker Compose, the `/opt/nutsnews` layout, and a local-only Caddy placeholder. Check mode remains the first stop. Apply mode is still the button with consequences.
 
 The workflow can also pass optional SMTP settings into Ansible extra vars for the Ops Portal reporter. Those values are never committed, and the Ansible task that writes `/etc/nutsnews/ops-reporter.env` is hidden with `no_log` so the workflow does not proudly print the password like a broken receipt printer.
+
+When `enable_grafana_alloy` is true, the workflow passes Grafana Cloud telemetry write inputs into the service foundation role. Ansible renders a root-only environment file, writes the Alloy config, validates it with `alloy validate` on the VPS, installs a textfile metrics timer, and starts the Alloy service only after those steps succeed.
 
 There is also a separate manual workflow named `Send VPS Health Report`. It uses the same `production-vps` Environment and SSH material, but it is not an apply workflow. It connects as `nutsnews_ops`, starts only `nutsnews-ops-health-report.service`, prints fixed service/reporting status, and refuses to accept arbitrary remote commands. It is the doorbell for a report, not the keys to the building.
 
@@ -135,9 +149,10 @@ Use check mode first every time. Yes, even when the change looks tiny. Especiall
 3. Choose `Protected Ansible Apply`.
 4. Click `Run workflow`.
 5. Keep `run_mode` as `check`.
-6. Leave `confirm_apply` blank.
-7. Approve the `production-vps` Environment gate if GitHub asks.
-8. Read the diff and final recap.
+6. Set `enable_grafana_alloy` to `true` only when testing the Grafana Alloy rollout.
+7. Leave `confirm_apply` blank.
+8. Approve the `production-vps` Environment gate if GitHub asks.
+9. Read the diff and final recap.
 
 Expected healthy recap:
 
@@ -155,8 +170,9 @@ Apply mode is for after check mode looks safe.
 2. Start `Protected Ansible Apply` again.
 3. Set `run_mode` to `apply`.
 4. Set `confirm_apply` to `vps.nutsnews.com`.
-5. Approve the `production-vps` Environment gate.
-6. Watch the final `PLAY RECAP`.
+5. Set `enable_grafana_alloy` to `true` only after check mode validates the Alloy diff.
+6. Approve the `production-vps` Environment gate.
+7. Watch the final `PLAY RECAP`.
 
 If Ansible exits non-zero, the workflow fails. Do not retry apply mode repeatedly as a coping mechanism. Read the failing task, fix the source of truth, and rerun check mode.
 
@@ -203,6 +219,7 @@ It is one careful step: take the already-bootstrapped host baseline and let GitH
 
 - [NutsNews VPS Ansible Bootstrap](NUTSNEWS_VPS_ANSIBLE_BOOTSTRAP.md)
 - [NutsNews VPS Service Foundation](NUTSNEWS_VPS_SERVICE_FOUNDATION.md)
+- [NutsNews Grafana Cloud Observability](NUTSNEWS_GRAFANA_CLOUD_OBSERVABILITY.md)
 - [NutsNews Infra Operations Platform](NUTSNEWS_INFRA_OPERATIONS_PLATFORM.md)
 - [Operations](OPERATIONS.md)
 - [Troubleshooting](TROUBLESHOOTING.md)

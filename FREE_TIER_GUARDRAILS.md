@@ -35,6 +35,21 @@ NUTSNEWS_PAGESPEED_30D_CALL_LIMIT=25000
 
 Most metrics warn at 70% of the configured limit and enter danger at 90%. AI cost warns earlier at 60% and enters danger at 85% so there is more time to reduce reviews or switch to local AI.
 
+## Grafana Cloud observability guardrails
+
+The VPS Grafana Cloud layer adds a separate Usage / Quota dashboard and Grafana-managed alert rules for Grafana Cloud telemetry usage. Current assumptions are documented in [NutsNews Grafana Cloud Observability](NUTSNEWS_GRAFANA_CLOUD_OBSERVABILITY.md), and the live Grafana pricing page must be checked before adding more telemetry.
+
+Important defaults:
+
+| Area | Guardrail behavior |
+| --- | --- |
+| Metrics | Alloy defaults to 60-second scrape intervals and drops high-cardinality labels before remote write. |
+| Logs | Alloy redacts secrets/IPs, drops debug/trace logs, limits line size, and rate-limits journald/file/Docker streams. |
+| Synthetic Monitoring | Optional checks are disabled until targets and probe IDs are supplied through protected variables; apply is blocked above 70% of the current free API execution assumption. |
+| k6 | Grafana Cloud k6 is not enabled by default; calculate VUh and get approval before enabling cloud runs. |
+
+Related doc: [Grafana Cloud Observability](NUTSNEWS_GRAFANA_CLOUD_OBSERVABILITY.md).
+
 ## Worker ingestion backpressure guardrails
 
 Issue #93 adds Worker-side pressure controls before AI/API/database-heavy work begins.

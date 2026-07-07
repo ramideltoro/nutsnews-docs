@@ -21,6 +21,7 @@ This folder is organized by what you are trying to do: understand the product, c
 | Understand the VPS service foundation | [VPS Service Foundation](NUTSNEWS_VPS_SERVICE_FOUNDATION.md) |
 | Understand the VPS operations portal | [Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md) |
 | Set up or restore encrypted VPS backups | [VPS Backups](NUTSNEWS_VPS_BACKUPS.md); [VPS Restore](NUTSNEWS_VPS_RESTORE.md); [VPS Disaster Recovery](NUTSNEWS_VPS_DISASTER_RECOVERY.md) |
+| Set up VPS Grafana Cloud observability | [Grafana Cloud Observability](NUTSNEWS_GRAFANA_CLOUD_OBSERVABILITY.md) |
 | Ship a change | [Deployment Checklist](DEPLOYMENT_CHECKLIST.md) |
 | Fix a production issue | [Troubleshooting](TROUBLESHOOTING.md) |
 | Check cost and quota risk | [Free-Tier Guardrails](FREE_TIER_GUARDRAILS.md) |
@@ -52,6 +53,7 @@ These docs explain the product and the system at a high level.
 | [VPS Backups](NUTSNEWS_VPS_BACKUPS.md) | Encrypted restic backups to a dedicated OneDrive rclone remote, setup secrets, status, alerts, and validation |
 | [VPS Restore](NUTSNEWS_VPS_RESTORE.md) | Restoring encrypted VPS snapshots to staging, copying selected data/config, and restore testing |
 | [VPS Disaster Recovery](NUTSNEWS_VPS_DISASTER_RECOVERY.md) | Rebuilding on another VPS provider, restoring data, verifying, cutting over DNS, and rollback |
+| [Grafana Cloud Observability](NUTSNEWS_GRAFANA_CLOUD_OBSERVABILITY.md) | Grafana Alloy on the VPS, OpenTofu-managed dashboards/alerts, Synthetic Monitoring, and free-tier guardrails |
 | [Troubleshooting](TROUBLESHOOTING.md) | Common failures, checks, and recovery steps |
 
 ### 2. Product and Reader Experience
@@ -148,6 +150,7 @@ These docs explain the product and the system at a high level.
 | Doc | Use it for |
 | --- | --- |
 | [Observability](OBSERVABILITY.md) | Logs, errors, dashboards, and health checks |
+| [Grafana Cloud Observability](NUTSNEWS_GRAFANA_CLOUD_OBSERVABILITY.md) | VPS host/container/service/app/log dashboards, quota alerts, and Synthetic Monitoring setup |
 | [Cloudflare Cache Observability](CLOUDFLARE_CACHE_OBSERVABILITY.md) | Expected-vs-actual cache header reports and alerts |
 | [UptimeRobot Onboarding](UPTIMEROBOT_ONBOARDING.md) | External uptime monitors |
 | [Grafana Backup Monitoring](GRAFANA_BACKUP_MONITORING.md) | Backup freshness and success panels |
