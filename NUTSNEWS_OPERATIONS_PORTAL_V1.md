@@ -1,12 +1,14 @@
 # NutsNews Operations Portal v1
 
-This explains the first real Ops Portal layer for the NutsNews VPS: a read-only amber dashboard, a local status collector, opt-in email alerts/reports, encrypted backup status, on-demand report and backup workflows, deeper resource visibility, and a Caddy-managed public route protected by Google OAuth.
+This explains the first real Ops Portal layer for the NutsNews VPS: a read-only amber dashboard, a local status collector, opt-in email alerts/reports, encrypted backup status, free-tier usage visibility for external services, on-demand report and backup workflows, deeper resource visibility, and a Caddy-managed public route protected by Google OAuth.
 
 ## Easy Summary
 
-The VPS has a polished amber dashboard for boring-but-important server facts: overall health, email reporting, resource pressure, processes, disk, network, services, logs, security posture, encrypted restic backup status, GitOps state, and runbook links.
+The VPS has a polished amber dashboard for boring-but-important server facts: overall health, email reporting, external free-tier usage, resource pressure, processes, disk, network, services, logs, security posture, encrypted restic backup status, GitOps state, and runbook links.
 
 This update makes the portal easier to scan when the server starts smelling weird. It adds gauges for health score, CPU, RAM, disk, swap, and inodes; temperature-style hot spots for memory pressure, disk pressure, service health, and alert level; compact stats where the data supports them; and an email/reporting block that makes enabled/configured/next run/last run/last success/last error hard to miss.
+
+The Free Tier Usage section shows current usage against configured free-plan limits for Vercel, Sentry, Cloudflare, Better Stack, Supabase, and Grafana Cloud. It uses thermometer-style remaining-capacity gauges: green when plenty remains, amber near the warning threshold, red when almost exhausted or exceeded, and muted when usage is unknown. The section is still read-only; it never upgrades plans, writes provider settings, or calls mutating provider APIs.
 
 There is also a manual `Send VPS Health Report` workflow. It uses the same protected `production-vps` Environment and SSH secret pattern, connects as `nutsnews_ops`, and starts only the existing health report service. No random remote command box. No "type your shell script here." Production does not need karaoke night.
 
@@ -32,7 +34,9 @@ The infra repo now has these pieces:
 6. A Google OAuth gateway that serves `/api/auth/signin/google`, `/api/auth/callback/google`, and all authenticated portal files
 7. A manual GitHub Actions workflow named `Send VPS Health Report`
 8. Manual backup workflows named `Run VPS Backup` and `Verify VPS Backup`
-9. CI guardrails that validate the portal fixture, Google OAuth allowlist, callback route, secret redaction, read-only surface, backup status, and the no-arbitrary-command shape of the manual report and backup workflows
+9. A read-only free-tier usage collector module at `/usr/local/bin/ops_free_tier_usage.py`
+10. Root-only free-tier collector configuration at `/etc/nutsnews/free-tier-usage.env`
+11. CI guardrails that validate the portal fixture, Google OAuth allowlist, callback route, secret redaction, read-only surface, backup status, free-tier fallback states, and the no-arbitrary-command shape of the manual report and backup workflows
 
 The collector runs locally on the VPS, reads host state, redacts obvious sensitive log patterns, and writes JSON here:
 
@@ -77,6 +81,8 @@ The reporter reads that same JSON feed and can send two kinds of email:
 
 SMTP values live in the protected `production-vps` GitHub Environment and are rendered by Ansible into `/etc/nutsnews/ops-reporter.env` with mode `0600`. If email is disabled or missing required settings, the reporter exits successfully, writes that state for the portal, and does not improvise. Infrastructure improv is for jazz bands and outages.
 
+Free-tier quota values live in Ansible configuration under `vps_service_foundation_free_tier_quotas`. Each provider entry records the provider name, source URL, last verification date, metrics, units, free limits, warning/critical thresholds, and optional read-only live collection settings. Usage data can come from a safe live collector, a normalized snapshot, or a local cache. If no safe source exists, that provider shows `not configured` or `unknown` instead of failing the whole portal.
+
 ## Expert Summary
 
 Ops Portal v1 is intentionally simple:
@@ -91,6 +97,7 @@ Ops Portal v1 is intentionally simple:
 - No production secrets
 - No automatic apply on merge
 - No arbitrary remote command input in the manual health-report workflow
+- No provider mutations or paid-plan assumptions in the free-tier collector
 
 The collector runs as root because it needs to read system logs, systemd state, Docker state, UFW output, open ports, and backup directory metadata. That sounds spicy, so the blast radius is kept small:
 
@@ -103,6 +110,8 @@ The collector runs as root because it needs to read system logs, systemd state, 
 The protected Ansible apply workflow now passes non-secret GitHub run metadata into Ansible. After the role verifies Caddy and the portal JSON endpoint, it can stamp the deployed infra commit and last successful apply marker for the dashboard.
 
 The same workflow can also pass optional SMTP values from protected Environment secrets into Ansible extra vars. The secret-bearing reporter env file task is `no_log`, so apply diffs do not print the SMTP password into Actions logs. This is basic hygiene, but basic hygiene is also why the kitchen has soap.
+
+The protected workflow can also pass optional free-tier usage values and read-only provider tokens into Ansible extra vars. Ansible renders them into `/etc/nutsnews/free-tier-usage.env` with mode `0600`, and the collector writes only sanitized usage numbers, source status, and timestamps into portal JSON. Tokens are never copied into `status.json`.
 
 Resource visibility stays cheap-VPS friendly:
 
@@ -130,6 +139,9 @@ flowchart TB
     reportTimer["systemd timer\nnutsnews-ops-health-report"]
     reporter["local reporter\nemail opt-in"]
     env["/etc/nutsnews/ops-reporter.env\n0600, root-only"]
+    freeTierEnv["/etc/nutsnews/free-tier-usage.env\n0600, root-only"]
+    freeTier["free-tier collector module\nread-only usage"]
+    cache["free-tier cache\nsanitized JSON"]
     json["/opt/nutsnews/portal-assets/data/status.json"]
     reportingJson["/opt/nutsnews/portal-assets/data/reporting-status.json"]
     assets["/opt/nutsnews/portal-assets\nHTML, CSS, JS"]
@@ -141,8 +153,13 @@ flowchart TB
   ansible --> alertTimer
   ansible --> reportTimer
   ansible --> env
+  ansible --> freeTierEnv
+  ansible --> freeTier
   compose --> caddy
   timer --> collector
+  freeTierEnv --> collector
+  freeTier --> collector
+  collector --> cache
   collector --> json
   alertTimer --> reporter
   reportTimer --> reporter
@@ -185,6 +202,8 @@ Check mode still deserves suspicion. It is useful, but it can lie like a resume:
 sequenceDiagram
   participant Timer as systemd timer
   participant Collector as local collector
+  participant FreeTier as free-tier module
+  participant Providers as provider APIs or snapshots
   participant Host as VPS host state
   participant JSON as status.json
   participant Caddy as local-only Caddy
@@ -192,6 +211,9 @@ sequenceDiagram
 
   Timer->>Collector: Run every minute
   Collector->>Host: Read systemd, Docker, logs, UFW, ports, resources
+  Collector->>FreeTier: Load quota config and usage sources
+  FreeTier->>Providers: Optional read-only usage calls or normalized snapshots
+  FreeTier-->>Collector: Sanitized provider status, usage, limits, remaining capacity
   Collector->>Collector: Redact obvious sensitive patterns
   Collector->>JSON: Atomic write
   UI->>Caddy: GET /data/status.json
@@ -200,6 +222,76 @@ sequenceDiagram
 ```
 
 The portal is not a live shell. It is a snapshot reader. That makes it less magical, which is great, because magical production systems usually require candles and apologies.
+
+## Free Tier Usage Flow
+
+```mermaid
+flowchart TD
+  docs["Official provider docs\nand quota source URLs"] --> quotas["Ansible quota catalog\nvps_service_foundation_free_tier_quotas"]
+  secrets["production-vps optional values\nread-only tokens, usage URLs,\nnormalized usage JSON"] --> apply["Protected Ansible Apply"]
+  quotas --> apply
+  apply --> envFile["/etc/nutsnews/free-tier-usage.env\nroot-only, 0600"]
+  envFile --> collector["ops_free_tier_usage.py"]
+  collector --> live{"Safe live source\nconfigured?"}
+  live -- "Yes" --> api["Provider API or\nnormalized HTTPS usage endpoint"]
+  api --> sanitize["Sanitize numbers,\nsource status, timestamps"]
+  live -- "No" --> snapshot{"Snapshot or cache\navailable?"}
+  snapshot -- "Yes" --> sanitize
+  snapshot -- "No" --> unknown["not configured / unknown"]
+  unknown --> status["status.json\nfree_tier_usage"]
+  sanitize --> status
+  status --> ui["Ops Portal\nthermometer gauges"]
+```
+
+The live path is deliberately conservative. Sentry uses the official organization stats endpoint when an `org:read` token and org slug are configured. Other providers use optional normalized HTTPS usage endpoints or snapshot JSON until a specific official read-only API integration is reviewed. Missing, malformed, or stale inputs become visible provider states; they do not abort the portal collector.
+
+Quota config fields:
+
+| Field | Meaning |
+| --- | --- |
+| `key` / `platform` | Stable provider key and display name |
+| `quota_source` / `quota_last_verified` | Official source URL and last human verification date |
+| `notes` | Operational context for the provider quota |
+| `live` | Optional read-only collector definition, token env names, URL env names, metric paths, and provider-specific settings |
+| `metrics[].key` / `metrics[].label` | Stable metric key and display label |
+| `metrics[].unit` / `metrics[].period` | Display unit and billing or measurement window |
+| `metrics[].limit` | Free-tier quota value |
+| `metrics[].warning_used_percent` / `metrics[].critical_used_percent` | Optional warning and critical thresholds |
+
+Optional protected Environment values:
+
+| Value | Purpose |
+| --- | --- |
+| `NUTSNEWS_FREE_TIER_USAGE_JSON` | Provider-keyed normalized usage snapshot for providers without live collection |
+| `NUTSNEWS_VERCEL_API_TOKEN`, `NUTSNEWS_VERCEL_USAGE_API_URL` | Optional Vercel read-only usage source |
+| `NUTSNEWS_SENTRY_AUTH_TOKEN`, `NUTSNEWS_SENTRY_ORG`, `NUTSNEWS_SENTRY_BASE_URL` | Optional Sentry Stats v2 usage source; token should be limited to read scope |
+| `NUTSNEWS_CLOUDFLARE_USAGE_API_TOKEN`, `NUTSNEWS_CLOUDFLARE_USAGE_API_URL` | Optional Cloudflare read-only usage source |
+| `NUTSNEWS_BETTER_STACK_API_TOKEN`, `NUTSNEWS_BETTER_STACK_USAGE_API_URL` | Optional Better Stack read-only usage source |
+| `NUTSNEWS_SUPABASE_ACCESS_TOKEN`, `NUTSNEWS_SUPABASE_USAGE_API_URL` | Optional Supabase read-only usage source |
+| `NUTSNEWS_GRAFANA_CLOUD_USAGE_API_TOKEN`, `NUTSNEWS_GRAFANA_CLOUD_USAGE_API_URL` | Optional Grafana Cloud read-only usage source |
+
+`NUTSNEWS_FREE_TIER_USAGE_JSON` must be a JSON object. A minimal provider snapshot looks like:
+
+```json
+{
+  "vercel": {
+    "last_checked_at": "2026-07-05T00:00:00+00:00",
+    "fast_data_transfer_gb": 32
+  }
+}
+```
+
+Generic `*_USAGE_API_URL` values must be HTTPS and return normalized read-only JSON such as:
+
+```json
+{
+  "usage": {
+    "logs_gb": 1.2
+  }
+}
+```
+
+Do not use paid-only APIs, mutating endpoints, write/admin tokens, global API keys, automatic upgrade flows, or screenshots/logs that expose provider secrets.
 
 ## Email Alert And Report Flow
 
@@ -276,6 +368,7 @@ The CPU table is useful, not omniscient. It shows a lifetime average normalized 
 | --- | --- |
 | Overall Health | Health score gauge, hostname, uptime, public IPs, OS, kernel, deployed infra commit, last apply marker |
 | Alerts and Email Reporting | Email enabled/configured state, SMTP configured flag, next report run, last run, last success, last error, pending alerts, timer state |
+| Free Tier Usage | Vercel, Sentry, Cloudflare, Better Stack, Supabase, and Grafana Cloud usage, free limits, remaining amount, percent used, percent remaining, last checked time, and source status |
 | Resources | Gauges for CPU, RAM, root disk, swap, and root inode usage; load stats; network counters; NutsNews disk usage |
 | Hot Spots | Temperature-style memory pressure, disk pressure, service health, and alert level |
 | Processes | Top memory and CPU apps with client-side filtering, PID, user, memory, CPU estimate, thread count, CPU time, elapsed time, idle time |
@@ -344,6 +437,10 @@ Future public access should add:
 | Portal does not load on the VPS | Caddy container is down, Caddyfile is invalid, or the assets mount is wrong | Check `docker compose ps`, `docker logs nutsnews-caddy`, and rerun protected apply after a PR fix |
 | `/data/status.json` returns 404 | Collector did not create the status file or Caddy is not serving the portal assets directory | Check `systemctl status nutsnews-ops-portal-collector.timer` and the Caddy mount |
 | Status data is stale | Timer is disabled, failed, or blocked by systemd hardening | Check `systemctl list-timers` and `journalctl -u nutsnews-ops-portal-collector.service` |
+| Free-tier provider says `not configured` | No optional token, usage URL, or usage snapshot is configured for that provider | Add a read-only source through protected Environment secrets or accept the unknown state |
+| Free-tier provider says `unavailable` | Provider response was malformed, unreachable, or missing expected metric paths | Check the usage endpoint shape; do not print tokens in logs or screenshots |
+| Free-tier provider says `cached` and stale | Live usage failed and the local sanitized cache is older than the configured TTL | Recheck provider availability and rerun the collector; the dashboard is intentionally preserving the last safe numbers |
+| Free-tier usage exceeds 100% | The configured free-tier allowance is exhausted or the quota value is stale | Verify the provider docs, reduce usage, or make an explicit budget/plan decision outside the portal |
 | Docker section is empty | Docker is not installed, Docker service is down, or the collector cannot reach the local Docker socket | Check Docker service state; fix collector permissions through PR if needed |
 | Process tables are empty | `/proc` changed, permissions are unexpectedly restricted, or the collector failed mid-run | Check `journalctl -u nutsnews-ops-portal-collector.service`; fix the collector through PR |
 | Disk hot spots look stale | The cache is still valid or the scan failed and reused old data | Check `disk_usage.scanned_at`, `disk_usage.errors`, and the collector journal |
@@ -388,6 +485,7 @@ Expected status JSON behavior:
 - contains `generated_at`
 - contains `portal.mode` set to `read-only`
 - contains host, resource, process, disk, network, Docker, service, security, backup, alert, email reporting, GitOps, and runbook sections
+- contains `free_tier_usage` with all six configured providers and a source status for each
 - contains no committed secrets
 - reports email as disabled or misconfigured if SMTP secrets are not configured
 - keeps per-process network byte totals labeled unavailable unless a later PR adds approved telemetry
