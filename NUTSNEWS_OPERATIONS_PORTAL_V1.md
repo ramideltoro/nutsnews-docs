@@ -281,7 +281,7 @@ Optional protected Environment values:
 }
 ```
 
-Generic `*_USAGE_API_URL` values must be HTTPS and return normalized read-only JSON such as:
+Generic `*_USAGE_API_URL` values must be HTTPS GET endpoints and return normalized read-only JSON such as:
 
 ```json
 {
