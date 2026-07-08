@@ -316,6 +316,16 @@ Generic `*_USAGE_API_URL` values must be HTTPS GET endpoints and return normaliz
 
 Do not use paid-only APIs, mutating endpoints, write/admin tokens, global API keys, automatic upgrade flows, or screenshots/logs that expose provider secrets.
 
+Provider-specific live usage notes:
+
+- Vercel uses `NUTSNEWS_VERCEL_API_TOKEN` and `NUTSNEWS_VERCEL_USAGE_API_URL`. The collector adds ISO 8601 `from` and `to` query parameters. `costs_not_found` means the configured team, account access, or billing endpoint is not exposing the requested usage data.
+- Sentry uses Stats v2 with `NUTSNEWS_SENTRY_AUTH_TOKEN`, `NUTSNEWS_SENTRY_ORG`, and `NUTSNEWS_SENTRY_BASE_URL`. The base URL may be `https://sentry.io` or `https://sentry.io/api/0`; `401 Invalid token` means the token must be replaced with one that can read org stats.
+- Cloudflare GraphQL usage cannot be treated as generic GET JSON. A `request must be a POST` provider message means the next infra change must add a Cloudflare GraphQL POST collector and pass the account identifier; until then, use a normalized snapshot if live quota numbers are required.
+- Better Stack monitor count can be read from the monitors API by counting the returned `data` list. Logs, traces, RUM, and exception volume still need a normalized snapshot or a dedicated read-only usage endpoint.
+- Supabase analytics endpoints can return metric-specific `result` rows, not the normalized storage, egress, auth, edge function, and realtime quota fields the portal displays. Do not map unrelated API-request counts into those quota fields.
+- Grafana Cloud billed usage requires numeric `month` and `year` query parameters. A `403` means `NUTSNEWS_GRAFANA_CLOUD_USAGE_API_TOKEN` does not have billed-usage permission for the configured org. Synthetic Monitoring tokens are separate and do not satisfy billed-usage reads.
+- GitHub Actions uses `NUTSNEWS_GITHUB_USAGE_API_TOKEN`; `NUTSNEWS_GITHUB_ACTIONS_USAGE_API_URL` is optional when the default repo API URL is correct. Use a fine-grained read-only token for repository Actions metadata. Do not create custom secrets whose names start with `GITHUB_`. Hosted-runner billing minutes require a separate billing-scoped endpoint and should remain unknown until that is explicitly wired.
+
 ## Email Alert And Report Flow
 
 ```mermaid
@@ -460,8 +470,8 @@ Future public access should add:
 | Portal does not load on the VPS | Caddy container is down, Caddyfile is invalid, or the assets mount is wrong | Check `docker compose ps`, `docker logs nutsnews-caddy`, and rerun protected apply after a PR fix |
 | `/data/status.json` returns 404 | Collector did not create the status file or Caddy is not serving the portal assets directory | Check `systemctl status nutsnews-ops-portal-collector.timer` and the Caddy mount |
 | Status data is stale | Timer is disabled, failed, or blocked by systemd hardening | Check `systemctl list-timers` and `journalctl -u nutsnews-ops-portal-collector.service` |
-| Free-tier provider says `not configured` | No optional token, usage URL, or usage snapshot is configured for that provider | Add a read-only source through protected Environment secrets or accept the unknown state |
-| Free-tier provider says `unavailable` | Provider response was malformed, unreachable, or missing expected metric paths | Check the usage endpoint shape; do not print tokens in logs or screenshots |
+| Free-tier provider says `not configured` | No optional token, usage URL, or usage snapshot is configured for that provider | Add the provider-specific protected Environment secret named in `source_detail`, or accept the unknown state |
+| Free-tier provider says `unavailable` | Provider response was malformed, unreachable, unauthorized, or missing expected metric paths | Read the sanitized `source_detail` for HTTP status, provider message, response shape, and missing metric names; do not print tokens in logs or screenshots |
 | Free-tier provider says `cached` and stale | Live usage failed and the local sanitized cache is older than the configured TTL | Recheck provider availability and rerun the collector; the dashboard is intentionally preserving the last safe numbers |
 | Free-tier usage exceeds 100% | The configured free-tier allowance is exhausted or the quota value is stale | Verify the provider docs, reduce usage, or make an explicit budget/plan decision outside the portal |
 | Docker section is empty | Docker is not installed, Docker service is down, or the collector cannot reach the local Docker socket | Check Docker service state; fix collector permissions through PR if needed |
