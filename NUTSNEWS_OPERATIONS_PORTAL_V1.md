@@ -114,7 +114,7 @@ The same workflow can also pass optional SMTP values from protected Environment 
 
 The protected workflow can also pass optional free-tier usage values and read-only provider tokens into Ansible extra vars. Ansible renders them into `/etc/nutsnews/free-tier-usage.env` with mode `0600`, and the collector writes only sanitized usage numbers, source status, risk status, remaining amount, and timestamps into portal JSON. Tokens are never copied into `status.json`.
 
-Protected apply refreshes the status snapshot by restarting `nutsnews-ops-portal-collector.service`, not by running the collector binary directly. That keeps the root-only free-tier environment file in the execution path; a direct binary run can omit external providers such as Vercel from the generated snapshot.
+Protected apply refreshes the status snapshot by restarting `nutsnews-ops-portal-collector.service`, matching the deployed timer path. The collector also falls back to `/etc/nutsnews/free-tier-usage.env` when process env is missing free-tier settings, so external providers such as Vercel stay visible instead of disappearing from the generated snapshot.
 
 The manual `Verify Ops Portal Status` workflow can be used after deploy when local SSH is unavailable or the browser session is not authenticated. It uses the protected `production-vps` SSH key, reads only `/opt/nutsnews/portal-assets/data/status.json`, prints sanitized Vercel free-tier status fields plus metric states, and probes the configured Vercel Billing Charges endpoint for sanitized response shape and aggregate diagnostics.
 
@@ -498,7 +498,7 @@ Future public access should add:
 | Portal does not load on the VPS | Caddy container is down, Caddyfile is invalid, or the assets mount is wrong | Check `docker compose ps`, `docker logs nutsnews-caddy`, and rerun protected apply after a PR fix |
 | `/data/status.json` returns 404 | Collector did not create the status file or Caddy is not serving the portal assets directory | Check `systemctl status nutsnews-ops-portal-collector.timer` and the Caddy mount |
 | Status data is stale | Timer is disabled, failed, or blocked by systemd hardening | Check `systemctl list-timers` and `journalctl -u nutsnews-ops-portal-collector.service` |
-| Free-tier provider is missing after apply | The status refresh bypassed the systemd unit and did not load `/etc/nutsnews/free-tier-usage.env` | Refresh with `systemctl start nutsnews-ops-portal-collector.service` and fix the protected apply path through PR |
+| Free-tier provider is missing after apply | The collector did not load `/etc/nutsnews/free-tier-usage.env`, or the env file lacks the quota JSON | Check the collector journal and fix the env rendering or loader through PR |
 | Free-tier provider says `not configured` | No optional token, usage URL, or usage snapshot is configured for that provider | Add the provider-specific protected Environment secret named in `source_detail`, or accept the unknown state |
 | Free-tier provider says `unavailable` | Provider response was malformed, unreachable, unauthorized, or missing expected metric paths | Read the sanitized `source_detail` for HTTP status, provider message, response shape, and missing metric names; do not print tokens in logs or screenshots |
 | Free-tier provider says `cached` and stale | Live usage failed and the local sanitized cache is older than the configured TTL | Recheck provider availability and rerun the collector; the dashboard is intentionally preserving the last safe numbers |

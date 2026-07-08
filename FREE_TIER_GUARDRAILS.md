@@ -56,7 +56,7 @@ Every metric row must be honest about its source. `measured` means the collector
 
 For Vercel, the only accepted usage source is the read-only Billing Charges FOCUS endpoint configured through `NUTSNEWS_VERCEL_USAGE_API_URL` and `NUTSNEWS_VERCEL_API_TOKEN`. Do not use `NUTSNEWS_FREE_TIER_USAGE_JSON` placeholder zeroes for Vercel; if the live endpoint is unavailable, the portal must show unavailable with the safe backend reason.
 
-After protected apply, the Ops Portal status snapshot must be refreshed through `nutsnews-ops-portal-collector.service` so `/etc/nutsnews/free-tier-usage.env` is loaded. A direct collector binary run bypasses that environment and can make Vercel disappear from the free-tier section instead of showing its measured or unavailable state.
+After protected apply, the Ops Portal status snapshot is refreshed through `nutsnews-ops-portal-collector.service`, matching the deployed timer path. The collector also falls back to `/etc/nutsnews/free-tier-usage.env` when process env is missing free-tier settings, so Vercel should remain visible with either measured values or a safe unavailable state.
 
 Related doc: [NutsNews Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md).
 
