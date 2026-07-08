@@ -319,7 +319,7 @@ Do not use paid-only APIs, mutating endpoints, write/admin tokens, global API ke
 
 Provider-specific live usage notes:
 
-- Vercel uses `NUTSNEWS_VERCEL_API_TOKEN` and `NUTSNEWS_VERCEL_USAGE_API_URL`. The collector adds ISO 8601 `from` and `to` query parameters. `costs_not_found` means the configured team, account access, or billing endpoint is not exposing the requested usage data.
+- Vercel uses `NUTSNEWS_VERCEL_API_TOKEN` and `NUTSNEWS_VERCEL_USAGE_API_URL`. Configure the URL as the HTTPS Billing Charges endpoint, including `teamId` or `slug` when the Vercel account is team-owned. The collector adds ISO 8601 `from` and `to` query parameters, parses the FOCUS JSONL response, and aggregates `ConsumedQuantity` into the configured Hobby quota metrics by service/unit matchers. `costs_not_found` means the configured team, account access, or billing endpoint is not exposing the requested usage data.
 - Sentry uses Stats v2 with `NUTSNEWS_SENTRY_AUTH_TOKEN`, `NUTSNEWS_SENTRY_ORG`, and `NUTSNEWS_SENTRY_BASE_URL`. The base URL may be `https://sentry.io` or `https://sentry.io/api/0`; `401 Invalid token` means the token must be replaced with one that can read org stats.
 - Cloudflare Workers request usage is read with a POST to the GraphQL Analytics API using `NUTSNEWS_CLOUDFLARE_ACCOUNT_ID`. Pages build and R2 quota metrics still need a normalized snapshot or a dedicated read-only collector.
 - Better Stack monitor count can be read from the monitors API by counting the returned `data` list. Logs, traces, RUM, and exception volume still need a normalized snapshot or a dedicated read-only usage endpoint.
