@@ -318,10 +318,15 @@ Optional protected Environment values:
 {
   "vercel": {
     "last_checked_at": "2026-07-05T00:00:00+00:00",
-    "fast_data_transfer_gb": 32
+    "usage": {
+      "fast_data_transfer_gb": 32,
+      "function_invocations": 1200
+    }
   }
 }
 ```
+
+The collector also accepts `providers.vercel.metrics`, `providers.vercel.usage`, top-level provider metric values, and metric-list entries such as `{"key":"fast_data_transfer_gb","usage":32}`. Snapshot data is only a fallback when the live read-only collector is missing or unavailable.
 
 Generic `*_USAGE_API_URL` values must be HTTPS GET endpoints and return normalized read-only JSON such as:
 
@@ -337,7 +342,7 @@ Do not use paid-only APIs, mutating endpoints, write/admin tokens, global API ke
 
 Provider-specific live usage notes:
 
-- Vercel uses `NUTSNEWS_VERCEL_API_TOKEN` and `NUTSNEWS_VERCEL_USAGE_API_URL`. Configure the URL as the HTTPS Billing Charges endpoint, including `teamId` or `slug` when the Vercel account is team-owned. The collector adds ISO 8601 `from` and `to` query parameters, parses the FOCUS JSONL response, and aggregates `ConsumedQuantity` into the configured Hobby quota metrics by service/unit matchers. Deployment count, concurrent deployment, build-time, and static-upload limits are shown as unsupported until a read-only deployment/build collector is added. `costs_not_found` means the configured team, account access, or billing endpoint is not exposing the requested usage data.
+- Vercel uses `NUTSNEWS_VERCEL_API_TOKEN` and `NUTSNEWS_VERCEL_USAGE_API_URL`. Configure the URL as the HTTPS Billing Charges endpoint, including `teamId` or `slug` when the Vercel account is team-owned. The collector adds ISO 8601 `from` and `to` query parameters, parses the FOCUS JSONL response, and aggregates documented quantity fields into the configured Hobby quota metrics by service/unit matchers. Deployment count, concurrent deployment, build-time, and static-upload limits are shown as unsupported until a read-only deployment/build collector is added. `costs_not_found` means the configured team, account access, or billing endpoint is not exposing the requested usage data. Monthly Vercel rows expose the next UTC month boundary as `reset_at`.
 - Sentry uses Stats v2 with `NUTSNEWS_SENTRY_AUTH_TOKEN`, `NUTSNEWS_SENTRY_ORG`, and `NUTSNEWS_SENTRY_BASE_URL`. The base URL may be `https://sentry.io` or `https://sentry.io/api/0`; `401 Invalid token` means the token must be replaced with one that can read org stats.
 - Cloudflare Workers request usage is read with a POST to the GraphQL Analytics API using `NUTSNEWS_CLOUDFLARE_ACCOUNT_ID`. Workers CPU/configuration limits, Workers KV usage, Pages usage, and R2 quota metrics still need a normalized snapshot or dedicated read-only collectors.
 - Better Stack monitor count can be read from a normalized provider endpoint by counting the returned `data` list. Logs, traces, metrics, RUM/web events, session replays, status page subscribers, and exception volume still need normalized usage fields or a dedicated read-only usage endpoint.

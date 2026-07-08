@@ -54,6 +54,8 @@ Current service groups are:
 
 Every metric row must be honest about its source. `measured` means the collector had current usage. `missing credential`, `unavailable`, `unsupported`, and `unknown` mean the free limit is known but the current usage is not safely available yet. Do not fill these rows with guesses.
 
+For Vercel, the preferred source is the read-only Billing Charges FOCUS endpoint configured through `NUTSNEWS_VERCEL_USAGE_API_URL` and `NUTSNEWS_VERCEL_API_TOKEN`. If that endpoint is unavailable for the account/team, `NUTSNEWS_FREE_TIER_USAGE_JSON` may provide a normalized fallback under `vercel.usage` or `providers.vercel.usage`; the portal should still label it as cached snapshot data.
+
 Related doc: [NutsNews Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md).
 
 ## Grafana Cloud observability guardrails
