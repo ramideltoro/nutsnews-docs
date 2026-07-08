@@ -77,8 +77,11 @@ Optional Grafana Alloy Environment secrets:
 | `NUTSNEWS_GRAFANA_CLOUD_LOGS_URL` | Grafana Cloud logs push endpoint |
 | `NUTSNEWS_GRAFANA_CLOUD_LOGS_USERNAME` | Grafana Cloud logs username |
 | `NUTSNEWS_GRAFANA_CLOUD_ACCESS_POLICY_TOKEN` | Access Policy token for telemetry writes |
+| `NUTSNEWS_GRAFANA_CLOUD_URL` | Grafana Cloud stack URL used by the Ops Portal free-tier usage collector |
+| `NUTSNEWS_GRAFANA_CLOUD_SERVICE_ACCOUNT_TOKEN` | Grafana service account token used by the Ops Portal to query the read-only usage datasource |
+| `NUTSNEWS_GRAFANA_CLOUD_USAGE_DATASOURCE_UID` | UID of the Grafana Cloud `grafanacloud-usage` datasource queried by the Ops Portal |
 
-These are required only when the workflow input `enable_grafana_alloy` is `true`. Grafana Cloud dashboard and alert automation uses a separate Grafana service account token in the Grafana Cloud OpenTofu workflows, not in the Ansible telemetry-write path.
+The telemetry write values are required only when the workflow input `enable_grafana_alloy` is `true`. The URL, service account token, and usage datasource UID are optional for Alloy itself, but they let the Ops Portal free-tier collector read Grafana active-series and logs-ingestion usage from the existing usage datasource after protected apply renders the root-only collector environment.
 
 ## Expert Summary
 

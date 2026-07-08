@@ -254,7 +254,7 @@ flowchart TD
   status --> reporter["Email reporter\nalerts and daily report"]
 ```
 
-The live path is deliberately conservative. Sentry uses the official organization stats endpoint when an `org:read` token and org slug are configured. Other providers use optional normalized HTTPS usage endpoints or snapshot JSON until a specific official read-only API integration is reviewed. Missing, malformed, or stale inputs become visible provider states; they do not abort the portal collector. Local VPS entries are always read from the host snapshot and are never browser-side API calls.
+The live path is deliberately conservative. Sentry uses the official organization stats endpoint when an `org:read` token and org slug are configured. Grafana Cloud usage can be read through the existing `grafanacloud-usage` datasource using the Grafana Cloud URL, service account token, and usage datasource UID. Other providers use optional normalized HTTPS usage endpoints or snapshot JSON until a specific official read-only API integration is reviewed. Missing, malformed, or stale inputs become visible provider states; they do not abort the portal collector. Local VPS entries are always read from the host snapshot and are never browser-side API calls.
 
 Normalized service fields:
 
@@ -290,7 +290,8 @@ Optional protected Environment values:
 | `NUTSNEWS_CLOUDFLARE_USAGE_API_TOKEN`, `NUTSNEWS_CLOUDFLARE_USAGE_API_URL`, `NUTSNEWS_CLOUDFLARE_ACCOUNT_ID` | Optional Cloudflare read-only usage source |
 | `NUTSNEWS_BETTER_STACK_API_TOKEN`, `NUTSNEWS_BETTER_STACK_USAGE_API_URL` | Optional Better Stack read-only usage source |
 | `NUTSNEWS_SUPABASE_ACCESS_TOKEN`, `NUTSNEWS_SUPABASE_USAGE_API_URL` | Optional Supabase read-only usage source |
-| `NUTSNEWS_GRAFANA_CLOUD_USAGE_API_TOKEN`, `NUTSNEWS_GRAFANA_CLOUD_USAGE_API_URL` | Optional Grafana Cloud read-only usage source |
+| `NUTSNEWS_GRAFANA_CLOUD_URL`, `NUTSNEWS_GRAFANA_CLOUD_SERVICE_ACCOUNT_TOKEN`, `NUTSNEWS_GRAFANA_CLOUD_USAGE_DATASOURCE_UID` | Optional Grafana Cloud usage datasource source for active-series and logs ingestion usage |
+| `NUTSNEWS_GRAFANA_CLOUD_USAGE_API_TOKEN`, `NUTSNEWS_GRAFANA_CLOUD_USAGE_API_URL` | Legacy optional Grafana Cloud billed-usage source; keep only as fallback diagnostics unless the billing API path is deliberately restored |
 | `NUTSNEWS_GITHUB_USAGE_API_TOKEN`, `NUTSNEWS_GITHUB_ACTIONS_USAGE_API_URL` | Optional GitHub Actions and REST API usage source |
 
 `NUTSNEWS_FREE_TIER_USAGE_JSON` must be a JSON object. A minimal provider snapshot looks like:
@@ -323,7 +324,7 @@ Provider-specific live usage notes:
 - Cloudflare Workers request usage is read with a POST to the GraphQL Analytics API using `NUTSNEWS_CLOUDFLARE_ACCOUNT_ID`. Pages build and R2 quota metrics still need a normalized snapshot or a dedicated read-only collector.
 - Better Stack monitor count can be read from the monitors API by counting the returned `data` list. Logs, traces, RUM, and exception volume still need a normalized snapshot or a dedicated read-only usage endpoint.
 - Supabase analytics endpoints can return metric-specific `result` rows, not the normalized storage, egress, auth, edge function, and realtime quota fields the portal displays. Do not map unrelated API-request counts into those quota fields.
-- Grafana Cloud billed usage requires numeric `month` and `year` query parameters. A `403` means `NUTSNEWS_GRAFANA_CLOUD_USAGE_API_TOKEN` does not have billed-usage permission for the configured org. Synthetic Monitoring tokens are separate and do not satisfy billed-usage reads.
+- Grafana Cloud usage is read from the existing `grafanacloud-usage` Prometheus datasource through the Grafana datasource proxy. The collector uses read-only GET queries for `max(grafanacloud_instance_metrics_usage)` and `max(grafanacloud_logs_instance_usage)`. A `403` on this path means `NUTSNEWS_GRAFANA_CLOUD_SERVICE_ACCOUNT_TOKEN` cannot query the configured usage datasource or `NUTSNEWS_GRAFANA_CLOUD_USAGE_DATASOURCE_UID` points at the wrong datasource. The older billed-usage API token and URL can still explain billing API failures, but the portal live path should prefer the usage datasource.
 - GitHub Actions can read public repository cache and artifact usage without a token when `NUTSNEWS_GITHUB_ACTIONS_USAGE_API_URL` points at a public repository API URL. Use `NUTSNEWS_GITHUB_USAGE_API_TOKEN` only for private repository access or authenticated REST rate-limit telemetry. If configured, use a fine-grained read-only token for repository Actions metadata. Do not create custom secrets whose names start with `GITHUB_`. Hosted-runner billing minutes require a separate billing-scoped endpoint and should remain unknown until that is explicitly wired.
 
 ## Email Alert And Report Flow
