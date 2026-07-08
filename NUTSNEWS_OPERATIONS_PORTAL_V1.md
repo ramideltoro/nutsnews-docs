@@ -114,7 +114,7 @@ The same workflow can also pass optional SMTP values from protected Environment 
 
 The protected workflow can also pass optional free-tier usage values and read-only provider tokens into Ansible extra vars. Ansible renders them into `/etc/nutsnews/free-tier-usage.env` with mode `0600`, and the collector writes only sanitized usage numbers, source status, risk status, remaining amount, and timestamps into portal JSON. Tokens are never copied into `status.json`.
 
-The manual `Verify Ops Portal Status` workflow can be used after deploy when local SSH is unavailable or the browser session is not authenticated. It uses the protected `production-vps` SSH key, reads only `/opt/nutsnews/portal-assets/data/status.json`, and prints sanitized Vercel free-tier status fields plus metric states.
+The manual `Verify Ops Portal Status` workflow can be used after deploy when local SSH is unavailable or the browser session is not authenticated. It uses the protected `production-vps` SSH key, reads only `/opt/nutsnews/portal-assets/data/status.json`, prints sanitized Vercel free-tier status fields plus metric states, and probes the configured Vercel Billing Charges endpoint for sanitized response shape and aggregate diagnostics.
 
 Free-tier pressure now feeds the same alert list used by email reporting. Warning, critical, and over-limit provider states can produce alert emails and appear in the daily health report. Unknown or not-configured providers stay visible in the portal summary but do not pretend to be live data.
 
@@ -256,7 +256,7 @@ flowchart TD
   status --> reporter["Email reporter\nalerts and daily report"]
 ```
 
-The live path is deliberately conservative. Sentry uses the official organization stats endpoint when an `org:read` token and org slug are configured. Grafana Cloud usage can be read through the existing `grafanacloud-usage` datasource using the Grafana Cloud URL, service account token, and usage datasource UID. Other providers use optional normalized HTTPS usage endpoints or snapshot JSON until a specific official read-only API integration is reviewed. Missing, malformed, or stale inputs become visible provider states; they do not abort the portal collector. Local VPS entries are always read from the host snapshot and are never browser-side API calls.
+The live path is deliberately conservative. Vercel uses the official Billing Charges FOCUS endpoint and does not use generic snapshot/cache fallback, because placeholder zeroes are unsafe for billing usage. Sentry uses the official organization stats endpoint when an `org:read` token and org slug are configured. Grafana Cloud usage can be read through the existing `grafanacloud-usage` datasource using the Grafana Cloud URL, service account token, and usage datasource UID. Other providers use optional normalized HTTPS usage endpoints or snapshot JSON until a specific official read-only API integration is reviewed. Missing, malformed, or stale inputs become visible provider states; they do not abort the portal collector. Local VPS entries are always read from the host snapshot and are never browser-side API calls.
 
 Normalized service fields:
 
@@ -314,15 +314,15 @@ Optional protected Environment values:
 | `NUTSNEWS_GRAFANA_CLOUD_USAGE_API_TOKEN`, `NUTSNEWS_GRAFANA_CLOUD_USAGE_API_URL` | Legacy optional Grafana Cloud billed-usage source; keep only as fallback diagnostics unless the billing API path is deliberately restored |
 | `NUTSNEWS_GITHUB_USAGE_API_TOKEN`, `NUTSNEWS_GITHUB_ACTIONS_USAGE_API_URL` | Optional GitHub Actions and REST API usage source |
 
-`NUTSNEWS_FREE_TIER_USAGE_JSON` must be a JSON object. A minimal provider snapshot looks like:
+`NUTSNEWS_FREE_TIER_USAGE_JSON` must be a JSON object for providers without a live collector. A minimal provider snapshot looks like:
 
 ```json
 {
-  "vercel": {
+  "better_stack": {
     "last_checked_at": "2026-07-05T00:00:00+00:00",
     "usage": {
-      "fast_data_transfer_gb": 32,
-      "function_invocations": 1200
+      "logs_gb": 1.2,
+      "monitors_heartbeats": 3
     }
   }
 }
@@ -344,7 +344,7 @@ Do not use paid-only APIs, mutating endpoints, write/admin tokens, global API ke
 
 Provider-specific live usage notes:
 
-- Vercel uses `NUTSNEWS_VERCEL_API_TOKEN` and `NUTSNEWS_VERCEL_USAGE_API_URL`. Configure the URL as the HTTPS Billing Charges endpoint, including `teamId` or `slug` when the Vercel account is team-owned. The collector adds ISO 8601 `from` and `to` query parameters, parses the FOCUS JSONL response, and aggregates documented quantity fields into the configured Hobby quota metrics by service/unit matchers. Deployment count, concurrent deployment, build-time, and static-upload limits are shown as unsupported until a read-only deployment/build collector is added. `costs_not_found` means the configured team, account access, or billing endpoint is not exposing the requested usage data. Monthly Vercel rows expose the next UTC month boundary as `reset_at`.
+- Vercel uses `NUTSNEWS_VERCEL_API_TOKEN` and `NUTSNEWS_VERCEL_USAGE_API_URL`. Configure the URL as the HTTPS Billing Charges endpoint, including `teamId` or `slug` when the Vercel account is team-owned. The collector adds ISO 8601 `from` and `to` query parameters, parses the FOCUS JSONL response, and aggregates documented quantity fields into the configured Hobby quota metrics by service/unit matchers. Deployment count, concurrent deployment, build-time, and static-upload limits are shown as unsupported until a read-only deployment/build collector is added. Vercel does not use generic snapshot/cache fallback; if the live API fails or omits a metric, the portal shows unavailable with the safe backend reason. `costs_not_found` means the configured team, account access, or billing endpoint is not exposing the requested usage data. Monthly Vercel rows expose the next UTC month boundary as `reset_at`.
 - Sentry uses Stats v2 with `NUTSNEWS_SENTRY_AUTH_TOKEN`, `NUTSNEWS_SENTRY_ORG`, and `NUTSNEWS_SENTRY_BASE_URL`. The base URL may be `https://sentry.io` or `https://sentry.io/api/0`; `401 Invalid token` means the token must be replaced with one that can read org stats.
 - Cloudflare Workers request usage is read with a POST to the GraphQL Analytics API using `NUTSNEWS_CLOUDFLARE_ACCOUNT_ID`. Workers CPU/configuration limits, Workers KV usage, Pages usage, and R2 quota metrics still need a normalized snapshot or dedicated read-only collectors.
 - Better Stack monitor count can be read from a normalized provider endpoint by counting the returned `data` list. Logs, traces, metrics, RUM/web events, session replays, status page subscribers, and exception volume still need normalized usage fields or a dedicated read-only usage endpoint.
