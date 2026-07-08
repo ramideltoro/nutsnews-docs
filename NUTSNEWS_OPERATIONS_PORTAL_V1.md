@@ -287,7 +287,7 @@ Optional protected Environment values:
 | `NUTSNEWS_FREE_TIER_USAGE_JSON` | Provider-keyed normalized usage snapshot for providers without live collection |
 | `NUTSNEWS_VERCEL_API_TOKEN`, `NUTSNEWS_VERCEL_USAGE_API_URL` | Optional Vercel read-only usage source |
 | `NUTSNEWS_SENTRY_AUTH_TOKEN`, `NUTSNEWS_SENTRY_ORG`, `NUTSNEWS_SENTRY_BASE_URL` | Optional Sentry Stats v2 usage source; token should be limited to read scope |
-| `NUTSNEWS_CLOUDFLARE_USAGE_API_TOKEN`, `NUTSNEWS_CLOUDFLARE_USAGE_API_URL` | Optional Cloudflare read-only usage source |
+| `NUTSNEWS_CLOUDFLARE_USAGE_API_TOKEN`, `NUTSNEWS_CLOUDFLARE_USAGE_API_URL`, `NUTSNEWS_CLOUDFLARE_ACCOUNT_ID` | Optional Cloudflare read-only usage source |
 | `NUTSNEWS_BETTER_STACK_API_TOKEN`, `NUTSNEWS_BETTER_STACK_USAGE_API_URL` | Optional Better Stack read-only usage source |
 | `NUTSNEWS_SUPABASE_ACCESS_TOKEN`, `NUTSNEWS_SUPABASE_USAGE_API_URL` | Optional Supabase read-only usage source |
 | `NUTSNEWS_GRAFANA_CLOUD_USAGE_API_TOKEN`, `NUTSNEWS_GRAFANA_CLOUD_USAGE_API_URL` | Optional Grafana Cloud read-only usage source |
@@ -320,7 +320,7 @@ Provider-specific live usage notes:
 
 - Vercel uses `NUTSNEWS_VERCEL_API_TOKEN` and `NUTSNEWS_VERCEL_USAGE_API_URL`. The collector adds ISO 8601 `from` and `to` query parameters. `costs_not_found` means the configured team, account access, or billing endpoint is not exposing the requested usage data.
 - Sentry uses Stats v2 with `NUTSNEWS_SENTRY_AUTH_TOKEN`, `NUTSNEWS_SENTRY_ORG`, and `NUTSNEWS_SENTRY_BASE_URL`. The base URL may be `https://sentry.io` or `https://sentry.io/api/0`; `401 Invalid token` means the token must be replaced with one that can read org stats.
-- Cloudflare GraphQL usage cannot be treated as generic GET JSON. A `request must be a POST` provider message means the next infra change must add a Cloudflare GraphQL POST collector and pass the account identifier; until then, use a normalized snapshot if live quota numbers are required.
+- Cloudflare Workers request usage is read with a POST to the GraphQL Analytics API using `NUTSNEWS_CLOUDFLARE_ACCOUNT_ID`. Pages build and R2 quota metrics still need a normalized snapshot or a dedicated read-only collector.
 - Better Stack monitor count can be read from the monitors API by counting the returned `data` list. Logs, traces, RUM, and exception volume still need a normalized snapshot or a dedicated read-only usage endpoint.
 - Supabase analytics endpoints can return metric-specific `result` rows, not the normalized storage, egress, auth, edge function, and realtime quota fields the portal displays. Do not map unrelated API-request counts into those quota fields.
 - Grafana Cloud billed usage requires numeric `month` and `year` query parameters. A `403` means `NUTSNEWS_GRAFANA_CLOUD_USAGE_API_TOKEN` does not have billed-usage permission for the configured org. Synthetic Monitoring tokens are separate and do not satisfy billed-usage reads.
