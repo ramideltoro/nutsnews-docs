@@ -8,7 +8,7 @@ The VPS has a polished amber dashboard for boring-but-important server facts: ov
 
 This update makes the portal easier to scan when the server starts smelling weird. It adds gauges for health score, CPU, RAM, disk, swap, and inodes; temperature-style hot spots for memory pressure, disk pressure, service health, and alert level; compact stats where the data supports them; and an email/reporting block that makes enabled/configured/next run/last run/last success/last error hard to miss.
 
-The Free Tier Usage section now shows current usage against configured free-plan or usage-limited resources for the VPS host, Docker storage, backup storage, Vercel, Sentry, Cloudflare, Better Stack, Supabase, Grafana Cloud, and GitHub Actions. It shows used, limit, remaining free amount, percent used, period/window, last checked time, source state, and a risk state: safe, warning, critical, over limit, unknown, or not configured. The section is still read-only; it never upgrades plans, writes provider settings, or calls mutating provider APIs.
+The Free Tier Usage section now groups quota rows by service for the VPS host, Docker storage, backup storage, Vercel, Sentry, Cloudflare, Better Stack, Supabase, Grafana Cloud, and GitHub Actions. Each service group shows current usage, free limit, percent used, remaining amount, period/window, reset date if known, source state, risk state, and per-metric measurement state. Metrics without safe live usage stay visible as `missing credential`, `unavailable`, `unsupported`, or `unknown` instead of pretending to be measured. The section is still read-only; it never upgrades plans, writes provider settings, or calls mutating provider APIs.
 
 There is also a manual `Send VPS Health Report` workflow. It uses the same protected `production-vps` Environment and SSH secret pattern, connects as `nutsnews_ops`, and starts only the existing health report service. No random remote command box. No "type your shell script here." Production does not need karaoke night.
 
@@ -82,7 +82,7 @@ The reporter reads that same JSON feed and can send two kinds of email:
 
 SMTP values live in the protected `production-vps` GitHub Environment and are rendered by Ansible into `/etc/nutsnews/ops-reporter.env` with mode `0600`. If email is disabled or missing required settings, the reporter exits successfully, writes that state for the portal, and does not improvise. Infrastructure improv is for jazz bands and outages.
 
-Free-tier quota values live in Ansible configuration under `vps_service_foundation_free_tier_quotas`. Local VPS, Docker, and backup entries come from live read-only status collection instead of a static provider quota. Each service entry records the provider name, plan, source URL or local source description, last verification date where applicable, metrics, units, free limits, warning/critical/over-limit thresholds, and optional read-only live collection settings. Usage data can come from a safe live collector, a normalized snapshot, or a local cache. If no safe source exists, that provider shows `not configured`, `unavailable`, or `unknown` instead of failing the whole portal.
+Free-tier quota values live in Ansible configuration under `vps_service_foundation_free_tier_quotas`. Local VPS, Docker, and backup entries come from live read-only status collection instead of a static provider quota. Each service entry records the provider name, plan, source URL or local source description, last verification date where applicable, metrics, units, free limits, warning/critical/over-limit thresholds, optional read-only live collection settings, and whether the specific metric is measured, missing credentials, unavailable, unsupported, or unknown. Usage data can come from a safe live collector, a normalized snapshot, or a local cache. If no safe source exists, that provider shows `not configured`, `unavailable`, or `unknown` instead of failing the whole portal.
 
 ## Expert Summary
 
@@ -250,7 +250,7 @@ flowchart TD
   unknown --> normalize
   sanitize --> normalize
   normalize --> status["status.json\nfree_tier_usage"]
-  status --> ui["Ops Portal\nsummary, cards, table,\nprogress bars"]
+  status --> ui["Ops Portal\nsummary, service groups,\nmetric rows, progress bars"]
   status --> reporter["Email reporter\nalerts and daily report"]
 ```
 
@@ -263,6 +263,8 @@ Normalized service fields:
 | `key`, `platform`, `plan` | Stable service ID, display name, and free/current plan context |
 | `metrics[]` | Used, limit, remaining, percent used, percent remaining, unit, period/window, and reset date if known |
 | `source_status` | `live`, `cached`, `not configured`, `unavailable`, or `unknown` |
+| `metrics[].measurement_status` | `measured`, `missing credential`, `unavailable`, `unsupported`, or `unknown` |
+| `metrics[].measurement_detail` | Sanitized reason for the metric state; never includes tokens or provider secrets |
 | `risk_status` | `safe`, `warning`, `critical`, `over_limit`, `unknown`, or `not_configured` |
 | `last_checked_at`, `stale` | Freshness metadata for the last usage source |
 | `quota_source`, `quota_last_verified` | Official provider source and verification date, or a local source description for VPS-derived limits |
@@ -278,7 +280,23 @@ Quota config fields:
 | `metrics[].key` / `metrics[].label` | Stable metric key and display label |
 | `metrics[].unit` / `metrics[].period` | Display unit and billing or measurement window |
 | `metrics[].limit` | Free-tier quota value |
+| `metrics[].quota_source` / `metrics[].usage_source` | Optional metric-specific source URL and collection note when a provider has multiple products or an unsupported usage source |
 | `metrics[].warning_used_percent` / `metrics[].critical_used_percent` | Optional warning and critical thresholds |
+
+Current service coverage:
+
+| Service | Quotas covered | Current usage source |
+| --- | --- | --- |
+| VPS Host | CPU sample, RAM, root disk, swap | Local collector |
+| Docker Storage | Docker data directory footprint | Local collector |
+| Backup Storage | Local backup cache and latest snapshot age | Local collector and backup status |
+| Vercel | Hobby usage summary plus relevant deployment/build limits | Billing Charges FOCUS JSONL where configured; unsupported rows stay visible |
+| Sentry | Developer Free errors, logs, app metrics, spans, replays, uptime/cron/metric monitors, attachments | Stats v2 for supported categories; snapshots or future collectors for the rest |
+| Cloudflare | Workers, Workers KV, Pages, and R2 free limits | Workers GraphQL for requests; snapshots or future collectors for KV, Pages, and R2 |
+| Better Stack | Monitors/heartbeats, status pages/subscribers, exceptions, logs, traces, metrics, web events, session replays | Normalized HTTPS usage endpoint |
+| Supabase | Egress, database size, auth MAU, third-party MAU, storage, Edge Functions, Realtime messages, Realtime peak connections | Normalized HTTPS usage endpoint or snapshot |
+| Grafana Cloud | Metrics, logs, traces, profiles, Synthetic Monitoring API/browser executions, Frontend Observability sessions | `grafanacloud-usage` datasource for wired queries; snapshots or future collectors for the rest |
+| GitHub Actions | Hosted-runner minutes, artifact storage, cache storage, REST API primary rate limit | Repository REST endpoints and optional token; billing minutes need a billing-scoped endpoint |
 
 Optional protected Environment values:
 
@@ -319,10 +337,10 @@ Do not use paid-only APIs, mutating endpoints, write/admin tokens, global API ke
 
 Provider-specific live usage notes:
 
-- Vercel uses `NUTSNEWS_VERCEL_API_TOKEN` and `NUTSNEWS_VERCEL_USAGE_API_URL`. Configure the URL as the HTTPS Billing Charges endpoint, including `teamId` or `slug` when the Vercel account is team-owned. The collector adds ISO 8601 `from` and `to` query parameters, parses the FOCUS JSONL response, and aggregates `ConsumedQuantity` into the configured Hobby quota metrics by service/unit matchers. `costs_not_found` means the configured team, account access, or billing endpoint is not exposing the requested usage data.
+- Vercel uses `NUTSNEWS_VERCEL_API_TOKEN` and `NUTSNEWS_VERCEL_USAGE_API_URL`. Configure the URL as the HTTPS Billing Charges endpoint, including `teamId` or `slug` when the Vercel account is team-owned. The collector adds ISO 8601 `from` and `to` query parameters, parses the FOCUS JSONL response, and aggregates `ConsumedQuantity` into the configured Hobby quota metrics by service/unit matchers. Deployment count, concurrent deployment, build-time, and static-upload limits are shown as unsupported until a read-only deployment/build collector is added. `costs_not_found` means the configured team, account access, or billing endpoint is not exposing the requested usage data.
 - Sentry uses Stats v2 with `NUTSNEWS_SENTRY_AUTH_TOKEN`, `NUTSNEWS_SENTRY_ORG`, and `NUTSNEWS_SENTRY_BASE_URL`. The base URL may be `https://sentry.io` or `https://sentry.io/api/0`; `401 Invalid token` means the token must be replaced with one that can read org stats.
-- Cloudflare Workers request usage is read with a POST to the GraphQL Analytics API using `NUTSNEWS_CLOUDFLARE_ACCOUNT_ID`. Pages build and R2 quota metrics still need a normalized snapshot or a dedicated read-only collector.
-- Better Stack monitor count can be read from the monitors API by counting the returned `data` list. Logs, traces, RUM, and exception volume still need a normalized snapshot or a dedicated read-only usage endpoint.
+- Cloudflare Workers request usage is read with a POST to the GraphQL Analytics API using `NUTSNEWS_CLOUDFLARE_ACCOUNT_ID`. Workers CPU/configuration limits, Workers KV usage, Pages usage, and R2 quota metrics still need a normalized snapshot or dedicated read-only collectors.
+- Better Stack monitor count can be read from a normalized provider endpoint by counting the returned `data` list. Logs, traces, metrics, RUM/web events, session replays, status page subscribers, and exception volume still need normalized usage fields or a dedicated read-only usage endpoint.
 - Supabase analytics endpoints can return metric-specific `result` rows, not the normalized storage, egress, auth, edge function, and realtime quota fields the portal displays. Do not map unrelated API-request counts into those quota fields.
 - Grafana Cloud usage is read from the existing `grafanacloud-usage` Prometheus datasource through the Grafana datasource proxy. The collector uses read-only GET queries for `max(grafanacloud_instance_metrics_usage)` and `max(grafanacloud_logs_instance_usage)`. A `403` on this path means `NUTSNEWS_GRAFANA_CLOUD_SERVICE_ACCOUNT_TOKEN` cannot query the configured usage datasource or `NUTSNEWS_GRAFANA_CLOUD_USAGE_DATASOURCE_UID` points at the wrong datasource. The older billed-usage API token and URL can still explain billing API failures, but the portal live path should prefer the usage datasource.
 - GitHub Actions can read public repository cache and artifact usage without a token when `NUTSNEWS_GITHUB_ACTIONS_USAGE_API_URL` points at a public repository API URL. Use `NUTSNEWS_GITHUB_USAGE_API_TOKEN` only for private repository access or authenticated REST rate-limit telemetry. If configured, use a fine-grained read-only token for repository Actions metadata. Do not create custom secrets whose names start with `GITHUB_`. Hosted-runner billing minutes require a separate billing-scoped endpoint and should remain unknown until that is explicitly wired.
@@ -402,7 +420,7 @@ The CPU table is useful, not omniscient. It shows a lifetime average normalized 
 | --- | --- |
 | Overall Health | Health score gauge, hostname, uptime, public IPs, OS, kernel, deployed infra commit, last apply marker |
 | Alerts and Email Reporting | Email enabled/configured state, SMTP configured flag, next report run, last run, last success, last error, pending alerts, timer state |
-| Free Tier Usage | VPS host, Docker storage, backup storage, Vercel, Sentry, Cloudflare, Better Stack, Supabase, Grafana Cloud, and GitHub Actions usage, free limits, remaining amount, percent used, period/window, reset date if known, last checked time, source status, and risk status |
+| Free Tier Usage | Service-grouped VPS host, Docker storage, backup storage, Vercel, Sentry, Cloudflare, Better Stack, Supabase, Grafana Cloud, and GitHub Actions quota rows with usage, free limits, remaining amount, percent used, period/window, reset date if known, source status, measurement status, and risk status |
 | Resources | Gauges for CPU, RAM, root disk, swap, and root inode usage; load stats; network counters; NutsNews disk usage |
 | Hot Spots | Temperature-style memory pressure, disk pressure, service health, and alert level |
 | Processes | Top memory and CPU apps with client-side filtering, PID, user, memory, CPU estimate, thread count, CPU time, elapsed time, idle time |

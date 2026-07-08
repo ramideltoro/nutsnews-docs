@@ -35,6 +35,27 @@ NUTSNEWS_PAGESPEED_30D_CALL_LIMIT=25000
 
 Most metrics warn at 70% of the configured limit and enter danger at 90%. AI cost warns earlier at 60% and enters danger at 85% so there is more time to reduce reviews or switch to local AI.
 
+## Ops Portal service quota catalog
+
+The VPS Ops Portal has a separate read-only Free Tier Usage section for infrastructure and cloud-service quotas. It is managed from `ramideltoro/nutsnews-infra` in `vps_service_foundation_free_tier_quotas`, rendered by the protected Ansible apply workflow, and exposed only as sanitized `status.json` fields.
+
+Current service groups are:
+
+| Service | Quota areas |
+| --- | --- |
+| Local VPS | Host CPU/RAM/disk/swap, Docker storage, backup cache, latest snapshot freshness |
+| Vercel | Hobby usage summary plus relevant deployment/build limits |
+| Sentry | Developer Free errors, logs, application metrics, spans, replays, monitors, attachments |
+| Cloudflare | Workers, Workers KV, Pages, and R2 |
+| Better Stack | Monitoring, status pages, telemetry, errors, web events, session replays |
+| Supabase | Egress, database size, Auth MAU, third-party MAU, storage, Edge Functions, Realtime |
+| Grafana Cloud | Metrics, logs, traces, profiles, Synthetic Monitoring, Frontend Observability |
+| GitHub Actions | Hosted runner minutes, artifact storage, cache storage, REST API primary rate limit |
+
+Every metric row must be honest about its source. `measured` means the collector had current usage. `missing credential`, `unavailable`, `unsupported`, and `unknown` mean the free limit is known but the current usage is not safely available yet. Do not fill these rows with guesses.
+
+Related doc: [NutsNews Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md).
+
 ## Grafana Cloud observability guardrails
 
 The VPS Grafana Cloud layer adds a separate Usage / Quota dashboard and Grafana-managed alert rules for Grafana Cloud telemetry usage. Current assumptions are documented in [NutsNews Grafana Cloud Observability](NUTSNEWS_GRAFANA_CLOUD_OBSERVABILITY.md), and the live Grafana pricing page must be checked before adding more telemetry.
