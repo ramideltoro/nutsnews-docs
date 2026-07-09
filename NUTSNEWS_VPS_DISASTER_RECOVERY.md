@@ -22,7 +22,7 @@ Disaster recovery order:
 4. Run `Protected Ansible Apply` in apply mode.
 5. Restore restic backup to staging.
 6. Copy needed `/opt/nutsnews` and `/etc/nutsnews` data/config.
-7. Verify services, portal, backup timer, and backup verification.
+7. Verify services, portal, backup timer, verify timer, and latest backup verification.
 8. Cut over DNS.
 9. Monitor.
 10. Document anything weird.
@@ -122,6 +122,7 @@ curl -fsS http://127.0.0.1:8080/healthz
 curl -fsS http://127.0.0.1:8080/data/status.json
 systemctl status nutsnews-ops-portal-collector.timer --no-pager
 systemctl status nutsnews-restic-backup.timer --no-pager
+systemctl status nutsnews-restic-verify.timer --no-pager
 ```
 
 From GitHub Actions:
@@ -161,6 +162,8 @@ Minimum restore test:
 2. Confirm `/opt/nutsnews`, `/etc/nutsnews`, and systemd unit files exist.
 3. Run `restic check --read-data-subset=5%`.
 4. Record the snapshot ID and result.
+
+The scheduled VPS verify timer should already be green before a disaster, but it does not replace this drill. Infra issue #24 tracks the recurring full restore drill.
 
 Untested backups are emotional support files. They may make us feel prepared, but they cannot carry production out of a ditch until proven.
 

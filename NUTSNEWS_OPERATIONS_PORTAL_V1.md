@@ -12,7 +12,7 @@ The Free Tier Usage section now groups quota rows by service for the VPS host, D
 
 There is also a manual `Send VPS Health Report` workflow. It uses the same protected `production-vps` Environment and SSH secret pattern, connects as `nutsnews_ops`, and starts only the existing health report service. No random remote command box. No "type your shell script here." Production does not need karaoke night.
 
-There are also manual `Run VPS Backup` and `Verify VPS Backup` workflows. They use the same protected environment pattern and start only fixed systemd units. The portal then shows backup freshness, last backup, last prune, last verify, retention, and protected path coverage.
+There are also manual `Run VPS Backup` and `Verify VPS Backup` workflows plus a scheduled `nutsnews-restic-verify.timer`. They use the same protected environment pattern and start only fixed systemd units. The portal then shows backup freshness, whether the latest snapshot has a recent successful verification, last backup, last prune, retention, next backup run, next verify run, and protected path coverage.
 
 The important part: it is read-only. No restart button. No "install this one tiny thing" button. No secret shell wearing a dashboard costume. If something needs to change production, it still goes through the civilized path:
 
@@ -34,10 +34,11 @@ The infra repo now has these pieces:
 6. A Google OAuth gateway that serves `/api/auth/signin/google`, `/api/auth/callback/google`, and all authenticated portal files
 7. A manual GitHub Actions workflow named `Send VPS Health Report`
 8. Manual backup workflows named `Run VPS Backup` and `Verify VPS Backup`
-9. A read-only free-tier usage collector module at `/usr/local/bin/ops_free_tier_usage.py`
-10. Root-only free-tier collector configuration at `/etc/nutsnews/free-tier-usage.env`
-11. Local usage-limited service entries for VPS resources, Docker storage, and backup storage/freshness
-12. CI guardrails that validate the portal fixture, Google OAuth allowlist, callback route, secret redaction, read-only surface, backup status, free-tier fallback states, and the no-arbitrary-command shape of the manual report and backup workflows
+9. A scheduled latest-backup verification timer named `nutsnews-restic-verify.timer`
+10. A read-only free-tier usage collector module at `/usr/local/bin/ops_free_tier_usage.py`
+11. Root-only free-tier collector configuration at `/etc/nutsnews/free-tier-usage.env`
+12. Local usage-limited service entries for VPS resources, Docker storage, and backup storage/freshness
+13. CI guardrails that validate the portal fixture, Google OAuth allowlist, callback route, secret redaction, read-only surface, backup status, free-tier fallback states, and the no-arbitrary-command shape of the manual report and backup workflows
 
 The collector runs locally on the VPS, reads host state, redacts obvious sensitive log patterns, and writes JSON here:
 
@@ -439,11 +440,15 @@ The CPU table is useful, not omniscient. It shows a lifetime average normalized 
 | Docker and Compose | Containers, health, restart count, image names, ports, compose project |
 | Logs | Recent Caddy logs, journal warnings, auth/security logs, with basic redaction |
 | Security | Firewall status, open ports, SSH hardening, pending updates, last reboot, failed login summary |
-| Backups and Snapshots | Backup directory usage, latest local backup placeholder, snapshot reminders |
+| Backups and Snapshots | Restic/rclone backup status, latest snapshot freshness, latest snapshot verification, backup/verify timer state, protected path counts |
 | GitOps | Workflow links, deployed commit marker, last apply marker, drift warning |
 | Runbooks and Docs | Links back to the docs repo |
 
-The backup section now reports the restic/rclone VPS backup layer: enabled/configured state, repository path, latest snapshot age, backup/prune/verify state, timer state, and protected paths. Backup failures and stale snapshots flow into the same warning/critical alert list used by email reporting.
+The backup section now reports the restic/rclone VPS backup layer: enabled/configured state, repository path, latest snapshot age, backup/prune state, latest-snapshot verification state, backup and verify timer state, and protected path counts. Raw backup path lists and restore targets stay in root-only config, not public status JSON.
+
+The latest-snapshot verification state is computed by comparing the last check's snapshot ID/time with the newest restic snapshot ID/time. It distinguishes `success`, `failed`, `stale`, `latest_unverified`, `disabled`, and `misconfigured`. Backup failures, stale snapshots, prune failures, verification failures, stale verification, latest snapshots checked by an older verification, and inactive backup/verify timers flow into the same warning/critical alert list used by email reporting.
+
+Routine verification is not a restore drill. The scheduled timer checks repository readability and latest-snapshot coverage; the full restore drill tracked in infra issue #24 still restores to staging and validates the files.
 
 The email section is still intentionally humble. It reports local VPS warnings, scheduled health summaries, and backup problems from the portal status feed. Future deploy, security scan, and incident reporting can build on the same pattern instead of each workflow inventing a new inbox ritual with its own little hat.
 

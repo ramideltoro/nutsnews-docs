@@ -4,13 +4,15 @@ This is the setup and operations guide for encrypted VPS backups to OneDrive.
 
 The design is intentionally boring: restic encrypts the data on the VPS, rclone transports the encrypted repository to OneDrive, and GitHub Actions can only start fixed systemd units. No raw readable backup pile in OneDrive. No "paste a command and hope" workflow. No tiny production trapdoor wearing a workflow badge.
 
-## Easy Summary
+## Simple Summary
 
 The VPS backs itself up with restic. Restic encrypts the backup before anything leaves the server. rclone then moves the encrypted restic repository to a OneDrive remote named `nutsnews-onedrive`.
 
 OneDrive sees encrypted restic blobs, not readable `/opt/nutsnews` files. If someone opens the OneDrive folder, they should see backup confetti, not secrets with a newsletter subscription.
 
-The Ops Portal shows whether backups are enabled, fresh, successful, pruned, verified, or stale. Email alerts already use the portal alert feed, so backup failures and stale snapshots can yell politely.
+The VPS also verifies the latest restic snapshot on a weekly systemd timer. The Ops Portal shows whether the newest snapshot has a recent successful verification, whether the last check looked at an older snapshot, and whether verification has failed or gone stale. Email alerts use the same portal alert feed.
+
+This routine verification is not the full restore drill tracked separately in infra issue #24. It proves repository readability and latest-snapshot coverage; a restore drill still restores data to staging and inspects the result.
 
 ## Intermediate Summary
 
@@ -26,6 +28,9 @@ The infra repo manages the VPS backup layer through Ansible:
 | Backup service | `nutsnews-restic-backup.service` |
 | Backup timer | `nutsnews-restic-backup.timer` |
 | Verification service | `nutsnews-restic-verify.service` |
+| Verification timer | `nutsnews-restic-verify.timer` |
+| Verification cadence | Weekly on Sunday around `05:15` server-local time, randomized by up to `6h` |
+| Verification stale threshold | `192h` by default |
 | Portal status file | `/opt/nutsnews/portal-assets/data/backup-status.json` |
 | Root-only config | `/etc/nutsnews` |
 
@@ -50,6 +55,8 @@ The default retention policy is:
 
 Pruning runs after a successful backup. If prune fails, the backup status becomes degraded and the portal emits an alert. That is useful because "the backup worked but the storage bill is doing pushups" is still an operations problem.
 
+Scheduled verification runs `restic ls latest` and then `restic check --read-data-subset=5%` through the existing lock-protected backup runner. The service timeout is four hours. The manual GitHub workflow that starts the same verify service has a 60-minute Actions timeout, so unusually slow OneDrive/network reads may outlive the manual workflow even when the systemd service timeout is still larger.
+
 ## Expert Summary
 
 The backup layer is GitOps-managed and provider-agnostic:
@@ -62,6 +69,9 @@ The backup layer is GitOps-managed and provider-agnostic:
 - The systemd units run as root but use hardening and constrained writable paths.
 - The rclone config directory is writable because rclone may need to refresh OAuth tokens.
 - The manual workflows have no dispatch inputs and start only fixed systemd units.
+- The scheduled verify timer starts only `nutsnews-restic-verify.service`; it does not add any arbitrary remote shell control.
+- The portal compares `last_check.latest_snapshot_id` and `last_check.latest_snapshot_time` against `latest_snapshot.id`, `latest_snapshot.short_id`, and `latest_snapshot.time`.
+- The public status output exposes counts and status fields, not raw backup path lists or restore targets.
 
 The protected apply workflow rejects enabled backups unless these are true:
 
@@ -71,16 +81,28 @@ The protected apply workflow rejects enabled backups unless these are true:
 
 Pull request validation checks that backup workflows are not arbitrary remote command runners and that committed backup secret material is absent.
 
+The verification state can be:
+
+| State | Meaning |
+| --- | --- |
+| `success` | The latest snapshot has a recent successful verification. |
+| `failed` | The latest verification command failed. |
+| `stale` | The latest snapshot was verified, but the check is older than the stale threshold. |
+| `latest_unverified` | The last successful check covered an older snapshot or no successful check exists yet. |
+| `disabled` | Backups are disabled. |
+| `misconfigured` | Backups are enabled but required restic/rclone settings are missing. |
+
 ## Architecture
 
 ```mermaid
 flowchart LR
   env["production-vps Environment secrets"] --> apply["Protected Ansible Apply"]
   apply --> rootConfig["/etc/nutsnews\nroot-only backup config"]
-  apply --> units["systemd units\nbackup timer and verify service"]
+  apply --> units["systemd units\nbackup timer, verify service,\nverify timer"]
   timer["nutsnews-restic-backup.timer"] --> service["nutsnews-restic-backup.service"]
+  verifyTimer["nutsnews-restic-verify.timer\nweekly + randomized delay"] --> verify["nutsnews-restic-verify.service"]
   manualRun["Run VPS Backup workflow"] --> service
-  manualVerify["Verify VPS Backup workflow"] --> verify["nutsnews-restic-verify.service"]
+  manualVerify["Verify VPS Backup workflow"] --> verify
   rootConfig --> service
   rootConfig --> verify
   service --> restic["restic\nlocal encryption"]
@@ -88,10 +110,30 @@ flowchart LR
   restic --> rclone["rclone transport"]
   rclone --> onedrive["OneDrive\nnutsnews-backups/vps\nciphertext only"]
   service --> status["backup-status.json"]
-  verify --> status
+  verify --> compare["compare checked snapshot\nagainst latest snapshot"]
+  compare --> status
   status --> portal["Ops Portal"]
-  portal --> alerts["email alerts\nfailure, stale, prune, verify"]
+  status --> reporter["email reporter"]
+  portal --> alerts["visible alerts\nfailed, stale, older snapshot"]
+  reporter --> email["email alerts and reports"]
 ```
+
+## Scheduled Latest Verification
+
+The Ansible role manages `nutsnews-restic-verify.timer` alongside the backup timer. The default cadence is weekly, with randomized delay, and it stays enabled only when encrypted VPS backups are enabled. The timer starts the same fixed `nutsnews-restic-verify.service` used by the manual workflow.
+
+The runner keeps the existing restic lock. If a backup is already running, verification records a busy state instead of fighting the backup for repository access.
+
+Expected runtime depends on repository size, OneDrive response time, VPS network throughput, and the `NUTSNEWS_BACKUP_CHECK_READ_DATA_SUBSET` value. The default `5%` read-data subset is deliberately conservative for a small VPS and a free/consumer OneDrive-backed repository. Increasing the subset or running checks too frequently can consume OneDrive API/network quota and make manual GitHub verification hit its 60-minute workflow timeout.
+
+The portal and reports warn when:
+
+- verification failed
+- verification is stale
+- the last successful verification checked an older snapshot than the newest backup
+- the verification timer is inactive while backups are enabled
+
+Keep full restore drills separate. Issue #24 tracks the periodic restore drill that stages files on a trusted host and validates recoverability beyond repository checks.
 
 ## Required GitHub Environment Secrets
 
@@ -113,6 +155,7 @@ Optional tuning:
 | --- | --- |
 | `NUTSNEWS_BACKUP_REPOSITORY` | `rclone:nutsnews-onedrive:nutsnews-backups/vps` |
 | `NUTSNEWS_BACKUP_STALE_AFTER_HOURS` | `30` |
+| `NUTSNEWS_BACKUP_VERIFY_STALE_AFTER_HOURS` | `192` |
 | `NUTSNEWS_BACKUP_CHECK_READ_DATA_SUBSET` | `5%` |
 | `NUTSNEWS_BACKUP_KEEP_DAILY` | `14` |
 | `NUTSNEWS_BACKUP_KEEP_WEEKLY` | `8` |
@@ -169,7 +212,8 @@ confirm_apply=vps.nutsnews.com
 
 6. Run the manual `Run VPS Backup` workflow.
 7. Run the manual `Verify VPS Backup` workflow.
-8. Check the Ops Portal through the SSH tunnel.
+8. Confirm `nutsnews-restic-verify.timer` is active.
+9. Check the Ops Portal through the SSH tunnel and confirm latest verification is `success`.
 
 ## Manual Workflows
 
@@ -182,6 +226,8 @@ The backup workflows are intentionally narrow:
 
 They do not accept dispatch inputs. They do not stream arbitrary shell over SSH. They do not take a command parameter. Production does not need a karaoke machine for root commands.
 
+The scheduled verify timer exists so manual verification is not the only path. The manual workflow remains useful after setup, incidents, or restores.
+
 ## Portal And Alerts
 
 The Ops Portal backup section shows:
@@ -192,8 +238,10 @@ The Ops Portal backup section shows:
 - fresh/stale status
 - last backup result
 - last prune result
-- last verification result
+- latest snapshot verification result
+- whether the last verification checked the latest snapshot
 - next timer run
+- next verification timer run
 - protected path count
 
 Email alerts fire through the existing alert pipeline for:
@@ -202,7 +250,10 @@ Email alerts fire through the existing alert pipeline for:
 - stale snapshots
 - prune failures
 - verification failures
+- stale verification
+- latest snapshot not yet verified
 - inactive backup timer
+- inactive verification timer
 - enabled but missing backup configuration
 
 ## Validation

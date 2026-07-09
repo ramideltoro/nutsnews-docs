@@ -60,13 +60,14 @@ Optional encrypted VPS backup Environment secrets:
 | `NUTSNEWS_BACKUP_RCLONE_CONFIG` | Complete rclone config for the dedicated `nutsnews-onedrive` OneDrive remote |
 | `NUTSNEWS_BACKUP_REPOSITORY` | Optional override, default `rclone:nutsnews-onedrive:nutsnews-backups/vps` |
 | `NUTSNEWS_BACKUP_STALE_AFTER_HOURS` | Optional stale threshold, default `30` |
+| `NUTSNEWS_BACKUP_VERIFY_STALE_AFTER_HOURS` | Optional latest-verification stale threshold, default `192` |
 | `NUTSNEWS_BACKUP_CHECK_READ_DATA_SUBSET` | Optional verify sample, default `5%` |
 | `NUTSNEWS_BACKUP_KEEP_DAILY` | Optional daily retention, default `14` |
 | `NUTSNEWS_BACKUP_KEEP_WEEKLY` | Optional weekly retention, default `8` |
 | `NUTSNEWS_BACKUP_KEEP_MONTHLY` | Optional monthly retention, default `12` |
 | `NUTSNEWS_BACKUP_KEEP_YEARLY` | Optional yearly retention, default `2` |
 
-If `NUTSNEWS_BACKUP_ENABLED` is true, the workflow rejects missing restic/rclone secrets and rejects repositories that do not use the dedicated `nutsnews-onedrive` rclone remote. This is the right kind of annoying.
+If `NUTSNEWS_BACKUP_ENABLED` is true, the workflow rejects missing restic/rclone secrets and rejects repositories that do not use the dedicated `nutsnews-onedrive` rclone remote. The Ansible role then enables both `nutsnews-restic-backup.timer` and the weekly `nutsnews-restic-verify.timer`. This is the right kind of annoying.
 
 Optional Grafana Alloy Environment secrets:
 
@@ -109,7 +110,7 @@ When `enable_grafana_alloy` is true, the workflow passes Grafana Cloud telemetry
 
 There is also a separate manual workflow named `Send VPS Health Report`. It uses the same `production-vps` Environment and SSH material, but it is not an apply workflow. It connects as `nutsnews_ops`, starts only `nutsnews-ops-health-report.service`, prints fixed service/reporting status, and refuses to accept arbitrary remote commands. It is the doorbell for a report, not the keys to the building.
 
-The manual backup workflows follow the same pattern: `Run VPS Backup` starts only `nutsnews-restic-backup.service`, and `Verify VPS Backup` starts only `nutsnews-restic-verify.service`. They have no command input and no arbitrary remote shell mode.
+The manual backup workflows follow the same pattern: `Run VPS Backup` starts only `nutsnews-restic-backup.service`, and `Verify VPS Backup` starts only `nutsnews-restic-verify.service`. The scheduled verify path is a GitOps-managed systemd timer for that same fixed service. They have no command input and no arbitrary remote shell mode.
 
 ## Protected Apply Flow
 

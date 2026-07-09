@@ -151,6 +151,8 @@ Use judgment. If the infra repo now manages a config file differently, prefer th
 
 Run this after initial setup and periodically after meaningful changes:
 
+The scheduled `nutsnews-restic-verify.timer` is useful routine evidence, but it is not this restore test. It checks repository readability and the latest snapshot from the VPS. A restore test still needs a trusted restore host, a staging directory, and human inspection of restored files. The recurring full restore drill is tracked separately in infra issue #24.
+
 1. Run the `Run VPS Backup` workflow.
 2. Run the `Verify VPS Backup` workflow.
 3. On a trusted restore host, run `restic snapshots`.
