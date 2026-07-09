@@ -19,8 +19,8 @@ NutsNews uses multiple observability layers:
 | Better Stack Uptime | External availability monitoring |
 | UptimeRobot | Additional external availability, keyword, API, and public page monitoring |
 | Lighthouse CI | GitHub Actions quality checks for public web performance, accessibility, SEO, best practices, and Core Web Vitals-style regressions |
-| Better Stack Logs | Centralized structured logs |
-| Grafana Cloud | Prometheus metrics, Explore queries, backup dashboard panels, and backup alerts |
+| Better Stack Logs | Existing app/Worker structured log searches until those repos migrate |
+| Grafana Cloud | VPS infrastructure metrics, centralized Loki logs, Explore queries, dashboards, quota alerts, and backup alerts |
 | Sentry | Application error monitoring |
 | Cloudflare | CDN and Worker visibility |
 | Cloudflare Cache Observability | Expected-vs-actual cache header dashboard, scheduled checks, and GitHub Actions alerting |
@@ -31,9 +31,26 @@ NutsNews uses multiple observability layers:
 
 ## Centralized Logging
 
-NutsNews sends structured logs to Better Stack.
+NutsNews infrastructure logs are centralized in Grafana Cloud Logs through Grafana Alloy on the VPS. The infra repo owns the host-side pipeline for systemd journal logs, auth/security logs, Caddy JSON access/error logs, Docker/Compose logs for NutsNews runtime containers, backup/reporting logs, and Ops Portal logs.
 
-Service names:
+Use low-cardinality Loki labels such as:
+
+```text
+env
+host
+service
+unit
+container
+compose_project
+source
+level
+```
+
+Keep high-cardinality data such as request IDs, raw IP addresses, user IDs, full dynamic paths, and arbitrary error strings out of labels. Query those as parsed fields or structured metadata.
+
+The older app/Worker Better Stack searches remain useful until those application repositories explicitly migrate their runtime logging. Do not treat an infra-only PR as an app logging migration.
+
+Existing app/Worker service names:
 
 ```text
 nutsnews-web
@@ -181,7 +198,7 @@ Manual WAVE browser-extension checks should still be run before App Store review
 Better Stack Logs answer:
 
 ```text
-What happened inside the app, Worker, or controller?
+What happened inside the app, Worker, or controller while those repos still use Better Stack?
 ```
 
 Useful searches:
@@ -227,8 +244,8 @@ Confirmed value meaning:
 The VPS observability layer is managed from `ramideltoro/nutsnews-infra`:
 
 - Ansible installs and configures Grafana Alloy on the VPS when explicitly enabled.
-- Alloy currently ships host/systemd/log/textfile telemetry; cAdvisor/Docker socket collection is disabled by default until its privilege boundary is reviewed.
-- OpenTofu manages the Grafana Cloud folder, dashboards, quota guardrail alerts, and optional Synthetic Monitoring checks.
+- Alloy ships host/systemd/log/textfile telemetry and Docker/Compose logs for NutsNews runtime containers; cAdvisor/container metrics remain disabled by default until that separate privilege boundary is reviewed.
+- OpenTofu manages the Grafana Cloud folder, dashboards, quota guardrail alerts, log-pipeline alerts, and optional Synthetic Monitoring checks.
 - Grafana Cloud telemetry write credentials and Grafana automation credentials are separate.
 - Real Grafana URLs, usernames, tokens, tenant IDs, Synthetic Monitoring targets, and backend config stay out of Git.
 

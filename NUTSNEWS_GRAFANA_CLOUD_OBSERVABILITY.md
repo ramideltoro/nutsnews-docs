@@ -11,7 +11,7 @@ There are two halves:
 1. `ramideltoro/nutsnews-infra` installs and configures Grafana Alloy on the VPS through the protected Ansible workflow.
 2. The same infra repo manages Grafana Cloud folders, dashboards, quota alerts, and optional Synthetic Monitoring checks through OpenTofu.
 
-The VPS side is read-only. Alloy collects host metrics, systemd state, selected service logs, auth/security logs with redaction, backup/reporting logs, Ops Portal logs, and a small set of NutsNews status metrics derived from the existing read-only Ops Portal JSON. Docker/cAdvisor collection is intentionally disabled by default because the previous container metrics path tried to reach `containerd.sock` and produced permission errors.
+The VPS side is read-only. Alloy collects host metrics, systemd state, selected service logs, auth/security logs with redaction, Caddy JSON access/error logs, Docker/Compose logs for NutsNews runtime containers, backup/reporting logs, Ops Portal logs, and a small set of NutsNews status metrics derived from the existing read-only Ops Portal JSON. Docker/cAdvisor container metrics stay disabled by default because the previous container metrics path tried to reach `containerd.sock` and produced permission errors.
 
 This does not add a shell button, restart button, package installer, portal mutation path, or broad workflow command runner. Production changes still go through commits, PRs, checks, merge, and protected apply.
 
@@ -50,6 +50,7 @@ The infra implementation keeps observability useful without making Grafana Cloud
 - Alloy scrape interval defaults to 60 seconds.
 - Host metrics come from Alloy's Unix exporter.
 - Container metrics do not come from cAdvisor by default.
+- Docker logs are collected for the `nutsnews-service-foundation` and `nutsnews-app` Compose projects through the Docker API socket.
 - Docker state still appears through the Ops Portal collector and low-cardinality textfile metrics.
 - High-cardinality labels such as container IDs, image IDs, request IDs, user IDs, raw IPs, and full dynamic paths are dropped or avoided.
 - Logs are redacted, size-limited, and rate-limited before leaving the VPS.
@@ -80,13 +81,15 @@ Grafana Cloud usage and limit metrics are queried through the `grafanacloud-usag
 flowchart TB
   vps["NutsNews VPS"] --> host["Linux host metrics\nCPU, load, memory, swap,\nfilesystem, disk IO, network,\nfile descriptors, conntrack,\nprocesses, boot time, time sync"]
   vps --> systemd["systemd services and timers"]
-  vps --> docker["Docker and Compose state\nthrough Ops Portal/textfile metrics"]
-  vps --> files["journald, auth, Caddy,\napp/service, backup,\nreporting, Ops Portal logs"]
+  vps --> docker["Docker and Compose logs\nthrough Alloy Docker API discovery"]
+  vps --> dockerState["Docker and Compose state\nthrough Ops Portal/textfile metrics"]
+  vps --> files["journald, auth, Caddy JSON,\napp/service, backup,\nreporting, Ops Portal logs"]
   vps --> portal["Ops Portal status JSON"]
   portal --> textfile["low-cardinality\nNutsNews textfile metrics"]
   host --> alloy["Grafana Alloy"]
   systemd --> alloy
   docker --> alloy
+  dockerState --> textfile
   files --> alloy
   textfile --> alloy
   alloy --> gc["Grafana Cloud"]
@@ -94,13 +97,16 @@ flowchart TB
 
 ## Container Metrics Strategy
 
-Alloy leaves `vps_service_foundation_grafana_alloy_collect_docker` set to `false` by default. That disables the cAdvisor exporter and Docker log discovery blocks that require Docker socket access. The current production model is:
+Alloy leaves `vps_service_foundation_grafana_alloy_collect_docker` set to `false` by default. That disables the cAdvisor exporter and avoids the containerd metrics path that previously produced permission errors. The current production model is:
 
 - Alloy host, systemd, journald/file, and textfile telemetry.
+- Alloy Docker log collection for NutsNews Compose projects only.
 - Docker container state, health, restart counts, and storage pressure from the root-run Ops Portal collector.
 - Low-cardinality Docker state exported through `/var/lib/nutsnews/alloy/textfile/nutsnews.prom`.
 
-Do not make `/run/containerd/containerd.sock` world-readable, chmod host sockets, or run Alloy as root to silence cAdvisor. If container-level CPU/memory metrics become necessary later, add them through an infra PR that documents the exact socket, mounts, supplementary groups, and rollback path. The accepted privilege boundary today is no cAdvisor/containerd access from Alloy.
+Docker log shipping is controlled separately by `vps_service_foundation_grafana_alloy_collect_docker_logs`, which is enabled by default. It grants the non-root `alloy` user membership in the `docker` group so Alloy can read `/var/run/docker.sock` and discover only containers labeled with the `nutsnews-service-foundation` or `nutsnews-app` Compose project. That is the accepted log-collection privilege boundary today.
+
+Do not make `/run/containerd/containerd.sock` world-readable, chmod host sockets, or run Alloy as root to silence cAdvisor. If container-level CPU/memory metrics become necessary later, add them through an infra PR that documents the exact socket, mounts, supplementary groups, and rollback path. The accepted metrics boundary today is no cAdvisor/containerd access from Alloy.
 
 The custom NutsNews textfile metrics cover state that already exists locally:
 
@@ -121,11 +127,11 @@ Log collection is intentionally selective:
 | --- | --- |
 | journald priorities 0-4 | Collected with rate limiting |
 | auth/security logs | Collected with secret and IP redaction |
-| Caddy logs | Collected from `/opt/nutsnews/logs` |
+| Caddy logs | JSON access/error logs collected from Docker stdout |
 | app/service logs | Collected from managed NutsNews log directories |
 | backup/reporting logs | Collected for operations visibility |
 | Ops Portal logs | Collected for collector/reporting diagnosis |
-| Docker logs | Disabled by default with cAdvisor/Docker socket collection |
+| Docker logs | Collected for the NutsNews Compose projects through the Docker API socket |
 
 Intentionally excluded:
 
@@ -143,6 +149,7 @@ This is a practical observability feed, not a copy of every byte the server has 
 OpenTofu manages a `NutsNews Observability` folder and these dashboards:
 
 - NutsNews VPS Overview
+- NutsNews Logs Overview
 - NutsNews CPU Load Processes
 - NutsNews Memory Swap
 - NutsNews Disk Filesystem IO
@@ -156,7 +163,7 @@ OpenTofu manages a `NutsNews Observability` folder and these dashboards:
 - NutsNews Synthetic Uptime API Checks
 - NutsNews Grafana Cloud Usage Quota
 
-OpenTofu also manages quota alert rules at roughly 70%, 85%, and 95% for configured Grafana Cloud usage guardrails. Contact points are not created in code because they often contain secrets. Instead, alert labels can route into existing Grafana notification policies.
+OpenTofu also manages quota alert rules at roughly 70%, 85%, and 95% for configured Grafana Cloud usage guardrails, including log ingest and active-stream pressure. A separate log-pipeline rule group alerts on Alloy Loki dropped entries, Alloy Loki write retries, and high error log volume. Contact points are not created in code because they often contain secrets. Instead, alert labels can route into existing Grafana notification policies.
 
 ## Synthetic Monitoring
 
@@ -227,6 +234,16 @@ sudo find /var/lib/nutsnews/alloy/textfile -maxdepth 1 -type f -name '*.prom' -p
 ```
 
 The `journalctl` count must be `0` after the 30-minute post-apply window has aged out pre-fix lines.
+
+Use Loki Explore after apply:
+
+```logql
+{service_namespace="nutsnews", source="journal"}
+{service_namespace="nutsnews", source="auth"}
+{service_namespace="nutsnews", source="docker", compose_project=~"nutsnews-service-foundation|nutsnews-app"}
+{service_namespace="nutsnews", source="docker", container="nutsnews-caddy"} | json
+{service_namespace="nutsnews"} |~ "(?i)(error|critical|panic|failed|denied)"
+```
 
 ## Required Environment Secrets
 
