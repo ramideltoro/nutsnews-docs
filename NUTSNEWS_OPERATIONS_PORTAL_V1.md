@@ -8,6 +8,8 @@ The VPS has a polished amber dashboard for boring-but-important server facts: ov
 
 This update makes the portal easier to scan when the server starts smelling weird. It adds gauges for health score, CPU, RAM, disk, swap, and inodes; temperature-style hot spots for memory pressure, disk pressure, service health, and alert level; compact stats where the data supports them; and an email/reporting block that makes enabled/configured/next run/last run/last success/last error hard to miss.
 
+Swap is reported as a real host state, not a fake number. The status feed distinguishes enabled, disabled, unavailable, unused, minor, non-trivial, warning, and critical swap states. It also records recent kernel OOM evidence from `journalctl -k` so memory pressure, fallback swap use, and actual OOM kills can be read together.
+
 The Free Tier Usage section now groups quota rows by service for the VPS host, Docker storage, backup storage, Vercel, Sentry, Cloudflare, Better Stack, Supabase, Grafana Cloud, and GitHub Actions. Each service group shows current usage, free limit, percent used, remaining amount, period/window, reset date if known, source state, risk state, and per-metric measurement state. Metrics without safe live usage stay visible as `missing credential`, `unavailable`, `unsupported`, or `unknown` instead of pretending to be measured. The section is still read-only; it never upgrades plans, writes provider settings, or calls mutating provider APIs.
 
 There is also a manual `Send VPS Health Report` workflow. It uses the same protected `production-vps` Environment and SSH secret pattern, connects as `nutsnews_ops`, and starts only the existing health report service. No random remote command box. No "type your shell script here." Production does not need karaoke night.
@@ -125,6 +127,7 @@ Resource visibility stays cheap-VPS friendly:
 
 - process rankings come from `/proc`
 - CPU percent is a best-effort lifetime average, not a live flame graph
+- swap total, used, usage state, sustained/non-trivial warnings, and recent OOM evidence come from local kernel and journal data
 - disk hot spots use `du` with a cache so the collector does not rescan heavy folders every minute
 - host network counters come from standard Linux interface stats
 - per-process network byte totals are explicitly marked unavailable unless we approve extra telemetry later
@@ -292,7 +295,7 @@ Current service coverage:
 
 | Service | Quotas covered | Current usage source |
 | --- | --- | --- |
-| VPS Host | CPU sample, RAM, root disk, swap | Local collector |
+| VPS Host | CPU sample, RAM, root disk, swap total/used/state, recent kernel OOM evidence | Local collector |
 | Docker Storage | Docker data directory footprint | Local collector |
 | Backup Storage | Local backup cache and latest snapshot age | Local collector and backup status |
 | Vercel | Hobby usage summary plus relevant deployment/build limits | Billing Charges FOCUS JSONL where configured; unsupported rows stay visible |
@@ -431,7 +434,7 @@ The CPU table is useful, not omniscient. It shows a lifetime average normalized 
 | Overall Health | Health score gauge, hostname, uptime, public IPs, OS, kernel, deployed infra commit, last apply marker |
 | Alerts and Email Reporting | Email enabled/configured state, SMTP configured flag, next report run, last run, last success, last error, pending alerts, timer state |
 | Free Tier Usage | Service-grouped VPS host, Docker storage, backup storage, Vercel, Sentry, Cloudflare, Better Stack, Supabase, Grafana Cloud, and GitHub Actions quota rows with usage, free limits, remaining amount, percent used, period/window, reset date if known, source status, measurement status, and risk status |
-| Resources | Gauges for CPU, RAM, root disk, swap, and root inode usage; load stats; network counters; NutsNews disk usage |
+| Resources | Gauges for CPU, RAM, root disk, swap, and root inode usage; swap state; recent kernel OOM evidence; load stats; network counters; NutsNews disk usage |
 | Hot Spots | Temperature-style memory pressure, disk pressure, service health, and alert level |
 | Processes | Top memory and CPU apps with client-side filtering, PID, user, memory, CPU estimate, thread count, CPU time, elapsed time, idle time |
 | Disk | Cached top folder sizes across approved local roots, scan cache status, largest scanned entry |
@@ -509,6 +512,8 @@ Future public access should add:
 | Free-tier provider says `unavailable` | Provider response was malformed, unreachable, unauthorized, or missing expected metric paths | Read the sanitized `source_detail` for HTTP status, provider message, response shape, and missing metric names; do not print tokens in logs or screenshots |
 | Free-tier provider says `cached` and stale | Live usage failed and the local sanitized cache is older than the configured TTL | Recheck provider availability and rerun the collector; the dashboard is intentionally preserving the last safe numbers |
 | Free-tier usage exceeds 100% | The configured free-tier allowance is exhausted or the quota value is stale | Verify the provider docs, reduce usage, or make an explicit budget/plan decision outside the portal |
+| Swap state is `non_trivial`, `warning`, or `critical` | A deploy, backup, package task, app process, or leak is leaning on the zram fallback | Check top memory processes, Docker health, recent apply/deploy activity, and kernel OOM evidence before changing zram size |
+| Recent kernel OOM evidence appears | The kernel killed or attempted to kill a process under memory pressure | Treat as an incident signal: identify the killed process, review recent workload changes, and keep any durable fix in `nutsnews-infra` |
 | Docker section is empty | Docker is not installed, Docker service is down, or the collector cannot reach the local Docker socket | Check Docker service state; fix collector permissions through PR if needed |
 | Process tables are empty | `/proc` changed, permissions are unexpectedly restricted, or the collector failed mid-run | Check `journalctl -u nutsnews-ops-portal-collector.service`; fix the collector through PR |
 | Disk hot spots look stale | The cache is still valid or the scan failed and reused old data | Check `disk_usage.scanned_at`, `disk_usage.errors`, and the collector journal |

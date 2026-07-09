@@ -1,10 +1,12 @@
 # NutsNews VPS Service Foundation
 
-This explains the next layer in the NutsNews VPS platform: Docker Engine, Docker Compose, the `/opt/nutsnews` runtime layout, Caddy, public infrastructure health, the protected Ops Portal route, and Caddy rate limiting.
+This explains the next layer in the NutsNews VPS platform: Docker Engine, Docker Compose, the `/opt/nutsnews` runtime layout, a small zram fallback, Caddy, public infrastructure health, the protected Ops Portal route, and Caddy rate limiting.
 
 ## Easy Summary
 
-The VPS now gets a small container foundation managed by Ansible. The playbook installs Docker Engine and Docker Compose from Ubuntu packages, creates the standard `/opt/nutsnews` directory layout, and starts Caddy through Compose.
+The VPS now gets a small container foundation managed by Ansible. The playbook installs Docker Engine and Docker Compose from Ubuntu packages, creates the standard `/opt/nutsnews` directory layout, configures a small compressed-memory zram fallback, and starts Caddy through Compose.
+
+The zram fallback is intentionally small: `/dev/zram0`, 1536 MiB of virtual compressed swap, `vm.swappiness=10`, and no changes to Docker memory limits. It is there to buy time during transient deploy, package upgrade, backup verification, or app spikes. It is not a capacity plan.
 
 Caddy now has three jobs. It exposes `https://vps.nutsnews.com/health` publicly for Better Stack, serves the Google OAuth-protected Ops Portal at `https://ops.nutsnews.com`, and keeps `127.0.0.1:8080` available for local health checks and SSH tunnel fallback. It also enforces free Caddy-based rate limiting before traffic reaches health, portal, API, auth, admin, ops, or future app handlers.
 
@@ -21,6 +23,7 @@ That role runs after the existing VPS baseline role. It manages:
 - Docker Engine from Ubuntu packages
 - Docker Compose v2 from Ubuntu packages
 - Docker daemon log limits for cheap-VPS disk sanity
+- `systemd-zram-generator` with a small `/dev/zram0` fallback swap device
 - a non-login Caddy runtime user
 - `/opt/nutsnews/apps`
 - `/opt/nutsnews/config`
@@ -53,16 +56,47 @@ This layer creates the runtime substrate and one narrow production route. The de
 - Caddy keeps the loopback listener available on host `127.0.0.1:8080`.
 - Caddy applies rate limits keyed by client remote host, with IPv6 clients grouped by `/64`.
 - UFW allows the Caddy Docker network to reach the host health service on TCP `18080`.
+- `/dev/zram0` provides a 1536 MiB compressed-memory swap fallback with `vm.swappiness=10`.
 - Caddy admin API is disabled.
 - Caddy automatic HTTPS is enabled for the public hostname.
 - The container runs as a dedicated numeric non-root user.
 - The container uses `read_only`, dropped capabilities plus only `NET_BIND_SERVICE`, memory limits, PID limits, and small tmpfs mounts.
 - Docker JSON log files are capped to avoid slow disk doom.
+- Existing Docker memory limits stay in place. zram is a resilience fallback, not permission for containers to grow.
 - No secrets, environment files, app credentials, or production tokens are introduced.
 - Compose validation runs in CI before the PR can merge.
 - Ansible syntax and lint checks cover the role wiring before apply.
 
 The point is to establish a stable convention now so future services have somewhere predictable to live. The platform should grow in layers, not in one heroic blob of YAML that future operators study like a cursed family recipe.
+
+## Zram Fallback Model
+
+The production VPS uses `systemd-zram-generator` from Ubuntu packages. Ansible renders:
+
+```text
+/etc/systemd/zram-generator.conf
+/etc/sysctl.d/90-nutsnews-zram.conf
+```
+
+Current production sizing:
+
+| Setting | Value | Why |
+| --- | --- | --- |
+| Device | `/dev/zram0` | Temporary compressed-memory swap, recreated by systemd |
+| Size | `1536 MiB` | Small 1-2 GiB fallback on a 10 GiB RAM VPS |
+| Compression | `lz4` | Fast compression for short pressure spikes |
+| Swap priority | `100` | Prefer the managed zram device if swap is needed |
+| Swappiness | `10` | Keep normal operation in RAM; use swap only under pressure |
+
+Expected normal usage is `0 B` or very low. Any sustained or non-trivial usage means something is leaning on the fallback and should be investigated. Do not respond by removing container memory limits or simply increasing zram size. First check what changed: recent deploys, package upgrades, backup verification, app rollout, process memory rankings, Docker restart loops, and kernel OOM logs.
+
+If swap climbs:
+
+1. Check the Ops Portal resource and alert sections.
+2. Inspect top memory processes and Docker container health.
+3. Check kernel logs for OOM evidence.
+4. Review recent GitOps apply, deploy, backup, and package activity.
+5. Fix the workload or limit before changing zram sizing.
 
 ## Service Foundation Flow
 
@@ -77,7 +111,8 @@ flowchart TD
   fix --> ci
   review -- "Yes" --> apply["Protected Ansible workflow: apply mode"]
   apply --> docker["Install Docker Engine and Compose"]
-  docker --> layout["Create /opt/nutsnews layout"]
+  docker --> zram["Configure small zram fallback"]
+  zram --> layout["Create /opt/nutsnews layout"]
   layout --> caddy["Start Caddy edge service"]
   caddy --> health["Verify local /healthz returns ok"]
   caddy --> publicHealth["Expose public /health over HTTPS"]
@@ -213,6 +248,11 @@ sudo docker compose -f /opt/nutsnews/apps/caddy/compose.yml ps
 curl -fsS http://127.0.0.1:8080/healthz
 curl -i http://127.0.0.1:8080/health
 curl -fsS http://127.0.0.1:8080/
+free -h
+swapon --show
+cat /proc/sys/vm/swappiness
+sudo journalctl -k --since "-7 days" --no-pager | grep -Ei "out of memory|oom-killer|killed process" || true
+sudo /usr/local/bin/nutsnews-ops-portal-collector
 systemctl status nutsnews-infra-health.service
 sudo docker logs nutsnews-caddy --since 10m | grep -E 'status=429|rate'
 ```
