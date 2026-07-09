@@ -71,6 +71,7 @@ The backup layer is GitOps-managed and provider-agnostic:
 - The manual workflows have no dispatch inputs and start only fixed systemd units.
 - The scheduled verify timer starts only `nutsnews-restic-verify.service`; it does not add any arbitrary remote shell control.
 - The portal compares `last_check.latest_snapshot_id` and `last_check.latest_snapshot_time` against `latest_snapshot.id`, `latest_snapshot.short_id`, and `latest_snapshot.time`.
+- The backup runner may write `latest_snapshot_age_seconds` to `backup-status.json`, but that value is diagnostic for the moment the runner wrote the file. The Ops Portal collector recomputes live snapshot age from `latest_snapshot.time` on every collection, including restic timestamps with nanosecond precision and a trailing `Z`.
 - The public status output exposes counts and status fields, not raw backup path lists or restore targets.
 
 The protected apply workflow rejects enabled backups unless these are true:
@@ -255,6 +256,8 @@ Email alerts fire through the existing alert pipeline for:
 - inactive backup timer
 - inactive verification timer
 - enabled but missing backup configuration
+
+Freshness alerts use the collector's recomputed live age, not the age stored by the backup runner. If `latest_snapshot.time` is older than `NUTSNEWS_BACKUP_STALE_AFTER_HOURS`, the portal status becomes `stale` and the email alert pipeline sees the same stale status on the next collector run.
 
 ## Validation
 
