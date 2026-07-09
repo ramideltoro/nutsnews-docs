@@ -66,7 +66,7 @@ Grafana's current public free-tier assumptions used by the docs and module are:
 | Area | Current assumption |
 | --- | ---: |
 | Metrics | 10,000 active series per month |
-| Logs | 50 GB ingested per month |
+| Logs | 50 GB ingested per month with 14-day retention |
 | Synthetic API tests | 100,000 executions per month |
 | Synthetic browser tests | 10,000 executions per month |
 | k6 | 500 virtual user hours per month |
