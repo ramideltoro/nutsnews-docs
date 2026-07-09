@@ -227,6 +227,7 @@ Confirmed value meaning:
 The VPS observability layer is managed from `ramideltoro/nutsnews-infra`:
 
 - Ansible installs and configures Grafana Alloy on the VPS when explicitly enabled.
+- Alloy currently ships host/systemd/log/textfile telemetry; cAdvisor/Docker socket collection is disabled by default until its privilege boundary is reviewed.
 - OpenTofu manages the Grafana Cloud folder, dashboards, quota guardrail alerts, and optional Synthetic Monitoring checks.
 - Grafana Cloud telemetry write credentials and Grafana automation credentials are separate.
 - Real Grafana URLs, usernames, tokens, tenant IDs, Synthetic Monitoring targets, and backend config stay out of Git.

@@ -11,7 +11,7 @@ There are two halves:
 1. `ramideltoro/nutsnews-infra` installs and configures Grafana Alloy on the VPS through the protected Ansible workflow.
 2. The same infra repo manages Grafana Cloud folders, dashboards, quota alerts, and optional Synthetic Monitoring checks through OpenTofu.
 
-The VPS side is read-only. Alloy collects host metrics, Docker/container metrics when Docker exists, selected service logs, auth/security logs with redaction, backup/reporting logs, Ops Portal logs, and a small set of NutsNews status metrics derived from the existing read-only Ops Portal JSON.
+The VPS side is read-only. Alloy collects host metrics, systemd state, selected service logs, auth/security logs with redaction, backup/reporting logs, Ops Portal logs, and a small set of NutsNews status metrics derived from the existing read-only Ops Portal JSON. Docker/cAdvisor collection is intentionally disabled by default because the previous container metrics path tried to reach `containerd.sock` and produced permission errors.
 
 This does not add a shell button, restart button, package installer, portal mutation path, or broad workflow command runner. Production changes still go through commits, PRs, checks, merge, and protected apply.
 
@@ -49,8 +49,8 @@ The infra implementation keeps observability useful without making Grafana Cloud
 
 - Alloy scrape interval defaults to 60 seconds.
 - Host metrics come from Alloy's Unix exporter.
-- Container metrics come from cAdvisor only when Docker is present.
-- Docker labels are allowlisted to Compose project/service labels.
+- Container metrics do not come from cAdvisor by default.
+- Docker state still appears through the Ops Portal collector and low-cardinality textfile metrics.
 - High-cardinality labels such as container IDs, image IDs, request IDs, user IDs, raw IPs, and full dynamic paths are dropped or avoided.
 - Logs are redacted, size-limited, and rate-limited before leaving the VPS.
 - Debug and trace logs are intentionally dropped.
@@ -80,7 +80,7 @@ Grafana Cloud usage and limit metrics are queried through the `grafanacloud-usag
 flowchart TB
   vps["NutsNews VPS"] --> host["Linux host metrics\nCPU, load, memory, swap,\nfilesystem, disk IO, network,\nfile descriptors, conntrack,\nprocesses, boot time, time sync"]
   vps --> systemd["systemd services and timers"]
-  vps --> docker["Docker and Compose\ncontainer metrics and logs"]
+  vps --> docker["Docker and Compose state\nthrough Ops Portal/textfile metrics"]
   vps --> files["journald, auth, Caddy,\napp/service, backup,\nreporting, Ops Portal logs"]
   vps --> portal["Ops Portal status JSON"]
   portal --> textfile["low-cardinality\nNutsNews textfile metrics"]
@@ -91,6 +91,16 @@ flowchart TB
   textfile --> alloy
   alloy --> gc["Grafana Cloud"]
 ```
+
+## Container Metrics Strategy
+
+Alloy leaves `vps_service_foundation_grafana_alloy_collect_docker` set to `false` by default. That disables the cAdvisor exporter and Docker log discovery blocks that require Docker socket access. The current production model is:
+
+- Alloy host, systemd, journald/file, and textfile telemetry.
+- Docker container state, health, restart counts, and storage pressure from the root-run Ops Portal collector.
+- Low-cardinality Docker state exported through `/var/lib/nutsnews/alloy/textfile/nutsnews.prom`.
+
+Do not make `/run/containerd/containerd.sock` world-readable, chmod host sockets, or run Alloy as root to silence cAdvisor. If container-level CPU/memory metrics become necessary later, add them through an infra PR that documents the exact socket, mounts, supplementary groups, and rollback path. The accepted privilege boundary today is no cAdvisor/containerd access from Alloy.
 
 The custom NutsNews textfile metrics cover state that already exists locally:
 
@@ -115,7 +125,7 @@ Log collection is intentionally selective:
 | app/service logs | Collected from managed NutsNews log directories |
 | backup/reporting logs | Collected for operations visibility |
 | Ops Portal logs | Collected for collector/reporting diagnosis |
-| Docker logs | Collected when Docker is present, with debug/trace drops |
+| Docker logs | Disabled by default with cAdvisor/Docker socket collection |
 
 Intentionally excluded:
 
@@ -207,6 +217,17 @@ Grafana states that the free tier and trial are limited to 500 VUh per month. Ke
 9. Run apply mode with `confirm_apply=vps.nutsnews.com` and `enable_grafana_alloy=true`.
 10. Verify metrics, logs, dashboards, alerts, and usage/quota panels in Grafana Cloud.
 
+After apply, also verify the host-side Alloy state:
+
+```bash
+systemctl show alloy.service --property=ActiveState,SubState,User,SupplementaryGroups,DropInPaths --no-pager
+curl -fsS http://127.0.0.1:12345/-/ready
+sudo journalctl -u alloy.service --since "-30 min" --no-pager | grep -c "containerd.sock: connect: permission denied"
+sudo find /var/lib/nutsnews/alloy/textfile -maxdepth 1 -type f -name '*.prom' -printf '%s %p\n'
+```
+
+The `journalctl` count must be `0` after the 30-minute post-apply window has aged out pre-fix lines.
+
 ## Required Environment Secrets
 
 All of these live in `ramideltoro/nutsnews-infra` under Settings -> Environments -> `production-vps`.
@@ -262,8 +283,9 @@ Logs:
 {service_namespace="nutsnews"}
 {service_namespace="nutsnews", log_source="auth"}
 {service_namespace="nutsnews", log_source="journal"}
-{service_namespace="nutsnews", log_source="docker"}
 ```
+
+Docker log streams are expected only if `vps_service_foundation_grafana_alloy_collect_docker` is deliberately enabled in a later reviewed change.
 
 Synthetics when configured:
 

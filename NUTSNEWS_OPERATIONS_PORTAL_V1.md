@@ -436,6 +436,7 @@ The CPU table is useful, not omniscient. It shows a lifetime average normalized 
 | Processes | Top memory and CPU apps with client-side filtering, PID, user, memory, CPU estimate, thread count, CPU time, elapsed time, idle time |
 | Disk | Cached top folder sizes across approved local roots, scan cache status, largest scanned entry |
 | Network | Host send/receive counters, interface counters, and an honest note that per-process byte totals need extra telemetry |
+| Telemetry | Grafana Alloy service/readiness state, container metrics strategy, textfile metrics files, and recent `containerd.sock: connect: permission denied` exporter-error counts |
 | Services | `ssh`, `docker`, unattended upgrades, UFW, fail2ban or CrowdSec if present, portal collector/reporting timers |
 | Docker and Compose | Containers, health, restart count, image names, ports, compose project |
 | Logs | Recent Caddy logs, journal warnings, auth/security logs, with basic redaction |
