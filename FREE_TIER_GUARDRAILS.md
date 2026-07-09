@@ -54,7 +54,7 @@ Current service groups are:
 
 Every metric row must be honest about its source. `measured` means the collector had current usage. `missing credential`, `unavailable`, `unsupported`, and `unknown` mean the free limit is known but the current usage is not safely available yet. Do not fill these rows with guesses.
 
-For Vercel, the only accepted usage source is the read-only Billing Charges FOCUS endpoint configured through `NUTSNEWS_VERCEL_USAGE_API_URL` and `NUTSNEWS_VERCEL_API_TOKEN`. Do not use `NUTSNEWS_FREE_TIER_USAGE_JSON` placeholder zeroes for Vercel; if the live endpoint is unavailable, the portal must show unavailable with the safe backend reason.
+For Vercel, the only accepted usage source is the read-only Billing Charges FOCUS endpoint configured through `NUTSNEWS_VERCEL_USAGE_API_URL` and `NUTSNEWS_VERCEL_API_TOKEN`. Do not use `NUTSNEWS_FREE_TIER_USAGE_JSON` placeholder zeroes for Vercel; if the live endpoint is unavailable, the portal must show `unavailable` with the safe backend reason, not generic `unknown` or zero-like display values. A Vercel `Costs not found` response means the protected team ID or slug, account billing visibility, token role, or the endpoint itself is not exposing usage data for the configured account.
 
 After protected apply, the Ops Portal status snapshot is refreshed through `nutsnews-ops-portal-collector.service`, matching the deployed timer path. The collector also falls back to `/etc/nutsnews/free-tier-usage.env` when process env is missing free-tier settings, so Vercel should remain visible with either measured values or a safe unavailable state.
 
