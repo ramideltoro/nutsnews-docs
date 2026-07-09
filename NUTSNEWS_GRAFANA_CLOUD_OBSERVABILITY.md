@@ -163,7 +163,7 @@ OpenTofu manages a `NutsNews Observability` folder and these dashboards:
 - NutsNews Synthetic Uptime API Checks
 - NutsNews Grafana Cloud Usage Quota
 
-OpenTofu also manages quota alert rules at roughly 70%, 85%, and 95% for configured Grafana Cloud usage guardrails, including log ingest and active-stream pressure. A separate log-pipeline rule group alerts on Alloy Loki dropped entries, Alloy Loki write retries, and high error log volume. Contact points are not created in code because they often contain secrets. Instead, alert labels can route into existing Grafana notification policies.
+OpenTofu also manages quota alert rules at roughly 70%, 85%, and 95% for configured Grafana Cloud usage guardrails, including log ingest and active-stream pressure. A separate log-pipeline rule group alerts on Alloy Loki dropped entries, Alloy Loki write retries, and high error log volume. Loki-backed alert queries declare the range query type explicitly so repeated plans stay convergent after apply. Contact points are not created in code because they often contain secrets. Instead, alert labels can route into existing Grafana notification policies.
 
 ## Synthetic Monitoring
 
