@@ -310,6 +310,7 @@ It gives future services a safe landing zone. That is less glamorous than launch
 
 ## Related Docs
 
+- [NutsNews VPS Health Endpoint Network](NUTSNEWS_VPS_HEALTH_ENDPOINT_NETWORK.md)
 - [NutsNews Protected Ansible Apply Workflow](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md)
 - [NutsNews Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md)
 - [NutsNews VPS Ansible Bootstrap](NUTSNEWS_VPS_ANSIBLE_BOOTSTRAP.md)
