@@ -206,6 +206,9 @@ Ansible renders the corresponding safe status names
 `NUTSNEWS_APP_LAST_KNOWN_GOOD_DIGEST`. The secret/required key-name lists are
 also reviewed non-secret state. Only the named application values belong in
 `NUTSNEWS_APP_ENVS_JSON` in the protected `production-vps` Environment.
+That secret is parsed as a JSON object and rendered by Ansible as a root-only
+env file with `no_log`; it must not be a list, string, or shell-style
+`KEY=value` blob.
 
 ## Image Publishing
 

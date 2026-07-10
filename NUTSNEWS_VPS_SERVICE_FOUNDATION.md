@@ -168,6 +168,12 @@ protected `production-vps` Environment. Ansible renders them into the existing
 root-only app environment path with `no_log`. The Ops Portal receives safe
 key-presence and status metadata only, never values.
 
+`NUTSNEWS_APP_ENVS_JSON` must be a JSON object whose keys are the application
+environment variable names and whose values are strings. The protected workflow
+passes that object to Ansible as a mapping and renders it directly into the
+root-only app env file; do not wrap the object in a list or store shell-style
+`KEY=value` lines in this secret.
+
 The staged Caddy contract remains health-only:
 
 ```text
