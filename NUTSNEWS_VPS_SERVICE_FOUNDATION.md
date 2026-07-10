@@ -1,6 +1,6 @@
 # NutsNews VPS Service Foundation
 
-This explains the next layer in the NutsNews VPS platform: Docker Engine, Docker Compose, the `/opt/nutsnews` runtime layout, a small zram fallback, Caddy, public infrastructure health, the protected Ops Portal route, Caddy rate limiting, and the disabled-by-default NutsNews app foundation.
+This explains the next layer in the NutsNews VPS platform: Docker Engine, Docker Compose, the `/opt/nutsnews` runtime layout, a small zram fallback, Caddy, public infrastructure health, the protected Ops Portal route, Caddy rate limiting, and the GitOps-controlled NutsNews app foundation.
 
 ## Easy Summary
 
@@ -8,9 +8,9 @@ The VPS now gets a small container foundation managed by Ansible. The playbook i
 
 The zram fallback is intentionally small: `/dev/zram0`, 1536 MiB of virtual compressed swap, `vm.swappiness=10`, and no changes to Docker memory limits. It is there to buy time during transient deploy, package upgrade, backup verification, or app spikes. It is not a capacity plan.
 
-Caddy now has three jobs. It exposes `https://vps.nutsnews.com/health` publicly for Better Stack, serves the Google OAuth-protected Ops Portal at `https://ops.nutsnews.com`, and keeps `127.0.0.1:8080` available for local health checks and SSH tunnel fallback. It also enforces free Caddy-based rate limiting before traffic reaches health, portal, API, auth, admin, ops, or future app handlers.
+Caddy now has four jobs. It exposes `https://vps.nutsnews.com/health` publicly for Better Stack, can route the digest-pinned NutsNews app on `https://vps.nutsnews.com`, serves the Google OAuth-protected Ops Portal at `https://ops.nutsnews.com`, and keeps `127.0.0.1:8080` available for local health checks and SSH tunnel fallback. It also enforces free Caddy-based rate limiting before traffic reaches health, portal, API, auth, admin, ops, or app handlers.
 
-Issue [nutsnews-infra #67](https://github.com/ramideltoro/nutsnews-infra/issues/67) prepares the app deployment plumbing but does not deploy it. The app, health-only staged route, and public app route remain disabled. `nutsnews.com` remains on Vercel.
+Issue [nutsnews-infra #67](https://github.com/ramideltoro/nutsnews-infra/issues/67) prepared the app deployment plumbing and staged health route. Issue #93 reviews the next promotion for only the `vps.nutsnews.com` public app route. `nutsnews.com` remains on Vercel.
 
 ## Intermediate Summary
 
@@ -55,7 +55,8 @@ Then the container taught us that hardening can go full gym-bro and become unusa
 This layer creates the runtime substrate and one narrow production route. The design is intentionally conservative:
 
 - Caddy publishes public ports `80` and `443` for `vps.nutsnews.com`.
-- The public host exposes only `/health` and returns `404` for all other paths.
+- The public host always keeps `/health` on the infrastructure health service.
+- The reviewed app route can proxy all other `vps.nutsnews.com` paths to the digest-pinned NutsNews app container.
 - Caddy exposes `ops.nutsnews.com` publicly behind the Ops Portal Google OAuth gateway.
 - Caddy keeps the loopback listener available on host `127.0.0.1:8080`.
 - Caddy applies rate limits keyed by client remote host, with IPv6 clients grouped by `/64`.
@@ -157,9 +158,10 @@ ansible/inventories/production/host_vars/vps.nutsnews.com.yml
 
 It records app enabled state, staged/public route states, image repository,
 image digest, source commit, build ID, deployment target, and the
-last-known-good digest. In the prepared issue #67 change, both route flags and
-the app flag are `false`; identity and digest values remain blank until a real
-image is published and separately promoted.
+last-known-good digest. The staged deployment uses the reviewed immutable image
+identity. The issue #93 promotion changes the reviewed public route state to
+`true`; the live VPS changes only after the infra PR is merged and Protected
+Ansible Apply runs.
 
 Runtime secrets are namespaced through `NUTSNEWS_APP_ENVS_JSON` in the
 protected `production-vps` Environment. Ansible renders them into the existing
@@ -172,10 +174,11 @@ The staged Caddy contract remains health-only:
 http://127.0.0.1:8080/app-stage/healthz
 ```
 
-The separately controlled public route may eventually serve the application
-on `vps.nutsnews.com`. It remains disabled in this task, must preserve the
-infrastructure `/health` route, and must pass through application security and
-cache headers instead of applying the placeholder `default-src 'none'` CSP.
+The separately controlled public route serves the application on
+`vps.nutsnews.com` when `vps_service_foundation_nutsnews_app_public_route_enabled`
+is `true`. It must preserve the infrastructure `/health` route and pass through
+application security and cache headers instead of applying the placeholder
+`default-src 'none'` CSP.
 See [Dual-Target Web Deployment](NUTSNEWS_DUAL_TARGET_WEB_DEPLOYMENT.md).
 
 ## Caddy Exposure Model
@@ -183,19 +186,55 @@ See [Dual-Target Web Deployment](NUTSNEWS_DUAL_TARGET_WEB_DEPLOYMENT.md).
 ```mermaid
 flowchart LR
   public["Public internet"] --> publicHealth["https://vps.nutsnews.com/health"]
+  public --> publicApp["https://vps.nutsnews.com/"]
   public --> publicOps["https://ops.nutsnews.com"]
   publicHealth --> caddy["Caddy container"]
+  publicApp --> caddy
   publicOps --> caddy
   maintainer["Maintainer over SSH"] --> loopback["127.0.0.1:8080"]
   loopback --> caddy
   caddy --> health["/healthz -> ok"]
   caddy --> infraHealth["/health -> infra health service"]
+  caddy --> app["NutsNews app container"]
   caddy --> portal["OAuth-protected read-only Ops Portal"]
 ```
 
-Public HTTP and HTTPS are used for the Better Stack-compatible health endpoint and the OAuth-protected Ops Portal. Caddy obtains and renews certificates for `vps.nutsnews.com` and `ops.nutsnews.com`; Cloudflare stays DNS-only unless a future PR deliberately enables proxying.
+Public HTTP and HTTPS are used for the Better Stack-compatible health endpoint, the reviewed `vps.nutsnews.com` app route, and the OAuth-protected Ops Portal. Caddy obtains and renews certificates for `vps.nutsnews.com` and `ops.nutsnews.com`; Cloudflare stays DNS-only unless a future PR deliberately enables proxying.
 
 The health service listens on the host at TCP `18080`. Because UFW denies inbound traffic by default, Ansible also installs an internal-only firewall rule that allows the Caddy Docker network to reach that host port. Do not add this manually on the VPS; run the protected apply workflow so the rule is reconciled from the infra repo.
+
+## NutsNews App Route Promotion
+
+Issue #93 promotes only `vps.nutsnews.com`. It does not change `nutsnews.com`, Cloudflare routing, DNS records, load balancing, failover, ingestion ownership, or app secrets. The app image remains pinned by immutable digest:
+
+```text
+ghcr.io/ramideltoro/nutsnews@sha256:26d525541c33d12fdd026b2d69f176e25d60c4e876094aa1a357aec3098580b6
+sourceCommit=93399a76dbb5c681faf82c9b0e2f87c223cc81ff
+buildId=29087977894-1
+```
+
+The pre-promotion staged route is intentionally limited. The Caddy staged template proxies only:
+
+```text
+http://127.0.0.1:8080/app-stage/healthz
+```
+
+That route proves the container health endpoint and source/build identity, but it cannot prove full authenticated HTML, asset, navigation, public API, Auth.js callback, Turnstile, contact-form, cookie, CSRF/CORS, Sentry, writable-cache, or cache-header parity. Before public promotion, `/app-stage/`, `/app-stage/api/articles?page=0`, and `/app-stage/api/auth/signin/google` are handled by the Ops Portal OAuth fallback and return `302`; they are not app parity probes.
+
+Because of that route shape, full app parity must be validated immediately after the reviewed PR is merged and Protected Ansible Apply enables the public app route. Required post-apply probes:
+
+```bash
+curl -i https://vps.nutsnews.com/health
+curl -i https://vps.nutsnews.com/
+curl -i https://vps.nutsnews.com/healthz
+curl -i 'https://vps.nutsnews.com/api/articles?page=0'
+curl -i https://vps.nutsnews.com/api/auth/signin/google
+curl -i https://vps.nutsnews.com/api/auth/callback/google
+```
+
+Record the exact HTTP statuses and redirect locations. `/health` must remain the infrastructure health endpoint. `/healthz` must return the app health response with the reviewed source commit and build ID. Representative HTML, `_next/static` assets, public APIs, Auth.js redirects/callback handling, security headers, cookies, CSRF/CORS behavior, Turnstile/contact-form origins, Sentry release identity, cache headers, and writable-cache behavior must be reviewed before issue #67 is closed.
+
+Rollback is GitOps-only. To remove public app traffic, set `vps_service_foundation_nutsnews_app_public_route_enabled: false`, open and merge an infra PR, run Protected Ansible Apply in check mode, then apply after approval. If the container itself is bad, promote a new immutable digest or disable the app container through the same PR/check/merge/apply path. Do not hand-edit Caddy, Docker Compose, firewall rules, DNS, or Cloudflare routing on the VPS.
 
 ## Better Stack Infrastructure Health
 
@@ -306,11 +345,17 @@ Verify the public Better Stack route from outside the VPS:
 curl -i https://vps.nutsnews.com/health
 ```
 
-After a separately approved future app rollout, also verify the expected and
-actual immutable digest, non-root container UID, `/healthz` source/build
-identity, staged route, application security headers, sanitized logs, and Ops
-Portal app fields. Until then, confirm the app container and both routes remain
-disabled/absent.
+After issue #93 is applied, also verify the expected and actual immutable
+digest, non-root container UID, `/healthz` source/build identity, staged route,
+application security headers, sanitized logs, and Ops Portal app fields.
+Verify the public app route from outside the VPS:
+
+```bash
+curl -i https://vps.nutsnews.com/
+curl -i https://vps.nutsnews.com/healthz
+curl -i 'https://vps.nutsnews.com/api/articles?page=0'
+curl -i https://vps.nutsnews.com/api/auth/signin/google
+```
 
 Expected `/healthz` output:
 
@@ -338,6 +383,8 @@ systemctl status nutsnews-ops-portal-collector.timer
 | `https://vps.nutsnews.com/health` fails to connect | Caddy is not published on `80`/`443`, firewall rules are not applied, or the protected apply has not run | Confirm the PR is merged, run protected check/apply after approval, then verify ports and Caddy logs |
 | Public `/health` returns `502` | Caddy cannot reach the host health service, often because the internal UFW rule is missing | Run protected check/apply from the infra repo and confirm the Caddy Docker network is allowed to TCP `18080` |
 | Public `/health` returns `503` | One required service, container, or resource threshold check is failing | Check `journalctl -u nutsnews-infra-health.service` and `/opt/nutsnews/logs/health/health-failures.jsonl` |
+| `https://vps.nutsnews.com/` still returns `404` after promotion | The public app route flag was not applied, Caddy did not reload, or the protected apply ran from the wrong revision | Confirm the merged host vars set the public route flag to `true`, rerun Protected Ansible Apply check mode, then apply after approval |
+| Public app paths return `502` | Caddy cannot reach the app container or the app container is unhealthy | Check Docker/Caddy health read-only, then fix the repo-managed app route, digest, or environment and apply through GitOps |
 | Expected traffic gets HTTP `429` | Caddy rate-limit zones are too strict for the observed traffic pattern | Tune `vps_service_foundation_caddy_rate_limit_zones` through an infra PR, run protected check mode, then apply |
 | Caddy build fails during apply | Docker cannot fetch the pinned Caddy base image or Go module, or the module pin is invalid | Rerun check/apply after network recovery, or update the Caddy/module pin through PR |
 | Disk grows too fast | Container logs or future service data are noisy | Docker log caps are already set; add service-specific retention before adding heavier workloads |
@@ -346,17 +393,16 @@ systemctl status nutsnews-ops-portal-collector.timer
 
 ## What This Does Not Do
 
-In the prepared issue #67 state, this layer does not:
+In the issue #93 route-promotion state, this layer does not:
 
-- start the NutsNews web app
-- expose the Ops Portal publicly
-- expose the future app route publicly
+- change DNS, Cloudflare routing, `nutsnews.com`, load balancing, or failover
 - install production app secrets
 - add databases or queues
 - add a self-hosted observability stack
 - require the home server
 - mutate the VPS from pull request validation
-- move `nutsnews.com`, change DNS, split traffic, or add automatic failover
+- run Protected Ansible Apply by itself
+- close issue #67 by itself
 
 It gives future services a safe landing zone. That is less glamorous than launching everything at once, but it is also less likely to make Friday evening weird.
 
