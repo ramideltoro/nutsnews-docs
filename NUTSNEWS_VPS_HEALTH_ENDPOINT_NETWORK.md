@@ -46,6 +46,7 @@ This intentionally separates the public contract from the internal hop:
 - Monitor availability at `https://vps.nutsnews.com/health` and require HTTP `200`.
 - Treat a failed direct request to `http://vps.nutsnews.com:18080/health` as the expected security posture.
 - After a protected Ansible apply, verify the listener, Caddy response, and UFW rule over read-only SSH before reporting success.
+- When the health systemd unit changes, protected apply restarts the service so its running listener matches the Ansible-managed configuration.
 
 If Docker gateway topology changes, do not widen the bind or firewall rule.
 Update the Ansible configuration, focused validation, and this document in a
