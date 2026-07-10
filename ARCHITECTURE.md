@@ -28,6 +28,26 @@ Cloudflare CDN
 Reader
 ```
 
+The public production site remains on Vercel. Issue
+[nutsnews-infra #67](https://github.com/ramideltoro/nutsnews-infra/issues/67)
+also prepares a second artifact from the same application commit: GitHub
+Actions builds an OCI image in `ramideltoro/nutsnews`, and
+`ramideltoro/nutsnews-infra` promotes its immutable digest to the VPS. This is
+one codebase with two platform-native artifacts, not two application forks.
+
+```mermaid
+flowchart LR
+  commit["One nutsnews commit"] --> vercel["Vercel native build\nprimary nutsnews.com"]
+  commit --> image["GitHub Actions\nproduction OCI image"]
+  image --> ghcr["GHCR immutable digest"]
+  ghcr --> infra["nutsnews-infra\nreviewed promotion"]
+  infra --> vps["VPS Compose behind Caddy\nprepared, disabled"]
+```
+
+See [Dual-Target Web Deployment](NUTSNEWS_DUAL_TARGET_WEB_DEPLOYMENT.md) for
+the environment boundary, build identity, staged gate, public opt-in, and
+rollback rules.
+
 ---
 
 ## Operations Flow
@@ -81,6 +101,11 @@ Sentry
 ### `web`
 
 The public website and admin portal.
+
+Its source remains in `ramideltoro/nutsnews/web`. Vercel builds that directory
+directly, while the application repository also owns the production
+Dockerfile and GHCR publishing workflow. The infrastructure repository never
+copies the web source.
 
 It includes:
 
@@ -346,7 +371,9 @@ Powers source quality badges and rankings in `/admin/feeds`.
 | React | UI rendering |
 | TypeScript | Safer application code |
 | Tailwind CSS | Mobile-first styling |
-| Vercel | Frontend and admin hosting |
+| Vercel | Primary frontend/admin hosting and native Git deployment |
+| GHCR | Immutable OCI images built from the same reviewed web commit |
+| VPS + Caddy | Prepared secondary runtime; promotion and routing remain GitOps-controlled and disabled until approved |
 
 ### Automation
 

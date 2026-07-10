@@ -22,6 +22,12 @@ The important part: it is read-only. No restart button. No "install this one tin
 commit -> PR -> checks -> merge -> protected apply
 ```
 
+Issue [nutsnews-infra #67](https://github.com/ramideltoro/nutsnews-infra/issues/67)
+extends that read-only model with application deployment status: enabled state,
+staged/public route states, expected and actual immutable digest, source commit,
+build ID, container/route health, last deployment result, and last-known-good
+digest. The prepared change does not enable the app or either route.
+
 For v1, Caddy serves the portal publicly at `https://ops.nutsnews.com` with automatic HTTPS, and every dashboard route is behind a Google OAuth gateway. The protected apply workflow updates the `ops.nutsnews.com` Cloudflare A record immediately when DDNS is enabled, then leaves the DDNS timer enabled for future VPS public IPv4 changes. The only allowed Google account is `rami.deltoro@gmail.com`. Access can still use the narrow SSH tunnel path to `127.0.0.1:8080`, but a browser must complete Google sign-in before the dashboard or `/data/*` status endpoints are served.
 
 ## Intermediate Summary
@@ -41,6 +47,7 @@ The infra repo now has these pieces:
 11. Root-only free-tier collector configuration at `/etc/nutsnews/free-tier-usage.env`
 12. Local usage-limited service entries for VPS resources, Docker storage, and backup storage/freshness
 13. CI guardrails that validate the portal fixture, Google OAuth allowlist, callback route, secret redaction, read-only surface, backup status, free-tier fallback states, and the no-arbitrary-command shape of the manual report and backup workflows
+14. A read-only application deployment block that compares reviewed release state with the running container without exposing runtime values
 
 The collector runs locally on the VPS, reads host state, redacts obvious sensitive log patterns, and writes JSON here:
 
@@ -118,6 +125,14 @@ The same workflow can also pass optional SMTP values from protected Environment 
 The protected workflow can also pass optional free-tier usage values and read-only provider tokens into Ansible extra vars. Ansible renders them into `/etc/nutsnews/free-tier-usage.env` with mode `0600`, and the collector writes only sanitized usage numbers, source status, risk status, remaining amount, and timestamps into portal JSON. Tokens are never copied into `status.json`.
 
 Protected apply refreshes the status snapshot by restarting `nutsnews-ops-portal-collector.service`, matching the deployed timer path. The collector also falls back to `/etc/nutsnews/free-tier-usage.env` when process env is missing free-tier settings, so external providers such as Vercel stay visible instead of disappearing from the generated snapshot.
+
+Application release metadata comes from the reviewed infra source of truth and
+sanitized local Docker inspection. Expected repository/digest, source commit,
+build ID, deployment target, route flags, last result, and rollback digest are
+safe status. Actual image identity comes from the running container. The
+collector must never copy `NUTSNEWS_APP_ENVS_JSON`, environment values, OAuth
+credentials, provider keys, or secret-bearing Docker inspection fields into
+`status.json`.
 
 The manual `Verify Ops Portal Status` workflow can be used after deploy when local SSH is unavailable or the browser session is not authenticated. It uses the protected `production-vps` SSH key, reads only `/opt/nutsnews/portal-assets/data/status.json`, prints sanitized Vercel free-tier status fields plus metric states, checks masked `/etc/nutsnews/free-tier-usage.env` key presence and collector timer/journal state, and probes the configured Vercel Billing Charges endpoint for sanitized response shape and aggregate diagnostics. It fails if Vercel disappears, falls back to cached placeholders, emits zero-like display values for null usage, or renders a known unavailable/unsupported Vercel row as generic `unknown`.
 
@@ -432,6 +447,7 @@ The CPU table is useful, not omniscient. It shows a lifetime average normalized 
 | Section | What it shows |
 | --- | --- |
 | Overall Health | Health score gauge, hostname, uptime, public IPs, OS, kernel, deployed infra commit, last apply marker |
+| Application Deployment | App enabled state; staged/public route states; expected image repository/digest; actual running digest; source commit; build ID; deployment target; container and route health; last deployment result; last-known-good digest |
 | Alerts and Email Reporting | Email enabled/configured state, SMTP configured flag, next report run, last run, last success, last error, pending alerts, timer state |
 | Free Tier Usage | Service-grouped VPS host, Docker storage, backup storage, Vercel, Sentry, Cloudflare, Better Stack, Supabase, Grafana Cloud, and GitHub Actions quota rows with usage, free limits, remaining amount, percent used, period/window, reset date if known, source status, measurement status, and risk status |
 | Resources | Gauges for CPU, RAM, root disk, swap, and root inode usage; swap state; recent kernel OOM evidence; load stats; network counters; NutsNews disk usage |
@@ -449,6 +465,10 @@ The CPU table is useful, not omniscient. It shows a lifetime average normalized 
 | Runbooks and Docs | Links back to the docs repo |
 
 The backup section now reports the restic/rclone VPS backup layer: enabled/configured state, repository path, latest snapshot age, backup/prune state, latest-snapshot verification state, backup and verify timer state, and protected path counts. Raw backup path lists and restore targets stay in root-only config, not public status JSON.
+
+The application block is status-only. A digest mismatch, unhealthy container,
+or failed route is visible evidence to stop rollout and fix the GitOps source
+of truth. It does not create pull/restart/rollback buttons.
 
 The latest-snapshot verification state is computed by comparing the last check's snapshot ID/time with the newest restic snapshot ID/time. It distinguishes `success`, `failed`, `stale`, `latest_unverified`, `disabled`, and `misconfigured`. Backup failures, stale snapshots, prune failures, verification failures, stale verification, latest snapshots checked by an older verification, and inactive backup/verify timers flow into the same warning/critical alert list used by email reporting.
 
@@ -530,6 +550,9 @@ Future public access should add:
 | SSH tunnel fails with `administratively prohibited` | SSH hardening is blocking TCP forwarding or the target does not match the allowed portal destinations | Apply the baseline update that allows `nutsnews_ops` local forwarding only to `127.0.0.1:8080` or `localhost:8080`, then use the documented `ssh -L` command |
 | Browser cannot reach the portal after the tunnel connects | Local port conflict, wrong left-side port, or Caddy is not answering on the VPS loopback listener | Use another local port like `18080:127.0.0.1:8080`, then verify Caddy with the VPS-side health checks |
 | Someone wants a restart button | Natural human impatience | Add a GitHub Actions-backed workflow later; do not add arbitrary shell buttons |
+| Expected and actual app digests differ | Host drift, incomplete pull, or wrong Compose reference | Keep routes disabled, inspect read-only Docker state, and reconcile through a reviewed infra change plus Protected Ansible Apply |
+| App status says prepared/disabled | Issue #67 plumbing exists but no approved promotion/apply has occurred | This is the expected safe-stop state; do not start the container manually |
+| App health is good but the public route is disabled | Staged health was not followed by a separate public-route review | Keep it disabled until full-host parity, security headers, Auth/contact behavior, and rollback are verified |
 
 ## Verification
 
@@ -562,6 +585,9 @@ Expected status JSON behavior:
 - contains no committed secrets
 - reports email as disabled or misconfigured if SMTP secrets are not configured
 - keeps per-process network byte totals labeled unavailable unless a later PR adds approved telemetry
+- contains safe application release/status fields without environment values
+- reports the app, staged route, and public route disabled in the prepared issue #67 state
+- exposes expected/actual digest and source/build identity only after a real reviewed promotion exists
 
 For the manual health report workflow, verify:
 
@@ -595,12 +621,15 @@ This v1 layer does not:
 - add true per-process network byte telemetry
 - replace Sentry, Better Stack, Supabase, or Cloudflare
 - make the home server required for production
+- mutate, restart, promote, or roll back the NutsNews application
+- expose application environment values or credentials
 
 It creates the dashboard foundation. The useful buttons can come later, but they need GitOps guardrails, not vibes.
 
 ## Related Docs
 
 - [Infra Operations Platform](NUTSNEWS_INFRA_OPERATIONS_PLATFORM.md)
+- [Dual-Target Web Deployment](NUTSNEWS_DUAL_TARGET_WEB_DEPLOYMENT.md)
 - [VPS Service Foundation](NUTSNEWS_VPS_SERVICE_FOUNDATION.md)
 - [Protected Ansible Apply](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md)
 - [VPS Ansible Bootstrap](NUTSNEWS_VPS_ANSIBLE_BOOTSTRAP.md)

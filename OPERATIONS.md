@@ -175,7 +175,8 @@ docs/DEPLOYMENT_CHECKLIST.md
 
 Use that guide when releasing changes to:
 
-* Vercel web app
+* Vercel web app and preview deployments
+* GHCR image publishing and reviewed VPS digest promotion
 * Cloudflare Worker shards
 * Controller Worker
 * Supabase migrations
@@ -200,13 +201,22 @@ With an article path:
 
 ### Web
 
-The web app is deployed to Vercel.
+The web app has one source tree, `ramideltoro/nutsnews/web`.
+
+Vercel remains the primary production target and continues its Git-based
+native build. GitHub Actions also prepares a production OCI image from the
+same commit for GHCR. Only `ramideltoro/nutsnews-infra` may promote that
+image's immutable digest to the VPS.
+
+The issue #67 state is prepared, not deployed: the VPS application, staged
+route, and public route remain disabled, and `nutsnews.com` remains on Vercel.
+See [Dual-Target Web Deployment](NUTSNEWS_DUAL_TARGET_WEB_DEPLOYMENT.md).
 
 Common commands:
 
 ```bash
 cd web
-npm install
+npm ci
 npm run build
 ```
 
@@ -261,6 +271,23 @@ X-NutsNews-Article-Data-Source: public_feed_snapshot
 X-NutsNews-Feed-Snapshot: hit
 X-NutsNews-Edge-Snapshot: not-used
 ```
+
+### Portable app identity and VPS staged status
+
+The target-neutral health contract is `/healthz`. It reports the application
+source commit, build ID, and deployment target without exposing environment
+values. Compare that identity across Vercel and, after an approved rollout,
+the expected GHCR digest and actual VPS container in the Ops Portal.
+
+The VPS staged gate is health-only:
+
+```text
+http://127.0.0.1:8080/app-stage/healthz
+```
+
+It must remain unavailable while the app and staged route are disabled. Even
+after it is enabled later, HTTP `200` proves health only; it does not prove
+that the full application works below `/app-stage`.
 
 ### Worker shard
 
@@ -371,25 +398,51 @@ RESTORE_DATABASE_URL="postgresql://..." ./scripts/validate_supabase_restore.sh b
 
 ## Environment Variables
 
-### Web / Vercel
+### Web / Vercel and VPS
 
 ```text
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 NEXT_PUBLIC_APP_ENV
+NEXT_PUBLIC_NUTSNEWS_SOURCE_COMMIT
+NEXT_PUBLIC_NUTSNEWS_BUILD_ID
 NEXT_PUBLIC_GA_ID
 NEXT_PUBLIC_SENTRY_DSN
+NEXT_PUBLIC_TURNSTILE_SITE_KEY
+NEXT_PUBLIC_NUTSNEWS_IOS_APP_STORE_URL
+NUTSNEWS_SOURCE_COMMIT
+NUTSNEWS_BUILD_ID
+NUTSNEWS_DEPLOYMENT_TARGET
 SENTRY_ORG
 SENTRY_PROJECT
 SENTRY_AUTH_TOKEN
 BETTER_STACK_SOURCE_TOKEN
 BETTER_STACK_INGESTING_HOST
-NEXTAUTH_URL
-NEXTAUTH_SECRET
-GOOGLE_CLIENT_ID
-GOOGLE_CLIENT_SECRET
-ADMIN_EMAIL
+BETTER_STACK_INFO_SAMPLE_RATE
+AUTH_URL
+AUTH_TRUST_HOST
+AUTH_SECRET
+AUTH_GOOGLE_ID
+AUTH_GOOGLE_SECRET
+ADMIN_EMAILS
+SUPABASE_URL
+SUPABASE_SERVICE_ROLE_KEY
+RESEND_API_KEY
+RESEND_EMAILS_URL
+CONTACT_TO_EMAIL
+CONTACT_FROM_EMAIL
+TURNSTILE_SECRET_KEY
+TURNSTILE_VERIFY_URL
+NUTSNEWS_ALLOWED_CONTACT_ORIGINS
 ```
+
+This is a names-only inventory. `NEXT_PUBLIC_*` values are build inputs;
+private values are runtime-only. The authoritative required/optional,
+public/secret, build/runtime, Vercel-source, VPS-source, and approved-difference
+matrix is in
+[Dual-Target Web Deployment](NUTSNEWS_DUAL_TARGET_WEB_DEPLOYMENT.md). VPS
+runtime secrets come only from the protected `production-vps` Environment
+through `NUTSNEWS_APP_ENVS_JSON`; image/digest/route state is reviewed in Git.
 
 ### Worker / Cloudflare
 

@@ -167,6 +167,18 @@ Use this checklist when changing:
 * Next.js config
 * Public docs shown from the repo
 
+The web application has one source commit and two platform-native build paths:
+
+- Vercel continues to build `web/` for previews and `nutsnews.com` production.
+- GitHub Actions validates a production container on pull requests without
+  pushing it, then publishes the merged `main` commit to GHCR.
+- Only `ramideltoro/nutsnews-infra` may promote the resulting immutable digest
+  to the VPS.
+
+See [Dual-Target Web Deployment](NUTSNEWS_DUAL_TARGET_WEB_DEPLOYMENT.md). Issue
+[nutsnews-infra #67](https://github.com/ramideltoro/nutsnews-infra/issues/67)
+is prepared, not deployed: all VPS app and route flags remain disabled.
+
 ### Local web build
 
 ```bash
@@ -209,7 +221,8 @@ TURNSTILE_SECRET_KEY
 
 ### Deploy web
 
-Normal production web deploy is triggered by pushing to `main`:
+Normal Vercel production deploy and immutable image publishing are triggered by
+the reviewed merge/push to `main`:
 
 ```bash
 cd /Users/ramideltoro/WebstormProjects/nutsnews2
@@ -222,10 +235,23 @@ git push
 
 Then verify the Vercel deployment finishes successfully.
 
+Also verify the `Container Image` workflow:
+
+- built the exact merged commit;
+- published the full-commit tag only from `main`;
+- reported a real `sha256` registry digest;
+- did not publish from an unreviewed pull request;
+- did not expose build inputs or credentials.
+
+Do not deploy `latest`. Do not copy application source into
+`nutsnews-infra`. A real published digest is required before a separate infra
+promotion change can be reviewed.
+
 ### Web post-deploy checks
 
 ```bash
 curl -I "https://www.nutsnews.com/"
+curl -i "https://www.nutsnews.com/healthz"
 curl -s "https://www.nutsnews.com/api/articles?page=0" | head -c 500
 ```
 
@@ -254,6 +280,39 @@ For `/api/articles`, expected response shape includes:
 articles
 nextPage or nextCursor
 ```
+
+The `/healthz` response and headers must identify the expected source commit,
+build ID, and `vercel` deployment target without exposing configuration.
+
+### VPS image promotion: later approved rollout only
+
+The safe stop for issue #67 ends before promotion. When a later rollout is
+explicitly approved:
+
+```text
+1. Merge the application PR and let main publish the image.
+2. Resolve and verify the real immutable GHCR digest.
+3. Commit source commit, build ID, digest, target, and rollback digest in
+   ansible/inventories/production/host_vars/vps.nutsnews.com.yml.
+4. Keep the public route disabled.
+5. Run Protected Ansible Apply in check mode.
+6. Review the recap and obtain separate apply approval.
+7. Run apply mode.
+8. Verify the running digest, container health, staged health-only route,
+   security headers, logs, and Ops Portal status.
+```
+
+The staged gate is:
+
+```text
+http://127.0.0.1:8080/app-stage/healthz
+```
+
+It proves liveness/build identity only. Before a later public route activation,
+test pages, static assets, navigation, redirects, APIs, Auth.js callbacks,
+Turnstile/contact origins, secure cookies, cache/revalidation, image
+optimization, and writable cache behavior on the root host. Preserve
+`https://vps.nutsnews.com/health` as the infrastructure endpoint.
 
 ### PageSpeed check after major UI changes
 
@@ -738,6 +797,11 @@ curl -I "https://www.nutsnews.com/"
 curl -s "https://www.nutsnews.com/api/articles?page=0" | head -c 500
 ```
 
+For a future VPS deployment, rollback is a reviewed promotion of the recorded
+last-known-good immutable digest through `nutsnews-infra` and Protected Ansible
+Apply. Do not rebuild an old commit, retag `latest`, or run Compose manually on
+the host. Disable the public route first when that is the safest containment.
+
 ### Worker rollback
 
 Redeploy the previous known-good commit or config.
@@ -789,6 +853,10 @@ Before closing a deployment issue, confirm:
 
 ```text
 [ ] Web build passed
+[ ] Vercel `/healthz` reports the expected source/build identity
+[ ] Container pull-request build passed without publishing, if web changed
+[ ] Main image publication reported a real immutable digest, after app merge
+[ ] VPS app, staged route, and public route remain disabled unless separately approved
 [ ] Supabase migrations applied, if any
 [ ] Worker configs regenerated, if Worker changed
 [ ] Worker shard 0 tested, if Worker changed
@@ -813,6 +881,7 @@ Before closing a deployment issue, confirm:
 | [Performance and Resiliency](PERFORMANCE_AND_RESILIENCY.md) | Cache, performance, resiliency, and cost controls |
 | [Observability](OBSERVABILITY.md) | Better Stack, Sentry, structured logs, and dashboards |
 | [Troubleshooting Guide](TROUBLESHOOTING.md) | Diagnose production problems |
+| [Dual-Target Web Deployment](NUTSNEWS_DUAL_TARGET_WEB_DEPLOYMENT.md) | Vercel/GHCR build identity, digest promotion, staged validation, public opt-in, and rollback |
 
 
 ---

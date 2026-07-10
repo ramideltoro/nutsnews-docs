@@ -1,6 +1,6 @@
 # NutsNews VPS Service Foundation
 
-This explains the next layer in the NutsNews VPS platform: Docker Engine, Docker Compose, the `/opt/nutsnews` runtime layout, a small zram fallback, Caddy, public infrastructure health, the protected Ops Portal route, and Caddy rate limiting.
+This explains the next layer in the NutsNews VPS platform: Docker Engine, Docker Compose, the `/opt/nutsnews` runtime layout, a small zram fallback, Caddy, public infrastructure health, the protected Ops Portal route, Caddy rate limiting, and the disabled-by-default NutsNews app foundation.
 
 ## Easy Summary
 
@@ -9,6 +9,8 @@ The VPS now gets a small container foundation managed by Ansible. The playbook i
 The zram fallback is intentionally small: `/dev/zram0`, 1536 MiB of virtual compressed swap, `vm.swappiness=10`, and no changes to Docker memory limits. It is there to buy time during transient deploy, package upgrade, backup verification, or app spikes. It is not a capacity plan.
 
 Caddy now has three jobs. It exposes `https://vps.nutsnews.com/health` publicly for Better Stack, serves the Google OAuth-protected Ops Portal at `https://ops.nutsnews.com`, and keeps `127.0.0.1:8080` available for local health checks and SSH tunnel fallback. It also enforces free Caddy-based rate limiting before traffic reaches health, portal, API, auth, admin, ops, or future app handlers.
+
+Issue [nutsnews-infra #67](https://github.com/ramideltoro/nutsnews-infra/issues/67) prepares the app deployment plumbing but does not deploy it. The app, health-only staged route, and public app route remain disabled. `nutsnews.com` remains on Vercel.
 
 ## Intermediate Summary
 
@@ -37,6 +39,8 @@ That role runs after the existing VPS baseline role. It manages:
 - generated Caddy rate-limit config under `/opt/nutsnews/config/caddy/rate-limits`
 - the first read-only operations portal surface and local status collector
 - a Better Stack-compatible `/health` endpoint for infrastructure health
+- a disabled app Compose project that accepts only an immutable GHCR digest
+- separately controlled health-only staged and public app routes
 
 The protected Ansible workflow still defaults to check mode. In real apply mode, the service role can start Caddy and verify `http://127.0.0.1:8080/healthz`. In check mode, it skips Docker Compose mutation because pretending to start containers without Docker being installed yet is how automation starts gaslighting everyone.
 
@@ -66,6 +70,8 @@ This layer creates the runtime substrate and one narrow production route. The de
 - No secrets, environment files, app credentials, or production tokens are introduced.
 - Compose validation runs in CI before the PR can merge.
 - Ansible syntax and lint checks cover the role wiring before apply.
+- App release state is reviewed in Git, while secret values remain in the protected `production-vps` Environment.
+- Mutable app references such as `latest` are rejected whenever the app is enabled.
 
 The point is to establish a stable convention now so future services have somewhere predictable to live. The platform should grow in layers, not in one heroic blob of YAML that future operators study like a cursed family recipe.
 
@@ -134,6 +140,43 @@ flowchart LR
 ```
 
 This layout is boring on purpose. "Where does this service put its files?" should not require a séance with shell history.
+
+## Prepared NutsNews Application Layer
+
+The application source stays entirely in `ramideltoro/nutsnews`. That
+repository builds the Vercel artifact and the production OCI image from the
+same commit. The infra repository contains only deployment configuration,
+immutable identity, Compose/Ansible/Caddy plumbing, health/status logic, and
+rollback state.
+
+Reviewed non-secret release state lives in:
+
+```text
+ansible/inventories/production/host_vars/vps.nutsnews.com.yml
+```
+
+It records app enabled state, staged/public route states, image repository,
+image digest, source commit, build ID, deployment target, and the
+last-known-good digest. In the prepared issue #67 change, both route flags and
+the app flag are `false`; identity and digest values remain blank until a real
+image is published and separately promoted.
+
+Runtime secrets are namespaced through `NUTSNEWS_APP_ENVS_JSON` in the
+protected `production-vps` Environment. Ansible renders them into the existing
+root-only app environment path with `no_log`. The Ops Portal receives safe
+key-presence and status metadata only, never values.
+
+The staged Caddy contract remains health-only:
+
+```text
+http://127.0.0.1:8080/app-stage/healthz
+```
+
+The separately controlled public route may eventually serve the application
+on `vps.nutsnews.com`. It remains disabled in this task, must preserve the
+infrastructure `/health` route, and must pass through application security and
+cache headers instead of applying the placeholder `default-src 'none'` CSP.
+See [Dual-Target Web Deployment](NUTSNEWS_DUAL_TARGET_WEB_DEPLOYMENT.md).
 
 ## Caddy Exposure Model
 
@@ -263,6 +306,12 @@ Verify the public Better Stack route from outside the VPS:
 curl -i https://vps.nutsnews.com/health
 ```
 
+After a separately approved future app rollout, also verify the expected and
+actual immutable digest, non-root container UID, `/healthz` source/build
+identity, staged route, application security headers, sanitized logs, and Ops
+Portal app fields. Until then, confirm the app container and both routes remain
+disabled/absent.
+
 Expected `/healthz` output:
 
 ```text
@@ -292,12 +341,14 @@ systemctl status nutsnews-ops-portal-collector.timer
 | Expected traffic gets HTTP `429` | Caddy rate-limit zones are too strict for the observed traffic pattern | Tune `vps_service_foundation_caddy_rate_limit_zones` through an infra PR, run protected check mode, then apply |
 | Caddy build fails during apply | Docker cannot fetch the pinned Caddy base image or Go module, or the module pin is invalid | Rerun check/apply after network recovery, or update the Caddy/module pin through PR |
 | Disk grows too fast | Container logs or future service data are noisy | Docker log caps are already set; add service-specific retention before adding heavier workloads |
+| App enablement rejects the image | The digest is empty, malformed, mutable, or inconsistent with source/build identity | Keep routes disabled and promote a real verified GHCR digest through a reviewed infra change |
+| Staged app health fails | App/route is disabled, the container is unhealthy, Caddy cannot reach it, or build identity mismatches | Inspect read-only runtime state, fix the app or infra source of truth through PR, then rerun protected check/apply after approval |
 
 ## What This Does Not Do
 
-This layer does not:
+In the prepared issue #67 state, this layer does not:
 
-- deploy the NutsNews web app
+- start the NutsNews web app
 - expose the Ops Portal publicly
 - expose the future app route publicly
 - install production app secrets
@@ -305,12 +356,14 @@ This layer does not:
 - add a self-hosted observability stack
 - require the home server
 - mutate the VPS from pull request validation
+- move `nutsnews.com`, change DNS, split traffic, or add automatic failover
 
 It gives future services a safe landing zone. That is less glamorous than launching everything at once, but it is also less likely to make Friday evening weird.
 
 ## Related Docs
 
 - [NutsNews VPS Health Endpoint Network](NUTSNEWS_VPS_HEALTH_ENDPOINT_NETWORK.md)
+- [NutsNews Dual-Target Web Deployment](NUTSNEWS_DUAL_TARGET_WEB_DEPLOYMENT.md)
 - [NutsNews Protected Ansible Apply Workflow](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md)
 - [NutsNews Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md)
 - [NutsNews VPS Ansible Bootstrap](NUTSNEWS_VPS_ANSIBLE_BOOTSTRAP.md)

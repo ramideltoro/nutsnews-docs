@@ -23,6 +23,7 @@ This folder is organized by what you are trying to do: understand the product, c
 | Set up or restore encrypted VPS backups | [VPS Backups](NUTSNEWS_VPS_BACKUPS.md); [VPS Restore](NUTSNEWS_VPS_RESTORE.md); [VPS Disaster Recovery](NUTSNEWS_VPS_DISASTER_RECOVERY.md) |
 | Set up VPS Grafana Cloud observability | [Grafana Cloud Observability](NUTSNEWS_GRAFANA_CLOUD_OBSERVABILITY.md) |
 | Ship a change | [Deployment Checklist](DEPLOYMENT_CHECKLIST.md) |
+| Understand the Vercel + VPS web delivery model | [Dual-Target Web Deployment](NUTSNEWS_DUAL_TARGET_WEB_DEPLOYMENT.md) |
 | Fix a production issue | [Troubleshooting](TROUBLESHOOTING.md) |
 | Check cost and quota risk | [Free-Tier Guardrails](FREE_TIER_GUARDRAILS.md) |
 | Validate public API contracts | [Public API Contract Tests](PUBLIC_API_CONTRACT_TESTS.md) |
@@ -49,6 +50,7 @@ These docs explain the product and the system at a high level.
 | [VPS Ansible Bootstrap](NUTSNEWS_VPS_ANSIBLE_BOOTSTRAP.md) | First Ubuntu VPS baseline, SSH lockout prevention, firewall, updates, logging, and recovery flow |
 | [Protected Ansible Apply](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md) | Manual protected GitHub Actions workflow for check/apply runs against the VPS baseline, plus the separate on-demand health report workflow |
 | [VPS Service Foundation](NUTSNEWS_VPS_SERVICE_FOUNDATION.md) | Docker, Compose, `/opt/nutsnews`, Caddy, and public infrastructure health routing |
+| [Dual-Target Web Deployment](NUTSNEWS_DUAL_TARGET_WEB_DEPLOYMENT.md) | One application commit, Vercel and GHCR artifacts, immutable VPS promotion, staged validation, public opt-in, and rollback |
 | [Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md) | Read-only VPS dashboard, local collector, public Google OAuth route, status JSON, and recovery notes |
 | [VPS Backups](NUTSNEWS_VPS_BACKUPS.md) | Encrypted restic backups to a dedicated OneDrive rclone remote, setup secrets, status, alerts, and validation |
 | [VPS Restore](NUTSNEWS_VPS_RESTORE.md) | Restoring encrypted VPS snapshots to staging, copying selected data/config, and restore testing |
@@ -141,6 +143,7 @@ These docs explain the product and the system at a high level.
 | Doc | Use it for |
 | --- | --- |
 | [Deployment Checklist](DEPLOYMENT_CHECKLIST.md) | Safe release steps for web, DB, and cache |
+| [Dual-Target Web Deployment](NUTSNEWS_DUAL_TARGET_WEB_DEPLOYMENT.md) | Build identity, environment parity, image publishing, digest promotion, protected rollout, and rollback |
 | [Dependency Updates](DEPENDENCY_UPDATES.md) | npm audit, safe upgrades, Dependabot, and validation |
 | [Mandatory NutsNews Docs Policy](updates/README_MANDATORY_NUTSNEWS_DOCS_POLICY.md) | Required docs updates, release-note summaries, diagrams, and app/docs PR linkage for every NutsNews change |
 | [Platform Improvement Backlog](PLATFORM_IMPROVEMENT_ISSUE_BACKLOG.md) | Planned platform improvement issues |

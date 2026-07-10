@@ -8,6 +8,12 @@ The VPS bootstrap is no longer just a local operator ritual. We now have a manua
 
 The safe default is check mode. Check mode connects to the VPS as `nutsnews_ops`, shows what Ansible would change, prints the recap, and exits without applying remote changes. Apply mode is available, but it requires an explicit `apply` selection, the confirmation text `vps.nutsnews.com`, and Environment approval.
 
+The workflow is also the only approved VPS application rollout path. It does
+not build or publish the image; it consumes reviewed immutable release state
+from `nutsnews-infra`. Issue
+[nutsnews-infra #67](https://github.com/ramideltoro/nutsnews-infra/issues/67)
+prepares that plumbing but does not run this workflow or enable the app.
+
 Root SSH was only for first bootstrap. From here on, root access is break-glass only: useful when things are genuinely broken, terrible as a lifestyle.
 
 ## Intermediate Summary
@@ -84,6 +90,22 @@ Optional Grafana Alloy Environment secrets:
 
 The telemetry write values are required only when the workflow input `enable_grafana_alloy` is `true`. The URL, service account token, and usage datasource UID are optional for Alloy itself, but they let the Ops Portal free-tier collector read Grafana active-series and logs-ingestion usage from the existing usage datasource after protected apply renders the root-only collector environment.
 
+Prepared application release state is not a secret. The reviewed source of
+truth is
+`ansible/inventories/production/host_vars/vps.nutsnews.com.yml`, which records:
+
+- application, staged-route, and public-route enabled states;
+- image repository and immutable `sha256` digest;
+- source commit, build ID, and deployment target;
+- last-known-good rollback digest;
+- the names of allowed/required runtime secret keys.
+
+Only the corresponding application values are secret. They stay in
+`NUTSNEWS_APP_ENVS_JSON` in the protected `production-vps` Environment and are
+rendered through the root-only Ansible path with `no_log`. The workflow and
+portal must never print values. Mutable image references are rejected whenever
+the application is enabled.
+
 ## Expert Summary
 
 The workflow is intentionally narrow:
@@ -103,6 +125,12 @@ The workflow is intentionally narrow:
 The playbook still manages privileged host state through sudo, but SSH does not log in as root. That distinction matters: `nutsnews_ops` is the automation door; root is the emergency hatch behind glass with a tiny hammer and a lot of paperwork.
 
 The same protected workflow now also applies the service foundation role after the host baseline: Docker Engine, Docker Compose, the `/opt/nutsnews` layout, and a local-only Caddy placeholder. Check mode remains the first stop. Apply mode is still the button with consequences.
+
+For a future app promotion, the same role may pull and reconcile only the
+reviewed immutable digest, render the root-only runtime environment, and update
+the health-only staged route. Public app routing is a separate opt-in flag and
+must remain disabled until parity and rollback are reviewed. The existing
+`/health` infrastructure route is never handed to the application.
 
 The workflow can also pass optional SMTP settings into Ansible extra vars for the Ops Portal reporter. Those values are never committed, and the Ansible task that writes `/etc/nutsnews/ops-reporter.env` is hidden with `no_log` so the workflow does not proudly print the password like a broken receipt printer.
 
@@ -158,6 +186,11 @@ Use check mode first every time. Yes, even when the change looks tiny. Especiall
 8. Approve the `production-vps` Environment gate if GitHub asks.
 9. Read the diff and final recap.
 
+For an app promotion, confirm the recap references the expected source commit,
+build ID, immutable digest, and route states. Stop if it shows `latest`, an
+unexpected digest, a public-route change, secret output, or unrelated host
+mutation.
+
 Expected healthy recap:
 
 ```text
@@ -178,13 +211,21 @@ Apply mode is for after check mode looks safe.
 6. Approve the `production-vps` Environment gate.
 7. Watch the final `PLAY RECAP`.
 
+Application apply mode requires the same separate approval. After it finishes,
+read-only SSH verification is required: prove the running image digest,
+container health, non-root runtime, `/healthz` identity, staged route, UFW/Caddy
+posture, application security headers, sanitized logs, and Ops Portal status.
+Do not report runtime success from the Ansible recap alone.
+
 If Ansible exits non-zero, the workflow fails. Do not retry apply mode repeatedly as a coping mechanism. Read the failing task, fix the source of truth, and rerun check mode.
 
 ## What Can Go Wrong
 
 | Failure | Likely cause | Recovery |
 | --- | --- | --- |
-| Missing secret error | One of the required Environment secrets is absent or empty | Add the secret to `production-vps`, then rerun check mode |
+| Missing secret error | One of the required Environment secrets is absent or empty | Add the secret to `production-vps` without printing it, then rerun check mode |
+| App promotion is rejected before SSH | Image digest is blank/mutable, metadata is incomplete, or a required secret key is absent | Keep all app routes disabled, fix reviewed release state or protected Environment values, then rerun check mode |
+| App check proposes public routing | Public route flag changed before staged parity/rollback approval | Stop, set the public route back to disabled in Git, and review through PR |
 | Host key check fails | `NUTSNEWS_VPS_KNOWN_HOSTS` does not match `65.75.202.112` | Verify the host key through a trusted path and update the Environment secret |
 | SSH authentication fails | Private key does not match an authorized key for `nutsnews_ops` | Confirm the key pair and the `NUTSNEWS_VPS_ADMIN_AUTHORIZED_KEYS_JSON` public key list |
 | Sudo fails | `nutsnews_ops` lost passwordless sudo or group membership | Use break-glass access, restore the minimal sudo config, document it, rerun check mode |
@@ -209,19 +250,22 @@ If `nutsnews_ops` access breaks, root SSH or provider console access is break-gl
 
 This workflow does not:
 
-- deploy the NutsNews app
+- build or publish the NutsNews app image
+- deploy an image that has not been promoted by immutable digest in Git
 - run automatically on merge
 - provision a new VPS
-- manage production application secrets
+- create application secret values or store them in Git
 - use root SSH
 - loosen the existing CI gates
 - replace provider console recovery
+- change DNS, move `nutsnews.com`, or automatically enable staged/public app routing
 
 It is one careful step: take the already-bootstrapped host baseline and let GitHub run it manually through the protected environment.
 
 ## Related Docs
 
 - [NutsNews VPS Ansible Bootstrap](NUTSNEWS_VPS_ANSIBLE_BOOTSTRAP.md)
+- [NutsNews Dual-Target Web Deployment](NUTSNEWS_DUAL_TARGET_WEB_DEPLOYMENT.md)
 - [NutsNews VPS Service Foundation](NUTSNEWS_VPS_SERVICE_FOUNDATION.md)
 - [NutsNews Grafana Cloud Observability](NUTSNEWS_GRAFANA_CLOUD_OBSERVABILITY.md)
 - [NutsNews Infra Operations Platform](NUTSNEWS_INFRA_OPERATIONS_PLATFORM.md)
