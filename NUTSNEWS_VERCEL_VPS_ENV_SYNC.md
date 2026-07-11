@@ -21,16 +21,17 @@ for manual review also stops the sync.
 | Category | Current policy | Examples |
 | --- | --- | --- |
 | Safe to synchronize | Explicitly allowlisted; values are public or non-credential runtime configuration used by the web app. | `ADMIN_EMAILS`, `ADMIN_SHARD_*`, `NEXT_PUBLIC_APP_ENV`, `NEXT_PUBLIC_GA_ID`, `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `NEXT_PUBLIC_SUPABASE_*`, `NUTSNEWS_EDGE_FEED_SNAPSHOT_URL` |
-| Server-side secrets to synchronize securely | Supported only through an explicit `sync: true` mapping and the protected Ansible secret path. | `ACTIONS_READ_TOKEN`, `BETTER_STACK_SOURCE_TOKEN`, `HOME_SERVER_STATS_API_KEY`, `RESEND_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `TURNSTILE_SECRET_KEY` are synchronized because the current VPS web runtime consumes them. |
+| Server-side secrets to synchronize securely | Supported only through an explicit `sync: true` mapping and the protected Ansible secret path. | `ACTIONS_READ_TOKEN`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `AUTH_SECRET`, `BETTER_STACK_SOURCE_TOKEN`, `HOME_SERVER_STATS_API_KEY`, `RESEND_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `TURNSTILE_SECRET_KEY` are synchronized because the current VPS web runtime consumes them. |
 | Vercel/platform-only | Excluded. | `VERCEL_*`, `NOW_*`, `NEXT_PUBLIC_VERCEL_*`, deployment commit metadata, `SENTRY_ORG`, `SENTRY_PROJECT`, and unused cost-estimation metadata |
 | Preview/development-only | Excluded from the production sync. | Names containing the mapped preview/development markers; non-production Vercel targets are never fetched as the source. |
 | Manual review | Fails closed until a consumer, target, and security classification are documented in the mapping. | Any newly discovered Turnstile, admin, controller, or other service-specific variable not yet represented by an exact rule |
 
 `SENTRY_AUTH_TOKEN` is classified as a server-side secret but excluded because it
-is a Vercel build/source-map credential. `OPENAI_API_KEY`, the unused OAuth/Auth
-secrets, and cost-estimation variables remain excluded because the current VPS
-web runtime does not consume them. Browser-readable values are not secrets by
-virtue of their name; only the reviewed public configuration above is copied.
+is a Vercel build/source-map credential. `OPENAI_API_KEY` remains excluded
+because it belongs to the Worker runtime, while cost-estimation variables remain
+excluded because the VPS web runtime does not consume them. Browser-readable
+values are not secrets by virtue of their name; only the reviewed public
+configuration above is copied.
 
 The current web runtime has two Supabase consumers: browser code uses
 `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`, while server-side
