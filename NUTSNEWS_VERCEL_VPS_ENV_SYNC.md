@@ -21,7 +21,7 @@ for manual review also stops the sync.
 | Category | Current policy | Examples |
 | --- | --- | --- |
 | Safe to synchronize | Explicitly allowlisted; values are public or non-credential runtime configuration. | `NEXT_PUBLIC_APP_ENV`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SUPABASE_URL` |
-| Server-side secrets to synchronize securely | Supported only through an explicit `sync: true` mapping and the protected Ansible secret path. No current privileged server secret is enabled. | `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY` are currently excluded because they are Worker-owned. |
+| Server-side secrets to synchronize securely | Supported only through an explicit `sync: true` mapping and the protected Ansible secret path. No current privileged server secret is enabled. | `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`, and the unused `ACTIONS_READ_TOKEN` are currently excluded pending an explicit VPS consumer review. |
 | Vercel/platform-only | Excluded. | `VERCEL_*`, `NOW_*`, `NEXT_PUBLIC_VERCEL_*`, deployment commit metadata, `SENTRY_ORG`, `SENTRY_PROJECT` |
 | Preview/development-only | Excluded from the production sync. | Names containing the mapped preview/development markers; non-production Vercel targets are never fetched as the source. |
 | Manual review | Fails closed until a consumer, target, and security classification are documented in the mapping. | Turnstile, admin, controller, and any newly discovered service-specific variable |
