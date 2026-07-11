@@ -6,10 +6,9 @@ delivered to Vercel and to an immutable, GitOps-managed VPS rollout.
 Issue: [nutsnews-infra #67](https://github.com/ramideltoro/nutsnews-infra/issues/67)
 
 Status: Vercel remains the production host for `nutsnews.com`, and the VPS app
-is live at `vps.nutsnews.com`. The automatic per-`main` release path is pending
-review of [nutsnews PR #170](https://github.com/ramideltoro/nutsnews/pull/170)
-and [nutsnews-infra PR #97](https://github.com/ramideltoro/nutsnews-infra/pull/97),
-plus the token setup documented below. It is not active until both PRs merge.
+is live at `vps.nutsnews.com`. The automatic per-`main` release path is enabled:
+it promotes only after the matching Vercel Production deployment and all
+registered infrastructure promotion checks pass.
 
 ## Simple Summary
 
@@ -37,7 +36,8 @@ ID, image repository, immutable digest, Vercel URL, and workflow run ID to
 
 `ramideltoro/nutsnews-infra` owns promotion. It validates that handoff, creates
 a normal promotion PR containing only reviewed release-state fields, waits for
-all required checks, merges the PR, starts the protected Ansible apply, and
+all promotion PR checks to register and pass, merges the PR, starts the
+protected Ansible apply, and
 waits for exact SSH and public-health identity evidence. Runtime secrets remain
 only in the protected `production-vps` Environment.
 
@@ -88,8 +88,8 @@ Required invariants:
 - Only `nutsnews-infra` may promote an image or change VPS routing.
 - A VPS promotion starts only after Vercel has reported a successful Production
   deployment for the same source commit.
-- Every automated release produces a normal infra PR, required checks, a merge,
-  a protected apply, and runtime identity verification.
+- Every automated release produces a normal infra PR, passing promotion checks,
+  a merge, a protected apply, and runtime identity verification.
 - Database migrations are single-flight, explicit, and auditable. Neither
   target runs migrations at container startup.
 
@@ -106,7 +106,7 @@ flowchart TD
   gate -- No --> stop["Fail closed\nno VPS mutation"]
   gate -- Yes --> dispatch["Constrained repository dispatch"]
   dispatch --> promotion["nutsnews-infra normal promotion PR\ndigest + source + build + rollback state"]
-  promotion --> checks["Required infra checks"]
+  promotion --> checks["Promotion PR checks register and pass"]
   checks --> apply["Merge + Protected Ansible Apply"]
   apply --> ssh["Read-only SSH\nrunning digest + health"]
   ssh --> vps["Public VPS /healthz\nsource/build/target identity"]
@@ -254,7 +254,8 @@ A tag is a lookup aid. Promotion always records and deploys the digest.
 
 ## Automated Main Release Setup
 
-Complete this once, before merging the automation PRs:
+This setup is required before enabling the automation in a new repository or
+after rotating its release credential:
 
 1. Keep Vercel's Git integration connected to `ramideltoro/nutsnews` so a push
    to `main` produces a GitHub deployment record with environment `Production`.
@@ -266,11 +267,10 @@ Complete this once, before merging the automation PRs:
    `NUTSNEWS_INFRA_RELEASE_TOKEN` in both `ramideltoro/nutsnews` and
    `ramideltoro/nutsnews-infra`. Never paste its value into a workflow, PR,
    issue, terminal transcript, or documentation.
-4. Merge [nutsnews-infra PR #97](https://github.com/ramideltoro/nutsnews-infra/pull/97)
-   first so the receiver, manifest guard, and protected-apply verification are
-   available on infra `main`.
-5. Merge [nutsnews PR #170](https://github.com/ramideltoro/nutsnews/pull/170).
-   Its next `main` release is the first automatic end-to-end test.
+4. Merge the reviewed infra receiver and protected-apply workflow first so the
+   manifest guard and release verification are available on infra `main`.
+5. Merge the reviewed application release workflow. Its next `main` release is
+   the first automatic end-to-end test.
 
 If the token is absent, expired, or too broad/narrow, the release fails before
 the VPS changes. Do not replace it with a broad personal token or copy VPS SSH
@@ -287,7 +287,9 @@ path is:
    commit is reachable from `nutsnews` `main`.
 3. It creates a normal, non-draft infrastructure PR that changes only the
    digest, source commit, build ID, target, and last-known-good digest.
-4. It waits for all required infra checks, then merges without bypassing them.
+4. It waits for promotion PR checks to register and pass, then merges without
+   bypassing them. This does not depend on GitHub branch-protection checks
+   being labelled "required".
 5. It dispatches `Protected Ansible Apply` at infra `main`, which validates the
    committed manifest before touching the VPS.
 6. The apply checks the exact container digest over read-only SSH and requires
@@ -391,7 +393,7 @@ digest:
 
 1. Open a focused infra change that moves the expected digest back to the
    recorded last-known-good digest.
-2. Let the required infra checks pass and merge the normal PR.
+2. Let the promotion PR checks pass and merge the normal PR.
 3. Run `Protected Ansible Apply` in apply mode with the confirmed rollback
    source/build identity; do not use the automatic app-release receiver to
    invent a rollback.
@@ -408,7 +410,7 @@ Do not rebuild an old commit and call the new image a rollback. Do not retag
 | Image workflow builds on a PR but no package appears | PR jobs are correctly push-disabled | Merge only after review; publishing occurs from `main` |
 | Publishing fails before build | A required public production build input is missing | Add/fix the approved GitHub publishing environment input; do not use a production secret as a placeholder |
 | Release stops before VPS promotion | Vercel did not report success for the exact SHA, or `NUTSNEWS_INFRA_RELEASE_TOKEN` is absent/invalid | Fix the Vercel deployment or the short-lived fine-grained token, then rerun the trusted main release; do not dispatch an arbitrary image manually |
-| Promotion PR does not merge | An infra required check failed or `main` moved during the release | Fix or rebase the generated PR through normal GitOps; do not bypass checks or direct-push the manifest |
+| Promotion PR does not merge | A promotion check failed, checks have not registered, or `main` moved during the release | Fix or rebase the generated PR through normal GitOps; do not bypass checks or direct-push the manifest |
 | Infra rejects the image | Reference is mutable, digest is malformed, or source metadata does not match | Resolve the real GHCR digest and correct the reviewed promotion |
 | Container is unhealthy | Missing runtime config, wrong health path, non-writable cache, or startup failure | Inspect sanitized container state/logs over read-only SSH; fix Ansible, Compose, or app source through PR |
 | `/app-stage/healthz` fails | App is disabled, route is disabled, Caddy cannot resolve the app, or health identity mismatches | Keep public routing disabled and fix the GitOps source of truth |
