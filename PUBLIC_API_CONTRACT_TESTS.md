@@ -148,6 +148,10 @@ Never silently repurpose an existing endpoint.
 
 Rollback is limited to reverting the application compatibility commit and, if needed, the documentation commit. No database migration, secret, provider configuration, or runtime feature flag is introduced by this testing and CI work.
 
+## Related Change
+
+- Application pull request: [ramideltoro/nutsnews#169](https://github.com/ramideltoro/nutsnews/pull/169)
+
 ## Related Docs
 
 - [Full Archive Search](FULL_ARCHIVE_SEARCH.md)
