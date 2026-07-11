@@ -1,37 +1,45 @@
 # NutsNews Dual-Target Web Deployment
 
 This guide defines how one reviewed commit from `ramideltoro/nutsnews` is
-delivered to Vercel and prepared for an immutable, GitOps-managed VPS rollout.
+delivered to Vercel and to an immutable, GitOps-managed VPS rollout.
 
 Issue: [nutsnews-infra #67](https://github.com/ramideltoro/nutsnews-infra/issues/67)
 
-Status: **prepared, not deployed**. Vercel remains the production host for
-`nutsnews.com`. The VPS application, staged route, and public application route
-remain disabled until a later approved promotion and protected rollout.
+Status: Vercel remains the production host for `nutsnews.com`, and the VPS app
+is live at `vps.nutsnews.com`. The automatic per-`main` release path is pending
+review of [nutsnews PR #170](https://github.com/ramideltoro/nutsnews/pull/170)
+and [nutsnews-infra PR #97](https://github.com/ramideltoro/nutsnews-infra/pull/97),
+plus the token setup documented below. It is not active until both PRs merge.
 
 ## Simple Summary
 
-NutsNews has one website codebase. Vercel builds that code in its normal way,
-and GitHub Actions builds a container from the same commit for the VPS. The VPS
-does not receive a copy of the source code. It receives a reviewed image digest
-through the infrastructure repository.
+NutsNews has one website codebase. After a reviewed change reaches `main`,
+Vercel builds it normally and GitHub builds a matching container for the VPS.
+The VPS gets the exact safe version through an infrastructure pull request, not
+a loose copy of the source code.
 
-Preparing the container path does not move traffic. `nutsnews.com` stays on
-Vercel, and both VPS application routes stay off.
+`nutsnews.com` stays on Vercel. `vps.nutsnews.com` is a separately observable
+VPS target; this automation does not move canonical traffic or introduce
+failover.
 
 ## Intermediate Summary
 
 `ramideltoro/nutsnews` owns the Next.js source, Vercel build, production OCI
 image, portable health endpoint, smoke checks, and build identity. A pull
-request may build the image for validation, but it must not publish it. A push
-to `main` publishes an immutable full-commit tag to
-`ghcr.io/ramideltoro/nutsnews` and records the registry digest.
+request may build the image for validation but never publishes it. Every push
+to `main` builds and publishes an immutable full-commit image and records its
+registry digest as a small, safe artifact.
 
-`ramideltoro/nutsnews-infra` owns promotion. It records the exact source
-commit, build ID, immutable image digest, deployment target, and last-known-good
-rollback digest. Ansible renders root-only runtime configuration, Compose runs
-the image, and Caddy provides a health-only staged gate before any public route
-can be considered.
+The release workflow waits for Vercel to report a successful **Production**
+deployment for that exact commit. It then sends only the source commit, build
+ID, image repository, immutable digest, Vercel URL, and workflow run ID to
+`ramideltoro/nutsnews-infra`.
+
+`ramideltoro/nutsnews-infra` owns promotion. It validates that handoff, creates
+a normal promotion PR containing only reviewed release-state fields, waits for
+all required checks, merges the PR, starts the protected Ansible apply, and
+waits for exact SSH and public-health identity evidence. Runtime secrets remain
+only in the protected `production-vps` Environment.
 
 Vercel does not consume the GHCR image. Vercel and the VPS produce different
 platform artifacts from the same source commit, which is the required parity
@@ -54,13 +62,13 @@ The publishing workflow separates unprivileged pull-request builds from the
 `latest`, are invalid when the VPS application is enabled. Application secrets
 are runtime-only values from the protected `production-vps` Environment and
 are rendered by Ansible with `no_log`. They are never Docker build arguments,
-OCI labels, image layers, artifacts, status JSON, or portal fields.
+OCI labels, image layers, artifacts, status JSON, promotion payloads, or portal
+fields.
 
-The staged route is intentionally a health-only gate at
-`http://127.0.0.1:8080/app-stage/healthz`. It does not prove that pages,
-assets, navigation, redirects, or APIs work under `/app-stage`. Public routing
-on `vps.nutsnews.com` is a separate opt-in state and must preserve the existing
-infrastructure `/health` endpoint.
+The automation uses a short-lived, fine-grained GitHub token stored only as the
+repository secret `NUTSNEWS_INFRA_RELEASE_TOKEN`. It is not a VPS credential,
+is never written to an artifact or Git, and is not substituted by the scoped
+`GITHUB_TOKEN`, which cannot dispatch to a different repository.
 
 ## Ownership And Invariants
 
@@ -78,6 +86,10 @@ Required invariants:
 - Vercel continues to build a native Vercel artifact from `nutsnews/web`.
 - The VPS pulls an immutable digest; it never deploys `latest`.
 - Only `nutsnews-infra` may promote an image or change VPS routing.
+- A VPS promotion starts only after Vercel has reported a successful Production
+  deployment for the same source commit.
+- Every automated release produces a normal infra PR, required checks, a merge,
+  a protected apply, and runtime identity verification.
 - Database migrations are single-flight, explicit, and auditable. Neither
   target runs migrations at container startup.
 
@@ -88,17 +100,16 @@ flowchart TD
   commit["One reviewed Git commit\nramideltoro/nutsnews"]
   commit --> vercel["Vercel Git build\nweb/ -> native Vercel artifact"]
   commit --> actions["GitHub Actions\nNode 22 container build"]
-  actions --> ghcr["GHCR\nfull-commit tag + immutable digest"]
-  ghcr --> manifest["Reviewed nutsnews-infra promotion\nsource commit + build ID + digest + rollback digest"]
-  manifest --> check["Protected Ansible Apply\ncheck mode"]
-  check --> approval{"Separate apply approval?"}
-  approval -- No --> stopped["Prepared only\nno VPS mutation"]
-  approval -- Yes --> apply["Protected Ansible Apply\napply mode"]
-  apply --> vps["VPS Compose\nimmutable image reference"]
-  vps --> stage["Health-only staged gate\n/app-stage/healthz"]
-  stage --> publicApproval{"Separate public-route review?"}
-  publicApproval -- No --> private["Public app route remains disabled"]
-  publicApproval -- Yes --> public["Opt-in vps.nutsnews.com app route\n/health remains infrastructure-owned"]
+  actions --> ghcr["GHCR\nfull-commit tag + immutable digest + metadata"]
+  vercel --> gate{"Same SHA deployed\nto Vercel Production?"}
+  ghcr --> gate
+  gate -- No --> stop["Fail closed\nno VPS mutation"]
+  gate -- Yes --> dispatch["Constrained repository dispatch"]
+  dispatch --> promotion["nutsnews-infra normal promotion PR\ndigest + source + build + rollback state"]
+  promotion --> checks["Required infra checks"]
+  checks --> apply["Merge + Protected Ansible Apply"]
+  apply --> ssh["Read-only SSH\nrunning digest + health"]
+  ssh --> vps["Public VPS /healthz\nsource/build/target identity"]
 ```
 
 There is deliberately no arrow from GHCR to Vercel. The shared identity is the
@@ -228,10 +239,12 @@ The implementation lives at `web/Dockerfile`, `web/.dockerignore`,
 
 Pushes to `main` must:
 
-1. Build from the merged commit with required production public build inputs.
+1. Build from every merged commit with required production public build inputs;
+   this workflow deliberately has no path filter or cancellation of earlier
+   `main` releases.
 2. Publish an immutable full-commit tag.
 3. Resolve the registry digest after publication.
-4. Expose the source commit, build ID, and digest in safe workflow output.
+4. Expose the source commit, build ID, and digest in a safe workflow artifact.
 
 The selected image architecture must match the read-only verified production
 VPS architecture. Use a multi-platform build only when a reviewed requirement
@@ -239,21 +252,50 @@ justifies its extra build time and complexity.
 
 A tag is a lookup aid. Promotion always records and deploys the digest.
 
+## Automated Main Release Setup
+
+Complete this once, before merging the automation PRs:
+
+1. Keep Vercel's Git integration connected to `ramideltoro/nutsnews` so a push
+   to `main` produces a GitHub deployment record with environment `Production`.
+2. Create a **fine-grained** GitHub personal access token owned by the release
+   operator. Limit repository access to `ramideltoro/nutsnews-infra` only, give
+   it `Contents: read and write`, `Pull requests: read and write`, and
+   `Actions: read and write`, and give it a short expiry with a rotation owner.
+3. Store the same token as the repository secret
+   `NUTSNEWS_INFRA_RELEASE_TOKEN` in both `ramideltoro/nutsnews` and
+   `ramideltoro/nutsnews-infra`. Never paste its value into a workflow, PR,
+   issue, terminal transcript, or documentation.
+4. Merge [nutsnews-infra PR #97](https://github.com/ramideltoro/nutsnews-infra/pull/97)
+   first so the receiver, manifest guard, and protected-apply verification are
+   available on infra `main`.
+5. Merge [nutsnews PR #170](https://github.com/ramideltoro/nutsnews/pull/170).
+   Its next `main` release is the first automatic end-to-end test.
+
+If the token is absent, expired, or too broad/narrow, the release fails before
+the VPS changes. Do not replace it with a broad personal token or copy VPS SSH
+material into `nutsnews`.
+
 ## Digest Promotion And Protected Rollout
 
-No digest may be invented. If the app PR has not merged and published, the
-infra application, staged route, and public route remain disabled.
+No digest may be invented. For every successful `main` release, the automated
+path is:
 
-After a real image exists, use a separate reviewed infra promotion:
+1. The app workflow validates its immutable image metadata and the matching
+   Vercel Production deployment.
+2. The infra receiver validates the GitHub handoff and confirms the source
+   commit is reachable from `nutsnews` `main`.
+3. It creates a normal, non-draft infrastructure PR that changes only the
+   digest, source commit, build ID, target, and last-known-good digest.
+4. It waits for all required infra checks, then merges without bypassing them.
+5. It dispatches `Protected Ansible Apply` at infra `main`, which validates the
+   committed manifest before touching the VPS.
+6. The apply checks the exact container digest over read-only SSH and requires
+   public `https://vps.nutsnews.com/healthz` to return the expected source
+   commit, build ID, deployment target, and identity headers.
 
-1. Verify the GHCR digest belongs to the expected full-commit tag.
-2. Record source commit, build ID, immutable digest, target, and current
-   last-known-good digest in the infra source of truth.
-3. Run `Protected Ansible Apply` in check mode.
-4. Review the exact recap and planned image/config changes.
-5. Obtain separate approval before apply mode.
-6. Apply through Ansible; do not run `docker compose up` manually.
-7. Re-verify over read-only SSH, local Caddy, external TLS, and the Ops Portal.
+A failed Vercel deployment, dispatch, PR check, merge, apply, SSH check, or
+health check is release-blocking and does not count as a deployment.
 
 ## Staged Validation
 
@@ -277,13 +319,14 @@ Do not claim full prefix support from the health-only route. Full pages, static
 assets, navigation, redirects, APIs, and Auth.js callbacks require root-host
 testing on the eventual public host.
 
-## Eventual Public Route Activation
+## VPS Public Route And Canonical Traffic
 
-Public activation is out of scope for the prepared change. A later reviewed
-change may opt in the app route on `vps.nutsnews.com` only after staged parity
-and rollback evidence are complete.
+The public app route at `vps.nutsnews.com` is live, but `nutsnews.com` remains
+the Vercel-backed canonical production hostname. A normal automated release
+updates the already reviewed VPS route; it does not alter DNS, canonical URLs,
+or traffic ownership.
 
-The public route must:
+The public route must continue to:
 
 - keep `https://vps.nutsnews.com/health` owned by infrastructure;
 - preserve WebSocket/streaming behavior and proxy `Host`, scheme, and forwarded
@@ -292,7 +335,7 @@ The public route must:
 - avoid applying the placeholder `default-src 'none'` CSP to app responses;
 - leave DNS and `nutsnews.com` traffic unchanged until a separate cutover;
 - never introduce traffic splitting, load balancing, or automatic failover as
-  part of issue #67.
+  part of this release automation.
 
 ## Application Parity Review
 
@@ -311,10 +354,10 @@ Before public activation, verify each boundary explicitly:
 | Vercel assumptions | Audit Vercel system variables, preview protection, deployment-status cache purge, and platform-only services. Provide a portable equivalent or document the approved target difference. |
 
 The production Vercel callback remains
-`https://www.nutsnews.com/api/auth/callback/google`. The future VPS callback is
-`https://vps.nutsnews.com/api/auth/callback/google` and must not be treated as
-accepted until the matching Google OAuth client and public route are reviewed.
-Health-only `/app-stage` validation does not exercise this callback.
+`https://www.nutsnews.com/api/auth/callback/google`. The VPS callback is
+`https://vps.nutsnews.com/api/auth/callback/google`; a successful health check
+does not prove OAuth callback parity, so its client, redirect registration,
+cookies, and sign-in behavior remain an explicit operational check.
 
 ## Migration Ownership
 
@@ -348,8 +391,10 @@ digest:
 
 1. Open a focused infra change that moves the expected digest back to the
    recorded last-known-good digest.
-2. Run protected check mode and review the recap.
-3. Obtain separate approval and run apply mode.
+2. Let the required infra checks pass and merge the normal PR.
+3. Run `Protected Ansible Apply` in apply mode with the confirmed rollback
+   source/build identity; do not use the automatic app-release receiver to
+   invent a rollback.
 4. Verify the running digest, `/healthz`, staged/public route state, security
    headers, and Ops Portal deployment result.
 
@@ -362,6 +407,8 @@ Do not rebuild an old commit and call the new image a rollback. Do not retag
 | --- | --- | --- |
 | Image workflow builds on a PR but no package appears | PR jobs are correctly push-disabled | Merge only after review; publishing occurs from `main` |
 | Publishing fails before build | A required public production build input is missing | Add/fix the approved GitHub publishing environment input; do not use a production secret as a placeholder |
+| Release stops before VPS promotion | Vercel did not report success for the exact SHA, or `NUTSNEWS_INFRA_RELEASE_TOKEN` is absent/invalid | Fix the Vercel deployment or the short-lived fine-grained token, then rerun the trusted main release; do not dispatch an arbitrary image manually |
+| Promotion PR does not merge | An infra required check failed or `main` moved during the release | Fix or rebase the generated PR through normal GitOps; do not bypass checks or direct-push the manifest |
 | Infra rejects the image | Reference is mutable, digest is malformed, or source metadata does not match | Resolve the real GHCR digest and correct the reviewed promotion |
 | Container is unhealthy | Missing runtime config, wrong health path, non-writable cache, or startup failure | Inspect sanitized container state/logs over read-only SSH; fix Ansible, Compose, or app source through PR |
 | `/app-stage/healthz` fails | App is disabled, route is disabled, Caddy cannot resolve the app, or health identity mismatches | Keep public routing disabled and fix the GitOps source of truth |
@@ -371,24 +418,25 @@ Do not rebuild an old commit and call the new image a rollback. Do not retag
 | Assets or images return errors | Standalone files are incomplete, remote host policy differs, or cache path is not writable | Fix the image contents/config or explicit writable cache mount and rebuild |
 | Ops Portal expected and actual digests differ | Drift, incomplete pull, or wrong Compose reference | Keep routes disabled, inspect read-only state, and reconcile through Ansible |
 
-## Current Safe Stop
+## Current Release State
 
-At the issue #67 review stop:
+Today, Vercel production and the VPS application route are live; the latter
+reports its own source/build identity at `/healthz`. `nutsnews.com` remains on
+Vercel and the infrastructure-owned `/health` endpoint remains separate.
 
-- Vercel production and preview behavior remain active;
-- the application and infrastructure pull requests are unmerged;
-- a real digest may not exist until the app PR merges;
-- no `production-vps` Environment secret is changed;
-- no Protected Ansible Apply is run;
-- the VPS application, staged route, and public route are disabled;
-- DNS and `nutsnews.com` traffic are unchanged;
-- runtime acceptance criteria remain unverified.
+Until [nutsnews PR #170](https://github.com/ramideltoro/nutsnews/pull/170) and
+[nutsnews-infra PR #97](https://github.com/ramideltoro/nutsnews-infra/pull/97)
+merge and the fine-grained token is configured in both repositories, automated
+promotion is not active. No one should emulate it with a direct server change,
+an unreviewed digest, `latest`, or a copied SSH secret.
 
 ## Related Work
 
 - Issue: [ramideltoro/nutsnews-infra#67](https://github.com/ramideltoro/nutsnews-infra/issues/67)
-- Application PR: https://github.com/ramideltoro/nutsnews/pull/167
-- Infrastructure PR: https://github.com/ramideltoro/nutsnews-infra/pull/88
+- Container foundation PR: https://github.com/ramideltoro/nutsnews/pull/167
+- Current application automation PR: https://github.com/ramideltoro/nutsnews/pull/170
+- Immutable-promotion foundation PR: https://github.com/ramideltoro/nutsnews-infra/pull/88
+- Current infrastructure automation PR: https://github.com/ramideltoro/nutsnews-infra/pull/97
 - [Deployment Checklist](DEPLOYMENT_CHECKLIST.md)
 - [Operations](OPERATIONS.md)
 - [VPS Service Foundation](NUTSNEWS_VPS_SERVICE_FOUNDATION.md)
