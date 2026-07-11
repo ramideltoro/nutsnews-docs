@@ -96,6 +96,11 @@ boundary. Do not run the apply command until the check run is reviewed. The
 workflow fetches Vercel Production again immediately before Ansible runs, so a
 stale dry-run cannot silently apply an unrelated later value.
 
+The workflow overlays the classified Vercel map onto the VPS app map before
+passing Ansible extra vars. This is intentional: Ansible extra vars have higher
+precedence than role facts, so merging only inside the role would not replace a
+pre-existing `NUTSNEWS_APP_ENVS_JSON` map.
+
 After an approved apply, perform the required read-only verification: confirm
 the env variable names and name-only fingerprints, confirm the app Compose
 service configuration, and check the configured health endpoint. Never print the
