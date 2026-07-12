@@ -220,7 +220,9 @@ with safe empty fixtures never publishes an empty story list.
 The page shell is rendered on demand, while the initial home-feed result is
 cached on the server for 15 minutes. This keeps staging and production content
 separate at runtime without causing every homepage visit to query Supabase.
-The public home-feed API retains its existing CDN policy.
+The public home-feed API retains its existing CDN policy. If a deployment ever
+hydrates an empty initial list, the browser safely retries that existing
+read-only public API once.
 
 #### Expert Summary
 
@@ -232,6 +234,10 @@ behavior for its preview and production deployments. Its
 stable `homepage-initial-feed` key and `revalidate: 900`. The container route
 therefore uses the active target's runtime public Supabase configuration on its
 first request, then reuses the server-side data cache until revalidation.
+`ArticleFeed` preserves the normal no-refetch path for populated English data;
+an empty initial list (or a non-English selection) invokes the existing
+localized home-feed read. It does not introduce a mutation or a new data
+source.
 
 ```mermaid
 flowchart LR
@@ -243,6 +249,8 @@ flowchart LR
   feed --> cache
   cache -- Yes --> page["Render populated homepage"]
   cache --> page
+  empty["Empty hydrated list"] --> clientRead["Read existing public home-feed API once"]
+  clientRead --> page
 ```
 
 Risk: the first request after cache expiry can be slower while it refreshes.
