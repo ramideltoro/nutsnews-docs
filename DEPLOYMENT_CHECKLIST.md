@@ -58,13 +58,43 @@ Keep deployments small when possible. A documentation-only change does not need 
 
 ## Main Release Boundary
 
-NutsNews production release automation starts only from a reviewed merge to
-`main`; maintainers must not publish a release with a direct push. This policy
-is delivered in two deliberate stages under
+### Simple Summary
+
+Before NutsNews can make a production image, its change must go through a pull
+request and pass one clear green-light check named `Release candidate`. Nobody
+should send a change straight to `main`.
+
+### Intermediate Summary
+
+This policy is delivered in two deliberate stages under
 [nutsnews #173](https://github.com/ramideltoro/nutsnews/issues/173): first the
 always-running `Release candidate` check is merged and proven on a real pull
 request, then the live GitHub ruleset requires that exact check and a pull
-request for `refs/heads/main`.
+request for `refs/heads/main`. This affects maintainers who release the web
+application: a reviewed, green PR merge becomes the only route that may publish
+the immutable image and start the existing production-release chain.
+
+### Expert Summary
+
+`Release candidate` is bound to the current pull-request head and requires a
+successful production-image build and smoke test. It also runs the release
+workflow contract, immutable-test guards, Actions linting, and release-critical
+web checks without production secrets or elevated pull-request permissions. The
+future ruleset pins that exact check to GitHub Actions, requires the branch to
+be up to date, retains deletion/non-fast-forward protection, and uses zero
+external approvals only to avoid a solo-maintainer self-approval loop.
+
+```mermaid
+flowchart LR
+  change["Application or workflow change"] --> pr["Pull request to main"]
+  pr --> candidate["Release candidate\ncurrent PR head"]
+  candidate --> gate{"Green and up to date?"}
+  gate -- "No" --> fix["Fix the PR"]
+  fix --> candidate
+  gate -- "Yes" --> merge["Reviewed merge to main"]
+  merge --> image["Immutable image publish"]
+  image --> promotion["Existing production-release chain"]
+```
 
 Until the second stage is verified against the live ruleset, do not claim that
 GitHub is rejecting direct pushes. The repository settings change is separate
