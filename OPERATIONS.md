@@ -279,6 +279,21 @@ source commit, build ID, and deployment target without exposing environment
 values. Compare that identity across Vercel and, after an approved rollout,
 the expected GHCR digest and actual VPS container in the Ops Portal.
 
+`/readyz` is the separate uncached runtime-safety readiness contract. It must
+return HTTP `200` with `ok: true` before a target is considered ready. It
+returns HTTP `503` for missing, conflicting, or production-in-staging runtime
+configuration, and it deliberately returns only a safe refusal code rather
+than environment values or credentials.
+
+```bash
+curl -fsS https://www.nutsnews.com/readyz
+curl -fsS https://vps.nutsnews.com/readyz
+```
+
+For the required runtime/data identity variables, staging sandbox limits, and
+the synthetic staging fixture procedure, see
+[Dual-Target Web Deployment](NUTSNEWS_DUAL_TARGET_WEB_DEPLOYMENT.md#staging-data-and-side-effect-safety).
+
 The VPS staged gate is health-only:
 
 ```text

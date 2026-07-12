@@ -173,9 +173,11 @@ The image build receives only target-neutral build identity (`NUTSNEWS_SOURCE_CO
 `NUTSNEWS_BUILD_ID`, and `NUTSNEWS_DEPLOYMENT_TARGET`) plus local neutral
 fixtures required by Next.js compilation. It must receive no deployment public
 configuration or credential as a Docker build argument. The container image
-workflow launches the same image identity twice—once with staging fixture
-configuration and once with production fixture configuration—and rejects the
-build if production fixture values appear in `.next/static`.
+workflow launches the same image identity with a valid staging fixture and
+with a deliberately rejected staging configuration that claims the known
+production data identity. The rejected container must become unhealthy through
+`/readyz`, and neither readiness output nor static browser assets may contain a
+credential fixture.
 
 For the VPS, Ansible derives `NUTSNEWS_SOURCE_COMMIT`, `NUTSNEWS_BUILD_ID`,
 `NUTSNEWS_DEPLOYMENT_TARGET`, and `NUTSNEWS_EXPECTED_IMAGE_DIGEST` directly
@@ -188,14 +190,25 @@ values, so an environment sync cannot claim a different digest.
 1. Set `NUTSNEWS_RUNTIME_ENV` and `NUTSNEWS_SIDE_EFFECTS_MODE` explicitly for
    every target. Staging must be `staging` with `disabled` or `sandbox`;
    production telemetry requires `production` with `live`.
-2. Configure browser-safe fields with the `NUTSNEWS_PUBLIC_*` runtime names.
+2. Set `NUTSNEWS_DATA_ENVIRONMENT`,
+   `NUTSNEWS_SUPABASE_CREDENTIALS_ENV`,
+   `NUTSNEWS_SUPABASE_PROJECT_REF`, and
+   `NUTSNEWS_PRODUCTION_SUPABASE_PROJECT_REF` explicitly for every target.
+   Runtime, data, and credential environments must agree. Staging uses its
+   own project reference and credentials; production uses the known production
+   reference for both project-reference variables.
+3. Every configured Supabase URL must resolve to the declared project
+   reference. A staging target that names or resolves to the production
+   reference is refused. Do not work around this with a writable production
+   schema, a production service-role key, or a copied production URL.
+4. Configure browser-safe fields with the `NUTSNEWS_PUBLIC_*` runtime names.
    The VPS sync maps legacy Vercel `NEXT_PUBLIC_*` sources into these runtime
    names during migration; it does not render the legacy public names on the
    VPS.
-3. Verify `GET /api/runtime-config` has `Cache-Control: no-store` and contains
+5. Verify `GET /api/runtime-config` has `Cache-Control: no-store` and contains
    the expected non-secret runtime identity. Verify `/healthz` for source,
    build, and deployment target as before.
-4. To roll back a public configuration error, restore the prior reviewed
+6. To roll back a public configuration error, restore the prior reviewed
    production environment value, run Protected Ansible Apply in check mode,
    then apply through the approval gate. To roll back code, promote the
    recorded last-known-good image digest. Do not rebuild an image merely to
@@ -205,6 +218,34 @@ Legacy `NEXT_PUBLIC_*` values are temporary server-side compatibility inputs
 for Vercel only. New runtime code and deployment wiring must use
 `NUTSNEWS_PUBLIC_*`; direct `NEXT_PUBLIC_*` references in browser entry points
 or Docker build arguments are a release-blocking regression.
+
+### Staging data and side-effect safety
+
+Issue: [nutsnews #117](https://github.com/ramideltoro/nutsnews/issues/117)
+
+`/healthz` remains a cacheable liveness and build-identity endpoint. `/readyz`
+is the uncached runtime-safety readiness endpoint used by container health
+checks and deployment verification. It returns only `ok`, runtime environment,
+side-effect mode, and a sanitized refusal code. It must never return a
+project reference, connection string, token, service-role key, or provider
+credential.
+
+| Runtime | Side effects | Allowed behavior |
+| --- | --- | --- |
+| Staging | `disabled` | Validated read-only application behavior only. Contact delivery, OAuth callbacks, telemetry delivery, ingestion triggers, quota writes, feed mutations, AI/backfills, analytics, and indexing are refused. |
+| Staging | `sandbox` | Only isolated local or `.test` provider endpoints and uniquely namespaced synthetic fixtures are allowed. A deployed staging target should normally remain `disabled`. |
+| Production | `live` | Production behavior is permitted only when all runtime/data/credential/project-reference checks agree. |
+| Any invalid or contradictory configuration | any | `/readyz` returns `503`; guarded operations fail closed. |
+
+The Web container does not own a Worker/controller schedule. Worker-owned
+ingestion remains in `ramideltoro/nutsnews-worker`; web post-deploy and Worker
+smoke commands are production-live guarded.
+
+To run the opt-in staging fixture integration after deployment, use staging
+credentials only and set `RUN_STAGING_FIXTURE_INTEGRATION=1`. The test creates
+one `nutsnews-test-...` namespaced quota event with a one-hour TTL and deletes
+it by returned identifier. A cleanup failure is reported separately and fails
+the test; it never converts a failed test into a pass.
 
 ### Homepage runtime feed cache
 
@@ -274,6 +315,10 @@ target.
 | --- | --- | --- | --- | --- | --- | --- |
 | `NUTSNEWS_RUNTIME_ENV` | Required | Public | Runtime | Vercel Production environment | Reviewed VPS environment | `production` for production; staging must never claim production |
 | `NUTSNEWS_SIDE_EFFECTS_MODE` | Required | Public | Runtime | Vercel Production environment | Reviewed VPS environment | `live` only for production; staging is disabled or sandbox |
+| `NUTSNEWS_DATA_ENVIRONMENT` | Required | Public | Runtime | Vercel target environment | Reviewed VPS environment | Must equal the declared runtime environment |
+| `NUTSNEWS_SUPABASE_CREDENTIALS_ENV` | Required | Public | Runtime | Vercel target environment | Reviewed VPS environment | Must equal the declared data environment |
+| `NUTSNEWS_SUPABASE_PROJECT_REF` | Required | Public non-secret identity | Runtime | Vercel target environment | Reviewed VPS environment | Must identify that target's Supabase project and match every configured Supabase URL |
+| `NUTSNEWS_PRODUCTION_SUPABASE_PROJECT_REF` | Required | Public non-secret identity | Runtime | Vercel target environment | Reviewed VPS environment | Known production project reference; staging must differ and production must match |
 | `NUTSNEWS_PUBLIC_SUPABASE_URL` | Required | Public | Runtime | Vercel Production environment | Synced into VPS app environment | Target-specific project; never embed production URL in a staging image |
 | `NUTSNEWS_PUBLIC_SUPABASE_ANON_KEY` | Required | Public | Runtime | Vercel Production environment | Synced into VPS app environment | Target-specific public browser key |
 | `NUTSNEWS_PUBLIC_TURNSTILE_SITE_KEY` | Required when contact is enabled | Public | Runtime | Vercel Production environment | Synced into VPS app environment | Hostname allowlist must include only reviewed hosts |
@@ -296,6 +341,7 @@ target.
 | `ADMIN_EMAILS` | Required for admin access | Secret | Runtime | Vercel Production environment | `NUTSNEWS_APP_ENVS_JSON` in `production-vps` | Normally identical allowlist |
 | `SUPABASE_URL` | Required for privileged admin reads | Public | Runtime | Vercel Production environment | `NUTSNEWS_APP_ENVS_JSON` in `production-vps` | Same production endpoint |
 | `SUPABASE_SERVICE_ROLE_KEY` | Required for privileged admin features | Secret | Runtime | Vercel Production environment | `NUTSNEWS_APP_ENVS_JSON` in `production-vps` | Same role, independently stored |
+| `NUTSNEWS_SANDBOX_CONTACT` | Test-only optional | Public | Runtime | Local/isolated test environment only | Not set in deployed VPS | Enables contact fixture UI only for sandbox with local or `.test` provider endpoints |
 | `BETTER_STACK_SOURCE_TOKEN` | Optional | Secret | Runtime | Vercel Production environment | `NUTSNEWS_APP_ENVS_JSON` in `production-vps` | Separate source token is preferred for target attribution |
 | `BETTER_STACK_INGESTING_HOST` | Optional | Public | Runtime | Vercel Production environment | `NUTSNEWS_APP_ENVS_JSON` in `production-vps` | Normally identical |
 | `BETTER_STACK_INFO_SAMPLE_RATE` | Optional | Public | Runtime | Vercel Production environment | `NUTSNEWS_APP_ENVS_JSON` in `production-vps` | Target-specific sampling is allowed |
