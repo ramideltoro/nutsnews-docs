@@ -47,8 +47,11 @@ Store these in the `production-vps` GitHub Actions Environment for
 `ramideltoro/nutsnews-infra`:
 
 - `NUTSNEWS_VERCEL_TOKEN`: a short-lived, least-privilege Vercel access token
-  that can read the project environment variables. Set an expiration and rotate
-  it before expiry.
+  that can read and decrypt the owning team's project environment variables.
+  The token owner must have access to the project and its environment secrets.
+  Set an expiration and rotate it before expiry. Store it only in the
+  `production-vps` GitHub Environment; do not put it in repository variables,
+  files, command arguments, or workflow outputs.
 - `NUTSNEWS_VERCEL_PROJECT_ID`: the Vercel project identifier.
 - `NUTSNEWS_VERCEL_TEAM_ID`: the owning Vercel team identifier.
 
@@ -76,7 +79,9 @@ gh workflow run "Protected Ansible Apply" \
 Approve the `production-vps` Environment gate when prompted, then review the
 workflow output. The Vercel API response is classified without printing values;
 the diff lists only `added`, `changed`, `removed`, and excluded variable names.
-Ansible check mode must finish with a healthy recap before any apply.
+The sync first reads Production metadata, then retrieves each selected value by
+ID through Vercel's per-variable decrypted-value endpoint. Ansible check mode
+must finish with a healthy recap before any apply.
 
 ## Approval and apply
 
@@ -126,6 +131,16 @@ mapping or source through review, run check mode again, and then apply. The
 Ansible template task is `no_log` and the workflow removes temporary secret
 files in an `always` cleanup step.
 
+If the sync reports that a value is undecrypted or semantically invalid, do not
+apply. A 403 while retrieving a selected secret means the protected Vercel
+token lacks project/team permission to read environment-variable secrets. Fix
+the token in the Vercel account/team token settings and update only
+`NUTSNEWS_VERCEL_TOKEN` in the `production-vps` GitHub Environment. For an
+invalid source value, repair the Vercel Production variable, rerun check mode,
+and review the name-only diff. If an unusable value was already applied, restore
+the last known-good Vercel Production value, run check mode, apply through the
+same approval boundary, and perform read-only VPS health verification.
+
 ## Rotate or remove a variable
 
 To rotate a synchronized variable, update its value in Vercel Production, run
@@ -143,14 +158,24 @@ security classification changes.
 
 ## Official Vercel behavior used
 
-The workflow uses Vercel's documented REST API endpoint
-`GET /v10/projects/{idOrName}/env`, bearer-token authentication, `teamId` for
-team-owned projects, and `decrypt=true` to retrieve values for the in-memory
-classification step. Vercel's CLI documentation also documents
-`vercel env run -e production` as a no-file environment injection path; the
-workflow uses the REST API so it can inspect targets and system-variable
-metadata before selecting the allowlist.
+The workflow uses bearer-token authentication and the owning `teamId` with
+Vercel's documented `GET /v10/projects/{idOrName}/env` endpoint to inspect
+Production targets and metadata. It then calls
+`GET /v1/projects/{idOrName}/env/{id}` for each selected variable. The list
+endpoint's older `decrypt=true` query parameter is deprecated; its `value`
+field is not treated as plaintext merely because that parameter was supplied.
+The per-variable response must report a usable decrypted value before it can
+enter the private temporary selection file.
 
+The sync rejects missing values, undecrypted encrypted/secret/sensitive values,
+encrypted-envelope-shaped strings, newlines, and invalid Auth.js/admin shapes.
+`AUTH_GOOGLE_ID` must be a plausible Google Web client ID,
+`AUTH_GOOGLE_SECRET` must be nonempty, `AUTH_SECRET` must be at least 32
+characters, and `ADMIN_EMAILS` must be a comma-separated email list. Failure
+messages identify variable names only.
+
+- [Vercel REST API overview](https://vercel.com/docs/rest-api)
 - [Vercel REST API: retrieve project environment variables](https://vercel.com/docs/rest-api/projects/retrieve-the-environment-variables-of-a-project-by-id-or-name)
+- [Vercel environment-variable management](https://vercel.com/docs/environment-variables/manage-across-environments)
 - [Vercel CLI: env](https://vercel.com/docs/cli/env)
 - [Vercel system environment variables](https://vercel.com/docs/environment-variables/system-environment-variables)
