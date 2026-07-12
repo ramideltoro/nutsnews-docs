@@ -118,4 +118,6 @@ The policy is owned by `ramideltoro/nutsnews-infra`. After review and merge, run
 
 After apply, perform read-only verification across several alert-timer cycles. Confirm the deployed infra commit, schema version 2, bounded active state, `Backup Local Cache` GiB semantics, the verification policy state/deadline, and successful timer/service results.
 
+Protected apply performs its non-sending reporting-status refresh with the same managed email values used by the systemd reporter. A bare reporter process does not load `/etc/nutsnews/ops-reporter.env`; if it is invoked without an explicit managed environment, it can temporarily display email as disabled even though the scheduled service remains configured. Prefer the managed timer and treat an environmentless apply-time refresh as a GitOps defect.
+
 Rollback is a Git revert of the owning infra change followed by the same protected check/apply process. Do not delete alert state or replace the reporter manually.
