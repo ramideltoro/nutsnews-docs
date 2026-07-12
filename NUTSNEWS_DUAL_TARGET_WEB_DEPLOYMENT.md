@@ -206,6 +206,47 @@ for Vercel only. New runtime code and deployment wiring must use
 `NUTSNEWS_PUBLIC_*`; direct `NEXT_PUBLIC_*` references in browser entry points
 or Docker build arguments are a release-blocking regression.
 
+### Homepage runtime feed cache
+
+Related issue: [nutsnews #174](https://github.com/ramideltoro/nutsnews/issues/174)
+
+#### Simple Summary
+
+The homepage gets its stories after the container starts, so an image built
+with safe empty fixtures never publishes an empty story list.
+
+#### Intermediate Summary
+
+The page shell is rendered on demand, while the initial home-feed result is
+cached on the server for 15 minutes. This keeps staging and production content
+separate at runtime without causing every homepage visit to query Supabase.
+The public home-feed API retains its existing CDN policy.
+
+#### Expert Summary
+
+`web/app/page.tsx` uses `dynamic = "force-dynamic"` to prevent Next.js from
+including neutral build-fixture data in the route's static HTML/RSC payload.
+Its `getHomeFeedDataWithEdgeFallback` call is wrapped in `unstable_cache` with
+the stable `homepage-initial-feed` key and `revalidate: 900`. The route therefore
+uses the active target's runtime public Supabase configuration on its first
+request, then reuses the server-side data cache until revalidation.
+
+```mermaid
+flowchart LR
+  build["Neutral immutable image build"] --> shell["No homepage story payload baked into image"]
+  request["Homepage request"] --> runtime["Runtime public Supabase configuration"]
+  runtime --> cache{"15-minute home-feed cache hit?"}
+  cache -- No --> feed["Read active target feed"]
+  feed --> cache
+  cache -- Yes --> page["Render populated homepage"]
+  cache --> page
+```
+
+Risk: the first request after cache expiry can be slower while it refreshes.
+Mitigation: only the shared data query is refreshed; the public API/CDN policy
+is unchanged. Roll back by reverting the homepage runtime-cache commit and
+promoting the prior immutable image through the normal GitOps path.
+
 ## Environment Parity Matrix
 
 The matrix lists names only. Never paste values into documentation, pull
