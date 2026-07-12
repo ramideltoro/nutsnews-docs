@@ -66,13 +66,13 @@ should send a change straight to `main`.
 
 ### Intermediate Summary
 
-This policy is delivered in two deliberate stages under
-[nutsnews #173](https://github.com/ramideltoro/nutsnews/issues/173): first the
-always-running `Release candidate` check is merged and proven on a real pull
-request, then the live GitHub ruleset requires that exact check and a pull
-request for `refs/heads/main`. This affects maintainers who release the web
-application: a reviewed, green PR merge becomes the only route that may publish
-the immutable image and start the existing production-release chain.
+This policy was delivered in two deliberate stages under
+[nutsnews #173](https://github.com/ramideltoro/nutsnews/issues/173): the
+always-running `Release candidate` check was merged and proven on a real pull
+request, then the live GitHub ruleset was updated to require that exact check
+and a pull request for `refs/heads/main`. This affects maintainers who release
+the web application: a reviewed, green PR merge is now the only route that may
+publish the immutable image and start the existing production-release chain.
 
 ### Expert Summary
 
@@ -80,9 +80,10 @@ the immutable image and start the existing production-release chain.
 successful production-image build and smoke test. It also runs the release
 workflow contract, immutable-test guards, Actions linting, and release-critical
 web checks without production secrets or elevated pull-request permissions. The
-future ruleset pins that exact check to GitHub Actions, requires the branch to
-be up to date, retains deletion/non-fast-forward protection, and uses zero
-external approvals only to avoid a solo-maintainer self-approval loop.
+active ruleset pins that exact check to GitHub Actions, requires the branch to
+be up to date, retains deletion/non-fast-forward protection, has no bypass
+actors, and uses zero external approvals only to avoid a solo-maintainer
+self-approval loop.
 
 ```mermaid
 flowchart LR
@@ -96,11 +97,11 @@ flowchart LR
   image --> promotion["Existing production-release chain"]
 ```
 
-Until the second stage is verified against the live ruleset, do not claim that
-GitHub is rejecting direct pushes. The repository settings change is separate
-from the application workflow PR and must retain deletion and non-fast-forward
-protection, require an up-to-date branch, apply to administrators, and allow no
-bypass actor.
+Live verification confirmed the active `refs/heads/main` ruleset requires a
+pull request and the exact `Release candidate` context from GitHub Actions,
+with strict up-to-date policy, no bypass actors, deletion protection, and
+non-fast-forward protection. Direct-push testing is intentionally not used as
+validation.
 
 For every normal application change after the ruleset is active:
 
@@ -117,7 +118,9 @@ requires the repository secret `NUTSNEWS_RULESET_AUDIT_TOKEN`: a fine-grained
 token limited to `ramideltoro/nutsnews` with **Administration: read** only. Do
 not expose that token to pull-request workflows or application code. A missing
 token causes the audit to fail visibly rather than treating protection as
-healthy.
+healthy. The credential was not configured during the initial Stage 2 update,
+so the direct GitHub API readback is the current audit evidence until that
+least-privilege secret is added.
 
 ---
 
