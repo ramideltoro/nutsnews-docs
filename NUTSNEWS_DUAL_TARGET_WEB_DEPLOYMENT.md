@@ -131,32 +131,109 @@ OCI labels may include the public repository URL and source revision. They must
 not include credentials, environment values, callback secrets, or provider
 tokens.
 
+## Immutable Image And Runtime Public Configuration
+
+Issue: [nutsnews #174](https://github.com/ramideltoro/nutsnews/issues/174)
+
+### Simple explanation
+
+Build the web image once. Start that exact digest in each target with that
+target's browser-safe configuration. The image does not contain a production
+Supabase URL, analytics ID, telemetry DSN, or Turnstile key.
+
+### Intermediate explanation
+
+The running web process exposes `GET /api/runtime-config`. It returns only an
+allowlisted public configuration object and is always `no-store`. Browser code
+fetches it after startup instead of relying on `NEXT_PUBLIC_*` values compiled
+into JavaScript. The response includes runtime environment, side-effects mode,
+public Supabase URL and anon key, Turnstile site key, optional Sentry DSN and
+analytics ID, source commit, build ID, deployment target, expected image
+digest, and whether telemetry is enabled.
+
+The endpoint must never contain a service-role key, email/provider token,
+OAuth secret, authorization token, complete private connection string, or any
+other server credential. A missing or malformed value disables its feature;
+clients must fail closed rather than guess a production value.
+
+### Expert explanation
+
+```mermaid
+flowchart LR
+  source["Reviewed source commit"] --> build["One target-neutral OCI build"]
+  build --> digest["GHCR immutable @sha256 digest"]
+  digest --> staging["Staging container\nNUTSNEWS_RUNTIME_ENV=staging\nside effects disabled/sandbox"]
+  digest --> production["Production container\nNUTSNEWS_RUNTIME_ENV=production\nside effects live"]
+  staging --> runtime["/api/runtime-config\nno-store public allowlist"]
+  production --> runtime
+  runtime --> browser["Browser features and telemetry labels"]
+```
+
+The image build receives only target-neutral build identity (`NUTSNEWS_SOURCE_COMMIT`,
+`NUTSNEWS_BUILD_ID`, and `NUTSNEWS_DEPLOYMENT_TARGET`) plus local neutral
+fixtures required by Next.js compilation. It must receive no deployment public
+configuration or credential as a Docker build argument. The container image
+workflow launches the same image identity twice—once with staging fixture
+configuration and once with production fixture configuration—and rejects the
+build if production fixture values appear in `.next/static`.
+
+For the VPS, Ansible derives `NUTSNEWS_SOURCE_COMMIT`, `NUTSNEWS_BUILD_ID`,
+`NUTSNEWS_DEPLOYMENT_TARGET`, and `NUTSNEWS_EXPECTED_IMAGE_DIGEST` directly
+from the reviewed release manifest after synchronized environment values have
+been rendered. Those manifest-derived values take precedence over synchronized
+values, so an environment sync cannot claim a different digest.
+
+### Operating and rollback rules
+
+1. Set `NUTSNEWS_RUNTIME_ENV` and `NUTSNEWS_SIDE_EFFECTS_MODE` explicitly for
+   every target. Staging must be `staging` with `disabled` or `sandbox`;
+   production telemetry requires `production` with `live`.
+2. Configure browser-safe fields with the `NUTSNEWS_PUBLIC_*` runtime names.
+   The VPS sync maps legacy Vercel `NEXT_PUBLIC_*` sources into these runtime
+   names during migration; it does not render the legacy public names on the
+   VPS.
+3. Verify `GET /api/runtime-config` has `Cache-Control: no-store` and contains
+   the expected non-secret runtime identity. Verify `/healthz` for source,
+   build, and deployment target as before.
+4. To roll back a public configuration error, restore the prior reviewed
+   production environment value, run Protected Ansible Apply in check mode,
+   then apply through the approval gate. To roll back code, promote the
+   recorded last-known-good image digest. Do not rebuild an image merely to
+   change runtime public configuration.
+
+Legacy `NEXT_PUBLIC_*` values are temporary server-side compatibility inputs
+for Vercel only. New runtime code and deployment wiring must use
+`NUTSNEWS_PUBLIC_*`; direct `NEXT_PUBLIC_*` references in browser entry points
+or Docker build arguments are a release-blocking regression.
+
 ## Environment Parity Matrix
 
 The matrix lists names only. Never paste values into documentation, pull
 requests, issues, workflow output, image history, or the Ops Portal.
 
-`NEXT_PUBLIC_*` values are embedded during `next build`. The publishing job
-must fail clearly when a required production public build input is absent.
-Private server variables are injected at runtime only.
+`NUTSNEWS_PUBLIC_*` values are browser-safe runtime configuration. They are
+read by the running process, delivered through `/api/runtime-config`, and must
+not be passed as Docker build arguments or embedded in browser assets. Private
+server variables are runtime-only. Legacy `NEXT_PUBLIC_*` names remain
+server-side transition inputs only and are not a deployment contract for a new
+target.
 
 | Variable name | Required / optional | Public / secret | Build / runtime | Vercel source | VPS source | Approved difference |
 | --- | --- | --- | --- | --- | --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` | Required | Public | Build | Vercel Production environment | App image publishing environment | Same production endpoint |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Required | Public | Build | Vercel Production environment | App image publishing environment | Same public browser key |
-| `NEXT_PUBLIC_APP_ENV` | Optional | Public | Build | Vercel Production environment | App image publishing environment | Target label may identify Vercel or VPS |
-| `NEXT_PUBLIC_NUTSNEWS_SOURCE_COMMIT` | Required | Public | Build | Derived from Vercel Git commit metadata | Derived from the GitHub source commit | Must identify the same source commit |
-| `NEXT_PUBLIC_NUTSNEWS_BUILD_ID` | Required | Public | Build | Derived from Vercel Git commit metadata | Derived from the GitHub source commit | Representation must resolve to the same commit |
-| `NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA` | Vercel-provided | Public | Build | Vercel system metadata | Not set | Vercel-only input; portable identity uses `NEXT_PUBLIC_NUTSNEWS_BUILD_ID` |
-| `VERCEL_GIT_COMMIT_SHA` | Vercel-provided | Public | Build/runtime metadata | Vercel system metadata | Not set | Vercel-only input normalized into portable identity |
-| `NEXT_PUBLIC_GA_ID` | Optional | Public | Build | Vercel Production environment | App image publishing environment | May be omitted on the non-primary VPS endpoint |
-| `NEXT_PUBLIC_SENTRY_DSN` | Optional | Public | Build | Vercel Production environment | App image publishing environment | Same project or reviewed target-specific project |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Required when contact is enabled | Public | Build | Vercel Production environment | App image publishing environment | Hostname allowlist must include only reviewed hosts |
-| `NEXT_PUBLIC_NUTSNEWS_IOS_APP_STORE_URL` | Optional | Public | Build | Vercel Production environment | App image publishing environment | Normally identical |
+| `NUTSNEWS_RUNTIME_ENV` | Required | Public | Runtime | Vercel Production environment | Reviewed VPS environment | `production` for production; staging must never claim production |
+| `NUTSNEWS_SIDE_EFFECTS_MODE` | Required | Public | Runtime | Vercel Production environment | Reviewed VPS environment | `live` only for production; staging is disabled or sandbox |
+| `NUTSNEWS_PUBLIC_SUPABASE_URL` | Required | Public | Runtime | Vercel Production environment | Synced into VPS app environment | Target-specific project; never embed production URL in a staging image |
+| `NUTSNEWS_PUBLIC_SUPABASE_ANON_KEY` | Required | Public | Runtime | Vercel Production environment | Synced into VPS app environment | Target-specific public browser key |
+| `NUTSNEWS_PUBLIC_TURNSTILE_SITE_KEY` | Required when contact is enabled | Public | Runtime | Vercel Production environment | Synced into VPS app environment | Hostname allowlist must include only reviewed hosts |
+| `NUTSNEWS_PUBLIC_SENTRY_DSN` | Optional | Public | Runtime | Vercel Production environment | Synced into VPS app environment | Runtime label governs delivery; staging must not send production-labeled telemetry |
+| `NUTSNEWS_PUBLIC_GA_ID` | Optional | Public | Runtime | Vercel Production environment | Synced into VPS app environment | Enabled only when production side effects are live |
+| `NUTSNEWS_PUBLIC_IOS_APP_STORE_URL` | Optional | Public | Runtime | Vercel Production environment | Synced into VPS app environment | Normally identical |
+| `NUTSNEWS_SOURCE_COMMIT` | Required | Public | Runtime/image metadata | Derived from Vercel Git metadata | Derived from reviewed release manifest | Must identify the same source commit |
+| `NUTSNEWS_BUILD_ID` | Required | Public | Runtime/image metadata | Derived from Vercel/GitHub build metadata | Derived from reviewed release manifest | Must match the portable build identity |
+| `NUTSNEWS_DEPLOYMENT_TARGET` | Required | Public | Runtime | Vercel deployment metadata | Derived from reviewed release manifest | Target name is intentionally different |
+| `NUTSNEWS_EXPECTED_IMAGE_DIGEST` | Required on image targets | Public | Runtime | Not applicable | Derived from reviewed release manifest | Must equal the promoted `sha256` digest |
+| `VERCEL_GIT_COMMIT_SHA` | Vercel-provided | Public | Runtime metadata | Vercel system metadata | Not set | Vercel-only fallback for portable source identity |
 | `AUTH_SECRET` | Required for admin auth | Secret | Runtime | Vercel Production environment | `NUTSNEWS_APP_ENVS_JSON` in `production-vps` | Different target-specific secret is allowed |
-| `NUTSNEWS_SOURCE_COMMIT` | Required | Public | Runtime/image metadata | Derived from Vercel Git metadata | Baked as secret-free image metadata | Must identify the same source commit |
-| `NUTSNEWS_BUILD_ID` | Required | Public | Runtime/image metadata | Derived from Vercel Git metadata | Baked as secret-free image metadata | Must match the portable build identity |
-| `NUTSNEWS_DEPLOYMENT_TARGET` | Required | Public | Runtime | `vercel` deployment metadata | Image/runtime metadata | Target name is intentionally different |
 | `NODE_ENV` | Required | Public | Runtime | Vercel-managed | Set to `production` in the final image | Equivalent production mode |
 | `HOSTNAME` | Platform-managed | Public | Runtime | Vercel-managed | Set to `0.0.0.0` in the final image | VPS must accept Caddy/container-network traffic |
 | `PORT` | Platform-managed | Public | Runtime | Vercel-managed | Set to `3000` in the final image | Port ownership is platform-specific |
