@@ -224,17 +224,20 @@ The public home-feed API retains its existing CDN policy.
 
 #### Expert Summary
 
-`web/app/page.tsx` uses `dynamic = "force-dynamic"` to prevent Next.js from
-including neutral build-fixture data in the route's static HTML/RSC payload.
-Its `getHomeFeedDataWithEdgeFallback` call is wrapped in `unstable_cache` with
-the stable `homepage-initial-feed` key and `revalidate: 900`. The route therefore
-uses the active target's runtime public Supabase configuration on its first
-request, then reuses the server-side data cache until revalidation.
+`web/app/page.tsx` calls Next.js `connection()` only outside Vercel. That
+prevents the neutral container build from including fixture data in the route's
+static HTML/RSC payload, while preserving Vercel's established prerender/ISR
+behavior for its preview and production deployments. Its
+`getHomeFeedDataWithEdgeFallback` call is wrapped in `unstable_cache` with the
+stable `homepage-initial-feed` key and `revalidate: 900`. The container route
+therefore uses the active target's runtime public Supabase configuration on its
+first request, then reuses the server-side data cache until revalidation.
 
 ```mermaid
 flowchart LR
   build["Neutral immutable image build"] --> shell["No homepage story payload baked into image"]
-  request["Homepage request"] --> runtime["Runtime public Supabase configuration"]
+  request["Non-Vercel homepage request"] --> runtime["Runtime public Supabase configuration"]
+  vercel["Vercel preview/production build"] --> vercelISR["Existing prerender/ISR path"]
   runtime --> cache{"15-minute home-feed cache hit?"}
   cache -- No --> feed["Read active target feed"]
   feed --> cache
