@@ -56,6 +56,74 @@ Keep deployments small when possible. A documentation-only change does not need 
 
 ---
 
+## Main Release Boundary
+
+### Simple Summary
+
+Before NutsNews can make a production image, its change must go through a pull
+request and pass one clear green-light check named `Release candidate`. Nobody
+should send a change straight to `main`.
+
+### Intermediate Summary
+
+This policy was delivered in two deliberate stages under
+[nutsnews #173](https://github.com/ramideltoro/nutsnews/issues/173): the
+always-running `Release candidate` check was merged and proven on a real pull
+request, then the live GitHub ruleset was updated to require that exact check
+and a pull request for `refs/heads/main`. This affects maintainers who release
+the web application: a reviewed, green PR merge is now the only route that may
+publish the immutable image and start the existing production-release chain.
+
+### Expert Summary
+
+`Release candidate` is bound to the current pull-request head and requires a
+successful production-image build and smoke test. It also runs the release
+workflow contract, immutable-test guards, Actions linting, and release-critical
+web checks without production secrets or elevated pull-request permissions. The
+active ruleset pins that exact check to GitHub Actions, requires the branch to
+be up to date, retains deletion/non-fast-forward protection, has no bypass
+actors, and uses zero external approvals only to avoid a solo-maintainer
+self-approval loop.
+
+```mermaid
+flowchart LR
+  change["Application or workflow change"] --> pr["Pull request to main"]
+  pr --> candidate["Release candidate\ncurrent PR head"]
+  candidate --> gate{"Green and up to date?"}
+  gate -- "No" --> fix["Fix the PR"]
+  fix --> candidate
+  gate -- "Yes" --> merge["Reviewed merge to main"]
+  merge --> image["Immutable image publish"]
+  image --> promotion["Existing production-release chain"]
+```
+
+Live verification confirmed the active `refs/heads/main` ruleset requires a
+pull request and the exact `Release candidate` context from GitHub Actions,
+with strict up-to-date policy, no bypass actors, deletion protection, and
+non-fast-forward protection. Direct-push testing is intentionally not used as
+validation.
+
+For every normal application change after the ruleset is active:
+
+1. Open a pull request targeting `main`.
+2. Wait for `Release candidate` to succeed on the current pull request head.
+   It includes the production-image build and smoke test, release-workflow
+   contracts, immutable-test guards, Actions linting, and release-critical web
+   checks.
+3. Merge the green pull request. That merge is the only event that may publish
+   the immutable image and start the existing production-release chain.
+
+The scheduled/manual `Main ruleset audit` detects remote settings drift. It
+requires the repository secret `NUTSNEWS_RULESET_AUDIT_TOKEN`: a fine-grained
+token limited to `ramideltoro/nutsnews` with **Administration: read** only. Do
+not expose that token to pull-request workflows or application code. A missing
+token causes the audit to fail visibly rather than treating protection as
+healthy. The credential was not configured during the initial Stage 2 update,
+so the direct GitHub API readback is the current audit evidence until that
+least-privilege secret is added.
+
+---
+
 ## 1. Pre-Deployment Checklist
 
 Run from repo root:
@@ -222,7 +290,7 @@ TURNSTILE_SECRET_KEY
 ### Deploy web
 
 Normal Vercel production deploy and immutable image publishing are triggered by
-the reviewed merge/push to `main`:
+the reviewed pull-request merge to `main`, never by a direct push:
 
 ```bash
 cd /Users/ramideltoro/WebstormProjects/nutsnews2
@@ -230,7 +298,8 @@ cd /Users/ramideltoro/WebstormProjects/nutsnews2
 git status
 git add <changed-files>
 git commit -m "<release message>"
-git push
+git push -u origin <feature-branch>
+# Open a PR targeting main. Merge only after Release candidate is green.
 ```
 
 Then verify the Vercel deployment finishes successfully.
