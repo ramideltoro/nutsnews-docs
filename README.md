@@ -100,6 +100,7 @@ These docs explain the product and the system at a high level.
 | Worker ingestion, controller, and local AI | See ramideltoro/nutsnews-worker |
 | [Worker Backpressure and Lock Safety](WORKER_BACKPRESSURE_AND_LOCK_SAFETY.md) | Queue visibility, Redis lock lease safety, backpressure thresholds, and worker report counters |
 | [Public Feed Snapshot and Edge Fallback](PUBLIC_FEED_SNAPSHOT.md) | Supabase snapshot reads, Cloudflare KV fallback, headers, admin status, and recovery checks |
+| [Runtime Feature Flags](RUNTIME_FEATURE_FLAGS.md) | Protected shared runtime switches for archive search and optional Worker edge-snapshot publishing, with no-redeploy rollback steps |
 | [RSS Source Quality](RSS_SOURCE_QUALITY.md) | Feed quality scoring, ranking, and source decisions |
 | [Image Delivery](IMAGE_DELIVERY.md) | Thumbnails, image optimization, cache TTL, and category-aware non-photo fallbacks |
 | [Secure Image Proxy/Cache Design](IMAGE_PROXY_CACHE_DESIGN.md) | Issue #105 design for optional Cloudflare image proxy/cache, domain controls, quotas, rollout, and kill switches |
