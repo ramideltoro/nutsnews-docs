@@ -10,7 +10,7 @@ The VPS backs itself up with restic. Restic encrypts the backup before anything 
 
 OneDrive sees encrypted restic blobs, not readable `/opt/nutsnews` files. If someone opens the OneDrive folder, they should see backup confetti, not secrets with a newsletter subscription.
 
-The VPS also verifies the latest restic snapshot on a weekly systemd timer. The Ops Portal shows whether the newest snapshot has a recent successful verification, whether the last check looked at an older snapshot, and whether verification has failed or gone stale. Email alerts use the same portal alert feed.
+The VPS also verifies the latest restic snapshot on a weekly systemd timer. The Ops Portal shows whether the newest snapshot has a recent successful verification, whether the last check looked at an older snapshot, and whether verification has failed or gone stale. A newer daily snapshot waiting for the expected weekly check stays visible as pending status; it does not immediately generate email. The shared [VPS Alert Email Policy](VPS_ALERT_EMAIL_POLICY.md) defines the deadline and cooldown behavior.
 
 This routine verification is not the full restore drill tracked separately in infra issue #24. It proves repository readability and latest-snapshot coverage; a restore drill still restores data to staging and inspects the result.
 
@@ -89,7 +89,7 @@ The verification state can be:
 | `success` | The latest snapshot has a recent successful verification. |
 | `failed` | The latest verification command failed. |
 | `stale` | The latest snapshot was verified, but the check is older than the stale threshold. |
-| `latest_unverified` | The last successful check covered an older snapshot or no successful check exists yet. |
+| `latest_unverified` | The last successful check covered an older snapshot or no successful check exists yet. This is pending until the verification policy deadline, then overdue. |
 | `disabled` | Backups are disabled. |
 | `misconfigured` | Backups are enabled but required restic/rclone settings are missing. |
 
@@ -115,7 +115,7 @@ flowchart LR
   compare --> status
   status --> portal["Ops Portal"]
   status --> reporter["email reporter"]
-  portal --> alerts["visible alerts\nfailed, stale, older snapshot"]
+  portal --> alerts["visible alerts\nfailed, stale, overdue"]
   reporter --> email["email alerts and reports"]
 ```
 
@@ -131,8 +131,10 @@ The portal and reports warn when:
 
 - verification failed
 - verification is stale
-- the last successful verification checked an older snapshot than the newest backup
+- the latest snapshot remains unverified beyond the 192-hour policy deadline
 - the verification timer is inactive while backups are enabled
+
+Before that deadline, a newer daily snapshot is shown as a pending mismatch in the portal without creating predictable daily email noise.
 
 Keep full restore drills separate. Issue #24 tracks the periodic restore drill that stages files on a trusted host and validates recoverability beyond repository checks.
 

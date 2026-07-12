@@ -312,7 +312,7 @@ Current service coverage:
 | --- | --- | --- |
 | VPS Host | CPU sample, RAM, root disk, swap total/used/state, recent kernel OOM evidence | Local collector |
 | Docker Storage | Docker data directory footprint | Local collector |
-| Backup Storage | Local backup cache and latest snapshot age | Local collector and backup status |
+| Backup Local Cache | Local backup cache GiB only; snapshot age stays in backup health | Local collector and backup status |
 | Vercel | Hobby usage summary plus relevant deployment/build limits | Billing Charges FOCUS JSONL where configured; unsupported rows stay visible |
 | Sentry | Developer Free errors, logs, app metrics, spans, replays, uptime/cron/metric monitors, attachments | Stats v2 for supported categories; snapshots or future collectors for the rest |
 | Cloudflare | Workers, Workers KV, Pages, and R2 free limits | Workers GraphQL for requests; snapshots or future collectors for KV, Pages, and R2 |
@@ -396,7 +396,7 @@ flowchart TD
 
 The reporter is deliberately boring. It does not restart services. It does not patch configs. It does not turn an alert into a shell command wearing a fake mustache. It reads the status JSON, applies cooldown rules, sends email only when configured, and writes a sanitized status file for the portal.
 
-Alert emails only send for warning and critical conditions. Repeated copies of the same alert are suppressed during the cooldown window, because "disk still 90%" every five minutes is not observability, it is inbox cardio.
+Alert emails only send for warning and critical conditions. Stable machine-readable identities and severity drive cooldown decisions; changing values remain useful in the email body without making the condition look new. A warning-to-critical escalation can notify immediately, cleared conditions are removed from active state, and active state is capped. See the shared [VPS Alert Email Policy](VPS_ALERT_EMAIL_POLICY.md).
 
 ## Manual Health Report Workflow
 
@@ -449,7 +449,7 @@ The CPU table is useful, not omniscient. It shows a lifetime average normalized 
 | Overall Health | Health score gauge, hostname, uptime, public IPs, OS, kernel, deployed infra commit, last apply marker |
 | Application Deployment | App enabled state; staged/public route states; expected image repository/digest; actual running digest; source commit; build ID; deployment target; container and route health; last deployment result; last-known-good digest |
 | Alerts and Email Reporting | Email enabled/configured state, SMTP configured flag, next report run, last run, last success, last error, pending alerts, timer state |
-| Free Tier Usage | Service-grouped VPS host, Docker storage, backup storage, Vercel, Sentry, Cloudflare, Better Stack, Supabase, Grafana Cloud, and GitHub Actions quota rows with usage, free limits, remaining amount, percent used, period/window, reset date if known, source status, measurement status, and risk status |
+| Free Tier Usage | Service-grouped VPS host, Docker storage, measurable backup local-cache GiB, Vercel, Sentry, Cloudflare, Better Stack, Supabase, Grafana Cloud, and GitHub Actions quota rows with usage, free limits, remaining amount, percent used, period/window, reset date if known, source status, measurement status, and risk status |
 | Resources | Gauges for CPU, RAM, root disk, swap, and root inode usage; swap state; recent kernel OOM evidence; load stats; network counters; NutsNews disk usage |
 | Hot Spots | Temperature-style memory pressure, disk pressure, service health, and alert level |
 | Processes | Top memory and CPU apps with client-side filtering, PID, user, memory, CPU estimate, thread count, CPU time, elapsed time, idle time |
@@ -470,7 +470,7 @@ The application block is status-only. A digest mismatch, unhealthy container,
 or failed route is visible evidence to stop rollout and fix the GitOps source
 of truth. It does not create pull/restart/rollback buttons.
 
-The latest-snapshot verification state is computed by comparing the last check's snapshot ID/time with the newest restic snapshot ID/time. It distinguishes `success`, `failed`, `stale`, `latest_unverified`, `disabled`, and `misconfigured`. Backup failures, stale snapshots, prune failures, verification failures, stale verification, latest snapshots checked by an older verification, and inactive backup/verify timers flow into the same warning/critical alert list used by email reporting.
+The latest-snapshot verification state is computed by comparing the last check's snapshot ID/time with the newest restic snapshot ID/time. It distinguishes `success`, `failed`, `stale`, `latest_unverified`, `disabled`, and `misconfigured`. A newer daily snapshot inside the 192-hour verification policy is shown as pending status without email. Backup failures, stale snapshots, prune failures, verification failures, overdue or stale verification, and inactive backup/verify timers flow into the same warning/critical alert list used by email reporting.
 
 Routine verification is not a restore drill. The scheduled timer checks repository readability and latest-snapshot coverage; the full restore drill tracked in infra issue #24 still restores to staging and validates the files.
 
