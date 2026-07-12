@@ -56,6 +56,41 @@ Keep deployments small when possible. A documentation-only change does not need 
 
 ---
 
+## Main Release Boundary
+
+NutsNews production release automation starts only from a reviewed merge to
+`main`; maintainers must not publish a release with a direct push. This policy
+is delivered in two deliberate stages under
+[nutsnews #173](https://github.com/ramideltoro/nutsnews/issues/173): first the
+always-running `Release candidate` check is merged and proven on a real pull
+request, then the live GitHub ruleset requires that exact check and a pull
+request for `refs/heads/main`.
+
+Until the second stage is verified against the live ruleset, do not claim that
+GitHub is rejecting direct pushes. The repository settings change is separate
+from the application workflow PR and must retain deletion and non-fast-forward
+protection, require an up-to-date branch, apply to administrators, and allow no
+bypass actor.
+
+For every normal application change after the ruleset is active:
+
+1. Open a pull request targeting `main`.
+2. Wait for `Release candidate` to succeed on the current pull request head.
+   It includes the production-image build and smoke test, release-workflow
+   contracts, immutable-test guards, Actions linting, and release-critical web
+   checks.
+3. Merge the green pull request. That merge is the only event that may publish
+   the immutable image and start the existing production-release chain.
+
+The scheduled/manual `Main ruleset audit` detects remote settings drift. It
+requires the repository secret `NUTSNEWS_RULESET_AUDIT_TOKEN`: a fine-grained
+token limited to `ramideltoro/nutsnews` with **Administration: read** only. Do
+not expose that token to pull-request workflows or application code. A missing
+token causes the audit to fail visibly rather than treating protection as
+healthy.
+
+---
+
 ## 1. Pre-Deployment Checklist
 
 Run from repo root:
@@ -222,7 +257,7 @@ TURNSTILE_SECRET_KEY
 ### Deploy web
 
 Normal Vercel production deploy and immutable image publishing are triggered by
-the reviewed merge/push to `main`:
+the reviewed pull-request merge to `main`, never by a direct push:
 
 ```bash
 cd /Users/ramideltoro/WebstormProjects/nutsnews2
@@ -230,7 +265,8 @@ cd /Users/ramideltoro/WebstormProjects/nutsnews2
 git status
 git add <changed-files>
 git commit -m "<release message>"
-git push
+git push -u origin <feature-branch>
+# Open a PR targeting main. Merge only after Release candidate is green.
 ```
 
 Then verify the Vercel deployment finishes successfully.
