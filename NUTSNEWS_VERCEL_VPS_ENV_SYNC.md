@@ -57,6 +57,8 @@ The automatic release path remains deliberately strict: an app release sends an 
 
 The protected sync fails before Ansible when it finds an unclassified Vercel Production variable. This protects against silent configuration expansion, but it means runtime-contract changes must update the reviewed mapping and its tests atomically. The exact `NUTSNEWS_DATA_ENVIRONMENT` rule renders the same named VPS runtime field and is covered by both the production-inventory and guardrail tests. The value remains private to the protected environment flow: reporting includes only names and fingerprints, never values. Unknown names and manual-review classifications continue to block the release.
 
+Release retries first fetch current infrastructure `main` and verify the reviewed manifest against the requested immutable digest. If it already matches, the retry skips duplicate release-PR creation and proceeds to the protected apply. If a promotion is still needed, its branch starts from the fetched `origin/main` rather than the historical workflow checkout. This keeps retries idempotent when an infra fix merges between an initial failed dispatch and its rerun.
+
 ```mermaid
 flowchart LR
   app[App main release] --> image[Published immutable GHCR digest]
