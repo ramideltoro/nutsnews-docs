@@ -47,9 +47,10 @@ records the migration head and public-catalog fingerprint. The disposable CI
 database sends two simultaneous requests through that same lock key.
 
 The catalog signature contains public relation kinds, columns/defaults,
-constraints, indexes, and row-level-security state. It contains neither row
-data nor credentials. A manual schema change therefore makes `/readyz` fail
-closed as `schema_drift_detected` until an approved forward migration runs.
+constraints, indexes, policies, functions, and row-level-security state. It
+contains neither row data nor credentials. A manual schema change therefore
+makes `/readyz` fail closed as `schema_drift_detected` until an approved
+forward migration runs.
 
 ```mermaid
 flowchart TD
