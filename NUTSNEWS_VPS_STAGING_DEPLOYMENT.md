@@ -82,6 +82,108 @@ After the `staging-vps` Environment approval, the workflow:
 Rerunning a candidate is idempotent at the Compose layer and intentionally
 creates another GitHub Deployment history entry for auditability.
 
+## Staging Supabase Schema Prerequisite
+
+The app repository now supplies a separate, fixed-purpose `Apply Verified
+NutsNews Staging Supabase Migrations` workflow. It is the only GitOps path for
+the staging Supabase schema. It exists because `/readyz` rejects a staging
+runtime until `nutsnews_migration_schema_contract` reports the migration head
+and catalog fingerprint expected by the immutable app image. This is a
+staging-only forward-migration path; it does not deploy a container, open SSH,
+use `staging-vps`, or promote production.
+
+### Simple Summary
+
+Before the staging app can say it is ready, this workflow safely gives the
+staging database the page it is missing. A person must approve the staging
+database step, and the workflow checks that it used the right app version.
+
+### Intermediate Summary
+
+An operator starts the workflow from the protected `main` branch with a full
+source SHA, the migration head expected by that source, and an exact
+confirmation phrase. The unprotected preflight rejects incomplete or mutable
+values and proves that the SHA is already in `main`. Only then can the
+`staging-supabase` GitHub Environment provide a staging database connection.
+The protected job serializes requests, applies forward migrations under the
+database advisory lock, reloads PostgREST's schema cache, and verifies the
+database contract before reporting success.
+
+### Expert Summary
+
+The request contract is intentionally narrower than the immutable image
+candidate contract: the schema operation executes reviewed SQL from a trusted
+source commit, so it accepts only `source_commit`, `migration_head`, and the
+literal `apply-staging-supabase-migrations` confirmation. The preflight has no
+Environment attachment or database secret. It checks the full lowercase SHA,
+the 14-digit head, and `git merge-base --is-ancestor <sha> origin/main`, then
+checks out that exact commit and requires its compiled migration contract to
+match the requested head. The protected job uses
+`NUTSNEWS_STAGING_MIGRATION_DATABASE_URL` only from `staging-supabase`, runs
+the existing forward-only locked migration runner, invokes `NOTIFY pgrst,
+'reload schema'`, and queries `nutsnews_migration_schema_contract` directly
+for both the expected head and matching fingerprint.
+
+```mermaid
+flowchart LR
+  A[Operator supplies source SHA and migration head] --> B[Preflight on main: strict validation and main reachability]
+  B -->|no secrets available| C[Checkout exact reviewed source and validate migration contract]
+  C --> D[staging-supabase Environment approval]
+  D --> E[Advisory lock and forward-only supabase db push]
+  E --> F[Record head, reload PostgREST schema cache, verify fingerprint]
+  F --> G[Dispatch immutable staging runtime candidate]
+  G --> H[/readyz and actual Docker digest verification]
+```
+
+### Required One-Time Environment Setup
+
+Before an authorized run, a repository administrator must create the
+`staging-supabase` GitHub Environment in `ramideltoro/nutsnews`, limit its
+deployment branches to protected `main`, and configure required reviewers.
+Store exactly one database credential there:
+
+- `NUTSNEWS_STAGING_MIGRATION_DATABASE_URL` — a connection URL for the
+  isolated staging Supabase Postgres project with only the privileges needed
+  to apply its reviewed migrations.
+
+Do not put this value in repository secrets, `NUTSNEWS_STAGING_APP_ENVS_JSON`,
+workflow inputs, application configuration, logs, or documentation. Do not
+reuse a production database URL or production credential. The preflight job
+must remain free of this Environment and its secret.
+
+### Authorized Run and Evidence
+
+Run `Apply Verified NutsNews Staging Supabase Migrations` from `main` with:
+
+1. `source_commit`: the exact full SHA of the already-qualified app source.
+2. `migration_head`: the 14-digit last migration filename at that SHA (for the
+   current `/readyz` failure, `20260713000000`).
+3. `confirmation`: `apply-staging-supabase-migrations`.
+
+The run is queued under a non-cancelling concurrency group and the database
+advisory lock, so a repeated approved request is safe to retry and does not
+apply concurrently. Success evidence is the workflow's direct database
+contract/fingerprint verification. It is schema evidence only, not staging
+runtime evidence. After it succeeds, send the existing immutable
+`nutsnews-staging-release` candidate to the infrastructure workflow and retain
+that workflow's `/readyz` and actual Docker digest evidence before considering
+the staging deployment complete.
+
+### Risks, Mitigations, and Rollback
+
+- Forward SQL is intentionally not automatically reversed. If a migration is
+  wrong, stop the staging release, correct it in a reviewed follow-up
+  migration, and use the separately documented staging restore process if a
+  restore is genuinely required.
+- The workflow cannot silently use production because it references neither a
+  production Environment nor a production secret or target. GitHub Environment
+  branch restrictions and required reviewers add an independent boundary.
+- A cancelled or failed run cannot claim the schema contract was verified; the
+  infrastructure release remains blocked by `/readyz` until a later successful
+  run proves the contract.
+
+This prerequisite supports [infrastructure issue #117](https://github.com/ramideltoro/nutsnews-infra/issues/117).
+
 ## Rehearse a Candidate
 
 From GitHub Actions, select `Deploy Verified NutsNews Staging Candidate`, enter
