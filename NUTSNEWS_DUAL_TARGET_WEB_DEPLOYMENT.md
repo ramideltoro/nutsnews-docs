@@ -156,6 +156,37 @@ OAuth secret, authorization token, complete private connection string, or any
 other server credential. A missing or malformed value disables its feature;
 clients must fail closed rather than guess a production value.
 
+### Digest fixture validation
+
+#### Simple Summary
+
+The app is built once, then the exact same sealed image is started once with
+safe staging settings and once with safe production-like settings. Each run
+shows the right public settings without rebuilding the app.
+
+#### Intermediate Summary
+
+The Container Image workflow uses a temporary local registry to record one
+`repository@sha256:` reference. It starts that reference with distinct
+synthetic staging and production-like Supabase endpoints, Turnstile keys,
+Sentry DSNs, analytics IDs, side-effect modes, and runtime environment names.
+The smoke check verifies each no-store runtime-config response and rejects any
+production-only fixture marker from the staging response. It also scans the
+generated `public` and `.next/static` output for the production-only synthetic
+Supabase, telemetry, and analytics markers.
+
+#### Expert Summary
+
+This is application-release verification only; it neither changes Vercel
+settings nor publishes a test image. `NUTSNEWS_EXPECTED_IMAGE_DIGEST` is set
+from the local registry's recorded manifest digest for both fixture processes.
+The browser endpoint remains an explicit allowlist, so server credentials are
+not an input to the browser contract or test output. This protects the staging
+qualification path from an image whose browser code was compiled with a
+production endpoint or telemetry identifier. If the check fails, reject the
+candidate and rebuild only after correcting source; do not rebuild merely to
+substitute a target's runtime configuration.
+
 ### Expert explanation
 
 ```mermaid
