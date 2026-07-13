@@ -172,6 +172,34 @@ runtime evidence. After it succeeds, send the existing immutable
 that workflow's `/readyz` and actual Docker digest evidence before considering
 the staging deployment complete.
 
+### Safe Connection-Failure Diagnosis
+
+#### Simple Summary
+
+If the staging database cannot be reached, the workflow says what kind of
+connection problem it found without showing the database password.
+
+#### Intermediate Summary
+
+The advisory-lock client keeps at most a small internal amount of PostgreSQL
+error text and converts it to one fixed, non-secret diagnosis. The available
+diagnoses cover malformed connection URLs, rejected authentication, DNS,
+network reachability, a missing database, and TLS or database access-policy
+rejection. A failure stops before the lock is acquired, so no migration SQL is
+applied and no staging runtime deployment may be dispatched.
+
+#### Expert Summary
+
+The reviewed lock runner never writes the `psql` stderr stream, connection
+string, or password to GitHub Actions output. It only matches the bounded
+internal stderr buffer against predefined patterns and emits a constant
+operator message. In particular, a password containing reserved URL characters
+can be diagnosed as a malformed URL without exposing the URL; encode those
+password characters before saving the Session Pooler URL in
+`NUTSNEWS_STAGING_MIGRATION_DATABASE_URL`. Any unrecognized error remains a
+generic fail-closed connection failure. The migration command and PostgREST
+reload are reached only after the advisory lock is acquired.
+
 ### Risks, Mitigations, and Rollback
 
 - Forward SQL is intentionally not automatically reversed. If a migration is
