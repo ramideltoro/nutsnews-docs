@@ -21,6 +21,7 @@ This folder is organized by what you are trying to do: understand the product, c
 | Synchronize reviewed Vercel Production variables to the VPS | [Vercel-to-VPS environment synchronization](NUTSNEWS_VERCEL_VPS_ENV_SYNC.md) |
 | Understand the VPS service foundation | [VPS Service Foundation](NUTSNEWS_VPS_SERVICE_FOUNDATION.md) |
 | Review production/staging VPS runtime isolation | [VPS Runtime Environment Isolation](NUTSNEWS_VPS_RUNTIME_ENVIRONMENT_ISOLATION.md) |
+| Review same-host staging capacity and safeguards | [VPS Staging Capacity Budget](NUTSNEWS_VPS_STAGING_CAPACITY.md) |
 | Understand the VPS operations portal | [Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md) |
 | Set up or restore encrypted VPS backups | [VPS Backups](NUTSNEWS_VPS_BACKUPS.md); [VPS Restore](NUTSNEWS_VPS_RESTORE.md); [VPS Disaster Recovery](NUTSNEWS_VPS_DISASTER_RECOVERY.md) |
 | Set up VPS Grafana Cloud observability | [Grafana Cloud Observability](NUTSNEWS_GRAFANA_CLOUD_OBSERVABILITY.md) |
@@ -53,6 +54,7 @@ These docs explain the product and the system at a high level.
 | [Protected Ansible Apply](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md) | Manual protected GitHub Actions workflow for check/apply runs against the VPS baseline, plus the separate on-demand health report workflow |
 | [VPS Service Foundation](NUTSNEWS_VPS_SERVICE_FOUNDATION.md) | Docker, Compose, `/opt/nutsnews`, Caddy, and public infrastructure health routing |
 | [VPS Runtime Environment Isolation](NUTSNEWS_VPS_RUNTIME_ENVIRONMENT_ISOLATION.md) | Separate production/staging Compose identities, state, Caddy boundary, immutable digest rule, and #118 blocker |
+| [VPS Staging Capacity Budget](NUTSNEWS_VPS_STAGING_CAPACITY.md) | Measured #118 capacity decision, fixed resource/test budgets, disk limitation, and post-apply verification |
 | [Dual-Target Web Deployment](NUTSNEWS_DUAL_TARGET_WEB_DEPLOYMENT.md) | One application commit, Vercel and GHCR artifacts, immutable VPS promotion, staged validation, public opt-in, and rollback |
 | [Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md) | Read-only VPS dashboard, local collector, public Google OAuth route, status JSON, and recovery notes |
 | [VPS Alert Email Policy](VPS_ALERT_EMAIL_POLICY.md) | Stable alert identity, cooldown/escalation behavior, backup freshness semantics, and read-only troubleshooting |

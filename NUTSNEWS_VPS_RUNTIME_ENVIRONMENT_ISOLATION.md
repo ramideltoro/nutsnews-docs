@@ -1,8 +1,8 @@
 # NutsNews VPS Runtime Environment Isolation
 
 NutsNews has separate production and staging runtime identities. Production
-retains its existing route and reviewed image; staging is deliberately disabled
-until the VPS capacity decision is complete.
+retains its existing route and reviewed image; staging remains deliberately
+disabled even though the VPS capacity decision is now recorded.
 
 ## When To Use This
 
@@ -17,9 +17,9 @@ containers, and writable cache volumes. Production keeps its current identity,
 so this safety refactor does not move the live route or swap its image digest.
 
 Staging is a prepared-but-disabled slot. It cannot start or receive a Caddy
-route in this phase. The measured CPU, memory, PID, disk, log, and test-traffic
-findings from [nutsnews-infra #118](https://github.com/ramideltoro/nutsnews-infra/issues/118)
-are still required before staging can be considered for activation.
+route in this phase. [The #118 capacity contract](NUTSNEWS_VPS_STAGING_CAPACITY.md)
+now defines its hard CPU, memory, PID, log, disk-preflight, and test-traffic
+budget, but does not authorize activation.
 
 Any configured application image must be a reviewed immutable reference:
 
@@ -88,7 +88,7 @@ flowchart LR
   prodApp --> prodState["production env, manifest, marker,\nlast-known-good, cache volume"]
   stageApp --> stageState["staging env, manifest, marker,\nlast-known-good, cache volume"]
 
-  budget["#118 measured resource budget\nnot yet available"] -. blocks activation .-> stageApp
+  budget["#118 fixed resource budget\nactivation still requires later work"] -. constrains .-> stageApp
 ```
 
 ## Operational Rules
@@ -118,9 +118,11 @@ and checks that staging-only rendering cannot change production artifacts.
 
 ## Current Blocker And Follow-Up Work
 
-Issue #118 has no recorded measured capacity findings. Issue #119 therefore
-does not define or authorize staging CPU, memory, PID, disk, log, or
-test-concurrency limits, and does not make staging deployable.
+Issue #118 records a same-host go decision with enforceable application CPU,
+memory, PID, and log ceilings. It does not make staging deployable: #119 and
+the later data isolation, credentials/TLS/access control, deployment,
+qualification, and promotion work must consume the fixed contract before an
+approved staging apply.
 
 The later staging data isolation, credentials/TLS/access control, deployment
 workflow, qualification gate, and protected production promotion/rollback work
@@ -130,4 +132,5 @@ remain intentionally out of scope.
 
 - [NutsNews Protected Ansible Apply Workflow](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md)
 - [NutsNews VPS Service Foundation](NUTSNEWS_VPS_SERVICE_FOUNDATION.md)
+- [NutsNews VPS Same-Host Staging Capacity Budget](NUTSNEWS_VPS_STAGING_CAPACITY.md)
 - [NutsNews Dual-Target Web Deployment](NUTSNEWS_DUAL_TARGET_WEB_DEPLOYMENT.md)
