@@ -59,6 +59,8 @@ The protected sync fails before Ansible when it finds an unclassified Vercel Pro
 
 Release retries first fetch current infrastructure `main` and verify the reviewed manifest against the requested immutable digest. If it already matches, the retry skips duplicate release-PR creation and proceeds to the protected apply. If a promotion is still needed, its branch starts from the fetched `origin/main` rather than the historical workflow checkout. This keeps retries idempotent when an infra fix merges between an initial failed dispatch and its rerun.
 
+After dispatching Protected Ansible Apply, the release workflow selects only a run created at or after that dispatch time. This prevents an older failed apply with the same release title from being mistaken for the newly dispatched run.
+
 ```mermaid
 flowchart LR
   app[App main release] --> image[Published immutable GHCR digest]
