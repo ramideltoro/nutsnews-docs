@@ -10,7 +10,7 @@ reviewed and applied.
 **Go for same-host staging with the fixed budget below.** The decision is based
 on a read-only SSH audit at `2026-07-13T15:24:06Z`, not on inventory values
 alone. The host had four vCPUs, 9.36 GB available memory, no zram use, 74.2 GB
-free root disk, and 9.66 million free inodes. No OOM event was found in the
+(69.1 GiB) free root disk, and 9.66 million free inodes. No OOM event was found in the
 preceding seven days.
 
 This decision is deliberately conservative because the host retains only short
@@ -51,7 +51,7 @@ were almost entirely internet SSH probes, not capacity faults.
 | CPU | 0.20 one-minute load; 1.7% host sample; app 0.01%, Caddy 4.01%, Ops auth 0.02% | 3 vCPUs | 1 vCPU maximum; CPU shares 256 | At least 3 vCPUs remain outside the staging cap |
 | Memory | 1.06 GB host used / 9.36 GB available; app 161 MiB, Caddy 14 MiB, Ops auth 16 MiB; Alloy process RSS 402 MiB | 4 GiB | 512 MiB limit; 256 MiB reservation | 5.2 GiB after reserve and staging ceiling, before normal reclaimable cache |
 | PIDs | app 12 / 256, Caddy 9 / 128, Ops auth 1 / 128 | Production app stays at 256 | 128 maximum | Separate staging process cap; production allowance unchanged |
-| Root disk | 7.88 GB used / 74.2 GB free; Docker images 3.57 GB, build cache 1.98 GB, volumes 0 B | 20 GiB free | 1 GiB image/cache preflight budget plus 30 MiB logs | At least 53 GiB after reserve and preflight budget |
+| Root disk | 7.34 GiB used / 69.1 GiB free; Docker images 3.57 GB, build cache 1.98 GB, volumes 0 B | 20 GiB free | 1 GiB image/cache preflight budget plus 30 MiB logs | At least 48.1 GiB after reserve and preflight budget |
 | Inodes | 251,014 used / 9,658,746 free | 1,000,000 free | No portable per-volume inode quota; check before deploy | More than 8.6 million outside reserve at audit time |
 | Swap/zram | 0 B / 1.5 GiB | zram is transient-spike protection, not planned capacity | Do not plan to consume it | 1.5 GiB unused at audit time |
 
