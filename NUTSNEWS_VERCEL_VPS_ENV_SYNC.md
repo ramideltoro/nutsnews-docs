@@ -33,7 +33,7 @@ The VPS needs the same explicit production runtime policy as Vercel because the 
 ```text
 NUTSNEWS_RUNTIME_ENV=production
 NUTSNEWS_SIDE_EFFECTS_MODE=live
-NUTSNEWS_DATA_ENV=production
+NUTSNEWS_DATA_ENVIRONMENT=production
 NUTSNEWS_SUPABASE_CREDENTIALS_ENV=production
 NUTSNEWS_SUPABASE_PROJECT_REF=<production project identity>
 NUTSNEWS_PRODUCTION_SUPABASE_PROJECT_REF=<production project identity>
@@ -42,6 +42,35 @@ NEXT_PUBLIC_NUTSNEWS_SIDE_EFFECTS_MODE=live
 ```
 
 The protected workflow fails closed if a Vercel Production variable is unclassified. Add an exact reviewed mapping and regression test before changing the VPS environment; never edit `/etc/nutsnews/nutsnews-app.env` manually.
+
+## Automatic release compatibility
+
+### Simple Summary
+
+When a checked NutsNews change reaches the app `main` branch, the release system can move the same checked image to the VPS. The required production safety label is now recognized, so the release does not stop just because it sees that label.
+
+### Intermediate Summary
+
+The automatic release path remains deliberately strict: an app release sends an immutable digest to the infrastructure repository, which reviews the release manifest through automation and starts Protected Ansible Apply. Vercel Production variables are synchronized only when each name has an explicit rule. `NUTSNEWS_DATA_ENVIRONMENT` is now one such non-secret runtime-safety identity. `NUTSNEWS_DATA_ENV` remains a legacy compatibility input, but it does not replace the required `NUTSNEWS_DATA_ENVIRONMENT` policy field.
+
+### Expert Summary
+
+The protected sync fails before Ansible when it finds an unclassified Vercel Production variable. This protects against silent configuration expansion, but it means runtime-contract changes must update the reviewed mapping and its tests atomically. The exact `NUTSNEWS_DATA_ENVIRONMENT` rule renders the same named VPS runtime field and is covered by both the production-inventory and guardrail tests. The value remains private to the protected environment flow: reporting includes only names and fingerprints, never values. Unknown names and manual-review classifications continue to block the release.
+
+```mermaid
+flowchart LR
+  app[App main release] --> image[Published immutable GHCR digest]
+  image --> dispatch[Repository dispatch to infra]
+  dispatch --> mapping{All Vercel Production variables classified?}
+  mapping -- no --> stop[Fail closed before Ansible]
+  mapping -- yes --> manifest[Checked VPS digest manifest]
+  manifest --> apply[Protected Ansible Apply]
+  apply --> verify[Digest and health verification]
+```
+
+### Rollback
+
+If a variable is newly unclassified, do not bypass the check or edit the VPS environment manually. Add a reviewed exact mapping and regression test, merge through the normal infrastructure PR flow, then rerun the failed release. To remove the field later, remove it from Vercel Production only after a reviewed mapping and runtime-policy change has established a safe replacement.
 
 `SENTRY_AUTH_TOKEN` is classified as a server-side secret but excluded because it
 is a Vercel build/source-map credential. `OPENAI_API_KEY` remains excluded
