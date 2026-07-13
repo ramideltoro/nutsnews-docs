@@ -41,6 +41,62 @@ The homepage uses the same edge-aware helper for its initial article load and ca
 
 ---
 
+## Homepage Category Backfill
+
+### Simple Summary
+
+If a category such as Animals has stories but the home page cannot see one in its first quick scan, NutsNews now asks the snapshot for that category specifically. Readers see available stories instead of an incorrect empty message.
+
+### Intermediate Summary
+
+The homepage still makes its normal bounded snapshot read for fast loading. It builds the main feed and category sections from that result first. When a section has no unique cards, the web app makes one additional filtered snapshot read for only that category. Existing card identity rules still prevent an article already shown in the main feed or an earlier section from appearing twice.
+
+### Expert Summary
+
+`getHomeFeedFromSnapshot` reads the first 250 globally ranked `public_feed_snapshot` rows to bound homepage read cost. Globally ranked rows do not guarantee that every category is represented: a category-specific query can contain matching rows beyond that window. Empty sections are therefore backfilled with the existing category-filtered read path, which retains the `public_feed_snapshot`-then-`articles` fallback behavior and the current translation handling. The additional reads run only for empty sections and are deduplicated against cards already selected for the page.
+
+```mermaid
+flowchart TD
+  A[Homepage request] --> B[Read first 250 global snapshot rows]
+  B --> C[Build main feed and category sections]
+  C --> D{Section has unique cards?}
+  D -- Yes --> E[Render existing section]
+  D -- No --> F[Read that category from public_feed_snapshot]
+  F --> G[Remove cards already rendered]
+  G --> H[Render backfilled category or valid empty state]
+```
+
+### Verification
+
+Use the public API to compare the combined homepage payload with a category result. Replace `animals` with another category when investigating a different section:
+
+```bash
+curl --fail --silent --show-error "https://www.nutsnews.com/api/articles?home=1" \
+  | jq '.sections[] | select(.id == "animals") | {id, count: (.articles | length)}'
+
+curl --fail --silent --show-error "https://www.nutsnews.com/api/articles?category=animals" \
+  | jq '{count: (.articles | length), dataSource}'
+```
+
+Run the code regression checks before release:
+
+```bash
+cd web
+npm run test:article-dedupe
+npm run test:public-route-cpu-cache
+npm run test:public-cache
+```
+
+### Risks, Mitigations, and Rollback
+
+- Risk: a sparse category can add one filtered database read to a homepage refresh.
+  Mitigation: no category read is made when the bounded scan already populates every section.
+- Risk: a multi-category article could appear twice.
+  Mitigation: backfilled cards use the established article identity set shared by the main feed and earlier sections.
+- Rollback: revert the homepage category-backfill change. This restores the former bounded-scan-only behavior without changing the snapshot schema, Worker, cache headers, or environment variables.
+
+---
+
 ## Write Path
 
 After an ingestion or translation run, the Worker refreshes the Supabase materialized snapshot:
