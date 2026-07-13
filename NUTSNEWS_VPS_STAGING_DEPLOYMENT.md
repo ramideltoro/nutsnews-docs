@@ -63,7 +63,9 @@ After the `staging-vps` Environment approval, the workflow:
    `NUTSNEWS_STAGING_APP_ENVS_JSON` from that Environment. Production secrets
    and the `production-vps` Environment are never referenced.
 2. Runs repository guardrails, Ansible syntax validation, and the fixed
-   `ansible/playbooks/deploy-staging.yml` in check mode.
+   `ansible/playbooks/deploy-staging.yml` in check mode. That play initializes
+   its reviewed service-foundation defaults before evaluating the fixed
+   staging-only guard, so no check can rely on a later role include.
 3. Uses a non-cancelling GitHub concurrency queue and a staging-host mutation
    lock. The play accepts only the `staging-vps` inventory alias, staging
    project/container/network identity, and the `nutsnews-staging-deploy` tag.
