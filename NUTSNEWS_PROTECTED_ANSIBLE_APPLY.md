@@ -106,6 +106,11 @@ rendered through the root-only Ansible path with `no_log`. The workflow and
 portal must never print values. Mutable image references are rejected whenever
 the application is enabled.
 
+The protected workflow selects only the production app runtime. Staging has a
+separate runtime identity but remains disabled pending the measured capacity
+decision; it has no Caddy route, credentials, TLS/access boundary, or deployment
+workflow in this phase. See [VPS Runtime Environment Isolation](NUTSNEWS_VPS_RUNTIME_ENVIRONMENT_ISOLATION.md).
+
 ## Expert Summary
 
 The workflow is intentionally narrow:
