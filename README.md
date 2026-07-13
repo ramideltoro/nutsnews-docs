@@ -117,6 +117,7 @@ These docs explain the product and the system at a high level.
 | [VPS Restore](NUTSNEWS_VPS_RESTORE.md) | VPS restic restore and restore-test procedure |
 | [VPS Disaster Recovery](NUTSNEWS_VPS_DISASTER_RECOVERY.md) | Provider-agnostic VPS rebuild and cutover runbook |
 | [Supabase Restore Procedure](SUPABASE_RESTORE.md) | Restore order, SQL import, and validation queries |
+| [Migration Release Gate](MIGRATION_RELEASE_GATE.md) | Ordered migrations, schema-drift readiness, deterministic staging fixtures, compatibility windows, and protected rollout |
 | [Free-Tier Guardrails](FREE_TIER_GUARDRAILS.md) | Quota, cost, and usage warning dashboard |
 
 ### 4. AI and Automation
