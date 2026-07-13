@@ -112,6 +112,7 @@ credentials in shell history or documentation:
 cd ramideltoro/nutsnews/web
 npm run fixtures:staging -- --namespace nutsnews-test-<unique-run-id>
 node ../scripts/staging_fixtures.mjs reset --namespace nutsnews-test-<unique-run-id>
+node ../scripts/staging_fixtures.mjs cleanup
 ```
 
 ## Expand/contract and rollback rules
@@ -149,6 +150,9 @@ change intentionally does not modify that repository:
 4. Make staging migration success and `/readyz` schema-contract success
    prerequisites of `nutsnews-infra#122`; keep promotion separately protected
    under `nutsnews-infra#121` and `#124`.
+5. Schedule the staging-only `node scripts/staging_fixtures.mjs cleanup`
+   command with the isolated staging credential. This is the TTL safety net for
+   a test process that is interrupted before its scoped reset.
 
 ## Incident notes
 
