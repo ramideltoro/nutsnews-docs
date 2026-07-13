@@ -149,7 +149,7 @@ fetches it after startup instead of relying on `NEXT_PUBLIC_*` values compiled
 into JavaScript. The response includes runtime environment, side-effects mode,
 public Supabase URL and anon key, Turnstile site key, optional Sentry DSN and
 analytics ID, source commit, build ID, deployment target, expected image
-digest, and whether telemetry is enabled.
+digest, configuration generation, and whether telemetry is enabled.
 
 The endpoint must never contain a service-role key, email/provider token,
 OAuth secret, authorization token, complete private connection string, or any
@@ -278,6 +278,96 @@ one `nutsnews-test-...` namespaced quota event with a one-hour TTL and deletes
 it by returned identifier. A cleanup failure is reported separately and fails
 the test; it never converts a failed test into a pass.
 
+## Uncached Qualification Readiness
+
+Issue: [nutsnews #172](https://github.com/ramideltoro/nutsnews/issues/172)
+
+### Simple Summary
+
+`/healthz` only says the app process is alive. `/readyz` is the separate
+answer to “is this exact staged release safe to test?” It refuses a candidate
+until its runtime settings, identity, database marker, and one small database
+read all agree.
+
+### Intermediate Summary
+
+`GET /readyz` is dynamic and `no-store`, so a request with a cache-busting
+query can never receive a previous deployment’s identity. It is the container
+health and staging-qualification gate for image targets. A successful response
+has `ok: true` and stable code `ready`; every failure is HTTP `503` with only a
+stable sanitized code. It never returns Supabase URLs, project references,
+database errors, connection data, service-role keys, tokens, or stack traces.
+
+The response always carries these safe headers: `X-NutsNews-Source-Commit`,
+`X-NutsNews-Build-Id`, `X-NutsNews-Deployment-Target`,
+`X-NutsNews-Runtime-Environment`, `X-NutsNews-Config-Generation`, and
+`X-NutsNews-Expected-Image-Digest`. `/healthz` stays the inexpensive,
+cacheable build/liveness endpoint and is not a qualification gate. Its static
+build identity can differ from `/readyz`’s runtime deployment target without
+indicating a digest change.
+
+### Expert Summary
+
+The app first reuses the #117 runtime/data/side-effect policy. For an OCI
+target it then requires matching source commit, build ID, expected and deployed
+digest, configuration generation, and expected schema version. It enforces
+`vps-staging` with runtime environment `staging` and `production-vps` with
+runtime environment `production`. Finally it performs exactly one anonymous,
+read-only Supabase query against the singleton `public.release_readiness` row
+and compares `schema_version` with `NUTSNEWS_EXPECTED_SCHEMA_VERSION`. The
+query is bounded by `NUTSNEWS_READYZ_TIMEOUT_MS`; a missing row, query error,
+timeout, or mismatch is not ready.
+
+Migration `20260712170000_create_release_readiness.sql` creates that row with
+schema version `20260712170000`. A later app-compatible migration must update
+the marker in the same reviewed migration and infra must set the matching
+expected value before deploying the candidate. This is a small bridge to the
+full migration/drift workflow tracked by [nutsnews #109](https://github.com/ramideltoro/nutsnews/issues/109); containers never run migrations on startup.
+
+```mermaid
+flowchart LR
+  digest["Reviewed OCI @sha256 digest"] --> stage["vps-staging runtime"]
+  digest --> prod["production-vps runtime"]
+  stage --> policy["#117 policy + release identity"]
+  prod --> policy
+  policy --> schema["read-only release_readiness schema marker"]
+  schema --> ready["/readyz no-store\n200 only when qualified"]
+  policy --> refused["503 safe reason code"]
+  ready --> qualifier["independent staging qualification"]
+```
+
+### Infra Runtime Contract
+
+For every OCI deployment, `nutsnews-infra` must supply the table’s image-target
+variables from the reviewed release manifest and reviewed environment state.
+The `NUTSNEWS_EXPECTED_*` source/build/digest values must match the runtime
+source/build/deployed-digest values exactly. The deployed digest must be the
+same `repository@sha256:` reference independently verified by Compose/Docker;
+the app’s environment comparison is a fail-closed consistency check, not a
+substitute for that host-level digest verification.
+
+Staging and production intentionally receive different `NUTSNEWS_DEPLOYMENT_TARGET`
+and `NUTSNEWS_CONFIG_GENERATION` values while using the same image digest.
+They may also have different browser-safe public configuration through
+`/api/runtime-config`. Do not set production Supabase, analytics, telemetry,
+or secret values in the staging environment or image build.
+
+Vercel remains outside this OCI qualification contract. Its existing #117
+runtime-safety readiness behavior is preserved and it does not need image-only
+digest, schema-marker, or configuration-generation values. No Vercel setting
+or deployment workflow change is required for this issue.
+
+### Failure and rollback rules
+
+`/readyz` uses only these public reason families: the existing #117 policy
+codes, `runtime_identity_invalid`, `deployment_target_environment_mismatch`,
+`deployment_target_invalid`, `release_identity_mismatch`, `schema_version_mismatch`,
+`supabase_dependency_failed`, and `supabase_dependency_timeout`. Treat every
+`503` as a failed candidate: keep production unchanged, correct the reviewed
+runtime or migration state, and deploy the same digest only when the corrected
+configuration is what needs changing. If code is at fault, promote the
+recorded last-known-good digest instead of modifying a running container.
+
 ### Homepage runtime feed cache
 
 Related issue: [nutsnews #174](https://github.com/ramideltoro/nutsnews/issues/174)
@@ -358,8 +448,14 @@ target.
 | `NUTSNEWS_PUBLIC_IOS_APP_STORE_URL` | Optional | Public | Runtime | Vercel Production environment | Synced into VPS app environment | Normally identical |
 | `NUTSNEWS_SOURCE_COMMIT` | Required | Public | Runtime/image metadata | Derived from Vercel Git metadata | Derived from reviewed release manifest | Must identify the same source commit |
 | `NUTSNEWS_BUILD_ID` | Required | Public | Runtime/image metadata | Derived from Vercel/GitHub build metadata | Derived from reviewed release manifest | Must match the portable build identity |
-| `NUTSNEWS_DEPLOYMENT_TARGET` | Required | Public | Runtime | Vercel deployment metadata | Derived from reviewed release manifest | Target name is intentionally different |
+| `NUTSNEWS_DEPLOYMENT_TARGET` | Required | Public | Runtime | Vercel deployment metadata | Derived from reviewed release manifest | Image qualification uses `vps-staging` for staging and `production-vps` for production; `/healthz` remains build identity while `/readyz` reports this runtime target |
 | `NUTSNEWS_EXPECTED_IMAGE_DIGEST` | Required on image targets | Public | Runtime | Not applicable | Derived from reviewed release manifest | Must equal the promoted `sha256` digest |
+| `NUTSNEWS_DEPLOYED_IMAGE_DIGEST` | Required on image targets | Public | Runtime | Not applicable | Derived from the exact Compose image reference | Must equal `NUTSNEWS_EXPECTED_IMAGE_DIGEST`; infra also verifies the actual container digest outside the process |
+| `NUTSNEWS_EXPECTED_SOURCE_COMMIT` | Required on image targets | Public | Runtime | Not applicable | Derived from reviewed release manifest | Must equal `NUTSNEWS_SOURCE_COMMIT` |
+| `NUTSNEWS_EXPECTED_BUILD_ID` | Required on image targets | Public | Runtime | Not applicable | Derived from reviewed release manifest | Must equal `NUTSNEWS_BUILD_ID` |
+| `NUTSNEWS_CONFIG_GENERATION` | Required on image targets | Public non-secret identity | Runtime | Not required for the OCI gate | Reviewed infra configuration generation | Changes when the reviewed target configuration changes; never contains a URL, project reference, or secret |
+| `NUTSNEWS_EXPECTED_SCHEMA_VERSION` | Required on image targets | Public non-secret identity | Runtime | Not required for the OCI gate | Reviewed migration head | Must equal the read-only `release_readiness.schema_version` marker after migration |
+| `NUTSNEWS_READYZ_TIMEOUT_MS` | Optional | Public | Runtime | Not required | Reviewed infra configuration | Bounded integer from 25 through 5000 milliseconds; the default is 2000 |
 | `VERCEL_GIT_COMMIT_SHA` | Vercel-provided | Public | Runtime metadata | Vercel system metadata | Not set | Vercel-only fallback for portable source identity |
 | `AUTH_SECRET` | Required for admin auth | Secret | Runtime | Vercel Production environment | `NUTSNEWS_APP_ENVS_JSON` in `production-vps` | Different target-specific secret is allowed |
 | `NODE_ENV` | Required | Public | Runtime | Vercel-managed | Set to `production` in the final image | Equivalent production mode |
