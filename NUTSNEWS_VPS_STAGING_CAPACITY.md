@@ -105,11 +105,54 @@ of its existing 768 MiB cap; Caddy and Ops auth used 14 MiB and 16 MiB of their
 CPU/IO weight 50 but no memory ceiling, so the 4 GiB reserve includes backup
 burst room.
 
+## Production Safeguards Applied
+
+The reviewed production safeguards were applied through the protected workflow
+on `2026-07-13T16:55Z`, with Vercel sync disabled, Cloudflare DDNS disabled,
+and Grafana Alloy explicitly enabled to preserve the active host service. The
+workflow completed successfully: [run 29268383268](https://github.com/ramideltoro/nutsnews-infra/actions/runs/29268383268)
+reported `ok=156`, `changed=11`, `failed=0`.
+
+This was a **production-only** reconciliation. It did not deploy or enable
+staging, send staging traffic, or change the staging route, credentials, or
+release identity.
+
+The post-apply read-only check at `2026-07-13T17:01:48Z` confirmed that the
+app had been recreated once and was healthy with these enforced Docker values:
+
+- CPU cap `4000000000` nanocpus (4 vCPUs), CPU shares `1024`.
+- Memory limit `805306368` bytes (768 MiB), reservation `536870912` bytes
+  (512 MiB), and PID limit `256`.
+- `json-file` logging, `max-size=10m`, `max-file=3`.
+
+The same sample showed 0.65 one-minute load, 9,472,016,384 bytes available
+memory, zero zram use, 74,190,782,464 bytes (69.1 GiB) free root disk, and
+9,658,763 free inodes. The app used 61.6 MiB and 12 PIDs; Caddy used 14.9 MiB
+and 10 PIDs; Ops auth used 15.5 MiB and one PID. Alloy remained active and
+enabled. There were no kernel OOM events or system priority-error entries
+since the apply. Docker recorded one expected `restart canceled` warning while
+the managed old app container was stopped for recreation; the replacement
+container was healthy with restart count zero.
+
+Relevant post-apply read-only commands were:
+
+```bash
+uptime; free -b; swapon --show --bytes
+df -B1 --output=size,used,avail,pcent /; df -iP /
+systemctl is-active alloy.service; systemctl is-enabled alloy.service
+sudo docker inspect nutsnews-app
+sudo docker ps; sudo docker stats --no-stream; sudo docker system df
+sudo find /var/lib/docker/containers -name '*-json.log' -printf '%f %s\n'
+sudo journalctl -k --since '2026-07-13 16:55:00 UTC' --no-pager
+sudo journalctl -p err..alert --since '2026-07-13 16:55:00 UTC' --no-pager
+sudo journalctl -u docker --since '2026-07-13 16:55:00 UTC' --no-pager
+```
+
 ## Apply and Verify Later
 
-Do not enable staging or run a protected apply merely because this document or
-a CI check is green. After the relevant staging deployment PR is approved and
-applied, use read-only SSH during one bounded qualification run:
+Do not enable staging merely because this document or a CI check is green.
+After the relevant staging deployment PR is approved and applied, use
+read-only SSH during one bounded qualification run:
 
 ```bash
 uptime; free -h; swapon --show; df -h; df -i
