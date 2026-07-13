@@ -17,6 +17,33 @@ This decision is deliberately conservative because the host retains only short
 current samples and swap history; it does not retain CPU or memory peak series.
 Do not treat the current low use as a measured peak.
 
+## Read-Only Evidence Commands
+
+The audit connected as `nutsnews_ops` with `BatchMode=yes` and used existing
+passwordless `sudo` only for read operations. The relevant commands were:
+
+```bash
+lscpu; uptime; vmstat 1 5; free -b; swapon --show --bytes; zramctl
+df -B1 -T; df -i
+sudo docker system df --format '{{json .}}'
+sudo docker ps -a
+sudo docker inspect <each-container>
+sudo docker stats --no-stream
+sudo du -sB1 /var/lib/docker /var/lib/containerd /var/log /opt/nutsnews
+sudo journalctl -k --since '7 days ago' --no-pager
+sudo journalctl -u docker.service --since '7 days ago' --no-pager
+sudo journalctl -p err..alert --since '7 days ago' --no-pager
+systemctl show docker.service alloy.service nutsnews-restic-backup.service
+```
+
+The Docker output reported 3.57 GB of images (1.63 GB reclaimable), 1.98 GB of
+build cache (1.85 GB reclaimable), three running healthy containers, and a
+zero-byte app cache volume. Container JSON logs totalled 0.74 MB; journald used
+187.6 MB. The seven-day kernel OOM count was zero. The single broad disk-pattern
+match was the normal boot option `errors=remount-ro`, not ENOSPC. Docker log
+messages were release/restart and resolver warnings; priority-error messages
+were almost entirely internet SSH probes, not capacity faults.
+
 ## Fixed Capacity Contract
 
 | Resource | Observed production/platform use | Production safety reserve | Staging budget | Remaining after staging budget |
