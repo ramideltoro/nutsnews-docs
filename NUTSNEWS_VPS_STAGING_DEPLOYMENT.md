@@ -120,9 +120,12 @@ the 14-digit head, and `git merge-base --is-ancestor <sha> origin/main`, then
 checks out that exact commit and requires its compiled migration contract to
 match the requested head. The protected job uses
 `NUTSNEWS_STAGING_MIGRATION_DATABASE_URL` only from `staging-supabase`, runs
-the existing forward-only locked migration runner, invokes `NOTIFY pgrst,
-'reload schema'`, and queries `nutsnews_migration_schema_contract` directly
-for both the expected head and matching fingerprint.
+the reviewed workflow revision's forward-only locked migration runner against
+the approved source checkout's migration files, invokes `NOTIFY pgrst, 'reload
+schema'`, and queries `nutsnews_migration_schema_contract` directly for both
+the expected head and matching fingerprint. It never executes scripts from the
+older approved source checkout, so a valid historical source cannot bypass a
+newer automation safeguard.
 
 ```mermaid
 flowchart LR
