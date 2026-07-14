@@ -361,9 +361,24 @@ can cause `ERR_TOO_MANY_REDIRECTS`. The focused staging-only remediation uses
 `SameSite=Lax`, which continues to block cross-site subrequests while permitting
 the top-level GET navigation used by the Google callback. HttpOnly, binding
 cookie, browser allow policy, independent service-token qualifier, DNS, VPS JWT
-verification, and all production behavior remain unchanged. Live OAuth remains
-unverified until that reviewed Cloudflare change is planned, applied, and
-retested.
+verification, and all production behavior remain unchanged. The exact Cloudflare
+plan (`29367539018`) changed only that one staging Access attribute; apply
+(`29367590285`) and the following no-drift plan (`29367643170`) succeeded, as
+did Access probe `29367644575`.
+
+After that correction, Cloudflare Access and Google consent both succeeded, but
+the callback reached `https://staging.nutsnews.com/api/auth/callback/google`
+and received a 404 before the application handled it. Sanitized Caddy metadata
+identified the cause: `forward_auth` rewrote the cloned verifier request to
+`/verify` but preserved the Google callback query, whereas the fail-closed
+verifier intentionally accepts only the exact `/verify` endpoint. The same
+metadata established that the staging Caddy access logger retained request URIs,
+which could retain OAuth callback query material. A focused GitOps correction
+therefore uses `/verify?` (an explicit empty query on the verifier clone only)
+and deletes the staging access-log URI field. It is limited to
+`staging.nutsnews.com`; the production and operations Caddy virtual hosts remain
+byte-for-byte unchanged. It must be merged, applied through the protected
+workflow, and browser-retested before OAuth can be claimed complete.
 
 ## Current Honest Status
 
