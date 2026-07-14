@@ -1,9 +1,9 @@
 # NutsNews VPS Staging Access And Credential Boundary
 
 Status: Cloudflare and VPS staging infrastructure are live and the immutable
-staging runtime has passed service-token and host-boundary verification. Issue
-`nutsnews-infra#120` remains open because browser-authenticated verification and
-application OAuth acceptance are not yet complete.
+staging runtime has passed service-token, browser-authenticated, and
+host-boundary verification. `nutsnews-infra#120` remains open because
+application OAuth acceptance is not yet complete.
 
 ## Easy Summary
 
@@ -244,9 +244,11 @@ production, and a healthy Access verifier.
 
 Run `29354941163` then proved anonymous denial plus service-token `/healthz`
 and `/readyz` access without retaining bodies, cookies, or tokens. Public
-production health/readiness remained 200. Browser-authenticated Access remains
-the outstanding edge check. Application OAuth remains intentionally blocked by
-the current production-only callback guard and is tracked in `nutsnews#201`.
+production health/readiness remained 200. On 2026-07-14, an authorized browser
+completed the Cloudflare Access flow and reached both staging `/healthz` and
+`/readyz`; only allow/health metadata was retained. Application OAuth remains
+intentionally blocked by the current production-only callback guard and is
+tracked in `nutsnews#201`.
 
 ## Current Honest Status
 
@@ -334,7 +336,7 @@ fail-closed origin JWT verifier. The protected hostname application and its
 browser/service-token policies remain unchanged.
 
 Cloudflare provisioning, durable remote state, the protected VPS baseline,
-immutable staging deployment, origin TLS, service-token health/readiness, and
-metadata-only host verification are complete. Production remained healthy and
-separate. Browser-authenticated Access and application OAuth are not complete;
-issue #120 must remain open.
+immutable staging deployment, origin TLS, service-token and browser-authenticated
+health/readiness, and metadata-only host verification are complete. Production
+remained healthy and separate. Application OAuth is not complete, so issue #120
+must remain open.
