@@ -45,8 +45,9 @@ staging secret. Before the `staging-vps` job is eligible to start, it requires:
 1. The exact candidate contract above.
 2. A completed, successful `Container Image` `push` workflow on the trusted
    app repository's `main`, whose head SHA and attempt match the candidate.
-3. GitHub's commit comparison to prove the source SHA is reachable from app
-   `main`.
+3. GitHub's `<candidate-SHA>...main` comparison to prove the source SHA is
+   reachable from app `main`: only `ahead` (current `main` contains the
+   candidate) or `identical` is accepted. `behind` and `diverged` fail closed.
 4. OCI index, linux/amd64 manifest, and attached SLSA v1 provenance checks in
    GHCR. The provenance must bind the manifest, app repository, source SHA,
    build ID, deployment target, and GitHub Actions run/attempt to the candidate.
