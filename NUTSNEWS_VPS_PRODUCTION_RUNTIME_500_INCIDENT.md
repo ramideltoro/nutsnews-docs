@@ -91,6 +91,42 @@ recreated the production container, while its shallow `/healthz` Compose check
 continued to report healthy. No secret values were inspected or recorded in
 this investigation.
 
+### Protected recovery attempt and compatibility rollback
+
+Infrastructure pull request `ramideltoro/nutsnews-infra#157` restored the
+reviewed production environment contract and changed the managed health gate to
+`/readyz`. Protected check run `29306095984` passed. Protected apply run
+`29306171719` then failed safely at the production container-health assertion;
+the release-verification steps were skipped and temporary credentials were
+removed.
+
+The strict gate exposed two additional release-compatibility facts that the old
+`/healthz` check had hidden:
+
+- The current image received a valid production/live runtime policy, but
+  `/readyz` returned `runtime_identity_invalid` because production did not
+  materialize the staging-only OCI attestation fields.
+- A read-only PostgREST probe returned `PGRST202` for
+  `nutsnews_migration_schema_contract`, proving that the current image depends
+  on migration `20260713000000_add_migration_schema_contract.sql` while the
+  production database does not yet expose that function. The preceding image
+  also depends on the absent `release_readiness` table (`PGRST205`).
+
+Database migration was outside the authorized recovery scope. The safe GitOps
+recovery therefore pins production to the most recent reviewed image whose
+`/readyz` has no database dependency:
+
+```text
+image: ghcr.io/ramideltoro/nutsnews@sha256:c4fea9e3d468df1bad3cc2ba9e84bb4361d7ea580be28e3466829acbf64c9ff8
+source commit: 9e5280398a73408593b27eaf49f324e6baaf5dbc
+build ID: 29217842808-1
+```
+
+This rollback keeps the corrected environment sync and the strict `/readyz`
+gate. The migration-dependent image must not be promoted again until its
+database migration is separately reviewed, applied, and verified through the
+owned Supabase migration workflow.
+
 ### Required production contract
 
 The infrastructure preflight requires these names for an enabled production
@@ -132,6 +168,12 @@ flowchart TD
     contract -- yes --> ansible[Ansible renders managed env]
     ansible --> ready[Compose checks readyz]
     ready --> serve[Serve public traffic only when ready]
+  end
+
+  subgraph Recovery[Compatibility recovery]
+    strict[readyz exposes missing database contract] --> stopRelease[Reject incompatible image]
+    stopRelease --> rollback[GitOps pin database-independent image]
+    rollback --> verify[Verify readyz, home, and articles]
   end
 ```
 
@@ -179,6 +221,8 @@ change Caddy, or deploy directly over SSH.
 - Managed production and staging Compose health checks target `/readyz`.
 - The controlled production check/apply with synchronization enabled restores
   `/readyz`, `/`, and the public articles API to HTTP 200.
+- The running release identity is the reviewed database-independent rollback
+  digest, source commit, and build ID listed above.
 
 ### Risks, mitigations, and rollback
 
