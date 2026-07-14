@@ -185,8 +185,12 @@ secret are stored as the separate `staging-vps` Environment secrets
 `NUTSNEWS_STAGING_AUTH_GOOGLE_ID` and
 `NUTSNEWS_STAGING_AUTH_GOOGLE_SECRET`. The protected deploy job requires both,
 overlays them in memory onto the existing write-only runtime bundle, and forces
-`NUTSNEWS_OAUTH_CREDENTIALS_ENV=staging`. The values are unavailable to the
-preflight and rehearsal jobs and are not written to summaries, deployment
+`AUTH_URL=https://staging.nutsnews.com` and
+`NUTSNEWS_OAUTH_CREDENTIALS_ENV=staging`. Pinning `AUTH_URL` gives Auth.js v5
+an exact canonical trusted host without enabling a broad host-trust flag. The
+application callback guard still independently requires the same exact request
+origin and all staging isolation identities. The credential values are
+unavailable to the preflight and rehearsal jobs and are not written to summaries, deployment
 records, logs, or artifacts. This avoids reading or blindly replacing
 `NUTSNEWS_STAGING_APP_ENVS_JSON`.
 
@@ -329,9 +333,23 @@ The candidate digest is
 `sha256:7f236c59266bf3bbdd84383dcd5b14abab811a9bd77352d10076cdee50a84f79`,
 with migration head `20260713000000` and schema version `20260712170000`.
 The dedicated staging-only Google OAuth client secret names are configured in
-`staging-vps`. Deployment remains pending until the reviewed infrastructure
-overlay is merged, installed through Protected Ansible Apply, and this exact
-candidate is deployed and verified live.
+`staging-vps`. Infrastructure PR
+[`nutsnews-infra#180`](https://github.com/ramideltoro/nutsnews-infra/pull/180)
+merged as `19ab268a56b4f74fc39e1acfa0d62ba3430ce1cb`; Protected Ansible check run
+`29361469048` and apply run `29361570686` succeeded. Rehearsal run
+`29362020580` verified the exact candidate and its OCI provenance. Staging
+deployment run `29362056657` then applied that digest and passed immutable
+digest, readiness, network, port, resource/log limit, directory, permission,
+Caddy, Access-verifier, and production-health checks. Access probe run
+`29362233346` proved anonymous denial plus service-token health/readiness.
+
+The first application OAuth browser attempt passed Cloudflare Access but
+stopped at `/api/auth/signin/google` with an Auth.js security error before any
+Google redirect. The reviewed cause is that the legacy write-only bundle
+provides `NEXTAUTH_URL`, while Auth.js v5 establishes trusted-host processing
+from `AUTH_URL` (or a broad trust flag). The focused remediation pins the exact
+staging `AUTH_URL` in the protected overlay; live OAuth remains unverified until
+that change is reviewed, applied, and the immutable candidate is redeployed.
 
 ## Current Honest Status
 
