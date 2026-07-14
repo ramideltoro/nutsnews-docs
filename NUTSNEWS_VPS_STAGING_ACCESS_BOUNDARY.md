@@ -260,8 +260,24 @@ staging verifier definition, verifier code, root-owned mode-0600 environment,
 and isolated network before Compose validation failed; it had not started the
 verifier. Production `/healthz` and `/readyz` again remained HTTP 200 with valid
 TLS, and the proxied staging hostname continued to return the Access login
-redirect. A focused correction must pass the reviewed env-file path to both
-Compose invocations and retain regression coverage for both task environments.
+redirect. Corrective PR
+[`#167`](https://github.com/ramideltoro/nutsnews-infra/pull/167) passed the
+reviewed env-file path to both Compose invocations and added regression coverage
+for both task environments. It merged as `e0685a7` after all required checks
+passed.
+
+Corrected protected check run `29343622521` passed with `failed=0`. Protected
+apply run `29343791298` then validated and started the verifier and connected
+Caddy to the isolated staging network. It stopped only when the final staging
+task invoked `caddy reload`: the reviewed Caddyfile deliberately configures
+`admin off`, so no admin endpoint was available for the CLI's reload request.
+Network attachment takes effect immediately and the already-running Caddy had
+loaded the staging route during the earlier service-foundation reconciliation,
+so no reload is required. Production `/healthz` and `/readyz` remained HTTP 200
+with valid TLS, while the proxied staging hostname continued to return the
+Access login redirect. A focused correction must remove the impossible reload
+without altering the Caddyfile, route, or production service behavior, and must
+retain regression coverage for the disabled admin API convention.
 
 Anonymous, browser-authenticated, service-token, and staging health probes are
 still pending the corrected protected apply. Application OAuth also remains
