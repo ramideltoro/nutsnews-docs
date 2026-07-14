@@ -127,6 +127,15 @@ gate. The migration-dependent image must not be promoted again until its
 database migration is separately reviewed, applied, and verified through the
 owned Supabase migration workflow.
 
+The recovery completed through infrastructure pull request `#158` (merge
+commit `b96409f7522b329570c029bffe9bd997d1a42804`). Protected check run
+`29306974751` and protected apply run `29307039328` both passed with production
+sync enabled. Post-apply verification confirmed the reviewed digest, healthy
+Docker state, all required environment names, and HTTP 200 responses from
+`/readyz`, `/`, `/api/articles?page=0`, and `/healthz`. The app log contained
+only normal startup output; the prior runtime-safety exception and digest did
+not recur.
+
 ### Required production contract
 
 The infrastructure preflight requires these names for an enabled production
