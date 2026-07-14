@@ -35,9 +35,12 @@ marker or remove fields until that digest is no longer a rollback target.
 The immutable image metadata now carries both `migration_head` and
 `schema_version`. Promotion stops before the infrastructure handoff unless the
 live production RPC reports those exact values and a matching catalog
-fingerprint. The infrastructure repository validates the same pair, records it
-in the reviewed production manifest, and derives a unique production
-configuration generation from the build ID and migration head.
+fingerprint. The application gate also requires the reviewed production URL to
+identify the same 20-character project reference. The infrastructure repository
+records the verified schema pair and project reference in the reviewed
+production manifest, compares that project with the Vercel-synchronized runtime
+before materialization, and derives a unique production configuration
+generation from the build ID and migration head.
 
 ## Expert explanation
 
@@ -207,9 +210,12 @@ production database contract before sending those values to
 The infrastructure promotion refuses an incomplete or malformed schema
 contract. Its generated GitOps pull request updates the digest and source
 identity together with the migration head, schema marker, and derived
-configuration generation. Protected Ansible Apply verifies all five release
-inputs against the merged manifest. Production and staging both receive the
-OCI attestation environment fields; an enabled production render is rejected
+configuration generation. The release handoff also carries the verified
+Supabase project reference. Protected Ansible Apply verifies all six release
+inputs against the merged manifest and rejects a synchronized production
+runtime whose project differs from the reviewed release project. Production
+and staging both receive the OCI attestation environment fields; an enabled
+production render is rejected
 if its build, configuration generation, migration head, or schema marker is
 missing or malformed.
 
@@ -225,3 +231,10 @@ evidence, and staging schema. If fixture cleanup fails, reset only its
 namespace; do not clear shared staging data. For a production migration
 incident, follow that migration’s explicit recovery procedure and the existing
 [Supabase Restore Procedure](SUPABASE_RESTORE.md).
+
+If `/readyz` returns `supabase_dependency_failed`, compare the managed
+production project reference used by backup/migration/release with the
+name-only Vercel-to-VPS runtime identity. A successful database gate against a
+different project is not production evidence. Correct the managed variables and
+dedicated credentials without printing values, take a fresh backup, and rerun
+the protected forward migration; never patch or restart the VPS manually.

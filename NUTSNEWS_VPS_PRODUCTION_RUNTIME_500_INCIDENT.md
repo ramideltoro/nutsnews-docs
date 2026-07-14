@@ -2,22 +2,37 @@
 
 ## Simple Summary
 
-The VPS website had the right app, but the app did not receive the safe settings
-it needs to read news. The new guard checks those settings before a deployment,
-and the health check now asks whether the app is truly ready instead of merely
-awake.
+The VPS website failed because its deployment settings and database were not
+ready for the same app release. The recovery restored the reviewed settings,
+backed up and upgraded the real production database, and made the release gate
+remember exactly which database it checked. The site is healthy again, and a
+future mismatch now stops before replacing the working container.
 
 ## Intermediate Summary
 
-On 2026-07-14, `https://vps.nutsnews.com/` returned HTTP 500 because the
+On 2026-07-14, `https://vps.nutsnews.com/` returned HTTP 500 after the
 production container was recreated without the runtime-safety and public
-Supabase configuration required by the web application. Protected Ansible Apply
-run `29268383268` was dispatched with `sync_vercel_production=false`; the sync
-step was skipped, and the rendered production environment contained only the
-separate protected app inputs available to that run. The durable infrastructure
-guard rejects an enabled production render unless the merged map has the
-complete required contract. Docker Compose also checks `/readyz` so an invalid
-policy or unusable data connection cannot report healthy through `/healthz`.
+Supabase configuration required by the web application. The first durable fix
+restored the reviewed Vercel-to-VPS mapping and changed Docker health from
+`/healthz` to `/readyz`. That stricter gate then exposed the second problem:
+production had not applied the migration contract required by the current
+image.
+
+The first protected migration succeeded against `nutsnews-staging` because the
+application repository's managed “production” Supabase variables incorrectly
+named that project. The image release gate therefore passed against staging,
+while Vercel synchronization correctly rendered the separate live production
+project on the VPS. The resulting image returned
+`supabase_dependency_failed`; direct read-only PostgREST probes returned
+`PGRST205` for `release_readiness` and `PGRST202` for the schema-contract RPC.
+
+Recovery corrected the managed project identity and dedicated credentials,
+created a fresh successful backup, and ran the protected forward migrations
+against the actual production project. `/readyz`, `/`, and the public articles
+API then returned HTTP 200. The final release contract carries the verified
+Supabase project reference into the reviewed infrastructure manifest and
+compares it with Vercel-synchronized runtime configuration before rendering or
+Compose.
 
 Operators must recover only through the reviewed Vercel-to-VPS sync and
 Protected Ansible Apply. Do not edit the VPS environment file or restart the
@@ -145,6 +160,60 @@ Docker state, all required environment names, and HTTP 200 responses from
 only normal startup output; the prior runtime-safety exception and digest did
 not recur.
 
+### Completed production migration and identity correction
+
+The initial protected database workflow completed against the project that was
+then labeled production in GitHub, but a later runtime comparison proved that
+project was actually `nutsnews-staging`. No secret values were printed. The
+authoritative project list and the deployed runtime identity showed the
+mislabeling directly.
+
+The managed repository variables and dedicated production anon/service-role
+credentials were corrected without logging values. Fresh production backup run
+`29313461483` passed. Protected migration run `29313510544` then applied the
+reviewed forward-only migration set to the actual live project and verified:
+
+```text
+legacy schema version: 20260712170000
+migration head: 20260713000000
+catalog fingerprint match: true
+```
+
+The already deployed immutable image became ready without a host edit or
+manual restart. Read-only checks returned HTTP 200 for `/readyz`, `/`, and
+`/api/articles?page=0`; Docker reported the reviewed digest healthy. Protected
+Ansible Apply run `29314521854` subsequently completed successfully and
+verified the same runtime identity through the controlled workflow.
+
+Application pull request `#200` and infrastructure pull request `#161` make the
+Supabase project reference part of the cross-repository release contract. The
+infrastructure guard compares the reviewed release project with the merged
+Vercel runtime map under `no_log` before materialization. Infrastructure pull
+request `#162` separately distinguishes the infrastructure deployment target
+`production-vps` from the immutable image build target `vps`, avoiding a false
+failure in final public-health verification.
+
+The final guarded rollout is recorded as:
+
+```text
+application source commit: c848fabc5bd8312b1b45c81d1b2d17efc20cf478
+container build run/build ID: 29314730458 / 29314730458-1
+immutable image digest: sha256:8aadaeb300225b291f7685537c2a3bd576f6659564c05e1e8949fd05e10bf8bb
+release promotion run: 29315097692
+infrastructure promotion PR/merge: #163 / d2526bcb3d3f7496bd534b719ec7d20d16a9a694
+protected apply run: 29315200287
+```
+
+All final runs completed successfully. At `2026-07-14T07:43:18Z`, an uncached
+root request returned HTTP/2 200 through Caddy and again had no request or
+correlation ID header. `/readyz` and `/api/articles?page=0` also returned 200.
+The health identity reported source `c848fabc5bd8312b1b45c81d1b2d17efc20cf478`,
+build `29314730458-1`, and image target `vps`; Docker reported the exact reviewed
+digest running and healthy. The live RPC returned the expected legacy marker
+and migration head with a matching fingerprint. Recent application logs
+contained only normal Next.js startup output and no recurrence of digest
+`3549087173`, `runtime_environment_invalid`, or `supabase_dependency_failed`.
+
 ### Required production contract
 
 The infrastructure preflight requires these names for an enabled production
@@ -198,7 +267,8 @@ flowchart TD
     backup[Fresh successful Supabase backup] --> migration[Protected forward migration]
     migration --> dbContract[Verify migration head and catalog fingerprint]
     dbContract --> imageGate[Image release checks live database contract]
-    imageGate --> gitops[GitOps promotion records OCI and schema identity]
+    imageGate --> projectIdentity[Carry verified Supabase project identity]
+    projectIdentity --> gitops[GitOps records OCI, schema, and project identity]
     gitops --> productionReady[Protected apply requires readyz]
   end
 ```
@@ -248,8 +318,9 @@ change Caddy, or deploy directly over SSH.
 - Managed production and staging Compose health checks target `/readyz`.
 - The controlled production check/apply with synchronization enabled restores
   `/readyz`, `/`, and the public articles API to HTTP 200.
-- The running release identity is the reviewed database-independent rollback
-  digest, source commit, and build ID listed above.
+- The running release identity matches the final reviewed digest, source
+  commit, build ID, migration head, schema marker, and Supabase project
+  reference recorded above.
 - A migration-dependent digest cannot dispatch infrastructure promotion unless
   production reports its exact migration head, legacy marker, and matching
   catalog fingerprint.
