@@ -1,8 +1,10 @@
 # NutsNews VPS Staging Access And Credential Boundary
 
-Status: implemented and verified offline; not deployed or live. Issue
-`nutsnews-infra#120` must remain open until separately approved provider/VPS
-applies and read-only live verification succeed.
+Status: Cloudflare DNS and Access were applied on July 14, 2026. The protected
+VPS check then stopped before staging materialization because one public-key
+assertion was parsed as a YAML mapping instead of an Ansible expression. Issue
+`nutsnews-infra#120` remains open until the corrective pull request is merged,
+the protected VPS check/apply succeeds, and read-only live verification passes.
 
 ## Easy Summary
 
@@ -216,7 +218,27 @@ here.
 
 ## Current Honest Status
 
-Offline code, tests, workflow boundaries, environment containers and protected
-branch policies can be complete before deployment. DNS, Access resources,
-secret values, the forced VPS identity, active Caddy/TLS, and live probes remain
-`not configured` until the approved steps above run. Issue #120 remains open.
+Cloudflare plan run `29340114473` proved an isolated `4 to add, 0 to change, 0
+to destroy` scope. Apply run `29340218273` then created the proxied staging DNS
+record, staging Access application, authorized-browser policy, and independent
+qualifier policy in the dedicated remote state backend. The required
+`cloudflare-admin`, `staging-tests`, and `production-vps` secret names are now
+configured without values appearing in the repository or workflow output.
+
+Protected Ansible check run `29340458679` stopped at
+`Validate opt-in staging access boundary inputs`. The public-key regular
+expression included an unquoted `: ` sequence, so YAML produced a mapping where
+Ansible requires a string conditional. No protected apply was dispatched and
+the staging Caddy route, origin verifier, and forced deployment identity were
+not materialized by that run. A focused correction must quote the whole
+assertion and retain regression coverage that parses the task file and proves
+every assertion is a string. Corrective commit
+[`ad37238`](https://github.com/ramideltoro/nutsnews-infra/commit/ad372381ab3d90ff7fb135e289ddb6ad051187bd)
+implements that focused fix for [issue #120](https://github.com/ramideltoro/nutsnews-infra/issues/120)
+without changing production behavior.
+
+Anonymous, browser-authenticated, service-token, and staging health probes are
+still pending the corrected protected check/apply. Production health remained
+available after the provider-only rollout. Application OAuth also remains
+intentionally blocked outside production by the separate application safety
+guard. Issue #120 remains open.
