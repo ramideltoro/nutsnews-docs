@@ -200,13 +200,15 @@ password characters before saving the Session Pooler URL in
 generic fail-closed connection failure. The migration command and PostgREST
 reload are reached only after the advisory lock is acquired.
 
-On the Ubuntu GitHub Actions runner, the lock client starts `psql` through
-`stdbuf --output=L`. This line-buffers the constant `LOCK_ACQUIRED` marker
-while the session intentionally holds the advisory lock, preventing pipe
-buffering from being mistaken for a 30-second lock timeout. The exact `psql`
-request, lock key, timeout, and no-secret logging boundary are unchanged. The
-reviewed runner falls back to direct `psql` outside Linux; the protected
-staging workflow itself always runs on Ubuntu.
+The reviewed runner creates a private per-run `psql` script and starts `psql`
+directly, with no wrapper process. After PostgreSQL grants the advisory lock,
+the script writes the constant `LOCK_ACQUIRED` result to a local marker file
+and immediately closes that file; the runner polls only that flushed local
+marker. This avoids treating a buffered stdout pipe as a 30-second lock
+timeout and ensures a timeout or normal release signals the actual lock-holder
+process. The temporary script and marker are mode-restricted and removed on
+both failure and release. The exact lock key, timeout, and no-secret logging
+boundary remain unchanged.
 
 ### Risks, Mitigations, and Rollback
 
@@ -217,9 +219,9 @@ staging workflow itself always runs on Ubuntu.
 - The workflow cannot silently use production because it references neither a
   production Environment nor a production secret or target. GitHub Environment
   branch restrictions and required reviewers add an independent boundary.
-- If the Ubuntu runner cannot start the standard `stdbuf` utility, the lock
-  client fails before any migration SQL runs; it never bypasses locking to keep
-  the release moving.
+- If the runner cannot start `psql`, create its private lock files, or observe
+  the flushed marker within the bounded wait, the lock client fails before any
+  migration SQL runs; it never bypasses locking to keep the release moving.
 - A cancelled or failed run cannot claim the schema contract was verified; the
   infrastructure release remains blocked by `/readyz` until a later successful
   run proves the contract.
