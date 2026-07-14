@@ -275,11 +275,33 @@ Network attachment takes effect immediately and the already-running Caddy had
 loaded the staging route during the earlier service-foundation reconciliation,
 so no reload is required. Production `/healthz` and `/readyz` remained HTTP 200
 with valid TLS, while the proxied staging hostname continued to return the
-Access login redirect. A focused correction must remove the impossible reload
-without altering the Caddyfile, route, or production service behavior, and must
-retain regression coverage for the disabled admin API convention.
+Access login redirect. Corrective PR
+[`#168`](https://github.com/ramideltoro/nutsnews-infra/pull/168) removed the
+impossible reload without altering the Caddyfile, route, or production service
+behavior and added regression coverage for the disabled admin API convention.
+It merged as `1359f5f` after all required checks passed.
 
-Anonymous, browser-authenticated, service-token, and staging health probes are
-still pending the corrected protected apply. Application OAuth also remains
+Corrected protected check run `29344892770` passed with `failed=0`, and
+protected apply run `29345020979` completed successfully with `ok=156`,
+`changed=9`, and `failed=0`. Production `/healthz` and `/readyz` remained HTTP
+200 with valid TLS. Anonymous staging health and readiness remained denied by
+Cloudflare Access with HTTP 302. Service-token probe run `29345490515` failed
+without exposing credentials or response data; diagnostic PR
+[`#169`](https://github.com/ramideltoro/nutsnews-infra/pull/169) added only the
+numeric failure status to that safe probe and merged as `36ef37a`. Probe run
+`29345777605` then identified HTTP 525. Direct TLS metadata confirmed that the
+origin presented no certificate for `staging.nutsnews.com`, while the production
+hostname continued to present its valid Let's Encrypt certificate.
+
+The durable staging-only correction is a path-scoped Access application for
+`staging.nutsnews.com/.well-known/acme-challenge/*` with a Bypass/Everyone
+policy. This allows Caddy's automatic certificate challenge and renewal without
+weakening Cloudflare SSL mode, changing production TLS, or exposing the staging
+application: outside an active ACME challenge, requests still reach the
+fail-closed origin JWT verifier. The protected hostname application and its
+browser/service-token policies remain unchanged.
+
+Browser-authenticated, service-token, and staging health probes remain pending
+the staging origin certificate correction. Application OAuth also remains
 intentionally blocked outside production by the separate application safety
 guard. Issue #120 remains open.
