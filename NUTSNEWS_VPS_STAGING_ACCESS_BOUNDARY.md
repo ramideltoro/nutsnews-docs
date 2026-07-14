@@ -126,12 +126,70 @@ belong only in `staging-tests`. Staging side effects remain disabled by default,
 so it cannot send real email, write production telemetry, invoke production
 ingestion, or use production data.
 
-Important application limitation: the currently merged application safety
-contract refuses application OAuth callbacks outside a live production
-runtime. The isolated client/callback values should still be onboarded, but
-full application OAuth verification remains pending a separately reviewed app
-change that preserves fail-closed side effects. That work is tracked in
-`nutsnews#201`. Cloudflare browser auth is independent and can be verified now.
+## Application OAuth Change (`nutsnews#201`)
+
+### Simple Summary
+
+Production keeps its existing locked door. Staging gets a different key that
+works only at the staging address and cannot be mistaken for production's key.
+
+### Intermediate Summary
+
+The application change for `nutsnews#201` introduces an OAuth-callback-specific
+runtime check. Production continues to use the existing production/live rule.
+Staging is eligible only when global side effects remain disabled, the runtime,
+data, Supabase credentials, OAuth credentials, Supabase project, configured
+Auth.js URL, and incoming request origin all identify the isolated staging
+system. Missing, preview, local, mixed, or ambiguous identities continue to
+receive the existing no-store HTTP 503 response before Auth.js runs.
+
+### Expert Summary
+
+The focused policy is implemented at the Auth.js GET/POST route boundary rather
+than weakening `assertProductionOperation` for unrelated operations. The
+staging branch requires all existing `assertRuntimeReady` invariants plus:
+
+- `NUTSNEWS_SIDE_EFFECTS_MODE=disabled`;
+- `NUTSNEWS_OAUTH_CREDENTIALS_ENV=staging`;
+- dedicated nonempty `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` values;
+- `AUTH_URL` or legacy `NEXTAUTH_URL` exactly equal to
+  `https://staging.nutsnews.com` (if both exist, they must agree); and
+- the incoming request origin exactly equal to
+  `https://staging.nutsnews.com`.
+
+Production's existing runtime/data/project validation and live-side-effects
+requirement are unchanged. No identity value, URL, client ID, secret, token, or
+callback material is added to readiness output. Focused regression tests cover
+production allow, isolated-staging allow, mixed/missing refusal, and guard
+placement on both GET and POST paths.
+
+```mermaid
+flowchart TD
+  Request[Auth.js GET or POST request] --> Runtime[Validate runtime, data, credentials, and Supabase identity]
+  Runtime -->|production plus live| AuthJs[Delegate to Auth.js]
+  Runtime -->|staging| Staging[Require disabled side effects, staging OAuth identity, and dedicated Google credentials]
+  Staging --> Origin[Require configured URL and request origin to equal staging.nutsnews.com]
+  Origin -->|all exact| AuthJs
+  Runtime -->|invalid or mixed| Refuse[No-store HTTP 503]
+  Staging -->|missing or mixed| Refuse
+  Origin -->|mismatch| Refuse
+```
+
+Before live OAuth verification, create or select a staging-only Google OAuth
+client and register only the reviewed staging callback URL:
+`https://staging.nutsnews.com/api/auth/callback/google`. Add its client ID and
+secret plus the staging identity label to `NUTSNEWS_STAGING_APP_ENVS_JSON`
+offline, replace that GitHub Environment secret through stdin, build a reviewed
+immutable application digest, and deploy it only through the fixed staging
+workflow. Never copy the production OAuth client, `AUTH_SECRET`, Supabase
+credentials, allowed-email/test-user credentials, or telemetry credentials.
+
+Risk is limited to staging authentication because production follows its
+existing branch. A missing or incorrect staging value fails closed. Roll back
+by redeploying the previous reviewed staging digest and removing or rotating
+only the staging OAuth client values; do not change the production guard or
+production provider configuration. Cloudflare browser auth remains independent
+from application OAuth.
 
 ## Exact Onboarding
 
@@ -247,8 +305,9 @@ and `/readyz` access without retaining bodies, cookies, or tokens. Public
 production health/readiness remained 200. On 2026-07-14, an authorized browser
 completed the Cloudflare Access flow and reached both staging `/healthz` and
 `/readyz`; only allow/health metadata was retained. Application OAuth remains
-intentionally blocked by the current production-only callback guard and is
-tracked in `nutsnews#201`.
+blocked by the currently deployed production-only callback guard while the
+focused change tracked in `nutsnews#201` is reviewed, configured with a
+staging-only provider client, deployed immutably, and verified live.
 
 ## Current Honest Status
 
