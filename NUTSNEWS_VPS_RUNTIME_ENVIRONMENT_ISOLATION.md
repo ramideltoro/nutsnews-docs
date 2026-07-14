@@ -1,8 +1,9 @@
 # NutsNews VPS Runtime Environment Isolation
 
 NutsNews has separate production and staging runtime identities. Production
-retains its existing route and reviewed image; staging remains deliberately
-disabled even though the VPS capacity decision is now recorded.
+retains its existing route and reviewed image. The staging runtime can be
+deployed by its fixed candidate workflow, while its hostname/access boundary
+remains opt-in and not live until the separately approved #120 applies.
 
 ## When To Use This
 
@@ -18,8 +19,9 @@ containers, and writable cache volumes. Production keeps its current identity,
 so the staging deployment path cannot move the live route or swap its image
 digest.
 
-Staging has a fixed-purpose, approval-gated deployment path. It still cannot
-receive a Caddy route or public traffic. [The #118 capacity contract](NUTSNEWS_VPS_STAGING_CAPACITY.md)
+Staging has a fixed-purpose, approval-gated deployment path. Its reviewed
+hostname and access layer are documented separately and remain inactive before
+approval. [The #118 capacity contract](NUTSNEWS_VPS_STAGING_CAPACITY.md)
 defines its hard CPU, memory, PID, log, disk-preflight, and test-traffic
 budget. See [Immutable Staging Deployment](NUTSNEWS_VPS_STAGING_DEPLOYMENT.md)
 for the candidate trust boundary and separate live-apply evidence.
@@ -39,14 +41,14 @@ Mutable tags, including `latest`, fail before Compose materializes a runtime.
 | Compose project | `nutsnews-app` | `nutsnews-staging` |
 | Container | `nutsnews-app` | `nutsnews-app-staging` |
 | Docker network | `nutsnews-edge` | `nutsnews-edge-staging` |
-| Caddy access | Attached only to this network | Not attached; no route in #119 |
+| Caddy access | Existing route/network unchanged | Additive attachment and protected hostname only when #120 is enabled |
 | App directory | `/opt/nutsnews/apps/nutsnews` | `/opt/nutsnews/apps/nutsnews-staging` |
 | Env file | `/etc/nutsnews/nutsnews-app.env` | `/etc/nutsnews/nutsnews-staging-app.env` |
 | Release manifest | `/opt/nutsnews/ops/apps/production/release.json` | `/opt/nutsnews/ops/apps/staging/release.json` |
 | Apply marker | `/opt/nutsnews/ops/last-app-apply.json` | `/opt/nutsnews/ops/apps/staging/last-apply.json` |
 | Last-known-good record | `/opt/nutsnews/ops/apps/production/last-known-good.json` | `/opt/nutsnews/ops/apps/staging/last-known-good.json` |
 | Writable cache volume | `nutsnews-app-cache` | `nutsnews-app-staging-cache` |
-| State | Existing protected production behavior | Fixed-purpose `staging-vps` workflow only; no route |
+| State | Existing protected production behavior | Fixed-purpose `staging-vps`; hostname uses separate approved #120 apply |
 
 The existing protected workflow continues to consume reviewed production release
 state and production runtime secrets from `NUTSNEWS_APP_ENVS_JSON`. The separate
@@ -128,8 +130,9 @@ memory, PID, and log ceilings. The fixed-purpose deployment workflow consumes
 that contract, but no live staging apply has occurred merely by merging its
 infrastructure PR. A separately approved dispatch and the completion evidence
 in [Immutable Staging Deployment](NUTSNEWS_VPS_STAGING_DEPLOYMENT.md) remain
-required. Public routing, TLS/access control, and production promotion/rollback
-remain intentionally out of scope.
+required. The reviewed TLS/access design is in
+[Staging Access And Credential Boundary](NUTSNEWS_VPS_STAGING_ACCESS_BOUNDARY.md),
+but protected provider/VPS applies and live verification remain pending.
 
 ## Related Docs
 
@@ -137,4 +140,5 @@ remain intentionally out of scope.
 - [NutsNews VPS Service Foundation](NUTSNEWS_VPS_SERVICE_FOUNDATION.md)
 - [NutsNews VPS Same-Host Staging Capacity Budget](NUTSNEWS_VPS_STAGING_CAPACITY.md)
 - [NutsNews Immutable Staging Deployment](NUTSNEWS_VPS_STAGING_DEPLOYMENT.md)
+- [NutsNews VPS Staging Access And Credential Boundary](NUTSNEWS_VPS_STAGING_ACCESS_BOUNDARY.md)
 - [NutsNews Dual-Target Web Deployment](NUTSNEWS_DUAL_TARGET_WEB_DEPLOYMENT.md)

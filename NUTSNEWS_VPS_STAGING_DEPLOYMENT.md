@@ -9,6 +9,12 @@ NutsNews staging runtime. It deploys a reviewed GHCR digest to the isolated
 the production container, attach Caddy to staging, or create a public staging
 route.
 
+The deployment key is designed to terminate at a server-side forced command
+for the root-owned staging bundle. The workflow proves arbitrary SSH commands
+are rejected, then submits only `check`, `apply`, and sanitized `verify`
+requests. Hostname/Access onboarding remains a separate protected step; see
+[VPS Staging Access And Credential Boundary](NUTSNEWS_VPS_STAGING_ACCESS_BOUNDARY.md).
+
 The workflow is activated only by the `nutsnews-staging-release`
 `repository_dispatch` event. Its manual `workflow_dispatch` path is a
 validation-only rehearsal: it can never attach `staging-vps`, read a staging

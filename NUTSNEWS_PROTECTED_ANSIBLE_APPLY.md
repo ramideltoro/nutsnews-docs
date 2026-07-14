@@ -2,6 +2,12 @@
 
 This explains the first protected GitHub Actions workflow that can run the Ansible VPS baseline against `vps.nutsnews.com`. It is a production mutation path, so it wears a seatbelt, uses the `production-vps` Environment, and defaults to check mode because infrastructure should ask before touching the expensive-looking buttons.
 
+The `enable_staging_access` input is opt-in and defaults to `false`. Leave it
+disabled for ordinary production work. Enabling it requires the separate
+Cloudflare Access/provider onboarding, a successful check-mode review, and
+explicit apply approval documented in
+[VPS Staging Access And Credential Boundary](NUTSNEWS_VPS_STAGING_ACCESS_BOUNDARY.md).
+
 ## Easy Summary
 
 The VPS bootstrap is no longer just a local operator ritual. We now have a manual GitHub Actions workflow that can run the Ansible baseline through the protected `production-vps` Environment.
