@@ -135,8 +135,9 @@ works only at the staging address and cannot be mistaken for production's key.
 
 ### Intermediate Summary
 
-Application PR [`nutsnews#202`](https://github.com/ramideltoro/nutsnews/pull/202)
-for `nutsnews#201` introduces an OAuth-callback-specific runtime check.
+Application PR [`nutsnews#202`](https://github.com/ramideltoro/nutsnews/pull/202),
+merged as `7619eac85450cc5db376f927aaa2def6894a6887`, introduces an
+OAuth-callback-specific runtime check for `nutsnews#201`.
 Production continues to use the existing production/live rule.
 Staging is eligible only when global side effects remain disabled, the runtime,
 data, Supabase credentials, OAuth credentials, Supabase project, configured
@@ -307,9 +308,17 @@ production health/readiness remained 200. On 2026-07-14, an authorized browser
 completed the Cloudflare Access flow and reached both staging `/healthz` and
 `/readyz`; only allow/health metadata was retained. Application OAuth remains
 blocked by the currently deployed production-only callback guard while the
-focused change in [`nutsnews#202`](https://github.com/ramideltoro/nutsnews/pull/202)
-is merged, configured with a staging-only provider client, deployed immutably,
-and verified live.
+merged change is configured with a staging-only provider client, deployed
+immutably, and verified live.
+
+Application merge commit `7619eac85450cc5db376f927aaa2def6894a6887`
+produced immutable candidate build `29357494815-1` in
+[Container Image run `29357494815`](https://github.com/ramideltoro/nutsnews/actions/runs/29357494815).
+The candidate digest is
+`sha256:7f236c59266bf3bbdd84383dcd5b14abab811a9bd77352d10076cdee50a84f79`,
+with migration head `20260713000000` and schema version `20260712170000`.
+It has not been deployed because the staging-only Google OAuth client and
+replacement protected staging bundle are not yet configured.
 
 ## Current Honest Status
 
