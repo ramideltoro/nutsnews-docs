@@ -135,8 +135,9 @@ works only at the staging address and cannot be mistaken for production's key.
 
 ### Intermediate Summary
 
-The application change for `nutsnews#201` introduces an OAuth-callback-specific
-runtime check. Production continues to use the existing production/live rule.
+Application PR [`nutsnews#202`](https://github.com/ramideltoro/nutsnews/pull/202)
+for `nutsnews#201` introduces an OAuth-callback-specific runtime check.
+Production continues to use the existing production/live rule.
 Staging is eligible only when global side effects remain disabled, the runtime,
 data, Supabase credentials, OAuth credentials, Supabase project, configured
 Auth.js URL, and incoming request origin all identify the isolated staging
@@ -306,8 +307,9 @@ production health/readiness remained 200. On 2026-07-14, an authorized browser
 completed the Cloudflare Access flow and reached both staging `/healthz` and
 `/readyz`; only allow/health metadata was retained. Application OAuth remains
 blocked by the currently deployed production-only callback guard while the
-focused change tracked in `nutsnews#201` is reviewed, configured with a
-staging-only provider client, deployed immutably, and verified live.
+focused change in [`nutsnews#202`](https://github.com/ramideltoro/nutsnews/pull/202)
+is merged, configured with a staging-only provider client, deployed immutably,
+and verified live.
 
 ## Current Honest Status
 
