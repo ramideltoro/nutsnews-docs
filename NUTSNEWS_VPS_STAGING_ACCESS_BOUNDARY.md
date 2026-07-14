@@ -321,10 +321,8 @@ Run `29354941163` then proved anonymous denial plus service-token `/healthz`
 and `/readyz` access without retaining bodies, cookies, or tokens. Public
 production health/readiness remained 200. On 2026-07-14, an authorized browser
 completed the Cloudflare Access flow and reached both staging `/healthz` and
-`/readyz`; only allow/health metadata was retained. Application OAuth remains
-blocked by the currently deployed production-only callback guard while the
-merged change is configured with a staging-only provider client, deployed
-immutably, and verified live.
+`/readyz`; only allow/health metadata was retained. This established the
+pre-application-OAuth browser baseline.
 
 Application merge commit `7619eac85450cc5db376f927aaa2def6894a6887`
 produced immutable candidate build `29357494815-1` in
@@ -348,8 +346,24 @@ stopped at `/api/auth/signin/google` with an Auth.js security error before any
 Google redirect. The reviewed cause is that the legacy write-only bundle
 provides `NEXTAUTH_URL`, while Auth.js v5 establishes trusted-host processing
 from `AUTH_URL` (or a broad trust flag). The focused remediation pins the exact
-staging `AUTH_URL` in the protected overlay; live OAuth remains unverified until
-that change is reviewed, applied, and the immutable candidate is redeployed.
+staging `AUTH_URL` in the protected overlay. Infrastructure PR
+[`nutsnews-infra#181`](https://github.com/ramideltoro/nutsnews-infra/pull/181)
+merged as `afb59800e4a919df180dfade48a8df747e133e8d`; check run `29365712148`,
+apply run `29365806062`, redeployment run `29366227324`, and Access probe run
+`29366329250` all succeeded. Production health/readiness remained 200.
+
+The next browser attempt reached Google, proving the Auth.js trusted-host fix,
+but the cross-site callback entered a Cloudflare Access redirect loop. A clean
+browser session then reproduced the loop even on `/healthz`. Protected plan run
+`29367170265` found no drift and confirmed live state exactly matched the
+GitOps application setting `SameSite=Strict`. Cloudflare documents that Strict
+can cause `ERR_TOO_MANY_REDIRECTS`. The focused staging-only remediation uses
+`SameSite=Lax`, which continues to block cross-site subrequests while permitting
+the top-level GET navigation used by the Google callback. HttpOnly, binding
+cookie, browser allow policy, independent service-token qualifier, DNS, VPS JWT
+verification, and all production behavior remain unchanged. Live OAuth remains
+unverified until that reviewed Cloudflare change is planned, applied, and
+retested.
 
 ## Current Honest Status
 
