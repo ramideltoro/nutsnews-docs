@@ -1,10 +1,9 @@
 # NutsNews VPS Staging Access And Credential Boundary
 
-Status: Cloudflare DNS and Access were applied on July 14, 2026. The protected
-VPS check then stopped before staging materialization because one public-key
-assertion was parsed as a YAML mapping instead of an Ansible expression. Issue
-`nutsnews-infra#120` remains open until the corrective pull request is merged,
-the protected VPS check/apply succeeds, and read-only live verification passes.
+Status: Cloudflare and VPS staging infrastructure are live and the immutable
+staging runtime has passed service-token and host-boundary verification. Issue
+`nutsnews-infra#120` remains open because browser-authenticated verification and
+application OAuth acceptance are not yet complete.
 
 ## Easy Summary
 
@@ -19,9 +18,9 @@ Cloudflare's signed Access token, so a request sent directly to the origin IP
 does not bypass the front door. `noindex` headers are defense in depth, not the
 access control.
 
-Nothing in the offline pull request changes the live host, DNS, Cloudflare, or
-production. Do not call staging live before the protected applies and the live
-checklist in this guide pass.
+The rollout was additive. Production DNS was not changed, production stayed on
+its existing project/network/route, and its public `/healthz` and `/readyz`
+continued to return 200 after the staging apply.
 
 ## Intermediate Summary
 
@@ -112,11 +111,12 @@ to commit. It must contain staging-owned values for:
 - Supabase URL/project, public anonymous key, and service-role key;
 - the production Supabase project reference only as a non-secret mismatch
   sentinel—never a production key or URL credential;
-- app OAuth client ID/secret, `AUTH_SECRET`, and `NEXTAUTH_URL` set to
+- staging-only `AUTH_SECRET` and `NEXTAUTH_URL` set to
   `https://staging.nutsnews.com`;
-- staging Turnstile site/secret keys;
-- staging Sentry endpoint/environment (delivery remains disabled by the app's
-  staging side-effect policy);
+- app OAuth client ID/secret only when the separately reviewed staging OAuth
+  application change is ready;
+- staging Turnstile and Sentry values only when those providers are explicitly
+  enabled; disabled providers may remain unset;
 - `NUTSNEWS_EMAIL_MODE=disabled` or a dedicated sandbox; disabled mode rejects
   a Resend key;
 - `NUTSNEWS_SITE_URL=https://staging.nutsnews.com` and staging runtime identity.
@@ -130,13 +130,14 @@ Important application limitation: the currently merged application safety
 contract refuses application OAuth callbacks outside a live production
 runtime. The isolated client/callback values should still be onboarded, but
 full application OAuth verification remains pending a separately reviewed app
-change that preserves fail-closed side effects. Cloudflare browser auth is
-independent and can be verified now.
+change that preserves fail-closed side effects. That work is tracked in
+`nutsnews#201`. Cloudflare browser auth is independent and can be verified now.
 
 ## Exact Onboarding
 
-All rows are `not configured` until names-only inventory confirms them. Never
-paste values into a terminal command line, issue, PR, log, or document.
+The live rollout confirmed every name in this table is configured in its
+designated Environment. The commands remain the rotation/onboarding reference.
+Never paste values into a terminal command line, issue, PR, log, or document.
 
 | Secret name | Provider/owner | GitHub Environment | Source/UI path | Required scope | New? | Safe command |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -178,7 +179,8 @@ here.
 6. With a separate explicit approval, rerun it with `run_mode=apply`,
    `confirm_apply=vps.nutsnews.com`, and `enable_staging_access=true`.
 7. Run `Staging Access Probe`. It must deny anonymous access and return 200 for
-   an authenticated `/healthz` request without retaining bodies/cookies.
+   authenticated `/healthz` and `/readyz` requests without retaining
+   bodies/cookies.
 8. Perform read-only verification: listening sockets/published ports; Docker
    projects, containers, digests, networks, limits and upstreams; env filenames,
    owners and modes without contents; active Caddy config/TLS; authenticated and
@@ -215,6 +217,36 @@ here.
   bypass the commit check.
 - Readiness fails: inspect sanitized reason codes and release identity only. Do
   not print the env file or response bodies containing authentication material.
+
+## Live Rollout Record
+
+Cloudflare Zero Trust Free and the `nutsnews.com` Free zone were used; no paid
+dependency was added. The applied provider resources are:
+
+- proxied `staging.nutsnews.com` A record;
+- `NutsNews staging` Access application;
+- authorized-browser, independent service-token, and ACME challenge policies;
+- `NutsNews staging independent qualifier` service token;
+- least-privilege `NutsNews staging access OpenTofu` API token;
+- private `nutsnews-staging-access-tofu-state` R2 state bucket and isolated
+  state credential.
+
+The approved immutable candidate is source commit
+`4a9b727b260f1380f1529524b8a01ba0b0caaac2`, build
+`29245347761-1`, and image digest
+`sha256:ae5efea8e03590e37b4565df57dc2e9616fc1057e939200f329a0d0173cdcceb`.
+Run `29354831098` passed provenance, fixed check/apply, readiness, digest, and
+the sanitized host-boundary report. That report proved no staging host ports,
+the reviewed Compose identities, network/upstream separation, the #118/#119
+resource and log limits, distinct root-owned directories, root-owned mode 0600
+env files without reading contents, the active Caddy staging route, healthy
+production, and a healthy Access verifier.
+
+Run `29354941163` then proved anonymous denial plus service-token `/healthz`
+and `/readyz` access without retaining bodies, cookies, or tokens. Public
+production health/readiness remained 200. Browser-authenticated Access remains
+the outstanding edge check. Application OAuth remains intentionally blocked by
+the current production-only callback guard and is tracked in `nutsnews#201`.
 
 ## Current Honest Status
 
@@ -301,7 +333,8 @@ application: outside an active ACME challenge, requests still reach the
 fail-closed origin JWT verifier. The protected hostname application and its
 browser/service-token policies remain unchanged.
 
-Browser-authenticated, service-token, and staging health probes remain pending
-the staging origin certificate correction. Application OAuth also remains
-intentionally blocked outside production by the separate application safety
-guard. Issue #120 remains open.
+Cloudflare provisioning, durable remote state, the protected VPS baseline,
+immutable staging deployment, origin TLS, service-token health/readiness, and
+metadata-only host verification are complete. Production remained healthy and
+separate. Browser-authenticated Access and application OAuth are not complete;
+issue #120 must remain open.
