@@ -127,6 +127,15 @@ gate. The migration-dependent image must not be promoted again until its
 database migration is separately reviewed, applied, and verified through the
 owned Supabase migration workflow.
 
+The subsequent approved follow-up closes that release gap without changing the
+host manually. The application repository adds the protected production
+Supabase workflow, a fresh-backup identity/freshness gate, a pre-migration
+schema snapshot, and a direct post-migration contract check. Image metadata and
+the cross-repository promotion payload now include both the compiled migration
+head and the rollback-compatible schema marker. The infrastructure repository
+records and validates those values, materializes the full OCI runtime identity
+for production, and refuses promotion unless the schema contract is complete.
+
 The recovery completed through infrastructure pull request `#158` (merge
 commit `b96409f7522b329570c029bffe9bd997d1a42804`). Protected check run
 `29306974751` and protected apply run `29307039328` both passed with production
@@ -184,12 +193,21 @@ flowchart TD
     stopRelease --> rollback[GitOps pin database-independent image]
     rollback --> verify[Verify readyz, home, and articles]
   end
+
+  subgraph DurableRelease[Durable migration and release path]
+    backup[Fresh successful Supabase backup] --> migration[Protected forward migration]
+    migration --> dbContract[Verify migration head and catalog fingerprint]
+    dbContract --> imageGate[Image release checks live database contract]
+    imageGate --> gitops[GitOps promotion records OCI and schema identity]
+    gitops --> productionReady[Protected apply requires readyz]
+  end
 ```
 
 ### Repository ownership and changes
 
-- `ramideltoro/nutsnews` owns the Next.js application, the fail-closed runtime
-  policy, and `/readyz`. No application change is required for this incident.
+- `ramideltoro/nutsnews` owns the Next.js application, fail-closed runtime
+  policy, `/readyz`, protected Supabase migration workflow, and image-to-schema
+  release gate.
 - `ramideltoro/nutsnews-infra` owns the protected sync, Ansible render,
   Compose health check, Caddy route, and durable preflight fix.
 - `ramideltoro/nutsnews-docs` owns this cross-repository incident and recovery
@@ -232,6 +250,12 @@ change Caddy, or deploy directly over SSH.
   `/readyz`, `/`, and the public articles API to HTTP 200.
 - The running release identity is the reviewed database-independent rollback
   digest, source commit, and build ID listed above.
+- A migration-dependent digest cannot dispatch infrastructure promotion unless
+  production reports its exact migration head, legacy marker, and matching
+  catalog fingerprint.
+- Production materializes the deployed digest, expected source/build,
+  configuration generation, and expected schema marker from the reviewed
+  infrastructure manifest.
 
 ### Risks, mitigations, and rollback
 

@@ -13,8 +13,9 @@ migrations before it can pass `/readyz` or qualification. Staging test data is
 deterministic synthetic data with a unique `nutsnews-test-*` namespace; it is
 removed after the test or its TTL expires.
 
-Production is different: it is a separately protected, human-approved step
-with a current-backup check. There is no automatic “down migration” button.
+Production is different: it is a separately protected, explicitly confirmed
+step with a fresh successful manual backup check. There is no automatic “down
+migration” button.
 
 ## Intermediate explanation
 
@@ -30,6 +31,13 @@ expand phase. The recorded last-known-good app digest can therefore continue to
 read its old marker after an additive schema expansion. CI runs its old-reader
 snapshot against the expanded disposable schema. Do not change the legacy
 marker or remove fields until that digest is no longer a rollback target.
+
+The immutable image metadata now carries both `migration_head` and
+`schema_version`. Promotion stops before the infrastructure handoff unless the
+live production RPC reports those exact values and a matching catalog
+fingerprint. The infrastructure repository validates the same pair, records it
+in the reviewed production manifest, and derives a unique production
+configuration generation from the build ID and migration head.
 
 ## Expert explanation
 
@@ -62,7 +70,8 @@ flowchart TD
   ready --> qualification["Independent staging qualification"]
   qualification --> productionPreflight["Protected production approval\ncurrent backup/freshness"]
   productionPreflight --> productionMigration["Separate locked forward migration"]
-  productionMigration --> release["Promote already-qualified digest"]
+  productionMigration --> databaseContract["Verify head, legacy marker, and fingerprint"]
+  databaseContract --> release["Promote compatible immutable digest"]
   oldDigest["Recorded last-known-good digest"] --> expand["Additive compatibility window"]
   expand --> productionPreflight
 ```
@@ -90,6 +99,62 @@ CI runs these checks in `Migration order, drift, fixtures, and compatibility`.
 The required `Release candidate` check depends on that job. Do not add
 `supabase db push`, `supabase db reset`, or the locked migration command to a
 web-container startup command.
+
+## Protected production migration procedure
+
+The application repository owns `Apply Verified NutsNews Production Supabase
+Migrations`. Run it only from `main`, after its workflow revision has passed
+review and a fresh manual `Supabase Backup` run has completed successfully.
+
+The request contains exactly:
+
+1. `source_commit`: a full lowercase SHA already reachable from `main`.
+2. `migration_head`: the 14-digit head declared by that source.
+3. `backup_run_id`: the successful manual `Supabase Backup` workflow run.
+4. `confirmation`: `apply-production-supabase-migrations`.
+
+The preflight job has no production database credential. It validates the
+request, main ancestry, checked-out migration contract, backup workflow
+identity, repository, branch, successful conclusion, and one-hour freshness.
+Only then can the `production-supabase` job read its protected Supabase access
+token and reviewed project reference.
+
+The protected job links the approved project, obtains a short-lived database
+connection without printing it, saves a pre-migration public-schema artifact,
+and calls the same forward-only advisory-lock runner used by staging. It then
+checks `nutsnews_migration_schema_contract()` directly with PostgreSQL. The job
+fails unless the migration head, legacy-compatible marker, recorded
+fingerprint, and current fingerprint all agree. Temporary connection material
+is deleted on success or failure.
+
+```mermaid
+sequenceDiagram
+  participant Operator
+  participant Backup as Supabase Backup workflow
+  participant Preflight as No-secret preflight
+  participant Protected as production-supabase
+  participant DB as Production Supabase
+  participant Release as Image release gate
+
+  Operator->>Backup: Dispatch fresh manual backup
+  Backup-->>Operator: Successful run ID
+  Operator->>Preflight: SHA + head + backup run + exact confirmation
+  Preflight->>Preflight: Verify main ancestry and backup freshness
+  Preflight->>Protected: Release approved immutable inputs
+  Protected->>DB: Capture schema snapshot
+  Protected->>DB: Acquire advisory lock and push forward migrations
+  Protected->>DB: Record and verify migration contract
+  DB-->>Protected: Head + legacy marker + matching fingerprint
+  Release->>DB: Verify same contract before promotion
+```
+
+The `production-supabase` environment requires:
+
+- secret `NUTSNEWS_PRODUCTION_SUPABASE_ACCESS_TOKEN`;
+- variable `NUTSNEWS_PRODUCTION_SUPABASE_PROJECT_REF`.
+
+Never store a database URL in the repository, paste one into workflow input,
+or copy a connection value into an issue or runbook.
 
 ## Staging fixture procedure
 
@@ -131,28 +196,26 @@ production migration is non-reversible, include a separate reviewed recovery
 procedure (for example restore to a temporary database, validate, then make a
 controlled repair). Do not claim or attempt automatic reverse migrations.
 
-## Required infrastructure follow-up
+## Release promotion contract
 
-`nutsnews-infra` must implement these protected invocations; this application
-change intentionally does not modify that repository:
+The container build publishes immutable metadata containing the image digest,
+source commit, build ID, `migration_head`, and rollback-compatible
+`schema_version`. `Promote Verified Production Release` verifies the live
+production database contract before sending those values to
+`ramideltoro/nutsnews-infra`.
 
-1. Before `/readyz` or qualification, invoke
-   `node scripts/locked_migration_workflow.mjs` with isolated staging database
-   credentials, target `staging`, purpose `staging-qualification`, and
-   direction `up`.
-2. Add a separate protected production migration environment. It must use
-   target `production`, purpose `production-protected`, direction `up`, an
-   explicit approval signal, and a backup-completed timestamp that passes the
-   freshness preflight. Never run it at container startup.
-3. Store the immutable last-known-good digest with release attestation and run
-   the real old-image smoke/compatibility test against staging before a
-   contract migration. The application snapshot test is the fast regression.
-4. Make staging migration success and `/readyz` schema-contract success
-   prerequisites of `nutsnews-infra#122`; keep promotion separately protected
-   under `nutsnews-infra#121` and `#124`.
-5. Schedule the staging-only `node scripts/staging_fixtures.mjs cleanup`
-   command with the isolated staging credential. This is the TTL safety net for
-   a test process that is interrupted before its scoped reset.
+The infrastructure promotion refuses an incomplete or malformed schema
+contract. Its generated GitOps pull request updates the digest and source
+identity together with the migration head, schema marker, and derived
+configuration generation. Protected Ansible Apply verifies all five release
+inputs against the merged manifest. Production and staging both receive the
+OCI attestation environment fields; an enabled production render is rejected
+if its build, configuration generation, migration head, or schema marker is
+missing or malformed.
+
+An application rollback remains a digest rollback to the recorded
+last-known-good image. The additive schema and unchanged legacy marker preserve
+that rollback window; the automation never attempts a database down migration.
 
 ## Incident notes
 

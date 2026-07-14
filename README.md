@@ -163,6 +163,7 @@ These docs explain the product and the system at a high level.
 | Doc | Use it for |
 | --- | --- |
 | [Observability](OBSERVABILITY.md) | Logs, errors, dashboards, and health checks |
+| [VPS Production Runtime 500 Incident](NUTSNEWS_VPS_PRODUCTION_RUNTIME_500_INCIDENT.md) | Correlated RSC 500 evidence, GitOps recovery, protected Supabase migration, and schema-compatible release promotion |
 | [Grafana Cloud Observability](NUTSNEWS_GRAFANA_CLOUD_OBSERVABILITY.md) | VPS host/container/service/app/log dashboards, quota alerts, and Synthetic Monitoring setup |
 | [Cloudflare Cache Observability](CLOUDFLARE_CACHE_OBSERVABILITY.md) | Expected-vs-actual cache header reports and alerts |
 | [UptimeRobot Onboarding](UPTIMEROBOT_ONBOARDING.md) | External uptime monitors |
