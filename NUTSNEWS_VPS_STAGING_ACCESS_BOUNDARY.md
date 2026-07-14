@@ -228,17 +228,28 @@ configured without values appearing in the repository or workflow output.
 Protected Ansible check run `29340458679` stopped at
 `Validate opt-in staging access boundary inputs`. The public-key regular
 expression included an unquoted `: ` sequence, so YAML produced a mapping where
-Ansible requires a string conditional. No protected apply was dispatched and
-the staging Caddy route, origin verifier, and forced deployment identity were
-not materialized by that run. A focused correction must quote the whole
-assertion and retain regression coverage that parses the task file and proves
-every assertion is a string. Corrective commit
+Ansible requires a string conditional. Corrective commit
 [`ad37238`](https://github.com/ramideltoro/nutsnews-infra/commit/ad372381ab3d90ff7fb135e289ddb6ad051187bd)
 implements that focused fix for [issue #120](https://github.com/ramideltoro/nutsnews-infra/issues/120)
-without changing production behavior.
+without changing production behavior. After merge, provider plan run
+`29341446703` reported zero drift, and protected check run `29341499410`
+completed with no remote materialization in check mode and no unexpected
+production change.
+
+Protected apply run `29341663329` then stopped while validating the dedicated
+staging deploy user's sudoers fragment. YAML's `>-` chomping indicator removed
+the terminal newline, and `visudo` rejected the generated file with `missing
+line terminator at end of file`. The apply had already installed the additive
+staging Caddy route and part of the dedicated staging deployment identity, but
+had not completed the origin verifier or staging network materialization.
+Production `/healthz` and `/readyz` both continued to return HTTP 200 with valid
+TLS after the partial apply. The proxied staging hostname continued to return
+the Cloudflare Access login redirect rather than exposing the incomplete
+origin. A focused correction must preserve the sudoers fragment's terminal
+newline and retain a regression assertion against the parsed task scalar before
+the protected check/apply is retried.
 
 Anonymous, browser-authenticated, service-token, and staging health probes are
-still pending the corrected protected check/apply. Production health remained
-available after the provider-only rollout. Application OAuth also remains
+still pending the corrected protected apply. Application OAuth also remains
 intentionally blocked outside production by the separate application safety
 guard. Issue #120 remains open.
