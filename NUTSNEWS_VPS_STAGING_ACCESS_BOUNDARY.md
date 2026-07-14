@@ -245,9 +245,23 @@ had not completed the origin verifier or staging network materialization.
 Production `/healthz` and `/readyz` both continued to return HTTP 200 with valid
 TLS after the partial apply. The proxied staging hostname continued to return
 the Cloudflare Access login redirect rather than exposing the incomplete
-origin. A focused correction must preserve the sudoers fragment's terminal
-newline and retain a regression assertion against the parsed task scalar before
-the protected check/apply is retried.
+origin. Corrective PR
+[`#166`](https://github.com/ramideltoro/nutsnews-infra/pull/166) preserved the
+sudoers fragment's terminal newline and added a regression assertion against
+the parsed task scalar. It merged as `98c425b` after all required checks passed.
+
+Corrected protected check run `29342602190` then passed with `failed=0` and no
+remote materialization in check mode. Protected apply run `29342742569` passed
+the previous assertion and sudoers blockers, then stopped while validating the
+staging access Compose project. The Compose definition requires
+`NUTSNEWS_STAGING_ACCESS_ENV_FILE` for interpolation, but the Ansible validation
+and startup commands did not define that variable. The apply had installed the
+staging verifier definition, verifier code, root-owned mode-0600 environment,
+and isolated network before Compose validation failed; it had not started the
+verifier. Production `/healthz` and `/readyz` again remained HTTP 200 with valid
+TLS, and the proxied staging hostname continued to return the Access login
+redirect. A focused correction must pass the reviewed env-file path to both
+Compose invocations and retain regression coverage for both task environments.
 
 Anonymous, browser-authenticated, service-token, and staging health probes are
 still pending the corrected protected apply. Application OAuth also remains
