@@ -26,7 +26,7 @@ continued to return 200 after the staging apply.
 
 | Boundary | Responsibility | Credentials it may receive | Credentials it must not receive |
 | --- | --- | --- | --- |
-| `staging-vps` | Submit immutable candidate configuration to the VPS fixed command | restricted SSH private key, known hosts, staging server runtime JSON | production secrets, provider-admin token, qualifier/test user credentials |
+| `staging-vps` | Submit immutable candidate configuration to the VPS fixed command | restricted SSH private key, known hosts, staging server runtime JSON, dedicated staging OAuth client | production secrets, provider-admin token, qualifier/test user credentials |
 | `staging-tests` | Probe the protected hostname from an off-VPS runner | Cloudflare Access client ID/secret and future synthetic test-user material | SSH, Ansible, provider admin, app service-role/runtime secrets, production secrets |
 | `cloudflare-admin` | Apply only the reviewed staging DNS/Access OpenTofu root | scoped Cloudflare token, state backend, account/zone/provider IDs | app runtime secrets, deploy SSH, test-user credentials |
 | `production-vps` | Existing protected host baseline; opt-in installation of the staging origin boundary and forced command | existing production administration plus non-value staging Access verifier inputs and the deploy public key | staging deploy private key and qualifier token secret |
@@ -106,15 +106,16 @@ The #118 ceilings remain one CPU, 512 MiB memory limit, 256 MiB reservation,
 ## Environment-Specific Application Configuration
 
 `NUTSNEWS_STAGING_APP_ENVS_JSON` is one protected transport bundle, not a file
-to commit. It must contain staging-owned values for:
+to commit. The bundle, together with the protected OAuth overlay, must provide
+staging-owned values for:
 
 - Supabase URL/project, public anonymous key, and service-role key;
 - the production Supabase project reference only as a non-secret mismatch
   sentinel—never a production key or URL credential;
 - staging-only `AUTH_SECRET` and `NEXTAUTH_URL` set to
   `https://staging.nutsnews.com`;
-- app OAuth client ID/secret only when the separately reviewed staging OAuth
-  application change is ready;
+- app OAuth client ID/secret supplied by the separate protected overlay described
+  below, not copied into or recovered from this write-only bundle;
 - staging Turnstile and Sentry values only when those providers are explicitly
   enabled; disabled providers may remain unset;
 - `NUTSNEWS_EMAIL_MODE=disabled` or a dedicated sandbox; disabled mode rejects
@@ -177,14 +178,22 @@ flowchart TD
   Origin -->|mismatch| Refuse
 ```
 
-Before live OAuth verification, create or select a staging-only Google OAuth
-client and register only the reviewed staging callback URL:
-`https://staging.nutsnews.com/api/auth/callback/google`. Add its client ID and
-secret plus the staging identity label to `NUTSNEWS_STAGING_APP_ENVS_JSON`
-offline, replace that GitHub Environment secret through stdin, build a reviewed
-immutable application digest, and deploy it only through the fixed staging
-workflow. Never copy the production OAuth client, `AUTH_SECRET`, Supabase
-credentials, allowed-email/test-user credentials, or telemetry credentials.
+The staging-only Google OAuth client registers only the reviewed origin and
+callback URL: `https://staging.nutsnews.com` and
+`https://staging.nutsnews.com/api/auth/callback/google`. Its client ID and
+secret are stored as the separate `staging-vps` Environment secrets
+`NUTSNEWS_STAGING_AUTH_GOOGLE_ID` and
+`NUTSNEWS_STAGING_AUTH_GOOGLE_SECRET`. The protected deploy job requires both,
+overlays them in memory onto the existing write-only runtime bundle, and forces
+`NUTSNEWS_OAUTH_CREDENTIALS_ENV=staging`. The values are unavailable to the
+preflight and rehearsal jobs and are not written to summaries, deployment
+records, logs, or artifacts. This avoids reading or blindly replacing
+`NUTSNEWS_STAGING_APP_ENVS_JSON`.
+
+Build and deploy only a reviewed immutable application digest through the
+fixed staging workflow. Never copy the production OAuth client, `AUTH_SECRET`,
+Supabase credentials, allowed-email/test-user credentials, or telemetry
+credentials.
 
 Risk is limited to staging authentication because production follows its
 existing branch. A missing or incorrect staging value fails closed. Roll back
@@ -204,6 +213,8 @@ Never paste values into a terminal command line, issue, PR, log, or document.
 | `NUTSNEWS_STAGING_VPS_SSH_PRIVATE_KEY` | operator/OpenSSH | `staging-vps` | generate offline with `ssh-keygen -t ed25519`; keep private half here | authenticates only forced `nutsnews_staging_deploy` key | yes | `gh secret set NUTSNEWS_STAGING_VPS_SSH_PRIVATE_KEY --env staging-vps --repo ramideltoro/nutsnews-infra < /secure/path/staging_deploy` |
 | `NUTSNEWS_STAGING_VPS_KNOWN_HOSTS` | VPS/OpenSSH | `staging-vps` | independently verify VPS host key, then save a namespaced known-hosts file | exact VPS host key only | yes | `gh secret set NUTSNEWS_STAGING_VPS_KNOWN_HOSTS --env staging-vps --repo ramideltoro/nutsnews-infra < /secure/path/staging_known_hosts` |
 | `NUTSNEWS_STAGING_APP_ENVS_JSON` | staging providers | `staging-vps` | compose offline from the provider settings listed above | staging runtime only; no test users or production keys | yes | `gh secret set NUTSNEWS_STAGING_APP_ENVS_JSON --env staging-vps --repo ramideltoro/nutsnews-infra < /secure/path/staging-app-envs.json` |
+| `NUTSNEWS_STAGING_AUTH_GOOGLE_ID` | Google Auth Platform | `staging-vps` | NutsNews Staging OAuth → NutsNews staging client | dedicated staging web client ID only | yes | `gh secret set NUTSNEWS_STAGING_AUTH_GOOGLE_ID --env staging-vps --repo ramideltoro/nutsnews-infra < /secure/path/staging-google-client-id` |
+| `NUTSNEWS_STAGING_AUTH_GOOGLE_SECRET` | Google Auth Platform | `staging-vps` | same staging-only client; rotate independently | paired staging client secret only | yes | `gh secret set NUTSNEWS_STAGING_AUTH_GOOGLE_SECRET --env staging-vps --repo ramideltoro/nutsnews-infra < /secure/path/staging-google-client-secret` |
 | `NUTSNEWS_STAGING_ACCESS_CLIENT_ID` | Cloudflare | `staging-tests` | Zero Trust → Access controls → Service credentials → Service Tokens | one token selected by the staging service-auth policy | yes | `gh secret set NUTSNEWS_STAGING_ACCESS_CLIENT_ID --env staging-tests --repo ramideltoro/nutsnews-infra < /secure/path/access-client-id` |
 | `NUTSNEWS_STAGING_ACCESS_CLIENT_SECRET` | Cloudflare | `staging-tests` | same creation screen; shown once | paired staging token only | yes | `gh secret set NUTSNEWS_STAGING_ACCESS_CLIENT_SECRET --env staging-tests --repo ramideltoro/nutsnews-infra < /secure/path/access-client-secret` |
 | `NUTSNEWS_STAGING_ACCESS_TOFU_BACKEND_CONFIG` | R2/S3 backend | `cloudflare-admin` | dedicated state bucket/access-key UI | bucket/prefix for this root only | yes | `gh secret set NUTSNEWS_STAGING_ACCESS_TOFU_BACKEND_CONFIG --env cloudflare-admin --repo ramideltoro/nutsnews-infra < /secure/path/staging-access-backend.hcl` |
@@ -317,8 +328,10 @@ produced immutable candidate build `29357494815-1` in
 The candidate digest is
 `sha256:7f236c59266bf3bbdd84383dcd5b14abab811a9bd77352d10076cdee50a84f79`,
 with migration head `20260713000000` and schema version `20260712170000`.
-It has not been deployed because the staging-only Google OAuth client and
-replacement protected staging bundle are not yet configured.
+The dedicated staging-only Google OAuth client secret names are configured in
+`staging-vps`. Deployment remains pending until the reviewed infrastructure
+overlay is merged, installed through Protected Ansible Apply, and this exact
+candidate is deployed and verified live.
 
 ## Current Honest Status
 
