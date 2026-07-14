@@ -375,10 +375,13 @@ verifier intentionally accepts only the exact `/verify` endpoint. The same
 metadata established that the staging Caddy access logger retained request URIs,
 which could retain OAuth callback query material. A focused GitOps correction
 therefore uses `/verify?` (an explicit empty query on the verifier clone only)
-and deletes the staging access-log URI field. It is limited to
+and deletes the staging access-log URI, Cloudflare Access JWT and service-token
+headers, cookies, `Set-Cookie`, and redirect-location fields. It is limited to
 `staging.nutsnews.com`; the production and operations Caddy virtual hosts remain
-byte-for-byte unchanged. It must be merged, applied through the protected
-workflow, and browser-retested before OAuth can be claimed complete.
+byte-for-byte unchanged. Applying the filter force-recreates the Caddy
+container, discarding the earlier local container log before the browser retry.
+It must be merged, applied through the protected workflow, and browser-retested
+before OAuth can be claimed complete.
 
 ## Current Honest Status
 
