@@ -510,6 +510,49 @@ If the application repository is private, `staging-tests` also provides
 `NUTSNEWS_STAGING_TESTS_SOURCE_TOKEN` with read-only checkout access to
 `ramideltoro/nutsnews`; public checkout can use the default token.
 
+#### Staging target identity alignment
+
+##### Simple Summary
+
+The staging qualification test now treats the app's health and readiness
+answers as the same staging target. If staging says it is `vps-staging`, the
+test expects both checks to agree.
+
+##### Intermediate Summary
+
+The deployed-staging qualification suite uses `vps-staging` as the expected
+deployment target for both `/healthz` and `/readyz`. This keeps the app suite
+aligned with the live VPS staging runtime and prevents an exact candidate from
+failing because the suite expects the older image-build target name `vps` on
+the health endpoint. Operators still get the independent infra-side pre/post
+identity checks, so source commit, build ID, digest, config generation,
+runtime environment, deployment target, and hostname drift continue to fail
+closed.
+
+##### Expert Summary
+
+`ramideltoro/nutsnews` passes the same verified staging target into
+`scripts/dual_target_web_smoke.mjs` for the health and readiness target
+assertions. The infra qualifier still checks the GitHub Deployment evidence,
+then independently reads the live health/ready identity before and after the
+suite. This change affects only the application suite's expected health target;
+it does not grant production authority, change staging credentials, alter the
+attestation predicate, or relax the `staging-tests` boundary.
+
+```mermaid
+flowchart LR
+  deploy[Staging deploy ready] --> identity[Infra pre-identity check]
+  identity --> suite[App suite expects vps-staging health and ready targets]
+  suite --> post[Infra post-identity drift check]
+  post --> attest[Pass predicate only if all required suites pass]
+```
+
+Rollback is to revert the app-suite change and deploy a fresh staging
+candidate from that reverted app commit. The risk is a candidate being blocked
+by a target-name mismatch rather than a real runtime failure; the mitigation is
+that infra still verifies exact source, build, digest, deployment ID, config
+generation, and pre/post runtime identity before any passing attestation.
+
 On full success only, infra writes `staging-qualification.json` and uses
 GitHub OIDC-backed artifact attestations with custom predicate type
 `https://nutsnews.com/attestations/staging-qualification/v1`. The attestation
