@@ -23,6 +23,7 @@ This folder is organized by what you are trying to do: understand the product, c
 | Review production/staging VPS runtime isolation | [VPS Runtime Environment Isolation](NUTSNEWS_VPS_RUNTIME_ENVIRONMENT_ISOLATION.md) |
 | Review same-host staging capacity and safeguards | [VPS Staging Capacity Budget](NUTSNEWS_VPS_STAGING_CAPACITY.md) |
 | Rehearse or approve an immutable staging deployment | [VPS Immutable Staging Deployment](NUTSNEWS_VPS_STAGING_DEPLOYMENT.md) |
+| Qualify an isolated deployed staging candidate | [VPS Immutable Staging Deployment — Deterministic Application Qualification](NUTSNEWS_VPS_STAGING_DEPLOYMENT.md#deterministic-application-qualification-nutsnews177) |
 | Configure the protected staging hostname and credential boundary | [VPS Staging Access and Credential Boundary](NUTSNEWS_VPS_STAGING_ACCESS_BOUNDARY.md) |
 | Understand the VPS operations portal | [Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md) |
 | Set up or restore encrypted VPS backups | [VPS Backups](NUTSNEWS_VPS_BACKUPS.md); [VPS Restore](NUTSNEWS_VPS_RESTORE.md); [VPS Disaster Recovery](NUTSNEWS_VPS_DISASTER_RECOVERY.md) |
@@ -57,7 +58,7 @@ These docs explain the product and the system at a high level.
 | [VPS Service Foundation](NUTSNEWS_VPS_SERVICE_FOUNDATION.md) | Docker, Compose, `/opt/nutsnews`, Caddy, and public infrastructure health routing |
 | [VPS Runtime Environment Isolation](NUTSNEWS_VPS_RUNTIME_ENVIRONMENT_ISOLATION.md) | Separate production/staging Compose identities, state, Caddy boundary, immutable digest rule, and #118 blocker |
 | [VPS Staging Capacity Budget](NUTSNEWS_VPS_STAGING_CAPACITY.md) | Measured #118 capacity decision, fixed resource/test budgets, disk limitation, and post-apply verification |
-| [VPS Immutable Staging Deployment](NUTSNEWS_VPS_STAGING_DEPLOYMENT.md) | Candidate schema, pre-secret trust checks, staging-only GitOps apply, audit record, and required live evidence |
+| [VPS Immutable Staging Deployment](NUTSNEWS_VPS_STAGING_DEPLOYMENT.md) | Candidate schema, pre-secret trust checks, staging-only GitOps apply, deterministic non-destructive qualification, audit evidence, and required live verification |
 | [VPS Staging Access and Credential Boundary](NUTSNEWS_VPS_STAGING_ACCESS_BOUNDARY.md) | Shared-host topology, Cloudflare Access, fixed deployment identity, secret onboarding, protected apply, rollback, and live verification |
 | [Dual-Target Web Deployment](NUTSNEWS_DUAL_TARGET_WEB_DEPLOYMENT.md) | One application commit, Vercel and GHCR artifacts, immutable VPS promotion, staged validation, public opt-in, and rollback |
 | [Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md) | Read-only VPS dashboard, local collector, public Google OAuth route, status JSON, and recovery notes |

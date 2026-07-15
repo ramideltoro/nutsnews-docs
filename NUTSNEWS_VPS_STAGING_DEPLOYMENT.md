@@ -271,6 +271,212 @@ Do not SSH in manually to start, repair, or verify a deployment outside this
 GitOps workflow. If a workflow fails, fix the reviewed configuration in a new
 pull request and retry the same immutable candidate.
 
+## Deterministic Application Qualification (`nutsnews#177`)
+
+### Simple Summary
+
+After a safe staging deployment, one test command checks that the exact app is
+healthy, private, and working. It uses pretend test records, cleans them up even
+when a check fails, and makes a report. It refuses to touch the real production
+website.
+
+### Intermediate Summary
+
+Run `npm run test:staging-qualification` from `ramideltoro/nutsnews/web` only
+against `https://staging.nutsnews.com`. The command first rejects unsafe or
+incomplete inputs without making a request. It then compares `/healthz`,
+uncached `/readyz`, `/api/runtime-config`, and the canonical GitHub staging
+Deployment record before it permits a synthetic write.
+
+The bounded suite reuses the existing deployment smoke and staging fixture
+implementation. It checks Cloudflare Access/TLS, routes and public APIs, JSON,
+CORS, cache/security headers, Auth.js public endpoints, the unauthenticated
+admin redirect, disabled contact delivery, private/noindex behavior, and a
+small Chromium/axe navigation. The fixture uses a unique `nutsnews-test-*`
+namespace and is reset in an unconditional cleanup path. JSON, JUnit, and
+Playwright failure evidence are retained; skip, cancellation, timeout, test
+failure, or cleanup failure makes the overall result fail.
+
+### Expert Summary
+
+Required inputs may be supplied as flags or the corresponding environment
+variables:
+
+| Input flag | Environment variable | Contract |
+| --- | --- | --- |
+| `--base-url` | `NUTSNEWS_QUALIFICATION_BASE_URL` | Exactly `https://staging.nutsnews.com/`; no port, path, query, credentials, preview, local, or other hostname |
+| `--expected-source-commit` | `NUTSNEWS_EXPECTED_SOURCE_COMMIT` | Full lowercase 40-character application commit |
+| `--expected-build-id` | `NUTSNEWS_EXPECTED_BUILD_ID` | Complete immutable candidate build identity |
+| `--expected-image-digest` | `NUTSNEWS_EXPECTED_IMAGE_DIGEST` | `sha256:` plus 64 lowercase hexadecimal characters |
+| `--expected-runtime-env` | `NUTSNEWS_EXPECTED_RUNTIME_ENV` | Exactly `staging` |
+| `--expected-deployment-target` | `NUTSNEWS_EXPECTED_DEPLOYMENT_TARGET` | Exactly `vps-staging` |
+| `--expected-config-generation` | `NUTSNEWS_EXPECTED_CONFIG_GENERATION` | Exact reviewed staging config generation |
+| `--staging-deployment-id` | `NUTSNEWS_STAGING_DEPLOYMENT_ID` | Exact sanitized `stg-*` ID from the GitHub Deployment payload |
+| `--suite-revision` | `NUTSNEWS_QUALIFICATION_SUITE_REVISION` | Full commit containing the qualification suite; defaults to checked-out `HEAD` |
+| `--artifact-dir` | `NUTSNEWS_QUALIFICATION_ARTIFACT_DIR` | Non-secret evidence destination |
+
+The runner also requires only staging-owned `CF_ACCESS_CLIENT_ID`,
+`CF_ACCESS_CLIENT_SECRET`, `NUTSNEWS_SUPABASE_URL`, and
+`SUPABASE_SERVICE_ROLE_KEY`. Do not provide a production key, deploy SSH key,
+OAuth secret, or test-user credential. The GitHub Deployment lookup is
+read-only; `GITHUB_TOKEN`/`GH_TOKEN` is optional for API rate capacity and must
+not have production deployment authority.
+
+```bash
+cd web
+npm run test:staging-qualification -- \
+  --base-url https://staging.nutsnews.com/ \
+  --expected-source-commit "$SOURCE_COMMIT" \
+  --expected-build-id "$BUILD_ID" \
+  --expected-image-digest "$IMAGE_DIGEST" \
+  --expected-runtime-env staging \
+  --expected-deployment-target vps-staging \
+  --expected-config-generation "$CONFIG_GENERATION" \
+  --staging-deployment-id "$STAGING_DEPLOYMENT_ID"
+```
+
+Never enable shell tracing around this command. Load secrets from the protected
+`staging-tests` context or a local credential mechanism that does not expose
+values in arguments, logs, shell history, screenshots, or process summaries.
+
+```mermaid
+flowchart LR
+  deployment[Staging deployment] --> preflight[Identity and safety preflight]
+  preflight --> suites[Qualification suites]
+  suites --> cleanup[Unconditional synthetic cleanup]
+  cleanup --> evidence[Pass or fail evidence]
+  evidence --> future[Future independent qualifier]
+```
+
+#### Fail-closed safety preflight
+
+Input validation is pure and runs before any network or fixture action. It
+rejects `nutsnews.com`, `www.nutsnews.com`, other production-looking hosts,
+HTTP, local/preview hosts, userinfo, non-root paths, malformed commits/builds,
+mutable or malformed digests, and mixed target/environment identity. The first
+authenticated phase requires complete matching runtime identity and disabled
+side effects. The next read-only phase locates the exact `stg-*` payload in the
+`nutsnews-infra` GitHub Deployment history and requires staging,
+non-production/transient classification, source, build, requested and actual
+digest, config generation, deployment ID, and a successful status. Any
+mismatch stops before the synthetic database write.
+
+Do not use real production as a negative fixture. The repository regression
+driver proves that `https://www.nutsnews.com/` is rejected before its mock
+fetch or mutation adapters are called.
+
+#### Fixture lifecycle and cleanup
+
+The suite calls the existing `scripts/staging_fixtures.mjs` seed/reset code.
+It creates only deterministic synthetic articles, translations, feeds, quota
+events, and test users under a unique `nutsnews-test-*` namespace with the
+existing 60-minute default TTL. Readiness supplies a bounded isolated staging
+database read before mutation. The seed exercises the controlled staging write.
+The namespace reset executes in `finally` whenever seeding began.
+
+The result records `originalFailure` and `cleanupFailure` separately. Cleanup
+never replaces the original error; either value makes the run non-passing. A
+cleanup-only failure also fails. Follow `MIGRATION_RELEASE_GATE.md` to reset
+only the affected namespace; never clear shared staging data.
+
+#### Evidence and secret handling
+
+The default evidence directory is
+`web/test-results/staging-qualification/`. It contains
+`staging-qualification.json` and `staging-qualification.junit.xml`, including
+the suite revision, expected candidate identity, required step statuses,
+original failure, and cleanup status. The Playwright sub-suite writes JUnit,
+screenshots, and retained-on-failure traces below
+`web/test-results/staging-qualification-playwright/`.
+
+All required steps are blocking: `pass` is the only passing state. A required
+skip, timeout, cancellation, missing component, test failure, or cleanup
+failure is not success. Evidence redacts Cloudflare Access token values,
+authorization/cookie headers, CSRF/OAuth tokens, service-role/database
+credentials, API keys, passwords/test-user credentials, and sensitive response
+bodies. The suite records shapes/statuses and bounded sanitized errors, not full
+auth/contact/readiness bodies. Before evidence is reported, it recursively
+redacts text reports and rewrites retained trace ZIPs to remove Access headers,
+cookies, authorization/CSRF fields, and supplied secret values. Never attach an
+unreviewed raw browser trace or network capture to an issue or PR.
+
+#### Local and controlled-failure validation
+
+The committed regression suite and test-only fixture driver use the real
+orchestrator with in-memory HTTP/deployment adapters and synthetic mutation
+counters. They never resolve or contact production:
+
+```bash
+cd web
+npm run test:staging-qualification-regression
+
+ARTIFACT_ROOT="$(mktemp -d)"
+node ../tests/fixtures/staging-qualification-cli.mjs positive "$ARTIFACT_ROOT/positive"
+node ../tests/fixtures/staging-qualification-cli.mjs production-host "$ARTIFACT_ROOT/production-host"
+node ../tests/fixtures/staging-qualification-cli.mjs browser-failure "$ARTIFACT_ROOT/browser-failure"
+node ../tests/fixtures/staging-qualification-cli.mjs cleanup-failure "$ARTIFACT_ROOT/cleanup-failure"
+node ../tests/fixtures/staging-qualification-cli.mjs skip "$ARTIFACT_ROOT/skip"
+node ../tests/fixtures/staging-qualification-cli.mjs timeout "$ARTIFACT_ROOT/timeout"
+node ../tests/fixtures/staging-qualification-cli.mjs cancel "$ARTIFACT_ROOT/cancel"
+```
+
+Expect only `positive` to exit zero. The production-host case must create no
+evidence because it stops at the pure safety preflight. The controlled browser
+failure must retain JSON, JUnit, and `playwright/trace.zip`. Every scenario
+must report zero residual mutations; cleanup failure still exits nonzero and is
+recorded separately.
+
+#### Live staging execution and operator evidence
+
+Run the live command only after the deploy workflow has recorded a successful
+exact-digest staging Deployment and the necessary `staging-tests` material is
+available. Review the resulting machine evidence, then use Chrome DevTools MCP
+only for additional bounded interactive confirmation of Access redirects,
+console/network status, `noindex`, auth endpoints, and accessibility-relevant
+behavior. Browser inspection supplements but never replaces Playwright.
+
+Read-only SSH may confirm container status, running digest, networks, limits,
+upstream identity, and production health. It must not print environments, edit
+files, restart/recreate containers, apply Ansible, or run deployment commands.
+If the Access token, isolated staging database credential, DevTools MCP, or
+unlocked SSH key is unavailable, report that exact blocker and do not claim a
+live qualification pass.
+
+The suite explicitly excludes `scripts/post_deploy_verify.sh` and therefore
+never runs its Worker/controller section. It must not invoke ingestion, toggle
+feeds, run AI/backfill jobs, send production telemetry, or use production data
+or credentials. Full accessibility, performance, ZAP, chaos, load, and
+unbounded crawl suites remain advisory or CI-only until separately approved
+and budgeted.
+
+#### Risks, mitigation, and removal
+
+- **Wrong target:** exact host/runtime/deployment validation precedes mutation.
+- **Redeploy race:** the current suite checks identity before mutation;
+  `nutsnews-infra#122` will independently repeat pre/post identity and bind it
+  to a short-lived attestation. That workflow remains out of scope here.
+- **Synthetic residue:** unique namespace, TTL, unconditional reset, separate
+  cleanup failure, and non-passing cleanup semantics limit and expose residue.
+- **Secret leakage:** allowlisted evidence, structural assertions, aggressive
+  redaction, and regression tests prevent known credential/body classes from
+  entering artifacts.
+- **Shared VPS load:** navigation and timeouts are bounded; heavy suites are not
+  part of the live profile.
+
+To roll back or remove this application-only capability, revert the
+`nutsnews#177` application commit/PR and delete only its generated qualification
+artifact directories. Do not change the deployed staging digest, staging
+database, Cloudflare Access, infra deployment history, or production. Any
+already-created synthetic namespace must first be reset with the existing
+fixture command; never delete unrelated staging rows. Removal fails closed by
+leaving the future independent qualifier without a required application suite.
+
+`nutsnews-infra#122` will consume a committed suite revision and these JSON,
+JUnit, and Playwright results from an off-VPS `staging-tests` runner, repeat
+identity around the run, and create/attest its own short-lived qualification
+predicate. This document does not implement, authorize, or pre-approve that
+independent workflow, attestation, or production promotion.
+
 ## Related Docs
 
 - [VPS Runtime Environment Isolation](NUTSNEWS_VPS_RUNTIME_ENVIRONMENT_ISOLATION.md)
