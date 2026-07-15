@@ -506,6 +506,9 @@ or the protected host-apply Environment. Before tests it reads
 Cloudflare Access service-token material. After tests it repeats the same
 identity check. A drift in source commit, build ID, digest, runtime environment,
 deployment target, config generation, or hostname fails qualification.
+If the application repository is private, `staging-tests` also provides
+`NUTSNEWS_STAGING_TESTS_SOURCE_TOKEN` with read-only checkout access to
+`ramideltoro/nutsnews`; public checkout can use the default token.
 
 On full success only, infra writes `staging-qualification.json` and uses
 GitHub OIDC-backed artifact attestations with custom predicate type
