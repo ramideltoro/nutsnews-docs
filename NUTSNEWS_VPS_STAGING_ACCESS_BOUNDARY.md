@@ -2,8 +2,9 @@
 
 Status: Cloudflare and VPS staging infrastructure are live and the immutable
 staging runtime has passed service-token, browser-authenticated, and
-host-boundary verification. `nutsnews-infra#120` remains open because
-application OAuth acceptance is not yet complete.
+host-boundary verification. `nutsnews-infra#120` remains open while application
+PR `nutsnews#203` corrects the final reverse-proxy callback identity mismatch
+and awaits immutable deployment plus live OAuth acceptance.
 
 ## Easy Summary
 
@@ -205,6 +206,63 @@ by redeploying the previous reviewed staging digest and removing or rotating
 only the staging OAuth client values; do not change the production guard or
 production provider configuration. Cloudflare browser auth remains independent
 from application OAuth.
+
+## Standalone Callback Origin Follow-Up (`nutsnews#203`)
+
+### Simple Summary
+
+The staging sign-in request came through the correct safe door, but the app saw
+the name of its room inside the container instead of the name on the outside
+door. The fix checks the exact safe door labels that Caddy supplies.
+
+### Intermediate Summary
+
+After the Caddy verifier-query and log-redaction corrections were live, a
+browser completed Cloudflare Access and Google consent. The callback reached
+the application but received the existing sanitized OAuth-disabled response.
+The deployed Next.js standalone server runs on `0.0.0.0:3000`, so
+`NextRequest.url` contains that internal bind origin. The staging guard compared
+it with `https://staging.nutsnews.com` and failed closed even though Caddy had
+preserved `Host: staging.nutsnews.com` and supplied `X-Forwarded-Proto: https`.
+
+Application PR [`nutsnews#203`](https://github.com/ramideltoro/nutsnews/pull/203)
+keeps every staging runtime, data, Supabase, provider-credential, and configured
+Auth.js URL invariant. For the reverse-proxied request identity, it requires the
+exact staging Host and HTTPS forwarding value. Wrong host, HTTP, a host with an
+explicit port, missing/mixed runtime identity, or incomplete staging credentials
+still fail closed. Production's existing live-runtime allow branch is unchanged.
+
+### Expert Summary
+
+Next.js 16.2.9 standalone constructs request metadata from the configured
+`HOSTNAME` and `PORT` before adapting the Node request to `NextRequest`. Enabling
+the broad experimental host-trust switch would expand trust for every route and
+was rejected. Instead, the Auth.js GET/POST boundary passes a small typed request
+identity to `assertOAuthCallback`: the internal URL for context, the read-only
+`Host` header, and `X-Forwarded-Proto`. Only the staging branch consumes the
+proxy fields, and only the exact pair `staging.nutsnews.com` plus `https` is
+accepted. The app container has no published host port and the external path
+remains Cloudflare Access, origin JWT verification, and the staging-only Caddy
+virtual host.
+
+```mermaid
+flowchart LR
+  Browser[Authorized browser] --> Access[Cloudflare Access]
+  Access --> Caddy[Caddy staging host]
+  Caddy -->|exact Host plus HTTPS metadata| Next[Next.js standalone internal bind]
+  Next --> Guard[OAuth callback guard]
+  Guard -->|complete staging identity| AuthJs[Auth.js callback]
+  Guard -->|wrong or ambiguous proxy/runtime identity| Refuse[No-store 503]
+  Production[Production live runtime] -->|unchanged branch| AuthJs
+```
+
+Local validation for PR #203 passed `npm ci`, all 28 runtime-safety tests,
+ESLint, a full Next.js production build with non-secret fixture identity, and
+`git diff --check`. No callback query, cookie, token, authorization header,
+provider value, or browser storage was retained. Roll back by reverting PR #203
+and redeploying the prior immutable staging digest through the fixed staging
+workflow; staging OAuth will fail closed again and production requires no
+configuration or credential change.
 
 ## Exact Onboarding
 
