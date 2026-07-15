@@ -1,10 +1,10 @@
 # NutsNews VPS Staging Access And Credential Boundary
 
-Status: Cloudflare and VPS staging infrastructure are live and the immutable
-staging runtime has passed service-token, browser-authenticated, and
-host-boundary verification. `nutsnews-infra#120` remains open while application
-PR `nutsnews#203` corrects the final reverse-proxy callback identity mismatch
-and awaits immutable deployment plus live OAuth acceptance.
+Status: complete. Cloudflare and VPS staging infrastructure are live, the
+reviewed immutable application candidate is deployed, Google OAuth returns to
+the staging application, and the resulting owner session is functional. All
+service-token, browser, Safe Browsing, host-boundary, and production-invariance
+checks passed for `nutsnews-infra#120`.
 
 ## Easy Summary
 
@@ -264,6 +264,11 @@ and redeploying the prior immutable staging digest through the fixed staging
 workflow; staging OAuth will fail closed again and production requires no
 configuration or credential change.
 
+PR #203 merged as `ee8bd5d0207ac84ace1f2acda2454bddbdc2a4de`. Container
+Image run `29388226439` published build `29388226439-1` at immutable digest
+`sha256:abb94e4f1c21ae96b096e8707e57094f2bafb063a1d67f1ba05cb100b589440b`,
+with migration head `20260713000000` and schema version `20260712170000`.
+
 ## Exact Onboarding
 
 The live rollout confirmed every name in this table is configured in its
@@ -342,7 +347,8 @@ here.
 - Authenticated 401: verify service-token policy/ID, token rotation, team domain
   and app audience by name/path without logging values.
 - Browser login works but app OAuth does not: distinguish Cloudflare Access from
-  the application's currently fail-closed staging OAuth behavior noted above.
+  the application callback guard, then correlate only sanitized origin/path,
+  status, immutable identity, and bounded time-window metadata.
 - 502 after Access: confirm Caddy and `nutsnews-staging-access` are on
   `nutsnews-edge-staging`, then confirm `nutsnews-app-staging` is healthy.
 - Forced command returns `unreviewed_infra_commit`: the installed root-owned
@@ -438,8 +444,14 @@ headers, cookies, `Set-Cookie`, and redirect-location fields. It is limited to
 `staging.nutsnews.com`; the production and operations Caddy virtual hosts remain
 byte-for-byte unchanged. Applying the filter force-recreates the Caddy
 container, discarding the earlier local container log before the browser retry.
-It must be merged, applied through the protected workflow, and browser-retested
-before OAuth can be claimed complete.
+Infrastructure PRs
+[`#183`](https://github.com/ramideltoro/nutsnews-infra/pull/183) and
+[`#184`](https://github.com/ramideltoro/nutsnews-infra/pull/184) merged as
+`0c09a381d2d6df3126c86c18f0f98a4491ba4506` and
+`7647ca6c3aaba5f3f88eb7b66717e5d62f58efab`. Their protected rollout and
+regression checks proved the verifier clone drops callback query material and
+the staging access logger removes URI and credential-bearing request/response
+fields without changing the production virtual host.
 
 ## Current Honest Status
 
@@ -526,8 +538,89 @@ application: outside an active ACME challenge, requests still reach the
 fail-closed origin JWT verifier. The protected hostname application and its
 browser/service-token policies remain unchanged.
 
+### Final OAuth Acceptance — 2026-07-15
+
+The final root cause was application-layer request identity, not Cloudflare,
+Caddy, Google client configuration, or a stale image. Next.js standalone built
+`NextRequest.url` from its internal `0.0.0.0:3000` bind. The staging-only OAuth
+guard therefore rejected a valid reverse-proxied callback before Auth.js. App
+PR [`nutsnews#203`](https://github.com/ramideltoro/nutsnews/pull/203), merged as
+`ee8bd5d0207ac84ace1f2acda2454bddbdc2a4de`, validates the exact external
+`Host: staging.nutsnews.com` and forwarded HTTPS identity in the staging branch.
+Wrong, missing, port-bearing, or HTTP identities still fail closed; the
+production/live branch returns before these staging checks and is unchanged.
+
+The immutable accepted candidate is:
+
+- source: `ee8bd5d0207ac84ace1f2acda2454bddbdc2a4de`;
+- build: `29388226439-1` from Container Image run
+  [`29388226439`](https://github.com/ramideltoro/nutsnews/actions/runs/29388226439);
+- digest: `sha256:abb94e4f1c21ae96b096e8707e57094f2bafb063a1d67f1ba05cb100b589440b`;
+- migration head: `20260713000000`; schema version: `20260712170000`.
+
+During rollout, the app main pipeline proposed a VPS production manifest
+promotion. Its apply was canceled before staging SSH/Ansible or production
+materialization, and infra PR
+[`#186`](https://github.com/ramideltoro/nutsnews-infra/pull/186), merged as
+`4079aac396eff9121b9817ade40be73a25ea8cd0`, restored the production manifest
+exactly to its prior reviewed values. A separate fail-closed baseline run showed
+that `sync_vercel_production=false` still selected the production runtime for
+validation. Infra PR
+[`#187`](https://github.com/ramideltoro/nutsnews-infra/pull/187), merged as
+`94e2d6ae46f6e0ad54cc42d04eff295936ec767b`, makes that input authoritative:
+staging-boundary refreshes select no production app runtime, while the default
+reviewed production sync continues to select production.
+
+Protected Ansible check run
+[`29389277317`](https://github.com/ramideltoro/nutsnews-infra/actions/runs/29389277317)
+completed with `changed=2`, `failed=0`, and production sync skipped. Matching
+apply run
+[`29389333130`](https://github.com/ramideltoro/nutsnews-infra/actions/runs/29389333130)
+completed with `changed=6`, `failed=0`, no release identity, and no production
+app runtime selected. Final immutable staging run
+[`29389565541`](https://github.com/ramideltoro/nutsnews-infra/actions/runs/29389565541)
+passed source-main reachability, OCI provenance, arbitrary-command rejection,
+fixed server-side check then apply, exact digest/readiness, Compose/container/
+network/path separation, one-CPU/512-MiB/128-PID limits, bounded logs, root-owned
+mode-0600 environment files without reading them, Caddy routing, production
+health, and Access verifier health. Deployment `5451794386` recorded success
+with the exact digest above. Final Access probe
+[`29389630224`](https://github.com/ramideltoro/nutsnews-infra/actions/runs/29389630224)
+proved anonymous denial plus service-token health/readiness without retaining
+bodies, cookies, or tokens.
+
+Chrome acceptance used the `chrome-devtools` MCP only. A clean profile was
+redirected to the Cloudflare Access sign-in page. An Access-authenticated
+profile received staging `/healthz` with the exact source/build above and
+`/readyz` with `runtimeEnv=staging`, disabled side effects, and `code=ready`.
+The Google account chooser and consent completed, the callback returned to
+`/admin` without an error, and the page showed an authenticated owner session
+with a working sign-out control and protected dashboard links. A post-deploy
+recheck confirmed the session remained functional. Google Transparency Report
+showed **No unsafe content found** for `staging.nutsnews.com` (updated
+2026-07-14); the earlier warning did not reproduce in the normal MCP-controlled
+Chrome profile, so no false-positive review was necessary and no provider wait
+remains.
+
+Production `/healthz` and `/readyz` remained HTTP 200, production readiness
+remained `runtimeEnv=production` with live side effects, and the production
+admin login route retained its Google sign-in boundary. The normal Vercel main
+deployment advanced to the reviewed app merge, but regression tests and live
+checks confirmed the production code path and behavior are invariant. The VPS
+production manifest and service were not promoted to the staging candidate.
+No production secret was exposed to staging jobs, and no staging credential,
+OAuth callback query, code, cookie, browser storage, authorization header,
+CSRF value, provider secret, or credential-bearing log/artifact was retained.
+
+Rollback remains staging-only: dispatch the previous reviewed source/digest
+through the immutable staging workflow, or revert app PR #203 and qualify its
+replacement digest. If the boundary automation itself must be rolled back,
+revert infra PR #187, run protected check then apply, and do not enable
+production sync. Never copy production credentials, edit the VPS manually, or
+bypass Access/origin verification.
+
 Cloudflare provisioning, durable remote state, the protected VPS baseline,
 immutable staging deployment, origin TLS, service-token and browser-authenticated
-health/readiness, and metadata-only host verification are complete. Production
-remained healthy and separate. Application OAuth is not complete, so issue #120
-must remain open.
+health/readiness, application Google OAuth, Safe Browsing verification, and
+metadata-only host verification are complete. Production remained healthy and
+behaviorally unchanged, and issue #120 may be closed.
