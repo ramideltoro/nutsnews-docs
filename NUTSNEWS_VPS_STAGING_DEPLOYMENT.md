@@ -345,7 +345,7 @@ flowchart LR
   preflight --> suites[Qualification suites]
   suites --> cleanup[Unconditional synthetic cleanup]
   cleanup --> evidence[Pass or fail evidence]
-  evidence --> future[Future independent qualifier]
+  evidence --> qualifier[Independent off-VPS qualifier]
 ```
 
 #### Fail-closed safety preflight
@@ -452,9 +452,9 @@ and budgeted.
 #### Risks, mitigation, and removal
 
 - **Wrong target:** exact host/runtime/deployment validation precedes mutation.
-- **Redeploy race:** the current suite checks identity before mutation;
-  `nutsnews-infra#122` will independently repeat pre/post identity and bind it
-  to a short-lived attestation. That workflow remains out of scope here.
+- **Redeploy race:** the app suite checks identity before mutation, and the
+  independent `nutsnews-infra#122` qualifier repeats identity after tests before
+  it can write or attest a passing predicate.
 - **Synthetic residue:** unique namespace, TTL, unconditional reset, separate
   cleanup failure, and non-passing cleanup semantics limit and expose residue.
 - **Secret leakage:** allowlisted evidence, structural assertions, aggressive
@@ -471,11 +471,119 @@ already-created synthetic namespace must first be reset with the existing
 fixture command; never delete unrelated staging rows. Removal fails closed by
 leaving the future independent qualifier without a required application suite.
 
-`nutsnews-infra#122` will consume a committed suite revision and these JSON,
-JUnit, and Playwright results from an off-VPS `staging-tests` runner, repeat
-identity around the run, and create/attest its own short-lived qualification
-predicate. This document does not implement, authorize, or pre-approve that
-independent workflow, attestation, or production promotion.
+The independent `nutsnews-infra#122` workflow consumes a committed suite
+revision and these JSON, JUnit, and Playwright results from an off-VPS
+`staging-tests` runner, repeats identity around the run, and creates/attests
+its own short-lived qualification predicate. The predicate is eligibility
+evidence only; it does not authorize production promotion by itself.
+
+## Independent Off-VPS Qualification (`nutsnews-infra#122`)
+
+### Simple Summary
+
+After staging says a candidate is ready, a separate GitHub-hosted runner checks
+that exact candidate from outside the VPS. It uses only staging test access,
+runs the application qualification suite from the exact app commit, checks that
+staging did not change during the test, and then signs a short-lived pass
+record. Failed, skipped, timed-out, cancelled, stale, or mismatched tests do not
+get a passing record.
+
+### Intermediate Summary
+
+The `Qualify Verified NutsNews Staging Candidate` workflow starts from the
+successful `Deploy Verified NutsNews Staging Candidate` workflow, or from a
+manual rerun that names an existing successful staging deploy run. It resolves
+one matching GitHub Deployment, requires `environment=staging`,
+`production_environment=false`, `transient_environment=true`, the
+`nutsnews-staging-deploy` task, the exact `stg-*` deployment ID, the requested
+digest, the actual digest in the successful deployment status, the infra commit,
+and the staging config generation.
+
+The qualifier attaches only the `staging-tests` Environment. It does not use
+VPS deploy SSH, production application secrets, release-promotion credentials,
+or the protected host-apply Environment. Before tests it reads
+`https://staging.nutsnews.com/healthz` and uncached `/readyz` through
+Cloudflare Access service-token material. After tests it repeats the same
+identity check. A drift in source commit, build ID, digest, runtime environment,
+deployment target, config generation, or hostname fails qualification.
+
+On full success only, infra writes `staging-qualification.json` and uses
+GitHub OIDC-backed artifact attestations with custom predicate type
+`https://nutsnews.com/attestations/staging-qualification/v1`. The attestation
+subject is `ghcr.io/ramideltoro/nutsnews@sha256:...`, and the predicate binds
+the source commit, build ID, source workflow run, infra commit/config
+generation, staging deployment ID, test-suite commit, qualifier workflow/run,
+evidence URLs, required suite results, start/completion time, and expiration.
+
+### Expert Summary
+
+The trusted predicate is valid only when all of these are true:
+
+| Field | Required value |
+| --- | --- |
+| Issuer repository | `ramideltoro/nutsnews-infra` |
+| Issuer workflow | `.github/workflows/nutsnews-staging-qualification.yml` |
+| Issuer ref | protected `refs/heads/main` |
+| Subject | `ghcr.io/ramideltoro/nutsnews` with the exact qualified `sha256:` digest |
+| Predicate result | `pass` |
+| Staging deployment | exact `stg-*` ID plus matching GitHub Deployment database ID |
+| Runtime identity | identical pre/post health and ready identity |
+| Test-suite revision | exact trusted app source commit |
+| Required suites | every required suite present and `pass` |
+| Expiration | current time before `timing.expires_at` |
+
+The recommended TTL is implemented as 24 hours. Treat the pass as invalid
+earlier if staging redeploys, the relevant infra/config generation changes, or
+the required test policy changes. A rerun creates a new artifact and
+attestation tied to the new qualifier run ID and attempt; it must not overwrite
+prior failure evidence.
+
+```mermaid
+flowchart TD
+  candidate[Trusted app image digest] --> deploy[Deploy Verified NutsNews Staging Candidate]
+  deploy --> deployment[GitHub staging Deployment success]
+  deployment --> qualifier[Off-VPS staging-tests qualifier]
+  qualifier --> pre[Pre-test health/ready identity]
+  pre --> suite[Exact app commit test:staging-qualification]
+  suite --> post[Post-test health/ready identity]
+  post --> record[staging-qualification.json pass predicate]
+  record --> attest[GitHub OIDC artifact attestation]
+  attest --> verifier[Production eligibility verifier]
+  verifier --> production[Protected production promotion]
+```
+
+#### Verification
+
+Use the qualifier run's own verification step as the first proof. It calls
+`gh attestation verify` against the OCI subject and validates that the verified
+predicate exactly matches the local `staging-qualification.json`.
+
+For an operator or later production gate, verify the attestation and inspect
+the predicate without printing secrets:
+
+```bash
+gh attestation verify "oci://ghcr.io/ramideltoro/nutsnews@${IMAGE_DIGEST}" \
+  --repo ramideltoro/nutsnews-infra \
+  --predicate-type https://nutsnews.com/attestations/staging-qualification/v1 \
+  --format json
+```
+
+Then require trusted issuer repository, workflow, protected ref, exact subject
+digest, unexpired predicate, exact staging deployment ID, exact infra/config
+generation, exact app test-suite commit, and all required suite results. A
+wrong digest, wrong issuer, wrong ref, expired timestamp, changed staging
+deployment ID, missing suite, tampered predicate, skipped/cancelled/timed-out
+suite, or pre/post identity mismatch must fail.
+
+#### Evidence Handling
+
+The qualifier retains sanitized JSON, JUnit, logs, screenshots, and Playwright
+failure traces in a run-and-attempt-specific artifact. Do not paste cookies,
+CSRF tokens, Access tokens, service-role keys, test-user credentials, or full
+sensitive response bodies into issues, pull requests, screenshots, run
+summaries, or artifacts. Browser verification, when needed, must use the
+Chrome DevTools MCP surface only and should record sanitized observations
+rather than raw session material.
 
 ## Related Docs
 
