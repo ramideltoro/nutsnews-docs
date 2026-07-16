@@ -1,6 +1,37 @@
-# Homepage Performance Budget
+# Public Performance Budgets
 
-NutsNews is mobile-first and image-heavy, so homepage speed needs explicit limits. This page defines the current budgets, the CI checks, and the common fixes to use before raising a limit.
+NutsNews is mobile-first and image-heavy, so public page speed needs explicit limits. This page defines the current budgets, the CI checks, and the common fixes to use before raising a limit.
+
+---
+
+## Simple Summary
+
+Every pull request that changes the web app builds NutsNews and checks public page performance budgets. If JavaScript, CSS, image weight, Lighthouse, or response-time guardrails cross a hard limit, CI fails and uploads a report.
+
+## Intermediate Summary
+
+The budget workflow runs `npm run test:performance-budget` from `web/`. That command reuses the homepage budget report, adds route bundle checks for the homepage and article detail page, verifies the image optimizer stays bounded, and confirms Lighthouse keeps response-time and Core Web Vitals-style assertions.
+
+## Expert Summary
+
+The budget layer uses generated Next.js build manifests and route client reference manifests instead of live production traffic for bundle checks. Lighthouse remains the browser-level check for public pages and now includes a server response-time assertion. Budget file changes still require `[performance-budget-reviewed]` in the PR title or body.
+
+```mermaid
+flowchart TD
+    PR[Web PR or main push] --> Build[Build Next.js app]
+    Build --> Homepage[Homepage budget script]
+    Build --> Public[Public route budget script]
+    Public --> RouteBundles[Homepage and article bundle budgets]
+    Public --> Images[Image optimizer guardrails]
+    Public --> Lighthouse[Lighthouse config guardrails]
+    Homepage --> Report[Performance report artifact]
+    RouteBundles --> Report
+    Images --> Report
+    Lighthouse --> Report
+    Report --> Gate{Hard limit crossed?}
+    Gate -- Yes --> Fail[Fail CI with annotations]
+    Gate -- No --> Pass[Pass with report]
+```
 
 ---
 
@@ -21,18 +52,36 @@ These targets apply to the public homepage route:
 | Runtime image transfer | 200 KB | 300 KB | 400 KB | Lighthouse CI and PageSpeed Insights |
 | Total initial transfer, gzip | 360 KB | 450 KB | 550 KB | Homepage budget script |
 
+The public route budget script also checks build output for these routes:
+
+```text
+/
+/articles/[id]
+```
+
+| Route | Area | Target | Warn | Hard limit | Checked by |
+| --- | --- | ---: | ---: | ---: | --- |
+| Homepage | Initial JavaScript, gzip | 300 KB | 330 KB | 380 KB | Public performance budget script |
+| Homepage | Initial CSS, gzip | 30 KB | 45 KB | 60 KB | Public performance budget script |
+| Homepage | Total initial transfer, gzip | 360 KB | 450 KB | 550 KB | Public performance budget script |
+| Article detail | Initial JavaScript, gzip | 300 KB | 340 KB | 400 KB | Public performance budget script |
+| Article detail | Initial CSS, gzip | 40 KB | 56 KB | 72 KB | Public performance budget script |
+| Article detail | Total initial transfer, gzip | 400 KB | 500 KB | 600 KB | Public performance budget script |
+
 Hard limits fail CI. Warning limits create GitHub Actions annotations and should be fixed before the next UI change pushes them into failure territory.
 
 The budget source of truth is:
 
 ```text
 web/performance-budget.json
+web/public-performance-budget.json
 ```
 
 The Lighthouse resource budget is:
 
 ```text
 web/lighthouse-budget.json
+web/lighthouserc.js
 ```
 
 ---
@@ -45,19 +94,20 @@ The homepage budget workflow runs on pull requests and pushes that touch the web
 .github/workflows/homepage-performance-budget.yml
 ```
 
-It does four things:
+It does five things:
 
 1. Builds the Next.js app.
 2. Reads the generated `.next` manifests for the homepage route.
-3. Writes a Markdown and JSON report to `web/reports/performance-budget`.
-4. Uploads the report as a GitHub Actions artifact.
+3. Reads route client reference manifests for homepage and article detail bundle budgets.
+4. Verifies image optimizer and Lighthouse response-time guardrails.
+5. Writes Markdown and JSON reports to `web/reports/performance-budget` and uploads them as a GitHub Actions artifact.
 
 Run the same check locally:
 
 ```bash
 cd web
 npm run build
-npm run analyze:homepage
+npm run test:performance-budget
 ```
 
 Create a warning-only report while investigating:
@@ -65,6 +115,7 @@ Create a warning-only report while investigating:
 ```bash
 cd web
 npm run analyze:homepage:warn
+node scripts/public-performance-budget.mjs --warn-only
 ```
 
 ---
@@ -133,6 +184,8 @@ CI uploads these files when the workflow runs:
 ```text
 web/reports/performance-budget/homepage-performance-budget.md
 web/reports/performance-budget/homepage-performance-budget.json
+web/reports/performance-budget/public-performance-budget.md
+web/reports/performance-budget/public-performance-budget.json
 ```
 
 The Markdown report is the easiest one to read. The JSON report is better for automation or comparing two runs.

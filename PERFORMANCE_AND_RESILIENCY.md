@@ -4,15 +4,17 @@ NutsNews is designed to stay fast, reliable, and inexpensive as traffic and RSS 
 
 ---
 
-## Homepage Performance Budget
+## Public Performance Budgets
 
-The public homepage has explicit performance budgets for LCP, JavaScript, CSS, image weight, and total initial transfer. CI now builds the web app, generates a homepage build-size report, and fails only when hard limits are crossed. Warning limits create GitHub Actions annotations.
+The public homepage and article detail route have explicit performance budgets for JavaScript, CSS, image weight, Lighthouse, response time, and total initial transfer. CI builds the web app, generates public performance reports, and fails only when hard limits are crossed. Warning limits create GitHub Actions annotations.
 
 Budget files:
 
 ```text
 web/performance-budget.json
+web/public-performance-budget.json
 web/lighthouse-budget.json
+web/lighthouserc.js
 ```
 
 Run locally:
@@ -20,7 +22,7 @@ Run locally:
 ```bash
 cd web
 npm run build
-npm run analyze:homepage
+npm run test:performance-budget
 ```
 
 Full guide:
