@@ -126,7 +126,50 @@ The same workflow can also pass optional SMTP values from protected Environment 
 
 The protected workflow can also pass optional free-tier usage values and read-only provider tokens into Ansible extra vars. Ansible renders them into `/etc/nutsnews/free-tier-usage.env` with mode `0600`, and the collector writes only sanitized usage numbers, source status, risk status, remaining amount, and timestamps into portal JSON. Tokens are never copied into `status.json`.
 
-Protected apply refreshes the status snapshot by restarting `nutsnews-ops-portal-collector.service`, matching the deployed timer path. The collector also falls back to `/etc/nutsnews/free-tier-usage.env` when process env is missing free-tier settings, so external providers such as Vercel stay visible instead of disappearing from the generated snapshot.
+Protected apply refreshes the status snapshot through an orderly systemd path:
+it pauses `nutsnews-ops-portal-collector.timer`, waits for any active
+collector one-shot to finish, starts `nutsnews-ops-portal-collector.service`,
+and always resumes the timer afterward. That keeps intentional apply refreshes
+out of the service-failure history while preserving failures for real collector
+errors or timeouts. The collector also falls back to
+`/etc/nutsnews/free-tier-usage.env` when process env is missing free-tier
+settings, so external providers such as Vercel stay visible instead of
+disappearing from the generated snapshot.
+
+## Collector Refresh During Protected Apply
+
+Simple: protected apply no longer kills the portal collector to refresh the
+dashboard. It waits its turn, runs one clean refresh, and turns the timer back
+on.
+
+Intermediate: the one-minute timer can already have a collector one-shot
+running when Ansible wants a fresh snapshot. Ansible now stops the timer first,
+waits for any active one-shot to become inactive, starts the managed collector
+service, and resumes the timer in an `always` block. A real collector failure
+still fails protected apply.
+
+Expert: the refresh task intentionally avoids `systemctl restart` for the
+`Type=oneshot` collector because restart terminates an active process with
+SIGTERM and leaves noisy `status=15/TERM` / `Failed with result 'signal'`
+history. The bounded wait uses `systemctl show ActiveState` and preserves the
+unit result semantics: timeout, failed start, or collector exit failure remain
+visible and stop the deployment path.
+
+```mermaid
+flowchart TD
+  apply["Protected Ansible Apply"] --> pause["Stop collector timer"]
+  pause --> active{"Collector active?"}
+  active -- yes --> wait["Wait with bounded retries"]
+  wait --> active
+  active -- no --> start["Start collector service"]
+  start --> ok{"Collector succeeded?"}
+  ok -- yes --> resume["Resume collector timer"]
+  ok -- no --> resume
+  resume --> result{"Apply result"}
+  ok -- no --> fail["Fail apply with collector error"]
+  result -- success path --> done["Fresh status.json"]
+  fail --> result
+```
 
 Application release metadata comes from the reviewed infra source of truth and
 sanitized local Docker inspection. Expected repository/digest, source commit,
