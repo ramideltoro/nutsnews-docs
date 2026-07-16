@@ -25,6 +25,7 @@ That role runs after the existing VPS baseline role. It manages:
 - Docker Engine from Ubuntu packages
 - Docker Compose v2 from Ubuntu packages
 - Docker daemon log limits for cheap-VPS disk sanity
+- a GitOps-managed Docker image and build-cache cleanup timer with conservative age filters
 - explicit Docker IPv6 defaults: host IPv6 remains enabled, but container IPv6 and Docker-managed `ip6tables` are disabled until a reviewed dual-stack rollout
 - `systemd-zram-generator` with a small `/dev/zram0` fallback swap device
 - a non-login Caddy runtime user
@@ -145,6 +146,109 @@ flowchart LR
 ```
 
 This layout is boring on purpose. "Where does this service put its files?" should not require a séance with shell history.
+
+## Docker Cleanup
+
+### Simple
+
+The VPS now has a scheduled Docker cleanup job managed by Ansible. It runs from
+`nutsnews-docker-cleanup.timer`, not from manual SSH commands. The default
+schedule is Sunday at `04:35 UTC` with a `30min` randomized delay.
+
+The cleanup is intentionally conservative. It prunes build cache older than
+`168h` and unused dangling images older than `168h`. It does not prune Docker
+volumes, containers, or all tagged images.
+
+### Intermediate
+
+The cleanup runner is installed at:
+
+```text
+/usr/local/bin/nutsnews-docker-cleanup
+```
+
+It writes its latest sanitized status to:
+
+```text
+/opt/nutsnews/portal-assets/data/docker-cleanup-status.json
+```
+
+It also appends bounded JSONL history to:
+
+```text
+/opt/nutsnews/logs/docker-cleanup/cleanup.jsonl
+```
+
+Before pruning, the runner reads the current production and staging app image
+refs plus each environment's last-known-good digest ref from the Ansible-managed
+environment model. It also inspects the images used by currently running
+containers. If a protected image is present only as an unsafe untagged,
+non-running image, the image-prune phase is skipped and the status records
+`protected_untagged_image_present`.
+
+The protected apply workflow seeds an `installed_pending_first_run` status file
+when the timer is first installed. That gives the Ops Portal honest visibility
+before the first scheduled prune runs, without forcing a prune during apply.
+
+### Expert
+
+The unit runs as root because Docker cleanup requires the local Docker socket,
+but the public Ops Portal still never receives that socket. The service is a
+oneshot systemd unit with hardening such as `NoNewPrivileges=true`,
+`ProtectSystem=strict`, `PrivateTmp=true`, `RestrictAddressFamilies=AF_UNIX`,
+and writable paths limited to the portal data directory and Docker cleanup log
+directory. The command runner uses argument vectors, not shell strings.
+
+The cleanup deliberately avoids `docker system prune`, `docker volume prune`,
+and `docker container prune`. Build cache cleanup uses:
+
+```text
+docker builder prune --force --filter until=168h
+```
+
+Image cleanup uses:
+
+```text
+docker image prune --force --filter until=168h
+```
+
+That image command prunes dangling unused images only. It is less aggressive
+than `docker image prune --all`, but it fits the current risk profile: Docker
+had reclaimable build cache and dangling image headroom, while the root disk was
+not under emergency pressure. Broader cleanup should be a separate reviewed
+policy change.
+
+```mermaid
+flowchart TD
+  apply["Protected Ansible Apply"] --> install["Install cleanup runner,\nservice, timer"]
+  install --> seed["Seed pending status\nwithout running prune"]
+  seed --> timer["systemd timer\nSunday 04:35 UTC + jitter"]
+  timer --> runner["cleanup runner"]
+  runner --> inspect["Inspect running images\nand protected app refs"]
+  inspect --> unsafe{"Protected image unsafe\nuntagged and not running?"}
+  unsafe -- "Yes" --> skip["Skip image prune\nrecord reason"]
+  unsafe -- "No" --> imagePrune["Prune dangling images\nolder than filter"]
+  inspect --> cachePrune["Prune build cache\nolder than filter"]
+  skip --> status["Write sanitized status\nand JSONL history"]
+  imagePrune --> status
+  cachePrune --> status
+  status --> collector["Ops Portal collector\nreads compact status"]
+  collector --> portal["Read-only portal JSON\nno Docker socket"]
+```
+
+Operators should verify cleanup through status and systemd:
+
+```bash
+systemctl list-timers nutsnews-docker-cleanup.timer
+systemctl status nutsnews-docker-cleanup.timer
+systemctl status nutsnews-docker-cleanup.service
+sudo python3 -m json.tool /opt/nutsnews/portal-assets/data/docker-cleanup-status.json
+sudo tail -n 20 /opt/nutsnews/logs/docker-cleanup/cleanup.jsonl
+```
+
+Do not run ad hoc prune commands over SSH as routine maintenance. Change the
+timer, filters, or protection behavior in `ramideltoro/nutsnews-infra`, merge
+through PR checks, and apply through the protected workflow.
 
 ## Prepared NutsNews Application Layer
 

@@ -1,6 +1,6 @@
 # NutsNews Operations Portal v1
 
-This explains the first real Ops Portal layer for the NutsNews VPS: a read-only amber dashboard, a local status collector, opt-in email alerts/reports, encrypted backup status, normalized free-tier and usage-limited service visibility, on-demand report and backup workflows, deeper resource visibility, and a Caddy-managed public route protected by Google OAuth.
+This explains the first real Ops Portal layer for the NutsNews VPS: a read-only amber dashboard, a local status collector, opt-in email alerts/reports, encrypted backup status, managed Docker cleanup status, normalized free-tier and usage-limited service visibility, on-demand report and backup workflows, deeper resource visibility, and a Caddy-managed public route protected by Google OAuth.
 
 ## Easy Summary
 
@@ -15,6 +15,11 @@ The Free Tier Usage section now groups quota rows by service for the VPS host, D
 There is also a manual `Send VPS Health Report` workflow. It uses the same protected `production-vps` Environment and SSH secret pattern, connects as `nutsnews_ops`, and starts only the existing health report service. No random remote command box. No "type your shell script here." Production does not need karaoke night.
 
 There are also manual `Run VPS Backup` and `Verify VPS Backup` workflows plus a scheduled `nutsnews-restic-verify.timer`. They use the same protected environment pattern and start only fixed systemd units. The portal then shows backup freshness, whether the latest snapshot has a recent successful verification, last backup, last prune, retention, next backup run, next verify run, and protected path coverage.
+
+Docker cleanup status is also visible as read-only operational evidence. The
+portal can show the latest cleanup result, timer/service names, cadence, prune
+filters, Docker storage summary, prune return codes, and protected-image counts
+without exposing the Docker socket or publishing protected image refs.
 
 The important part: it is read-only. No restart button. No "install this one tiny thing" button. No secret shell wearing a dashboard costume. If something needs to change production, it still goes through the civilized path:
 
@@ -46,8 +51,9 @@ The infra repo now has these pieces:
 10. A read-only free-tier usage collector module at `/usr/local/bin/ops_free_tier_usage.py`
 11. Root-only free-tier collector configuration at `/etc/nutsnews/free-tier-usage.env`
 12. Local usage-limited service entries for VPS resources, Docker storage, and backup storage/freshness
-13. CI guardrails that validate the portal fixture, Google OAuth allowlist, callback route, secret redaction, read-only surface, backup status, free-tier fallback states, and the no-arbitrary-command shape of the manual report and backup workflows
-14. A read-only application deployment block that compares reviewed release state with the running container without exposing runtime values
+13. Managed Docker cleanup status from `/opt/nutsnews/portal-assets/data/docker-cleanup-status.json`
+14. CI guardrails that validate the portal fixture, Google OAuth allowlist, callback route, secret redaction, read-only surface, backup status, Docker cleanup status, free-tier fallback states, and the no-arbitrary-command shape of the manual report and backup workflows
+15. A read-only application deployment block that compares reviewed release state with the running container without exposing runtime values
 
 The collector runs locally on the VPS, reads host state, redacts obvious sensitive log patterns, and writes JSON here:
 
@@ -83,6 +89,10 @@ Configured callback URLs:
 The hostless shorthand `https:///api/auth/callback/google` documents the required path shape only; runtime config must use one of the concrete URLs above.
 
 The portal does not mount the Docker socket into a public-facing app. Docker state is collected by the local systemd service, flattened into JSON, and handed to the browser like a report card. Much safer than giving the web UI a chainsaw and hoping it only trims hedges.
+
+Docker cleanup follows the same boundary. The root-run cleanup oneshot talks to
+Docker locally and writes a bounded status file. The collector publishes only a
+compact `docker_cleanup` summary in `status.json`.
 
 Firewall deny visibility is intentionally aggregated. UFW packet logging is disabled by the baseline to keep repetitive denied internet scans out of warning-priority journal output. The collector filters any retained UFW packet lines out of the raw journal warning panel, exposes a bounded deny summary with redacted packet samples, and reads aggregate UFW chain counters so operators can still see whether denied traffic is occurring.
 
