@@ -14,6 +14,13 @@ The VPS bootstrap is no longer just a local operator ritual. We now have a manua
 
 The safe default is check mode. Check mode connects to the VPS as `nutsnews_ops`, shows what Ansible would change, prints the recap, and exits without applying remote changes. Apply mode is available, but it requires an explicit `apply` selection, the confirmation text `vps.nutsnews.com`, and Environment approval.
 
+Before the workflow can use the `production-vps` Environment, it now runs a
+no-secret production eligibility verifier. Baseline-only changes can continue
+when the reviewed production release identity is unchanged. A production app
+release change must match a current staging qualification attestation for the
+exact digest, source, build, staging deployment, config, and test-suite
+revision.
+
 The workflow is also the only approved VPS application rollout path. It does
 not build or publish the image; it consumes reviewed immutable release state
 from `nutsnews-infra`. Issue
@@ -117,6 +124,23 @@ separate runtime identity but remains disabled pending the measured capacity
 decision; it has no Caddy route, credentials, TLS/access boundary, or deployment
 workflow in this phase. See [VPS Runtime Environment Isolation](NUTSNEWS_VPS_RUNTIME_ENVIRONMENT_ISOLATION.md).
 
+For an app release check or apply, the workflow requires the complete release
+identity bundle:
+
+- `release_source_commit`
+- `release_image_digest`
+- `release_build_id`
+- `release_source_workflow_run_id`
+- `release_migration_head`
+- `release_schema_version`
+- `release_supabase_project_ref`
+
+The verifier rejects missing, expired, tampered, stale, superseded, skipped, or
+mismatched staging qualification evidence before production SSH keys, deploy
+secrets, production app secrets, or the protected Environment are available.
+The old direct `nutsnews-production-release` dispatch path is paused until the
+staging-first handoff is activated.
+
 ## Expert Summary
 
 The workflow is intentionally narrow:
@@ -124,7 +148,9 @@ The workflow is intentionally narrow:
 - permissions are `contents: read`
 - concurrency prevents overlapping baseline runs against the same VPS
 - timeout is 30 minutes
-- job environment is `production-vps`
+- the first job has no production Environment and checks eligibility
+- production jobs depend on that eligibility result before using
+  `production-vps`
 - SSH user is hardcoded to `nutsnews_ops`
 - host key checking is enabled
 - the workflow validates required secrets before connecting

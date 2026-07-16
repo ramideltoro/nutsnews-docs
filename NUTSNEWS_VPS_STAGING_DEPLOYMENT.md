@@ -631,6 +631,84 @@ summaries, or artifacts. Browser verification, when needed, must use the
 Chrome DevTools MCP surface only and should record sanitized observations
 rather than raw session material.
 
+## Production Eligibility Gate (`nutsnews-infra#121`)
+
+### Simple Summary
+
+Production cannot use a staging pass by reputation. Before the protected
+production workflow can reach `production-vps`, a separate no-secret job checks
+that the requested production app release is the exact digest, source commit,
+build, staging deployment, infra config, and test-suite revision that passed
+staging. If the attestation is missing, expired, tampered, stale, superseded,
+or tied to a different candidate, the workflow fails before production secrets
+or SSH material are available.
+
+### Intermediate Summary
+
+`Protected Ansible Apply` now starts with `verify-production-eligibility`, a
+GitHub-hosted job with read-only repository, deployment, and attestation
+permissions. Baseline-only infrastructure changes may proceed only when the
+reviewed production release identity is unchanged. Any app release change must
+include the complete release identity bundle:
+
+- source commit
+- image digest
+- build ID
+- source workflow run ID
+- migration head
+- rollback-compatible schema version
+- Supabase project reference
+
+The verifier calls `gh attestation verify` for the OCI subject
+`ghcr.io/ramideltoro/nutsnews@sha256:...`, authenticates that the issuer is
+`ramideltoro/nutsnews-infra`, the workflow is
+`.github/workflows/nutsnews-staging-qualification.yml`, and the ref is the
+protected `refs/heads/main`. It then validates the predicate contents and asks
+GitHub Deployments for the current staging deployment. A redeploy, changed
+digest, changed staging deployment ID, changed config generation, skipped
+required suite, or expired predicate fails closed.
+
+The older direct `nutsnews-production-release` repository dispatch is paused
+until the app repository is moved to the staging-first handoff. That disabled
+path does not receive the infra release token.
+
+### Expert Summary
+
+The verifier is intentionally outside the production trust boundary. It has no
+`production-vps` Environment, no production application secrets, no deploy SSH,
+and no release-promotion token. Production jobs depend on its result and cannot
+load protected Environment material until it has accepted the exact candidate.
+
+Replay protection comes from binding all of these values together:
+
+| Evidence | Binding |
+| --- | --- |
+| Attestation subject | exact OCI digest |
+| Certificate | issuer repository, workflow, and protected ref |
+| Predicate | source commit, build ID, source workflow run, infra commit, config generation, staging deployment ID, test-suite commit, suite results, and expiration |
+| Live GitHub Deployments | latest successful staging deployment still matches the predicate |
+| Production manifest | requested release identity matches the reviewed manifest inputs |
+
+A rerun creates new workflow history and does not overwrite prior failure
+evidence. Negative regression coverage rejects missing, expired, tampered,
+wrong digest/source/build/workflow, wrong issuer/ref, skipped suite, stale
+staging, superseded staging, and release changes without the gate.
+
+```mermaid
+flowchart TD
+  start["Protected Ansible Apply dispatch"] --> classify{"Production app release changed?"}
+  classify -- "No" --> unchanged["No-secret manifest identity check"]
+  classify -- "Yes" --> verify["Verify OCI staging qualification attestation"]
+  verify --> issuer["Authenticate issuer repo, workflow, and protected ref"]
+  issuer --> predicate["Validate exact digest, source, build, deployment, config, suite, expiration"]
+  predicate --> live["Confirm latest GitHub staging deployment still matches"]
+  unchanged --> gate["Eligibility output"]
+  live --> gate
+  gate --> env["production-vps Environment gate"]
+  env --> secrets["Production SSH and runtime secrets"]
+  secrets --> ansible["Protected Ansible check or apply"]
+```
+
 ## Related Docs
 
 - [VPS Runtime Environment Isolation](NUTSNEWS_VPS_RUNTIME_ENVIRONMENT_ISOLATION.md)
