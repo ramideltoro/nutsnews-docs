@@ -89,6 +89,85 @@ After the `staging-vps` Environment approval, the workflow:
 Rerunning a candidate is idempotent at the Compose layer and intentionally
 creates another GitHub Deployment history entry for auditability.
 
+## Staging Auto-Idle After Qualification Expiry
+
+### Simple Summary
+
+Staging no longer has to run forever after a qualification window expires. A
+GitOps-managed VPS timer checks the recorded qualification expiry and idles only
+the matching staging app and staging Access verifier after a grace period.
+
+### Intermediate Summary
+
+The protected service-foundation apply installs
+`nutsnews-staging-auto-idle.timer` and `nutsnews-staging-auto-idle.service`.
+The service reads the production app apply marker, the staging apply marker,
+and the configured qualification expiry. If the expiry plus grace period has
+passed, and the staging deployment ID still matches the deployment ID that was
+qualified, it stops the `nutsnews-staging` and `nutsnews-staging-access`
+Compose projects and removes the `nutsnews-app-staging-cache` volume when that
+cleanup is enabled. It writes sanitized state to the Ops Portal and an audit
+JSONL log.
+
+If staging has been redeployed to a newer deployment ID, the service reports
+`superseded` and does not idle it. If another staging mutation is already in
+progress, it reports `blocked` and tries again on the next timer run.
+
+### Expert Summary
+
+The auto-idle unit is not a production deploy path. It runs on the VPS as root
+through systemd, but its environment points only at staging Compose projects,
+the staging app marker, the production app marker used for qualification
+metadata, the staging cache volume, and the existing staging mutation lock. It
+does not reference the `production-vps` GitHub Environment, production SSH,
+deploy SSH, app runtime secrets, or release tokens. The status record always
+sets `production_touched: false`.
+
+The matcher deliberately compares:
+
+- `staging_deployment_id` from `/opt/nutsnews/ops/last-app-apply.json`
+- `deployment_id` from `/opt/nutsnews/ops/apps/staging/last-apply.json`
+- `qualification_expires_at` from the production app apply marker
+
+Only a matching expired deployment may be idled. This prevents an old,
+expired production marker from stopping a newer staging candidate that is being
+qualified.
+
+```mermaid
+flowchart TD
+  timer["nutsnews-staging-auto-idle.timer"] --> marker["Read app apply marker"]
+  timer --> stageMarker["Read staging apply marker"]
+  marker --> expiry{"Qualification expired + grace?"}
+  stageMarker --> match{"Deployment IDs match?"}
+  expiry -- "No" --> visible["Write current/waiting status"]
+  match -- "No" --> superseded["Write superseded status"]
+  expiry -- "Yes" --> match
+  match -- "Yes" --> lock["Acquire staging mutation lock"]
+  lock --> stop["Stop staging app and staging Access Compose projects"]
+  stop --> cache["Remove staging cache volume if enabled"]
+  cache --> status["Write Ops Portal status and audit log"]
+```
+
+### Rehydrate Staging Safely
+
+1. If the staging hostname or Access verifier was idled, run the protected
+   `Protected Ansible Apply` workflow from `main` with
+   `enable_staging_access=true`. Use check mode first, then apply after review.
+2. Request or rerun the exact staging candidate through the app staging-first
+   handoff or the reviewed infra staging dispatch path. Do not SSH into the
+   VPS to start containers manually.
+3. Approve only the `staging-vps` Environment for the staging deploy job after
+   the no-secret preflight has validated the candidate.
+4. Confirm the staging deploy workflow reports `ready`, a GitHub staging
+   Deployment ID, the actual Docker digest, and sanitized boundary evidence.
+5. Run the independent off-VPS staging qualification. A new production
+   promotion must use the fresh qualification record for the exact digest,
+   deployment ID, config, and test revision.
+
+Rollback is to disable the auto-idle timer through a reviewed service-foundation
+change or revert the PR that introduced it, then run protected apply. Do not
+replace it with a manual Docker or SSH workflow.
+
 ## Staging Supabase Schema Prerequisite
 
 The app repository now supplies a separate, fixed-purpose `Apply Verified

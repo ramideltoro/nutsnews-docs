@@ -267,10 +267,18 @@ with secrets from the VPS. Unknown data is labeled `unknown`; absent setup is
 `not configured`; stale evidence is `expired`; superseded candidates are
 reported as `superseded` when the retained gate metadata proves that state.
 
+The same panel now includes staging auto-idle state. It shows whether the
+GitOps-managed idle timer is installed, waiting for the grace period, idled,
+blocked by the staging mutation lock, superseded by a newer staging deployment,
+or not configured. The status comes from the root-owned local status file; the
+browser never receives staging credentials, cookies, CSRF tokens, or full
+command output.
+
 ```mermaid
 flowchart LR
   manifest["Reviewed production manifest"] --> collector["Read-only portal collector"]
   marker["Last app apply marker"] --> collector
+  idle["Staging auto-idle status"] --> collector
   docker["Local Docker inspect\nsanitized identity only"] --> collector
   collector --> status["status.json\nrelease_gate"]
   status --> portal["Ops Portal\ncandidate, staging, qualification,\nproduction, rollback states"]
