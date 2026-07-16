@@ -516,6 +516,8 @@ The CPU table is useful, not omniscient. It shows a lifetime average normalized 
 
 The backup section now reports the restic/rclone VPS backup layer: enabled/configured state, repository path, latest snapshot age, backup/prune state, latest-snapshot verification state, backup and verify timer state, and protected path counts. Raw backup path lists and restore targets stay in root-only config, not public status JSON.
 
+Top-level `last_error` is only the active unresolved backup error. When a later backup plus prune succeeds, or when a later latest-snapshot verification succeeds, the runner clears `last_error` and records the old value in bounded `resolved_errors` history with occurrence and resolution timestamps. The individual run records still keep their own failure evidence on `last_backup.error`, `last_prune.error`, or `last_check.error`.
+
 The application block is status-only. A digest mismatch, unhealthy container,
 or failed route is visible evidence to stop rollout and fix the GitOps source
 of truth. It does not create pull/restart/rollback buttons.
