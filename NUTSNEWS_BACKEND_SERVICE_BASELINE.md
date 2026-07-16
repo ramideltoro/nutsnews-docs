@@ -99,6 +99,22 @@ References used for resource expectations:
 - Typesense system requirements: https://typesense.org/docs/guide/system-requirements.html
 - Typesense memory sizing: https://cloud-help-center.typesense.org/article/22-choosing-how-much-memory-you-need
 
+### PostgreSQL Replacement
+
+Backend issue #28 records the plan for replacing Supabase only after a non-production replacement is proven.
+
+Simple Summary:
+
+NutsNews is not moving off Supabase yet. A new database has to be tested, backed up, restorable, and safe to roll back before it can hold production data.
+
+Intermediate Summary:
+
+The app currently uses Supabase/PostgREST-style APIs with anon and service-role keys, not a direct PostgreSQL driver. A bare self-hosted PostgreSQL server would not be a drop-in replacement. The plan keeps one production writer, forbids public database ports, requires a PostgREST-compatible layer or app rewrite, and sets future targets of 15-minute RPO and 4-hour RTO only after WAL/PITR and restore drills pass.
+
+Expert Summary:
+
+The backend repo now has `docs/backend-postgres-replacement-plan.json`, `runbooks/POSTGRES_REPLACEMENT_PLAN.md`, and `scripts/validate_postgres_replacement_plan.py`. The validator fails if the service baseline stops marking PostgreSQL as not deployed while the decision still says `keep_supabase_until_replacement_is_proven`. The plan maps Supabase tables/functions, REST/PostgREST, anon/service-role behavior, RLS/grants, Auth, Storage, Realtime, Edge Functions, full-text search, and backups before any production install or cutover.
+
 ## Re-Attestation Trigger
 
 Update the attestation after protected apply changes listeners or services, after Docker/Caddy/app/database/cache/search/dashboard work lands, or whenever read-only audit finds drift.
