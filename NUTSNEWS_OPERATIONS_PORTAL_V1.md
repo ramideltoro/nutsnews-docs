@@ -106,6 +106,76 @@ SMTP values live in the protected `production-vps` GitHub Environment and are re
 
 Free-tier quota values live in Ansible configuration under `vps_service_foundation_free_tier_quotas`. Local VPS, Docker, and backup entries come from live read-only status collection instead of a static provider quota. Each service entry records the provider name, plan, source URL or local source description, last verification date where applicable, metrics, units, free limits, warning/critical/over-limit thresholds, optional read-only live collection settings, and whether the specific metric is measured, missing credentials, unavailable, unsupported, or unknown. Usage data can come from a safe live collector, a normalized snapshot, or a local cache. If no safe source exists, that provider shows `not configured`, `unavailable`, or `unknown` instead of failing the whole portal.
 
+## OS Update Visibility
+
+### Simple Summary
+
+The Ops Portal now separates ordinary package updates from security updates.
+It also shows whether `apt-daily-upgrade.timer` is active and whether the last
+`apt-daily-upgrade.service` run succeeded.
+
+If security updates sit around too long, the portal raises a warning. That is a
+signal to use the reviewed maintenance path, not a reason to run package
+upgrades manually over SSH.
+
+### Intermediate Summary
+
+The collector reads `apt list --upgradable`, counts all pending packages, and
+separately counts lines that come from security pockets. The security section
+publishes:
+
+- total pending package count
+- informational pending package count
+- pending security package count
+- bounded package samples
+- bounded security package samples
+- stale-security-update threshold, default `30h`
+- package-update policy status
+- `apt-daily-upgrade.timer` active/enabled state
+- `apt-daily-upgrade.service` last result, exit code, and timestamps
+
+The alert layer emits a warning only when pending security updates are stale or
+the unattended-upgrades timer is unexpectedly inactive. Non-security updates
+remain visible but informational until a maintenance workflow handles them.
+
+### Expert Summary
+
+This change is visibility, not package mutation. The collector runs read-only
+commands and systemd introspection from the existing root-run local status
+collector. It does not add an arbitrary command channel, an SSH maintenance
+shortcut, or a direct `apt upgrade` workflow.
+
+The stale policy is GitOps-configured by
+`vps_service_foundation_security_update_stale_after_hours`, passed to the
+collector as `NUTSNEWS_SECURITY_UPDATE_STALE_AFTER_HOURS`. The default is 30
+hours, giving the daily unattended-upgrades timer time to run while still making
+stuck security updates obvious in reports and alerts.
+
+```mermaid
+flowchart TD
+  timer["Ops Portal collector timer"] --> collector["Read-only collector"]
+  collector --> apt["apt list --upgradable"]
+  collector --> systemd["systemctl show\napt-daily-upgrade"]
+  apt --> classify["Classify package updates\ninformational vs security"]
+  systemd --> unattended["Record timer/service\nresult and timestamps"]
+  classify --> policy{"Security updates stale?"}
+  unattended --> policy
+  policy -- "No" --> status["Publish status.json\ncurrent or pending"]
+  policy -- "Yes" --> alert["Emit warning alert\nsecurity.stale_pending_updates"]
+  alert --> report["Email/reporting path"]
+  status --> portal["Read-only Ops Portal"]
+```
+
+Operational response:
+
+1. Check the portal security section and `apt-daily-upgrade.service` result.
+2. Confirm whether security updates are pending because the daily timer has not
+   run yet, because unattended-upgrades failed, or because a reboot or non-auto
+   package path is needed.
+3. Use the protected GitOps maintenance path once available. Until then, track
+   the maintenance follow-through in the infra issue rather than making routine
+   manual package changes.
+
 ## Expert Summary
 
 Ops Portal v1 is intentionally simple:
