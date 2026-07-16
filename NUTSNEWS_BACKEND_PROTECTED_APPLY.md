@@ -45,6 +45,17 @@ Optional early-bootstrap secrets:
 
 Prefer a dedicated automation user with key-based SSH and reviewed sudo behavior. If a sudo password is temporarily used, rotate it after the automation user exists.
 
+## Ansible Role Path
+
+The protected workflow runs `ansible-playbook` from the repo's `ansible/` directory. The backend repo keeps its roles in `ansible/roles`, so `ansible/ansible.cfg` must remain committed with:
+
+```ini
+[defaults]
+roles_path = roles
+```
+
+If the workflow fails with `the role 'backend_baseline' was not found`, confirm the checked-out commit contains `ansible/ansible.cfg` and rerun check mode before approving apply mode.
+
 ## Current Limitation
 
 The workflow cannot prove issue #10 complete until:
