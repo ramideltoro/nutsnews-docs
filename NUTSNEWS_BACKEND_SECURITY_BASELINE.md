@@ -31,6 +31,28 @@ ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no -o BatchMode
 ssh -i ~/.ssh/servercheap_65_75_201_18 rami@65.75.201.18 'hostname && whoami'
 ```
 
+## OS Package Maintenance And Reboot
+
+Backend issue #2 adds repo-managed OS package maintenance through the backend Ansible baseline role.
+
+Implementation shape:
+
+- Refresh apt metadata.
+- Apply available package upgrades with `upgrade: dist`.
+- Remove unused packages and clean apt cache.
+- Reboot during real apply mode when `/var/run/reboot-required` exists.
+- Capture package, kernel, reboot-required, and failed-unit evidence in workflow logs.
+
+Verification after approved apply:
+
+```bash
+ssh -i ~/.ssh/servercheap_65_75_201_18 rami@65.75.201.18 'uname -r'
+ssh -i ~/.ssh/servercheap_65_75_201_18 rami@65.75.201.18 'test ! -e /var/run/reboot-required && echo no-reboot-required'
+ssh -i ~/.ssh/servercheap_65_75_201_18 rami@65.75.201.18 'apt list --upgradable 2>/dev/null'
+ssh -i ~/.ssh/servercheap_65_75_201_18 rami@65.75.201.18 'systemctl --failed --no-pager'
+ssh -i ~/.ssh/servercheap_65_75_201_18 rami@65.75.201.18 'hostname && whoami'
+```
+
 ## Current Blocker
 
-SSH hardening cannot be considered complete until the `production-backend` Environment and required secrets exist, the protected workflow applies the role, and a privileged read-only audit confirms the effective server state.
+SSH hardening and OS package maintenance cannot be considered complete until the `production-backend` Environment and required secrets exist, the protected workflow applies the role, and read-only audits confirm the effective server state.
