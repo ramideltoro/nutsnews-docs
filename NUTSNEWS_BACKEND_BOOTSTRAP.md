@@ -36,6 +36,27 @@ The backend runtime direction is:
 
 No backend service is considered deployed until the protected pipeline applies it and read-only verification confirms it.
 
+## Cloud-Init Provider Warning
+
+Backend issue #9 verified that `cloud-init status --long` reports:
+
+```text
+status: done
+extended_status: degraded done
+detail: DataSourceNoCloud [seed=/dev/sr0]
+errors: []
+```
+
+The recoverable warnings are deprecated NoCloud seed keys for `chpasswd.list`, `lists`, and multiline `chpasswd` syntax. The backend repo does not currently own a cloud-init template, so this is treated as provider image/bootstrap hygiene rather than an app blocker.
+
+The backend rebuild path is Ansible plus the protected backend apply workflow. If this repo later owns cloud-init templates, they must use non-deprecated `users` and `chpasswd` syntax.
+
+Read-only verification:
+
+```bash
+ssh -i ~/.ssh/servercheap_65_75_201_18 rami@65.75.201.18 'cloud-init status --long 2>&1 || true'
+```
+
 ## Boundaries
 
 - Public app work stays in `ramideltoro/nutsnews`.
