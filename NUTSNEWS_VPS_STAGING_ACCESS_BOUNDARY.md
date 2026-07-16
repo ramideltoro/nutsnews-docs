@@ -58,7 +58,7 @@ flowchart LR
   Caddy --> Verify["JWT verifier\nRS256 + iss + aud + exp/nbf"]
   Verify -->|"valid only"| StageNet["nutsnews-edge-staging"]
   StageNet --> StageApp["nutsnews-app-staging\nimmutable @sha256"]
-  Caddy -->|"existing unchanged route"| ProdNet["nutsnews-edge"]
+  Caddy -->|"existing unchanged route"| ProdNet["nutsnews-edge-v6"]
   ProdNet --> ProdApp["nutsnews-app\nproduction"]
 
   Deploy["staging-vps workflow"] --> SSH["restricted SSH key"]
@@ -82,7 +82,7 @@ staging access is disabled. Enabling the opt-in template inserts one host block
 between the existing production and Ops Portal blocks. That block adds private
 no-store/noindex/security headers, invokes `forward_auth`, and proxies only
 `nutsnews-app-staging:3000`. Caddy is connected additively to
-`nutsnews-edge-staging`; production stays on `nutsnews-edge` with its existing
+`nutsnews-edge-staging`; production stays on `nutsnews-edge-v6` with its existing
 hostname, imports, headers, authentication, upstream, and digest.
 
 ## Runtime Topology
@@ -91,7 +91,7 @@ hostname, imports, headers, authentication, upstream, and digest.
 | --- | --- | --- |
 | Compose project | `nutsnews-app` | `nutsnews-staging` |
 | App container/upstream | `nutsnews-app` | `nutsnews-app-staging` |
-| Network | `nutsnews-edge` | `nutsnews-edge-staging` |
+| Network | `nutsnews-edge-v6` | `nutsnews-edge-staging` |
 | App directory | `/opt/nutsnews/apps/nutsnews` | `/opt/nutsnews/apps/nutsnews-staging` |
 | Env file | `/etc/nutsnews/nutsnews-app.env` | `/etc/nutsnews/nutsnews-staging-app.env` |
 | Release/apply/LKG state | production-only paths | `/opt/nutsnews/ops/apps/staging/*` |

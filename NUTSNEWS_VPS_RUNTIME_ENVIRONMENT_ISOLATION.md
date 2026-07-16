@@ -40,7 +40,7 @@ Mutable tags, including `latest`, fail before Compose materializes a runtime.
 | --- | --- | --- |
 | Compose project | `nutsnews-app` | `nutsnews-staging` |
 | Container | `nutsnews-app` | `nutsnews-app-staging` |
-| Docker network | `nutsnews-edge` | `nutsnews-edge-staging` |
+| Docker network | `nutsnews-edge-v6` | `nutsnews-edge-staging` |
 | Caddy access | Existing route/network unchanged | Additive attachment and protected hostname only when #120 is enabled |
 | App directory | `/opt/nutsnews/apps/nutsnews` | `/opt/nutsnews/apps/nutsnews-staging` |
 | Env file | `/etc/nutsnews/nutsnews-app.env` | `/etc/nutsnews/nutsnews-staging-app.env` |
@@ -73,7 +73,7 @@ that a staging-only input change leaves production runtime renders byte-for-byte
 unchanged.
 
 Caddy has a narrower trust boundary than the runtime model: it joins only
-`nutsnews-edge`, the production network. Its app route templates read only the
+`nutsnews-edge-v6`, the production network. Its app route templates read only the
 production configuration. The staging network is not attached to Caddy, so a
 staging service-name collision cannot become the production upstream.
 
@@ -86,7 +86,7 @@ volume, and route state—never application secret values.
 
 ```mermaid
 flowchart LR
-  caddy["Caddy\nproduction network only"] --> prodNet["nutsnews-edge"]
+  caddy["Caddy\nproduction network only"] --> prodNet["nutsnews-edge-v6"]
   prodNet --> prodApp["nutsnews-app\nproject: nutsnews-app"]
 
   stageNet["nutsnews-edge-staging\nnot attached to Caddy"] --> stageApp["nutsnews-app-staging\nproject: nutsnews-staging\nGitOps-only"]

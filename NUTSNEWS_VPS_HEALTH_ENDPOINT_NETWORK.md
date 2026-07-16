@@ -20,14 +20,14 @@ The health service is the systemd unit `nutsnews-infra-health.service`. Its
 Ansible-managed configuration binds it only to `172.17.0.1:18080`, the current
 Docker host-gateway address that Caddy resolves as `host.docker.internal`.
 
-Caddy is on the `nutsnews-edge` Docker network. UFW permits only that Docker
-source range, `172.18.0.0/16`, to reach TCP `18080`; it does not permit public
+Caddy is on the `nutsnews-edge-v6` Docker network. UFW permits only that Docker
+source range, `172.20.0.0/16`, to reach TCP `18080`; it does not permit public
 sources. Caddy accepts the public HTTPS request and proxies `/health` across
 that private host/Docker path.
 
 ```mermaid
 flowchart LR
-  monitor["External uptime check"] -->|"HTTPS 443\n/health"| caddy["Caddy container\nnutsnews-edge"]
+  monitor["External uptime check"] -->|"HTTPS 443\n/health"| caddy["Caddy container\nnutsnews-edge-v6"]
   caddy -->|"host.docker.internal\n172.17.0.1:18080"| health["nutsnews-infra-health.service"]
   internet["Public internet"] -. "direct TCP 18080\nblocked by UFW" .-> health
 ```
@@ -37,7 +37,7 @@ flowchart LR
 `host.docker.internal` is provided to Caddy through Docker's `host-gateway`
 mapping. On the production topology verified for this change, it resolves to
 the host's `172.17.0.1` Docker bridge address. Caddy's own endpoint is on
-`172.18.0.0/16`, which is the only UFW source range allowed to reach the
+`172.20.0.0/16`, which is the only UFW source range allowed to reach the
 health listener. The listener must not use `0.0.0.0`, and port `18080` must
 not be published by Compose or opened publicly in UFW.
 
