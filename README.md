@@ -99,6 +99,7 @@ These docs explain the product and the system at a high level.
 | [Public Page Translations](NUTSNEWS_PUBLIC_PAGE_TRANSLATIONS.md) | About, Contact, Privacy, and settings language behavior |
 | [Public Pages Theme Consistency](NUTSNEWS_PUBLIC_PAGES_THEME_CONSISTENCY.md) | Theme behavior across public pages |
 | [Privacy Analytics And Consent](PRIVACY_ANALYTICS_CONSENT.md) | GA4 consent gate, allowed event taxonomy, disallowed data, retention, and rollback |
+| [Publisher Attribution And Content Use](PUBLISHER_ATTRIBUTION_AND_CONTENT_USE.md) | Publisher credit, summary/excerpt limits, source removal workflow, and future digest/social requirements |
 
 #### UI and polish
 
