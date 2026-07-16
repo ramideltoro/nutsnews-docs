@@ -89,6 +89,24 @@ After the `staging-vps` Environment approval, the workflow:
 Rerunning a candidate is idempotent at the Compose layer and intentionally
 creates another GitHub Deployment history entry for auditability.
 
+## Production-Health Recovery Note
+
+The staging deploy verifier still proves that staging is isolated from
+production: separate Compose project, container, network, directories, env
+files, route, runtime limits, log limits, immutable digest, and Access verifier
+health. It also inspects production container identity, network separation, and
+root-only production env-file permissions.
+
+Current production app health is sanitized observation in the staging runtime
+result, not a staging deploy prerequisite. This matters during recovery from an
+already-unhealthy production container: staging must be able to deploy and
+qualify the exact replacement image before the protected production
+migration/apply path can restore production. Do not restart or patch production
+over SSH to make staging pass. Use the successful staging Deployment and
+qualification evidence, then run the protected production release/apply
+workflow with the matching image, source, build, migration, schema, and
+Supabase project identity.
+
 ## Staging Auto-Idle After Qualification Expiry
 
 ### Simple Summary
