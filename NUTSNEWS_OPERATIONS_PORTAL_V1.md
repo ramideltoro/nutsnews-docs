@@ -274,6 +274,15 @@ or not configured. The status comes from the root-owned local status file; the
 browser never receives staging credentials, cookies, CSRF tokens, or full
 command output.
 
+Inactive staging is not part of production health scoring. When the staging
+auto-idle status says the staging runtime is `idled` or `not_configured`, its
+managed containers stay visible for diagnosis but do not create a critical
+`runtime.unhealthy_containers` alert. Unmanaged unhealthy containers still
+remain critical. If a staging marker exists without active qualification
+metadata, protected apply starts the auto-idle oneshot so the GitOps-managed
+staging-only cleanup path can stop `nutsnews-staging` and
+`nutsnews-staging-access` after the configured grace window.
+
 ```mermaid
 flowchart LR
   manifest["Reviewed production manifest"] --> collector["Read-only portal collector"]
@@ -715,6 +724,7 @@ Future public access should add:
 | Free-tier provider is missing after apply | The collector did not load `/etc/nutsnews/free-tier-usage.env`, or the env file lacks the quota JSON | Check the collector journal and fix the env rendering or loader through PR |
 | Free-tier provider says `not configured` | No optional token, usage URL, or usage snapshot is configured for that provider | Add the provider-specific protected Environment secret named in `source_detail`, or accept the unknown state |
 | Free-tier provider says `unavailable` | Provider response was malformed, unreachable, unauthorized, or missing expected metric paths | Read the sanitized `source_detail` for HTTP status, provider message, response shape, and missing metric names; do not print tokens in logs or screenshots |
+| Vercel says `unavailable` with `Costs not found` | The configured Billing Charges request is unsupported for the current account, token role, team ID, or slug | Keep it informational/unknown rather than critical; verify the protected Vercel usage config later or remove that metric from active tracking |
 | Free-tier provider says `cached` and stale | Live usage failed and the local sanitized cache is older than the configured TTL | Recheck provider availability and rerun the collector; the dashboard is intentionally preserving the last safe numbers |
 | Free-tier usage exceeds 100% | The configured free-tier allowance is exhausted or the quota value is stale | Verify the provider docs, reduce usage, or make an explicit budget/plan decision outside the portal |
 | Swap state is `non_trivial`, `warning`, or `critical` | A deploy, backup, package task, app process, or leak is leaning on the zram fallback | Check top memory processes, Docker health, recent apply/deploy activity, and kernel OOM evidence before changing zram size |
@@ -738,6 +748,7 @@ Future public access should add:
 | Expected and actual app digests differ | Host drift, incomplete pull, or wrong Compose reference | Keep routes disabled, inspect read-only Docker state, and reconcile through a reviewed infra change plus Protected Ansible Apply |
 | App status says prepared/disabled | Issue #67 plumbing exists but no approved promotion/apply has occurred | This is the expected safe-stop state; do not start the container manually |
 | App health is good but the public route is disabled | Staged health was not followed by a separate public-route review | Keep it disabled until full-host parity, security headers, Auth/contact behavior, and rollback are verified |
+| `nutsnews-app-staging` is unhealthy but auto-idle is `not_configured` | A staging container exists without active qualification metadata | Let the protected apply or scheduled auto-idle service clean it up; do not stop Compose projects over SSH as routine maintenance |
 
 ## Verification
 

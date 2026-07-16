@@ -108,6 +108,10 @@ flowchart LR
    mutate runtime files or invoke Compose directly on the VPS.
 4. Treat manifests and last-known-good records as deployment evidence, not as a
    substitute for the later qualification and promotion gates.
+5. Treat staging containers with no active qualification metadata as inactive
+   staging, not production health. The GitOps-managed staging auto-idle service
+   is responsible for stopping the staging app/access projects after the grace
+   window; operators should not run ad hoc `docker compose down` over SSH.
 
 ## Local Verification
 

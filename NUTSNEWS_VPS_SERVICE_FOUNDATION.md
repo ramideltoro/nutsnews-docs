@@ -190,6 +190,15 @@ The protected apply workflow seeds an `installed_pending_first_run` status file
 when the timer is first installed. That gives the Ops Portal honest visibility
 before the first scheduled prune runs, without forcing a prune during apply.
 
+The staging auto-idle runner follows the same GitOps boundary for staging
+cleanup. It reads the production app marker and staging marker, writes a
+sanitized status file, and only targets the `nutsnews-staging` and
+`nutsnews-staging-access` Compose projects. If a staging marker exists but the
+active production marker no longer has qualification metadata, the runner treats
+that staging deployment as orphaned after the configured grace window. Protected
+apply starts the oneshot after installing/enabling it so stale staging is
+evaluated immediately instead of waiting for the next timer.
+
 ### Expert
 
 The unit runs as root because Docker cleanup requires the local Docker socket,
