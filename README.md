@@ -24,6 +24,7 @@ This folder is organized by what you are trying to do: understand the product, c
 | Review same-host staging capacity and safeguards | [VPS Staging Capacity Budget](NUTSNEWS_VPS_STAGING_CAPACITY.md) |
 | Rehearse or approve an immutable staging deployment | [VPS Immutable Staging Deployment](NUTSNEWS_VPS_STAGING_DEPLOYMENT.md) |
 | Qualify an isolated deployed staging candidate | [VPS Immutable Staging Deployment — Independent Off-VPS Qualification](NUTSNEWS_VPS_STAGING_DEPLOYMENT.md#independent-off-vps-qualification-nutsnews-infra122) |
+| Rehearse staging gate failures and bypass closure | [Protected Ansible Apply — Gate Rehearsal And Bypass Inventory](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md#gate-rehearsal-and-bypass-inventory) |
 | Configure the protected staging hostname and credential boundary | [VPS Staging Access and Credential Boundary](NUTSNEWS_VPS_STAGING_ACCESS_BOUNDARY.md) |
 | Understand the VPS operations portal | [Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md) |
 | Set up or restore encrypted VPS backups | [VPS Backups](NUTSNEWS_VPS_BACKUPS.md); [VPS Restore](NUTSNEWS_VPS_RESTORE.md); [VPS Disaster Recovery](NUTSNEWS_VPS_DISASTER_RECOVERY.md) |

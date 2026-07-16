@@ -141,6 +141,78 @@ secrets, production app secrets, or the protected Environment are available.
 The old direct `nutsnews-production-release` dispatch path is paused until the
 staging-first handoff is activated.
 
+## Gate Rehearsal And Bypass Inventory
+
+### Simple Summary
+
+The staging gate is now tested as a set of rehearsed outcomes, not just a happy
+path. A good candidate can become eligible, but missing attestations, failing or
+skipped suites, expired evidence, digest/source/build mismatches, staging drift,
+superseded candidates, and rollback selection mistakes must stop before the
+workflow reaches production secrets or deploy authority.
+
+Normal direct routes from `built` to production are closed or fail-closed. The
+old app repository production dispatch remains paused, mutable tags are rejected,
+and the only production app mutation paths are the no-secret attestation gate in
+`Protected Ansible Apply` and the fixed recorded last-known-good rollback path.
+
+### Intermediate Summary
+
+Issue
+[nutsnews-infra #123](https://github.com/ramideltoro/nutsnews-infra/issues/123)
+adds an explicit rehearsal validator in
+`ansible/tests/validate_gate_rehearsal.py`. It checks that the already-covered
+negative cases remain present, that `production-vps` is not attached before the
+eligibility job, that the old direct `nutsnews-production-release` path fails
+closed before legacy dispatch code, and that no other workflow can mutate the
+production app digest.
+
+The validator also inventories allowed `production-vps` workflows. Backups,
+health reports, Grafana workflows, portal status verification, protected apply,
+and fixed rollback may use that Environment for their fixed purpose. They must
+not accept arbitrary commands or app image tags. App digest promotion still goes
+through the protected apply gate only.
+
+The `ramideltoro/nutsnews` app `main` branch protection and the final
+staging-first app handoff are completed by
+[nutsnews #176](https://github.com/ramideltoro/nutsnews/issues/176). Until that
+activation, the old direct production dispatch is deliberately paused rather
+than trusted.
+
+### Expert Summary
+
+The rehearsal suite is intentionally offline for the trust-boundary logic. It
+does not need production SSH, production app secrets, deploy SSH, or the
+`production-vps` Environment to prove that the verifier rejects replay, stale,
+tampered, expired, skipped, cancelled, timed-out, drifted, superseded, and
+mismatched candidates. Live staging and production applies remain separately
+approved workflow runs, followed by sanitized SSH/HTTPS verification.
+
+The production rollback exception is not a bypass. It is a fixed-purpose path
+that selects only the current manifest's recorded last-known-good digest as
+found in reviewed git history, creates a normal rollback PR, and then dispatches
+`Protected Ansible Apply` with rollback inputs. It does not accept an arbitrary
+restored digest, mutable tag, manual SSH command, Docker Compose command, or
+database down migration.
+
+```mermaid
+flowchart TD
+  build["App build produces immutable digest"] --> stage["Deploy Verified Staging Candidate"]
+  stage --> qualify["Off-VPS staging qualification"]
+  qualify --> gate{"No-secret production verifier"}
+  gate -- "known-good, fresh, exact match" --> env["production-vps Environment"]
+  gate -- "missing / expired / tampered / mismatched / skipped / drifted / superseded" --> block["Block before production secrets"]
+  env --> apply["Protected Ansible Apply"]
+  apply --> verify["Docker digest, public health identity, safe smoke"]
+  verify -- "critical failure" --> rollback["Fixed recorded last-known-good rollback"]
+  rollback --> pr["Rollback PR + protected apply"]
+```
+
+Operationally, treat any `unknown`, `not configured`, `failed`, `expired`, or
+`superseded` gate state as not eligible for production. Retry by producing a new
+staging candidate and qualification; do not edit the VPS manually to force a
+candidate through.
+
 ## Expert Summary
 
 The workflow is intentionally narrow:

@@ -134,6 +134,24 @@ collector must never copy `NUTSNEWS_APP_ENVS_JSON`, environment values, OAuth
 credentials, provider keys, or secret-bearing Docker inspection fields into
 `status.json`.
 
+The App Layer now includes a read-only release-gate panel. It reports candidate
+digest/source/build, staging deployment ID, staging health/ready state,
+qualification state/run/expiry, config and test revisions, promotion run/time,
+previous digest, and rollback state when those values are available from the
+reviewed manifest and last apply marker. It does not query GitHub or staging
+with secrets from the VPS. Unknown data is labeled `unknown`; absent setup is
+`not configured`; stale evidence is `expired`; superseded candidates are
+reported as `superseded` when the retained gate metadata proves that state.
+
+```mermaid
+flowchart LR
+  manifest["Reviewed production manifest"] --> collector["Read-only portal collector"]
+  marker["Last app apply marker"] --> collector
+  docker["Local Docker inspect\nsanitized identity only"] --> collector
+  collector --> status["status.json\nrelease_gate"]
+  status --> portal["Ops Portal\ncandidate, staging, qualification,\nproduction, rollback states"]
+```
+
 The manual `Verify Ops Portal Status` workflow can be used after deploy when local SSH is unavailable or the browser session is not authenticated. It uses the protected `production-vps` SSH key, reads only `/opt/nutsnews/portal-assets/data/status.json`, prints sanitized Vercel free-tier status fields plus metric states, checks masked `/etc/nutsnews/free-tier-usage.env` key presence and collector timer/journal state, and probes the configured Vercel Billing Charges endpoint for sanitized response shape and aggregate diagnostics. It fails if Vercel disappears, falls back to cached placeholders, emits zero-like display values for null usage, or renders a known unavailable/unsupported Vercel row as generic `unknown`.
 
 Free-tier pressure now feeds the same alert list used by email reporting. Warning, critical, and over-limit provider states can produce alert emails and appear in the daily health report. Unknown or not-configured providers stay visible in the portal summary but do not pretend to be live data.
