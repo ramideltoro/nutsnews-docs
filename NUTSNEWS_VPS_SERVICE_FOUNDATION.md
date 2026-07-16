@@ -25,6 +25,7 @@ That role runs after the existing VPS baseline role. It manages:
 - Docker Engine from Ubuntu packages
 - Docker Compose v2 from Ubuntu packages
 - Docker daemon log limits for cheap-VPS disk sanity
+- explicit Docker IPv6 defaults: host IPv6 remains enabled, but container IPv6 and Docker-managed `ip6tables` are disabled until a reviewed dual-stack rollout
 - `systemd-zram-generator` with a small `/dev/zram0` fallback swap device
 - a non-login Caddy runtime user
 - `/opt/nutsnews/apps`
@@ -57,6 +58,7 @@ The app and staging-access Compose projects still use `no-new-privileges`, but t
 This layer creates the runtime substrate and one narrow production route. The design is intentionally conservative:
 
 - Caddy publishes public ports `80` and `443` for `vps.nutsnews.com`.
+- Caddy binds those public Docker-published sockets on IPv4 (`0.0.0.0`) while the hostname has no production AAAA record.
 - The public host always keeps `/health` on the infrastructure health service.
 - The reviewed app route can proxy all other `vps.nutsnews.com` paths to the digest-pinned NutsNews app container.
 - Caddy exposes `ops.nutsnews.com` publicly behind the Ops Portal Google OAuth gateway.
@@ -210,6 +212,39 @@ flowchart LR
 Public HTTP and HTTPS are used for the Better Stack-compatible health endpoint, the reviewed `vps.nutsnews.com` app route, and the OAuth-protected Ops Portal. Caddy obtains and renews certificates for `vps.nutsnews.com` and `ops.nutsnews.com`; Cloudflare stays DNS-only unless a future PR deliberately enables proxying.
 
 The health service listens on the host at TCP `18080`. Because UFW denies inbound traffic by default, Ansible also installs an internal-only firewall rule that allows the Caddy Docker network to reach that host port. Do not add this manually on the VPS; run the protected apply workflow so the rule is reconciled from the infra repo.
+
+## Docker IPv6 Boundary
+
+### Simple
+
+The VPS itself keeps IPv6 enabled. Docker containers stay on the current IPv4-only service networks, and Caddy publishes the public web ports on IPv4 only until there is a reviewed plan for dual-stack production traffic.
+
+### Intermediate
+
+Docker was creating IPv4-only container interfaces and writing container-side IPv6 sysctls during container changes. `systemd-networkd` reported those writes as conflicts with the managed host IPv6 setting. The service foundation now makes the intended boundary explicit in `/etc/docker/daemon.json`: container IPv6 is disabled and Docker does not manage `ip6tables`. Caddy also publishes `80` and `443` as `0.0.0.0` bindings instead of implicit dual-stack host bindings.
+
+### Expert
+
+This is not a global host IPv6 disable. The protected apply verification should continue to show:
+
+- `net.ipv6.conf.all.disable_ipv6 = 0`
+- `net.ipv6.conf.default.disable_ipv6 = 0`
+- `net.ipv6.conf.eth0.disable_ipv6 = 0`
+- the provider IPv6 address and default IPv6 route on `eth0`
+- no Docker proxy listener on `[::]:80` or `[::]:443`
+- healthy IPv4 service on `https://vps.nutsnews.com/health`
+
+If production later needs public IPv6, change this through a separate infra PR: add DNS AAAA intent, allocate reviewed container IPv6 ranges, re-enable Docker IPv6/ip6tables deliberately, update UFW and Caddy exposure evidence, run protected check/apply, and verify both IPv4 and IPv6 health.
+
+```mermaid
+flowchart TD
+  host["Host eth0\nIPv6 enabled"] --> caddy["Caddy Docker ports\n0.0.0.0:80/443"]
+  docker["Docker daemon"] --> ipv4nets["Container networks\nIPv4 service paths"]
+  docker -. "ipv6=false\nip6tables=false" .-> noDockerV6["No Docker-managed\ncontainer IPv6 firewalling"]
+  public["Public clients"] --> ipv4["IPv4 DNS/route"]
+  ipv4 --> caddy
+  caddy --> app["NutsNews app and portal"]
+```
 
 ## NutsNews App Route Promotion
 
