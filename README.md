@@ -113,6 +113,7 @@ These docs explain the product and the system at a high level.
 | [Worker Backpressure and Lock Safety](WORKER_BACKPRESSURE_AND_LOCK_SAFETY.md) | Queue visibility, Redis lock lease safety, backpressure thresholds, and worker report counters |
 | [Public Feed Snapshot and Edge Fallback](PUBLIC_FEED_SNAPSHOT.md) | Supabase snapshot reads, Cloudflare KV fallback, headers, admin status, and recovery checks |
 | [Runtime Feature Flags](RUNTIME_FEATURE_FLAGS.md) | Protected shared runtime switches for archive search and optional Worker edge-snapshot publishing, with no-redeploy rollback steps |
+| [Supabase RLS Regression Tests](SUPABASE_RLS_REGRESSION_TESTS.md) | Local Supabase allow/deny policy tests for public reads, denied anonymous writes, and service-role-only database surfaces |
 | [RSS Source Quality](RSS_SOURCE_QUALITY.md) | Feed quality scoring, ranking, and source decisions |
 | [Image Delivery](IMAGE_DELIVERY.md) | Thumbnails, image optimization, cache TTL, and category-aware non-photo fallbacks |
 | [Secure Image Proxy/Cache Design](IMAGE_PROXY_CACHE_DESIGN.md) | Issue #105 design for optional Cloudflare image proxy/cache, domain controls, quotas, rollout, and kill switches |
@@ -185,6 +186,7 @@ These docs explain the product and the system at a high level.
 | --- | --- |
 | [Homepage Performance Budget](HOMEPAGE_PERFORMANCE_BUDGET.md) | Build-size report, hard budgets, and common fixes |
 | [Web Visual Regression Tests](WEB_VISUAL_REGRESSION_TESTS.md) | Screenshot snapshots, update workflow, and failure artifacts |
+| [Supabase RLS Regression Tests](SUPABASE_RLS_REGRESSION_TESTS.md) | Disposable local database tests for Supabase grants, RLS policies, and approved public/service-role access |
 | [Multilingual Quality and Fallbacks](MULTILINGUAL_QUALITY_AND_FALLBACKS.md) | Translation coverage report, language-code checks, and fallback quality rules |
 | [Lighthouse CI Onboarding](LIGHTHOUSE_CI_ONBOARDING.md) | Lighthouse CI setup and thresholds |
 | [PageSpeed Insights](PAGESPEED_INSIGHTS.md) | Manual production speed checks |
