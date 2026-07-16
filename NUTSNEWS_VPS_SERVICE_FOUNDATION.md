@@ -413,6 +413,44 @@ curl -fsS http://127.0.0.1:8080/data/status.json
 systemctl status nutsnews-ops-portal-collector.timer
 ```
 
+## Runtime Drift Check
+
+Simple: after protected apply, run one read-only check to confirm the live VPS
+still has the same non-secret Compose and gateway files as the reviewed infra
+commit.
+
+Intermediate: `ansible/scripts/vps_runtime_drift_check.py` connects over SSH,
+hashes copied GitOps artifacts on the VPS, compares them with the local
+checkout, and checks `/opt/nutsnews/ops/deployed-infra-commit` plus
+`/opt/nutsnews/ops/last-apply.json`. It does not print file contents.
+
+Expert: the drift check deliberately covers copied, non-secret runtime
+artifacts: Caddy Compose/Dockerfile, the shared NutsNews app Compose file in
+production and staging runtime directories, staging-access Compose, and the
+staging-access gateway. It avoids `/etc/nutsnews` env files, rendered secret
+material, cookies, CSRF values, provider tokens, and full response bodies. The
+baseline also refreshes the shared app Compose source into any existing
+non-selected app runtime directory without rendering that environment's secrets
+or restarting it.
+
+```bash
+python3 ansible/scripts/vps_runtime_drift_check.py --target nutsnews-vps
+```
+
+```mermaid
+flowchart TD
+  checkout["Reviewed infra checkout"] --> expected["Local file hashes"]
+  vps["VPS over SSH"] --> live["Live managed file hashes"]
+  vps --> metadata["deployed commit + last apply metadata"]
+  expected --> compare{"All hashes match?"}
+  live --> compare
+  metadata --> commit{"Commit matches checkout?"}
+  compare -- yes --> ok["Runtime source aligned"]
+  commit -- yes --> ok
+  compare -- no --> drift["Investigate drift through PR/protected apply"]
+  commit -- no --> drift
+```
+
 ## What Can Go Wrong
 
 | Failure | Likely cause | Recovery |
