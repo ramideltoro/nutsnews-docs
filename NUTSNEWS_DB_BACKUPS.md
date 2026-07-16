@@ -41,6 +41,8 @@ The automated backup exports the current operational tables needed for the publi
 
 The script intentionally uses a focused `pg_dump` table list instead of dumping every Supabase object.
 
+The GitHub Actions REST backup artifact in `ramideltoro/nutsnews` now also exports `public.feed_health`, `public.worker_runs`, `public.quota_usage_events`, `public.runtime_feature_flags`, and `public.release_readiness` so the scheduled restore fire drill can validate the operational tables used by admin readiness and recovery checks. That artifact is for automated validation, diagnostics, and quick table-level recovery support; the encrypted home-server `pg_dump` remains the stronger production recovery source.
+
 ---
 
 ## Backup Format
@@ -70,6 +72,71 @@ No common hash found - not using a hash for checks
 ```
 
 That is expected for this encrypted remote. The important success signal is that the run ends with `Backup completed successfully` and reports zero differences / matching files.
+
+---
+
+## GitHub Actions Restore Fire Drill
+
+Related issue: https://github.com/ramideltoro/nutsnews/issues/110
+
+### Simple Summary
+
+NutsNews now checks that a backup can actually wake back up. The daily GitHub backup job makes files, puts them into a pretend database, and checks that the restored database looks right.
+
+### Intermediate Summary
+
+The `ramideltoro/nutsnews` app repo keeps its scheduled `Supabase Backup` workflow, but the job now also starts a disposable local Supabase database, restores the generated REST backup artifact into it, runs `supabase/restore_validation.sql`, writes `reports/supabase-restore/latest.md`, and uploads that report as a GitHub Actions artifact. Admins can use the latest successful workflow run as the visible restore-check record.
+
+### Expert Summary
+
+Issue #110 adds `scripts/supabase_restore_fire_drill.mjs` to validate backup manifests, artifact checksums, freshness, required table coverage, and required non-empty tables before mutating any database. Routine runs use `--local-supabase`, which reads the local Supabase database URL and refuses non-local restore targets unless `NUTSNEWS_RESTORE_FIRE_DRILL_ALLOW_REMOTE=true` is explicitly set for an isolated remote drill. The script truncates only the exported tables in the disposable target, restores rows with PostgreSQL `jsonb_populate_recordset`, runs the existing `supabase/restore_validation.sql`, and writes Markdown/JSON reports under `reports/supabase-restore/`. The scheduled workflow uploads both `supabase-rest-backup` and `supabase-restore-fire-drill-report` artifacts with 14-day retention. Rollback is to revert the app PR that added the restore script/workflow wiring and keep the older backup artifact path; production data is not changed by the fire drill.
+
+```mermaid
+flowchart TD
+  A[Supabase Backup workflow] --> B[Export production REST table artifacts]
+  B --> C[Write manifest with checksums and table counts]
+  C --> D[Start disposable local Supabase]
+  D --> E[Reset local schema from repo migrations]
+  E --> F[Restore artifact rows into local tables]
+  F --> G[Run supabase/restore_validation.sql]
+  G --> H[Write reports/supabase-restore/latest.md and .json]
+  H --> I[Upload backup and restore-report artifacts]
+  I --> J[/admin/readiness backup card reads latest workflow status when ACTIONS_READ_TOKEN exists]
+```
+
+One-command local fire drill after creating or downloading a REST backup artifact:
+
+```bash
+node scripts/supabase_restore_fire_drill.mjs \
+  --backup-dir backups/supabase \
+  --local-supabase
+```
+
+If using a disposable database URL instead of local Supabase:
+
+```bash
+RESTORE_DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
+  node scripts/supabase_restore_fire_drill.mjs --backup-dir backups/supabase
+```
+
+Failure next steps:
+
+1. Open the failed `Supabase Backup` workflow run.
+2. Download `supabase-restore-fire-drill-report` and read `latest.md`.
+3. Confirm the backup manifest is fresh, lists every expected table, and has no table export errors.
+4. Confirm the disposable Supabase reset reached the current repo migrations.
+5. Rerun the workflow manually after fixing the failed export, schema, or validation query.
+6. Do not use that backup for production recovery until the fire drill passes.
+
+Risks and mitigations:
+
+| Risk | Mitigation |
+| --- | --- |
+| The REST artifact is table-limited and not a full logical dump | Keep the encrypted home-server `pg_dump` as the primary recovery source; use the REST artifact for automated restore validation and diagnostics. |
+| A stale artifact creates false confidence | The restore script rejects manifests older than the configured freshness window, defaulting to 30 hours. |
+| A restore command targets production by accident | The script refuses non-local database URLs by default. Remote restore drills require an explicit override and must use an isolated target. |
+| A workflow succeeds without a durable record | The job writes the report into the GitHub step summary and uploads `supabase-restore-fire-drill-report`. |
+| Backup table coverage drifts | Regression checks assert the workflow, table list, restore command, and report upload remain wired. |
 
 ---
 
@@ -351,4 +418,3 @@ If a database URL or Grafana Cloud token is exposed in a chat, ticket, screensho
 | Purge old backups | Done: 14 daily / 8 weekly / 12 monthly retention |
 | Expose metrics | Done: Prometheus textfile metrics for Grafana Alloy |
 | Document restore path | Done: this doc + `SUPABASE_RESTORE.md` |
-

@@ -8,11 +8,11 @@ The admin now has one page that says whether NutsNews looks ready to ship, using
 
 ## Intermediate Summary
 
-The production readiness dashboard helps an admin decide whether NutsNews is healthy enough to promote in under 30 seconds. It checks public feed/API readiness, the latest Worker/controller run, database growth, translation coverage, image coverage, backup verification, and CI status. CI status is live when a read-only GitHub token is configured; otherwise the card stays yellow and links admins to GitHub Actions for manual verification.
+The production readiness dashboard helps an admin decide whether NutsNews is healthy enough to promote in under 30 seconds. It checks public feed/API readiness, the latest Worker/controller run, database growth, translation coverage, image coverage, backup restore verification, and CI status. Backup and CI status are live when a read-only GitHub token is configured; otherwise those cards stay yellow and link admins to GitHub Actions for manual verification.
 
 ## Expert Summary
 
-Issue #86 adds a protected Next.js admin route at `/admin/readiness`, backed by `web/lib/adminProductionReadiness.ts`. The loader uses server-side Supabase service-role reads for `articles`, `public_feed_snapshot`, `worker_runs`, and `article_summaries`; it does not expose credentials to the browser. The CI signal now also uses a server-only GitHub REST API call to `/repos/ramideltoro/nutsnews/actions/runs?branch=main&per_page=50` when `ACTIONS_READ_TOKEN` is configured. The call sends the required GitHub API headers, is cached/revalidated for 300 seconds, matches required workflows by explicit workflow file/name mappings, and returns only sanitized workflow names, status, conclusion, branch, commit SHA, updated time, and links to the admin UI. Backup freshness remains yellow because the app repository does not currently have a live backup-metrics API integration that can be queried without adding new secrets or infrastructure.
+Issue #86 adds a protected Next.js admin route at `/admin/readiness`, backed by `web/lib/adminProductionReadiness.ts`. Issue #110 extends the backup card so it can read the latest `Supabase Backup` workflow run when `ACTIONS_READ_TOKEN` is configured. The loader uses server-side Supabase service-role reads for `articles`, `public_feed_snapshot`, `worker_runs`, and `article_summaries`; it does not expose credentials to the browser. The GitHub-backed signals use a server-only GitHub REST API call to `/repos/ramideltoro/nutsnews/actions/runs?branch=main&per_page=50`. The call sends the required GitHub API headers, is cached/revalidated for 300 seconds, matches workflows by explicit workflow file/name mappings, and returns only sanitized workflow names, status, conclusion, branch, commit SHA, updated time, and links to the admin UI. Backup freshness is green only when the latest `Supabase Backup` run completed successfully within 30 hours, which means the workflow exported backup artifacts, restored them into disposable local Supabase, and ran `supabase/restore_validation.sql`.
 
 ## What Changed
 
@@ -21,6 +21,7 @@ Issue #86 adds a protected Next.js admin route at `/admin/readiness`, backed by 
 - Added a focused regression script for the readiness dashboard contract.
 - Added yellow verification states for backup freshness and unconfigured CI status rather than faking live success.
 - Added live GitHub Actions CI status when a server-side read-only token is configured, while preserving the yellow manual verification fallback when it is not.
+- Added live GitHub Actions backup restore-fire-drill status when the same server-side token is configured.
 
 ## Why It Matters
 
@@ -45,8 +46,24 @@ The admin landing page now links to Production Readiness. The new page groups si
 | DB growth signal | Recent published `articles` rows | Published rows arrived in 24 hours | Growth exists in 7 days but not 24 hours | No recent published growth |
 | Translation coverage | Recent `article_summaries` rows | Recent multilingual coverage is high | Coverage is partial or unmeasurable | Coverage is low |
 | Image coverage | Recent published article thumbnails | Thumbnail coverage is high | Thumbnail coverage is thin | Thumbnail coverage is too low |
-| Backup freshness | External workflow/runbook | Not measured in app yet | Admin must verify backup workflow/runbook | Reserved for future live metric integration |
+| Backup freshness | `Supabase Backup` GitHub Actions workflow | Latest workflow completed successfully within 30 hours and uploaded the restore fire drill report | Token missing, workflow missing, run pending, run skipped/neutral, GitHub unavailable, or manual verification required | Latest workflow failed/cancelled/timed out/requires action, or latest completed restore check is stale |
 | CI status | GitHub Actions REST API when `ACTIONS_READ_TOKEN` is configured | Every required workflow has a latest completed successful run on `main` within the freshness window | Token is missing, a workflow is missing/pending/stale/skipped/neutral, GitHub is rate-limited, or the API is unavailable | A required workflow failed, was cancelled, timed out, or requires action |
+
+## Live Backup Restore Status
+
+The backup card checks the latest main-branch run for:
+
+| Dashboard row | Workflow file | Expected workflow name |
+| --- | --- | --- |
+| Backup restore fire drill | `.github/workflows/supabase-backup.yml` | `Supabase Backup` |
+
+Status mapping:
+
+- Green: the latest run completed with `conclusion=success` and is not older than 30 hours.
+- Yellow: `ACTIONS_READ_TOKEN` is missing, the workflow is missing, the latest run is queued or in progress, GitHub is rate-limited, or the API is unavailable.
+- Red: the latest run failed, was cancelled, timed out, requires action, or the latest completed check is stale.
+
+The linked workflow run is the visible latest restore-check record. Its artifacts include `supabase-rest-backup` and `supabase-restore-fire-drill-report`; the report artifact contains `latest.md` and `latest.json`.
 
 ## Live GitHub Actions CI Status
 
@@ -106,39 +123,43 @@ flowchart TD
   C --> F[article_summaries]
   C --> N{GitHub token configured?}
   N -->|Yes| O[Fetch Actions runs for main with 300s revalidation]
-  O --> P[Map required workflow status]
-  N -->|No| Q[Yellow manual CI verification fallback]
+  O --> P[Map required CI workflow status]
+  O --> R[Map Supabase Backup restore-fire-drill status]
+  N -->|No| Q[Yellow manual GitHub verification fallback]
   D --> G[Readiness signal cards]
   E --> G
   F --> G
   P --> G
+  R --> G
   Q --> G
   G --> H{Any red?}
   H -->|Yes| I[Overall red: do not promote]
   H -->|No| J{Any yellow?}
   J -->|Yes| K[Overall yellow: verify linked systems]
   J -->|No| L[Overall green: ready to ship]
-  K --> M[GitHub Actions and backup runbook links]
+  K --> M[GitHub Actions, restore report artifact, and backup runbook links]
 ```
 
 ## Risks And Mitigations
 
 | Risk | Mitigation |
 | --- | --- |
-| Backup freshness is still manual | It is intentionally yellow and links to the workflow/runbook until a live backup metric exists. |
+| Backup workflow succeeds without a usable restore | The `Supabase Backup` workflow now runs the restore fire drill before a green backup card is possible. |
+| Backup card cannot query GitHub | It stays yellow and links directly to the workflow for manual verification. |
 | GitHub token is missing or under-scoped | The CI card stays yellow and keeps the manual GitHub Actions verification link. |
 | GitHub API is rate-limited or unavailable | The CI card stays yellow and tells admins to verify Actions directly. |
 | A blocked `GITHUB_*` custom secret name is used | Use only `ACTIONS_READ_TOKEN`; GitHub reserves the `GITHUB_` prefix for built-in variables/secrets. |
-| Workflow names change | The code matches by explicit workflow file path first and by known workflow name second; update the mapping when workflow files are renamed. |
+| Workflow names change | The code matches by explicit workflow file path first and by known workflow name second; update the CI and backup mappings when workflow files are renamed. |
 | Supabase schema drift breaks the dashboard | The focused regression script protects required dashboard strings and route linkage; TypeScript/build checks catch loader type issues. |
 | Thresholds need tuning | Threshold constants live in `web/lib/adminProductionReadiness.ts` and can be adjusted without changing the UI contract. |
 
 ## Rollback
 
-Revert the app PR that adds `/admin/readiness`, `web/lib/adminProductionReadiness.ts`, the admin landing card, package script, and regression script. If only the live CI integration must be rolled back, remove the GitHub Actions helper and workflow list rendering from `web/lib/adminProductionReadiness.ts` and `web/app/admin/(protected)/readiness/page.tsx`; the CI card will return to the manual yellow verification fallback. Then revert this documentation page and README link.
+Revert the app PR that adds or changes `/admin/readiness`, `web/lib/adminProductionReadiness.ts`, the admin landing card, package scripts, and regression scripts. If only the live backup restore status must be rolled back, remove the `Supabase Backup` workflow mapping from `web/lib/adminProductionReadiness.ts`; the backup card will return to the manual yellow workflow fallback. Then revert this documentation page and any related backup/restore docs updates.
 
 ## Related
 
 - App issue: https://github.com/ramideltoro/nutsnews/issues/86
+- Backup restore issue: https://github.com/ramideltoro/nutsnews/issues/110
 - Backup runbook: [NUTSNEWS_DB_BACKUPS.md](NUTSNEWS_DB_BACKUPS.md)
 - GitHub Actions automation: [GITHUB_ACTIONS_AUTOMATION.md](GITHUB_ACTIONS_AUTOMATION.md)

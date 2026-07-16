@@ -247,6 +247,23 @@ psql "$RESTORE_DATABASE_URL" \
   | tee "$BACKUP_DIR/validation-output.txt"
 ```
 
+For the automated REST backup artifact path introduced by issue #110, run the one-command disposable restore fire drill instead:
+
+```bash
+node scripts/supabase_restore_fire_drill.mjs \
+  --backup-dir backups/supabase \
+  --local-supabase
+```
+
+That command validates the latest manifest, checks artifact checksums and required non-empty tables, restores exported rows into local Supabase, runs `supabase/restore_validation.sql`, and writes:
+
+```text
+reports/supabase-restore/latest.md
+reports/supabase-restore/latest.json
+```
+
+Do not use `--allow-remote-database` or `NUTSNEWS_RESTORE_FIRE_DRILL_ALLOW_REMOTE=true` for routine checks. Those are only for an intentionally isolated remote restore target that is not production.
+
 ---
 
 ## Step 6: Validate Critical Data
