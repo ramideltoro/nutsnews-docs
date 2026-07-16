@@ -19,6 +19,7 @@ SSH from an operator machine remains for read-only verification or documented br
 The backend repo adds:
 
 - `.github/workflows/backend-checks.yml`
+- `.github/workflows/backend-controlled-maintenance.yml`
 - `.github/workflows/protected-backend-ansible-apply.yml`
 - `runbooks/PROTECTED_BACKEND_APPLY.md`
 - `scripts/validate_no_secret_files.py`
@@ -55,6 +56,32 @@ roles_path = roles
 ```
 
 If the workflow fails with `the role 'backend_baseline' was not found`, confirm the checked-out commit contains `ansible/ansible.cfg` and rerun check mode before approving apply mode.
+
+## Controlled Maintenance
+
+Routine baseline applies are not the place for disruptive OS maintenance. The
+backend baseline keeps broad `dist` upgrades, package autoremove, and automatic
+reboot disabled by default. Package metadata refresh and maintenance-state
+reporting can stay in the baseline path, but security updates and reboot actions
+use the fixed-purpose `Backend Controlled Maintenance` workflow.
+
+Allowed controlled-maintenance actions:
+
+- `precheck`: read-only collection of maintenance state.
+- `security-upgrade`: runs only the unattended security-upgrade path.
+- `reboot`: runs only the controlled reboot path, then verifies reconnect and
+  post-boot state.
+
+The workflow has no arbitrary command input. Mutating actions require
+`confirm_target=backend.nutsnews.com` and the protected `production-backend`
+Environment approval gate. Reports are uploaded as
+`backend-controlled-maintenance-report`.
+
+Prechecks cover backup freshness, failed systemd units, running/latest kernel,
+Docker/Caddy/backend health, root disk and inode pressure, active-alert state,
+reboot-required state, package-update count, and unattended-upgrade
+availability. A reboot remains blocked while backup freshness or active-alert
+state is not healthy.
 
 ## Check Mode Service Guards
 
