@@ -98,6 +98,7 @@ These docs explain the product and the system at a high level.
 | [Multilingual Quality and Fallbacks](MULTILINGUAL_QUALITY_AND_FALLBACKS.md) | Translation coverage checks, English-leak detection, admin visibility, and fallback policy |
 | [Public Page Translations](NUTSNEWS_PUBLIC_PAGE_TRANSLATIONS.md) | About, Contact, Privacy, and settings language behavior |
 | [Public Pages Theme Consistency](NUTSNEWS_PUBLIC_PAGES_THEME_CONSISTENCY.md) | Theme behavior across public pages |
+| [Privacy Analytics And Consent](PRIVACY_ANALYTICS_CONSENT.md) | GA4 consent gate, allowed event taxonomy, disallowed data, retention, and rollback |
 
 #### UI and polish
 
