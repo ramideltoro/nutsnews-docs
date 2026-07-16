@@ -4,7 +4,7 @@ This explains the first real Ops Portal layer for the NutsNews VPS: a read-only 
 
 ## Easy Summary
 
-The VPS has a polished amber dashboard for boring-but-important server facts: overall health, email reporting, remaining free usage, resource pressure, processes, disk, network, services, logs, security posture, encrypted restic backup status, GitOps state, and runbook links.
+The VPS has a polished amber dashboard for boring-but-important server facts: overall health, email reporting, remaining free usage, resource pressure, processes, disk, network, services, logs, security posture, bounded firewall deny visibility, encrypted restic backup status, GitOps state, and runbook links.
 
 This update makes the portal easier to scan when the server starts smelling weird. It adds gauges for health score, CPU, RAM, disk, swap, and inodes; temperature-style hot spots for memory pressure, disk pressure, service health, and alert level; compact stats where the data supports them; and an email/reporting block that makes enabled/configured/next run/last run/last success/last error hard to miss.
 
@@ -84,6 +84,8 @@ The hostless shorthand `https:///api/auth/callback/google` documents the require
 
 The portal does not mount the Docker socket into a public-facing app. Docker state is collected by the local systemd service, flattened into JSON, and handed to the browser like a report card. Much safer than giving the web UI a chainsaw and hoping it only trims hedges.
 
+Firewall deny visibility is intentionally aggregated. UFW packet logging is disabled by the baseline to keep repetitive denied internet scans out of warning-priority journal output. The collector filters any retained UFW packet lines out of the raw journal warning panel, exposes a bounded deny summary with redacted packet samples, and reads aggregate UFW chain counters so operators can still see whether denied traffic is occurring.
+
 The reporter reads that same JSON feed and can send two kinds of email:
 
 - warning/critical alert emails with a duplicate-alert cooldown
@@ -161,6 +163,7 @@ Resource visibility stays cheap-VPS friendly:
 - process rankings come from `/proc`
 - CPU percent is a best-effort lifetime average, not a live flame graph
 - swap total, used, usage state, sustained/non-trivial warnings, and recent OOM evidence come from local kernel and journal data
+- UFW deny volume comes from bounded summaries and aggregate firewall counters, not unbounded packet log lines in the raw warning panel
 - disk hot spots use `du` with a cache so the collector does not rescan heavy folders every minute
 - host network counters come from standard Linux interface stats
 - per-process network byte totals are explicitly marked unavailable unless we approve extra telemetry later

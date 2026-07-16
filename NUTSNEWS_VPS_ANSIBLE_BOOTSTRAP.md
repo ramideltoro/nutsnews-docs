@@ -4,7 +4,7 @@ This explains the first Ansible baseline for the primary NutsNews VPS. It is the
 
 ## Easy Summary
 
-The first Ansible layer prepares `vps.nutsnews.com` for future GitOps automation. It creates a non-root automation admin user, hardens SSH without trying to lock us outside in the rain, enables a basic firewall, turns on security updates, installs fail2ban, keeps time synced, makes journald persistent, sets up basic log rotation, and writes a local server facts snapshot.
+The first Ansible layer prepares `vps.nutsnews.com` for future GitOps automation. It creates a non-root automation admin user, hardens SSH without trying to lock us outside in the rain, enables a basic firewall, turns on security updates, installs fail2ban, keeps time synced, makes journald persistent, bounds noisy firewall packet logging, sets up basic log rotation, and writes a local server facts snapshot.
 
 It does not deploy the website. It does not run SSH deploys. It does not commit secrets. It does not mutate the VPS from CI. It is a bootstrap recipe, not a production push button.
 
@@ -30,6 +30,7 @@ This bootstrap layer is a provider-agnostic Ubuntu baseline. It is intentionally
 - public-key SSH access for that user
 - SSH hardening drop-in with port 22 preserved
 - UFW default deny incoming, allow outgoing, allow SSH/HTTP/HTTPS
+- UFW packet logging disabled by default so repetitive internet deny noise does not dominate the warning-priority journal
 - unattended security updates
 - fail2ban SSH jail
 - UTC time sync through systemd-timesyncd
@@ -56,6 +57,39 @@ flowchart TD
   verify --> protected["Use protected manual workflow for future baseline runs"]
   protected --> facts["Save local ignored facts snapshot"]
   facts --> docs["Update docs and runbooks with lessons learned"]
+```
+
+## Firewall Deny Logging
+
+### Simple
+
+The VPS firewall still blocks unsolicited inbound traffic by default. The baseline turns off repetitive UFW packet logging so blocked internet scans do not fill the warning journal, but it does not open ports or weaken SSH protection.
+
+### Intermediate
+
+Ansible owns the setting through `vps_baseline_ufw_logging`, which defaults to `off`. The Ops Portal keeps visibility by filtering UFW packet lines out of the raw journal-warning panel, showing bounded firewall deny summaries, and reading aggregate UFW chain counters from the kernel firewall state.
+
+### Expert
+
+The firewall control plane remains:
+
+- default incoming policy: deny
+- default outgoing policy: allow
+- allowed TCP ports: 22, 80, 443
+- service-foundation internal health rule: Caddy Docker network to host TCP 18080
+- UFW packet logging: off unless a reviewed infra PR changes `vps_baseline_ufw_logging`
+
+When investigating suspected firewall abuse, start with the Ops Portal firewall deny summary and counters. Temporarily increasing UFW packet logging should be a reviewed, time-boxed infra change because it can make non-firewall warnings hard to see and increases journal growth.
+
+```mermaid
+flowchart TD
+  scan["Unsolicited inbound packet"] --> ufw["UFW default deny"]
+  ufw --> drop["Packet dropped"]
+  ufw --> counters["Kernel/UFW counters increase"]
+  drop -. "packet logging off" .-> noJournal["No repetitive warning journal line"]
+  counters --> collector["Ops Portal collector"]
+  collector --> summary["Bounded firewall summary"]
+  collector --> warnings["Non-firewall warning journal stays visible"]
 ```
 
 ## Why This Exists
