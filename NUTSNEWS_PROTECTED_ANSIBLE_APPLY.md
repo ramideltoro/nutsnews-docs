@@ -254,6 +254,53 @@ container health, non-root runtime, `/healthz` identity, staged route, UFW/Caddy
 posture, application security headers, sanitized logs, and Ops Portal status.
 Do not report runtime success from the Ansible recap alone.
 
+For app releases, the workflow also checks out the exact app source commit and
+runs the app-owned safe production smoke script against `https://vps.nutsnews.com/`.
+That script verifies readiness, public runtime identity, homepage rendering,
+public article API shape, static asset delivery, cache/security headers,
+contact validation failure without submitting a real message, and auth session
+reachability.
+
+## Fixed Rollback Flow
+
+### Simple Summary
+
+Rollback is a small protected button, not a free-form server shell. It can put
+the VPS app back on the last recorded good image and then runs the same
+protected apply and verification path.
+
+### Intermediate Summary
+
+Use `Protected NutsNews Rollback` only when the current production app digest is
+critically bad. The workflow requires the failed digest, a sanitized reason, and
+the confirmation phrase `rollback-recorded-last-known-good`. It selects only
+the current manifest's recorded last-known-good digest, finds that release's
+source/build/schema metadata in reviewed git history, opens a normal rollback
+PR, waits for checks, merges it, and dispatches `Protected Ansible Apply` with
+rollback inputs.
+
+### Expert Summary
+
+The rollback verifier in `Protected Ansible Apply` bypasses the staging
+attestation only for this exact rollback shape: previous manifest digest equals
+the declared failed digest, previous manifest last-known-good equals the
+restored digest, restored manifest metadata matches git history, source
+workflow run matches the restored build ID, and the fixed confirmation phrase
+is present. The workflow does not accept arbitrary SSH commands, mutable tags,
+manual replacement digests, or database down migrations.
+
+```mermaid
+flowchart TD
+  failure["Critical production release failure"] --> dispatch["Protected NutsNews Rollback"]
+  dispatch --> select["Select previous manifest last-known-good digest"]
+  select --> history["Resolve restored source/build/schema from git history"]
+  history --> pr["Create rollback PR"]
+  pr --> checks["Wait for required checks"]
+  checks --> merge["Merge rollback PR"]
+  merge --> apply["Dispatch Protected Ansible Apply\nwith rollback inputs"]
+  apply --> verify["Verify Docker digest, health identity,\nand safe smoke surfaces"]
+```
+
 If Ansible exits non-zero, the workflow fails. Do not retry apply mode repeatedly as a coping mechanism. Read the failing task, fix the source of truth, and rerun check mode.
 
 ## What Can Go Wrong

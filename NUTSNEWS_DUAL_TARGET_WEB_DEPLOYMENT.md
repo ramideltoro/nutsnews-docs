@@ -686,24 +686,89 @@ The portal remains read-only. It may show:
 It must not show environment values, credentials, tokens, callback secrets, or
 a mutation/restart control.
 
+## Post-Production Verification And Rollback (`nutsnews#90`, `nutsnews-infra#124`)
+
+Implemented by [nutsnews PR #208](https://github.com/ramideltoro/nutsnews/pull/208)
+and [nutsnews-infra PR #199](https://github.com/ramideltoro/nutsnews-infra/pull/199).
+
+### Simple Summary
+
+After the VPS gets a new app image, we do not call it good just because the
+apply button finished. The workflow checks that the exact image is running,
+that the public site says the same source and build, and that safe public
+surfaces still work. If the release is critically broken, the rollback workflow
+can restore only the recorded last-known-good image.
+
+### Intermediate Summary
+
+`Protected Ansible Apply` now performs post-production release checks after an
+app release apply. It verifies the Docker container image reference, public
+`/healthz` identity, and the app-owned safe production smoke suite from the
+exact release source commit. The smoke suite checks readiness, public runtime
+config, homepage, public articles API shape, a Next.js static asset, bounded
+cache/security headers, a non-mutating invalid contact request, and the auth
+session endpoint. It does not print secrets, cookies, CSRF tokens, credentials,
+or full sensitive response bodies.
+
+`Protected NutsNews Rollback` is the fixed-purpose emergency path. It accepts
+the current failed digest, a sanitized reason, and the confirmation phrase
+`rollback-recorded-last-known-good`. It reads the reviewed production manifest,
+selects only that manifest's recorded last-known-good digest, resolves the
+restored release identity from git history, opens and merges a normal rollback
+PR after checks, then dispatches `Protected Ansible Apply` with rollback inputs.
+
+### Expert Summary
+
+Normal release apply still requires the staging qualification gate. Rollback is
+the deliberate exception: it does not require the broken production candidate to
+obtain a new staging pass, but it is limited to the digest already recorded as
+last-known-good before the failed change. The protected apply rollback verifier
+compares the previous manifest's failed digest, previous manifest's
+last-known-good digest, restored manifest identity, source workflow run derived
+from the restored build ID, sanitized reason, and reviewed manifest history.
+
+The rollback evidence records the reason, workflow actor/run context, failed
+digest, restored digest, restored source/build/schema/project identity, and
+protected apply run. It never creates a general SSH runner, never accepts a
+manual restored digest, never uses `latest`, never rebuilds an old commit, and
+never attempts a database down migration. Schema compatibility still follows
+the expand/contract rules in [Migration Release Gate](MIGRATION_RELEASE_GATE.md).
+
+```mermaid
+flowchart TD
+  attested["Fresh staging qualification"] --> apply["Protected Ansible Apply"]
+  apply --> docker["Verify Docker image digest"]
+  docker --> health["Verify public health identity"]
+  health --> smoke["Exact app source production smoke"]
+  smoke --> live{"All safe surfaces pass?"}
+  live -- "Yes" --> declare["Release can be declared live"]
+  live -- "No critical failure" --> rollback["Protected NutsNews Rollback"]
+  rollback --> lkg["Select recorded last-known-good digest from git history"]
+  lkg --> pr["Create rollback PR and wait for checks"]
+  pr --> rollbackApply["Protected apply with rollback inputs"]
+  rollbackApply --> reverify["Reverify digest and public identity"]
+```
+
 ## Rollback
 
 Vercel rollback uses the existing Vercel deployment rollback path.
 
-VPS rollback is a GitOps promotion of the recorded last-known-good immutable
-digest:
+VPS rollback is a fixed-purpose GitOps restore of the recorded last-known-good
+immutable digest:
 
-1. Open a focused infra change that moves the expected digest back to the
-   recorded last-known-good digest.
-2. Let the promotion PR checks pass and merge the normal PR.
-3. Run `Protected Ansible Apply` in apply mode with the confirmed rollback
-   source/build identity; do not use the automatic app-release receiver to
-   invent a rollback.
-4. Verify the running digest, `/healthz`, staged/public route state, security
-   headers, and Ops Portal deployment result.
+1. Start `Protected NutsNews Rollback`.
+2. Enter the current failed digest, a sanitized reason, and
+   `rollback-recorded-last-known-good`.
+3. Let the workflow select the recorded last-known-good digest from reviewed
+   manifest history and create the rollback PR.
+4. Let checks pass, merge the rollback PR, and dispatch protected apply.
+5. Verify the running digest, `/healthz`, staged/public route state, security
+   headers, safe production smoke result, rollback evidence, and Ops Portal
+   deployment result.
 
 Do not rebuild an old commit and call the new image a rollback. Do not retag
-`latest`. Disable the public route first if that reduces user impact.
+`latest`. Do not enter a replacement digest by hand. Disable the public route
+first through GitOps if that reduces user impact.
 
 ## Troubleshooting
 
