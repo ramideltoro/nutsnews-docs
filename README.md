@@ -21,6 +21,7 @@ This folder is organized by what you are trying to do: understand the product, c
 | Run the protected backend apply workflow | [Backend Protected Apply](NUTSNEWS_BACKEND_PROTECTED_APPLY.md) |
 | Review backend host security baseline | [Backend Security Baseline](NUTSNEWS_BACKEND_SECURITY_BASELINE.md) |
 | Review backend backup and restore baseline | [Backend Backup and Restore](NUTSNEWS_BACKEND_BACKUP_RESTORE.md) |
+| Review backend monitoring baseline | [Backend Monitoring](NUTSNEWS_BACKEND_MONITORING.md) |
 | Run the protected VPS baseline workflow or trigger an on-demand report | [Protected Ansible Apply](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md); [Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md) |
 | Run protected VPS package maintenance or reboot | [VPS Maintenance](NUTSNEWS_VPS_MAINTENANCE.md) |
 | Synchronize reviewed Vercel Production variables to the VPS | [Vercel-to-VPS environment synchronization](NUTSNEWS_VERCEL_VPS_ENV_SYNC.md) |
@@ -65,6 +66,7 @@ These docs explain the product and the system at a high level.
 | [Backend Protected Apply](NUTSNEWS_BACKEND_PROTECTED_APPLY.md) | Manual protected backend Ansible check/apply workflow, Environment secrets, blockers, and validation |
 | [Backend Security Baseline](NUTSNEWS_BACKEND_SECURITY_BASELINE.md) | Backend SSH hardening desired state, verification commands, and apply blocker |
 | [Backend Backup and Restore](NUTSNEWS_BACKEND_BACKUP_RESTORE.md) | Backend backup scope, retention, restore-test gate, secret boundary, and recovery order |
+| [Backend Monitoring](NUTSNEWS_BACKEND_MONITORING.md) | Backend host smoke checks, alert thresholds, log retention, and alert-delivery blocker |
 | [Protected Ansible Apply](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md) | Manual protected GitHub Actions workflow for check/apply runs against the VPS baseline, plus the separate on-demand health report workflow |
 | [VPS Service Foundation](NUTSNEWS_VPS_SERVICE_FOUNDATION.md) | Docker, Compose, `/opt/nutsnews`, Caddy, and public infrastructure health routing |
 | [VPS Runtime Environment Isolation](NUTSNEWS_VPS_RUNTIME_ENVIRONMENT_ISOLATION.md) | Separate production/staging Compose identities, state, Caddy boundary, immutable digest rule, and #118 blocker |
