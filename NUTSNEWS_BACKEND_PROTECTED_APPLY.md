@@ -25,6 +25,8 @@ The backend repo adds:
 
 The protected workflow is manual-only, defaults to check mode, and uses the GitHub Environment named `production-backend`.
 
+Use [Backend Credential Bootstrap](NUTSNEWS_BACKEND_CREDENTIAL_BOOTSTRAP.md) to create or update that Environment, set non-secret variables, load provider secrets, and run the protected readiness workflow.
+
 ## Required Environment Secrets
 
 The backend `production-backend` Environment needs:
