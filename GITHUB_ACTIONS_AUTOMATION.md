@@ -76,3 +76,36 @@ flowchart TD
 ```
 
 Operational rule: if a workflow, secret boundary, deployment path, runtime config, Terraform/OpenTofu file, Ansible role, Compose file, Dockerfile, portal file, dependency manifest, or scanner config changes, the matching safety checks should run. A docs-only skip is expected only when the changed files are documentation or runbooks.
+
+## Test Change Guard Reporting
+
+Related app PR: `ramideltoro/nutsnews#238`
+
+### Simple Summary
+
+NutsNews no longer asks Rami to type `APPROVED` before every pull request that changes tests or GitHub Actions files. The checks still point out those changes so they can be reviewed.
+
+### Intermediate Summary
+
+The app repository keeps the immutable test guard workflows, but they now behave as reporting checks instead of hard approval gates. When a PR edits existing tests, regression scripts, smoke checks, or protected workflow files, CI lists the guarded files and exits successfully. This removes the repeated manual approval loop while preserving visibility into risky test or workflow edits.
+
+### Expert Summary
+
+`scripts/immutable_all_tests_guard.mjs` and `scripts/immutable_preview_smoke_guard.mjs` no longer parse PR title/body approval tokens and no longer fail solely because guarded files changed. Their workflows are renamed to report-only language and stop passing `PR_TITLE`/`PR_BODY` into the scripts. Regression coverage now asserts that the old manual tokens are not required. Branch protection, PR review, and the normal CI suite remain the control points for deciding whether these changes should merge.
+
+```mermaid
+flowchart TD
+  A[Pull request changes tests or workflows] --> B[Guard workflow runs]
+  B --> C{Guarded files changed?}
+  C -->|No| D[Pass quietly]
+  C -->|Yes| E[List guarded files in CI logs]
+  E --> F[Exit successfully]
+  F --> G[Reviewer inspects PR diff and normal checks]
+```
+
+Operational impact:
+
+- PRs no longer need a standalone `APPROVED` line for the broad established-test guard.
+- PRs no longer need `IMMUTABLE TEST CHANGE APPROVED BY RAMI` for the older locked-regression guard.
+- Guard logs remain useful review signals, not merge blockers.
+- If the old hard gate is needed again, revert `ramideltoro/nutsnews#238`.
