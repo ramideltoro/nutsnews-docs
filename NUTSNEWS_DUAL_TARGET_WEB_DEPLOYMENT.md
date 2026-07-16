@@ -6,16 +6,18 @@ delivered to Vercel and to an immutable, GitOps-managed VPS rollout.
 Issue: [nutsnews-infra #67](https://github.com/ramideltoro/nutsnews-infra/issues/67)
 
 Status: Vercel remains the production host for `nutsnews.com`, and the VPS app
-is live at `vps.nutsnews.com`. The automatic per-`main` release path is enabled:
-it promotes only after the matching Vercel Production deployment and all
-registered infrastructure promotion checks pass.
+is live at `vps.nutsnews.com`. The automatic per-`main` app handoff is
+staging-first: the app repository may request only an immutable staging
+candidate. Production promotion is owned by `ramideltoro/nutsnews-infra` and
+is allowed only after the matching off-VPS staging qualification attestation
+passes.
 
 ## Simple Summary
 
 NutsNews has one website codebase. After a reviewed change reaches `main`,
 Vercel builds it normally and GitHub builds a matching container for the VPS.
-The VPS gets the exact safe version through an infrastructure pull request, not
-a loose copy of the source code.
+The app repository can ask infra to stage that exact digest, but it cannot ask
+infra to apply production directly.
 
 `nutsnews.com` stays on Vercel. `vps.nutsnews.com` is a separately observable
 VPS target; this automation does not move canonical traffic or introduce
@@ -29,17 +31,15 @@ request may build the image for validation but never publishes it. Every push
 to `main` builds and publishes an immutable full-commit image and records its
 registry digest as a small, safe artifact.
 
-The release workflow waits for Vercel to report a successful **Production**
-deployment for that exact commit. It then sends only the source commit, build
-ID, image repository, immutable digest, Vercel URL, and workflow run ID to
-`ramideltoro/nutsnews-infra`.
+The staging release workflow consumes only the trusted `Container Image`
+metadata artifact for the same `main` workflow run. It sends a strict staging
+candidate containing the source commit, image repository, immutable digest,
+build ID, and source workflow run ID to `ramideltoro/nutsnews-infra`.
 
-`ramideltoro/nutsnews-infra` owns promotion. It validates that handoff, creates
-a normal promotion PR containing only reviewed release-state fields, waits for
-all promotion PR checks to register and pass, merges the PR, starts the
-protected Ansible apply, and
-waits for exact SSH and public-health identity evidence. Runtime secrets remain
-only in the protected `production-vps` Environment.
+`ramideltoro/nutsnews-infra` owns staging deploy, independent qualification,
+production eligibility, protected apply, verification, and rollback. Runtime
+secrets remain only in the protected infrastructure Environments, and the app
+handoff token is not a VPS credential or production release token.
 
 Vercel does not consume the GHCR image. Vercel and the VPS produce different
 platform artifacts from the same source commit, which is the required parity
@@ -66,9 +66,10 @@ OCI labels, image layers, artifacts, status JSON, promotion payloads, or portal
 fields.
 
 The automation uses a short-lived, fine-grained GitHub token stored only as the
-repository secret `NUTSNEWS_INFRA_RELEASE_TOKEN`. It is not a VPS credential,
-is never written to an artifact or Git, and is not substituted by the scoped
-`GITHUB_TOKEN`, which cannot dispatch to a different repository.
+app repository secret `NUTSNEWS_INFRA_STAGING_TOKEN`. It may dispatch only the
+staging candidate event to `ramideltoro/nutsnews-infra`; it is not a VPS
+credential, production apply credential, infra release token, or substitute for
+the scoped `GITHUB_TOKEN`.
 
 ## Ownership And Invariants
 
@@ -86,8 +87,11 @@ Required invariants:
 - Vercel continues to build a native Vercel artifact from `nutsnews/web`.
 - The VPS pulls an immutable digest; it never deploys `latest`.
 - Only `nutsnews-infra` may promote an image or change VPS routing.
-- A VPS promotion starts only after Vercel has reported a successful Production
-  deployment for the same source commit.
+- A VPS production promotion starts only after infra verifies a fresh staging
+  qualification attestation for the exact digest, source, build, staging
+  deployment, config generation, and test-suite revision.
+- Vercel Production status is tracked independently and is not VPS production
+  authorization.
 - Every automated release produces a normal infra PR, passing promotion checks,
   a merge, a protected apply, and runtime identity verification.
 - Database migrations are single-flight, explicit, and auditable. Neither
@@ -101,15 +105,15 @@ flowchart TD
   commit --> vercel["Vercel Git build\nweb/ -> native Vercel artifact"]
   commit --> actions["GitHub Actions\nNode 22 container build"]
   actions --> ghcr["GHCR\nfull-commit tag + immutable digest + metadata"]
-  vercel --> gate{"Same SHA deployed\nto Vercel Production?"}
-  ghcr --> gate
-  gate -- No --> stop["Fail closed\nno VPS mutation"]
-  gate -- Yes --> dispatch["Constrained repository dispatch"]
-  dispatch --> promotion["nutsnews-infra normal promotion PR\ndigest + source + build + rollback state"]
-  promotion --> checks["Promotion PR checks register and pass"]
-  checks --> apply["Merge + Protected Ansible Apply"]
+  ghcr --> dispatch["Constrained staging repository dispatch"]
+  dispatch --> staging["nutsnews-infra staging deploy\nready + deployment ID"]
+  staging --> qualifier["Off-VPS staging-tests qualification"]
+  qualifier --> attestation["OIDC artifact attestation\nexact digest + deploy + config + suite"]
+  attestation --> gate["Production eligibility verifier\nbefore production-vps"]
+  gate --> apply["Protected Ansible Apply"]
   apply --> ssh["Read-only SSH\nrunning digest + health"]
   ssh --> vps["Public VPS /healthz\nsource/build/target identity"]
+  vercel --> status["Independent Vercel Production status"]
 ```
 
 There is deliberately no arrow from GHCR to Vercel. The shared identity is the
@@ -554,52 +558,59 @@ justifies its extra build time and complexity.
 
 A tag is a lookup aid. Promotion always records and deploys the digest.
 
-## Automated Main Release Setup
+## Automated Main Staging Handoff Setup
 
 This setup is required before enabling the automation in a new repository or
-after rotating its release credential:
+after rotating its staging dispatch credential:
 
 1. Keep Vercel's Git integration connected to `ramideltoro/nutsnews` so a push
-   to `main` produces a GitHub deployment record with environment `Production`.
+   to `main` continues to produce normal preview and production Vercel records.
+   These records are observability inputs, not VPS authorization.
 2. Create a **fine-grained** GitHub personal access token owned by the release
    operator. Limit repository access to `ramideltoro/nutsnews-infra` only, give
-   it `Contents: read and write`, `Pull requests: read and write`, and
-   `Actions: read and write`, and give it a short expiry with a rotation owner.
-3. Store the same token as the repository secret
-   `NUTSNEWS_INFRA_RELEASE_TOKEN` in both `ramideltoro/nutsnews` and
-   `ramideltoro/nutsnews-infra`. Never paste its value into a workflow, PR,
-   issue, terminal transcript, or documentation.
-4. Merge the reviewed infra receiver and protected-apply workflow first so the
-   manifest guard and release verification are available on infra `main`.
-5. Merge the reviewed application release workflow. Its next `main` release is
-   the first automatic end-to-end test.
+   it `Contents: read and write` only because GitHub's repository dispatch API
+   requires that permission to create `nutsnews-staging-release`, and give it a
+   short expiry with a rotation owner.
+3. Store the token as the app repository secret
+   `NUTSNEWS_INFRA_STAGING_TOKEN`. Do not store a production release token,
+   deploy SSH key, production app secret, or `production-vps` Environment
+   material in `ramideltoro/nutsnews`.
+4. Merge the reviewed infra staging receiver, off-VPS qualifier, production
+   eligibility gate, protected apply, and rollback workflows first.
+5. Merge the reviewed application staging handoff workflow. Its next `main`
+   release is the first automatic proof of build, stage, qualify, exact-digest
+   production gate, and verification.
 
-If the token is absent, expired, or too broad/narrow, the release fails before
-the VPS changes. Do not replace it with a broad personal token or copy VPS SSH
-material into `nutsnews`.
+If the staging token is absent, expired, or too broad/narrow, the handoff fails
+before staging mutates. Do not replace it with a broad personal token, an infra
+release token, production SSH material, or a production secret.
 
 ## Digest Promotion And Protected Rollout
 
 No digest may be invented. For every successful `main` release, the automated
 path is:
 
-1. The app workflow validates its immutable image metadata and the matching
-   Vercel Production deployment.
-2. The infra receiver validates the GitHub handoff and confirms the source
-   commit is reachable from `nutsnews` `main`.
-3. It creates a normal, non-draft infrastructure PR that changes only the
-   digest, source commit, build ID, target, and last-known-good digest.
-4. It waits for promotion PR checks to register and pass, then merges without
-   bypassing them. This does not depend on GitHub branch-protection checks
-   being labelled "required".
-5. It dispatches `Protected Ansible Apply` at infra `main`, which validates the
-   committed manifest before touching the VPS.
+1. The app workflow validates its immutable image metadata from the exact
+   trusted `Container Image` run and dispatches only `nutsnews-staging-release`.
+2. The infra receiver validates the GitHub handoff, confirms the source commit
+   is reachable from `nutsnews` `main`, verifies OCI provenance, and deploys
+   staging through the protected staging path.
+3. The off-VPS qualifier reads staging health/readiness identity, actual
+   deployment and digest evidence, runs the exact app test-suite revision, and
+   repeats the identity check to catch redeploy drift.
+4. On full success only, infra writes and attests `staging-qualification.json`
+   for the exact digest, source workflow run, staging deployment ID, infra
+   commit/config generation, and test-suite commit.
+5. `Protected Ansible Apply` verifies that attestation before any job can
+   access `production-vps`, production SSH, deploy secrets, or production app
+   secrets.
 6. The apply checks the exact container digest over read-only SSH and requires
-   public `https://vps.nutsnews.com/healthz` to return the expected source
-   commit, build ID, deployment target, and identity headers.
+   public `https://vps.nutsnews.com/healthz` plus safe production smoke
+   evidence to match the requested release.
 
-A failed Vercel deployment, dispatch, PR check, merge, apply, SSH check, or
-health check is release-blocking and does not count as a deployment.
+A failed Vercel deployment, staging dispatch, staging deployment,
+qualification, attestation check, production apply, SSH check, health check, or
+smoke check is release-blocking and does not count as a promoted deployment.
 
 ## Staged Validation
 
@@ -776,7 +787,8 @@ first through GitOps if that reduces user impact.
 | --- | --- | --- |
 | Image workflow builds on a PR but no package appears | PR jobs are correctly push-disabled | Merge only after review; publishing occurs from `main` |
 | Publishing fails before build | A required public production build input is missing | Add/fix the approved GitHub publishing environment input; do not use a production secret as a placeholder |
-| Release stops before VPS promotion | Vercel did not report success for the exact SHA, or `NUTSNEWS_INFRA_RELEASE_TOKEN` is absent/invalid | Fix the Vercel deployment or the short-lived fine-grained token, then rerun the trusted main release; do not dispatch an arbitrary image manually |
+| Staging handoff does not start | `NUTSNEWS_INFRA_STAGING_TOKEN` is absent/invalid, the metadata artifact is missing, or the trusted image run does not match the candidate | Fix the staging dispatch credential or image workflow, then rerun the trusted main release; do not dispatch an arbitrary image manually |
+| Production gate rejects a candidate | The staging attestation is missing, expired, superseded, tampered, or bound to another digest/source/build/deployment/config/test revision | Restage and requalify the exact candidate through infra; do not bypass `production-vps` gating |
 | Promotion PR does not merge | A promotion check failed, checks have not registered, or `main` moved during the release | Fix or rebase the generated PR through normal GitOps; do not bypass checks or direct-push the manifest |
 | Infra rejects the image | Reference is mutable, digest is malformed, or source metadata does not match | Resolve the real GHCR digest and correct the reviewed promotion |
 | Container is unhealthy | Missing runtime config, wrong health path, non-writable cache, or startup failure | Inspect sanitized container state/logs over read-only SSH; fix Ansible, Compose, or app source through PR |
@@ -793,17 +805,17 @@ Today, Vercel production and the VPS application route are live; the latter
 reports its own source/build identity at `/healthz`. `nutsnews.com` remains on
 Vercel and the infrastructure-owned `/health` endpoint remains separate.
 
-Until [nutsnews PR #170](https://github.com/ramideltoro/nutsnews/pull/170) and
-[nutsnews-infra PR #97](https://github.com/ramideltoro/nutsnews-infra/pull/97)
-merge and the fine-grained token is configured in both repositories, automated
-promotion is not active. No one should emulate it with a direct server change,
-an unreviewed digest, `latest`, or a copied SSH secret.
+The app repository's automated authority ends at the staging candidate
+dispatch. No one should emulate production promotion with a direct server
+change, an unreviewed digest, `latest`, copied SSH material, a production
+secret in the app repository, or a restored direct `nutsnews-production-release`
+dispatch.
 
 ## Related Work
 
 - Issue: [ramideltoro/nutsnews-infra#67](https://github.com/ramideltoro/nutsnews-infra/issues/67)
 - Container foundation PR: https://github.com/ramideltoro/nutsnews/pull/167
-- Current application automation PR: https://github.com/ramideltoro/nutsnews/pull/170
+- Staging-first application handoff issue: https://github.com/ramideltoro/nutsnews/issues/176
 - Immutable-promotion foundation PR: https://github.com/ramideltoro/nutsnews-infra/pull/88
 - Current infrastructure automation PR: https://github.com/ramideltoro/nutsnews-infra/pull/97
 - [Deployment Checklist](DEPLOYMENT_CHECKLIST.md)

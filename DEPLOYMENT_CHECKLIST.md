@@ -72,18 +72,18 @@ always-running `Release candidate` check was merged and proven on a real pull
 request, then the live GitHub ruleset was updated to require that exact check
 and a pull request for `refs/heads/main`. This affects maintainers who release
 the web application: a reviewed, green PR merge is now the only route that may
-publish the immutable image and start the existing production-release chain.
+publish the immutable image and request the staging-first release handoff.
 
 ### Expert Summary
 
 `Release candidate` is bound to the current pull-request head and requires a
-successful production-image build and smoke test. It also runs the release
-workflow contract, immutable-test guards, Actions linting, and release-critical
-web checks without production secrets or elevated pull-request permissions. The
-active ruleset pins that exact check to GitHub Actions, requires the branch to
-be up to date, retains deletion/non-fast-forward protection, has no bypass
-actors, and uses zero external approvals only to avoid a solo-maintainer
-self-approval loop.
+successful production-image build and smoke test. It also runs the staging
+handoff workflow contract, immutable-test guards, Actions linting, and
+release-critical web checks without production secrets or elevated
+pull-request permissions. The active ruleset pins that exact check to GitHub
+Actions, requires the branch to be up to date, retains
+deletion/non-fast-forward protection, has no bypass actors, and uses zero
+external approvals only to avoid a solo-maintainer self-approval loop.
 
 ```mermaid
 flowchart LR
@@ -94,7 +94,9 @@ flowchart LR
   fix --> candidate
   gate -- "Yes" --> merge["Reviewed merge to main"]
   merge --> image["Immutable image publish"]
-  image --> promotion["Existing production-release chain"]
+  image --> staging["Staging-only infra dispatch"]
+  staging --> qualification["Off-VPS qualification attestation"]
+  qualification --> production["Infra production eligibility gate"]
 ```
 
 Live verification confirmed the active `refs/heads/main` ruleset requires a
@@ -111,7 +113,7 @@ For every normal application change after the ruleset is active:
    contracts, immutable-test guards, Actions linting, and release-critical web
    checks.
 3. Merge the green pull request. That merge is the only event that may publish
-   the immutable image and start the existing production-release chain.
+   the immutable image and request the staging-first release handoff.
 
 The scheduled/manual `Main ruleset audit` detects remote settings drift. It
 requires the repository secret `NUTSNEWS_RULESET_AUDIT_TOKEN`: a fine-grained
@@ -309,12 +311,17 @@ Also verify the `Container Image` workflow:
 - built the exact merged commit;
 - published the full-commit tag only from `main`;
 - reported a real `sha256` registry digest;
+- uploaded the `nutsnews-staging-release` metadata artifact;
 - did not publish from an unreviewed pull request;
 - did not expose build inputs or credentials.
 
 Do not deploy `latest`. Do not copy application source into
-`nutsnews-infra`. A real published digest is required before a separate infra
-promotion change can be reviewed.
+`nutsnews-infra`. The app repository may request only the
+`nutsnews-staging-release` infra event with `NUTSNEWS_INFRA_STAGING_TOKEN`; it
+must not request production apply, use `production-vps`, or carry production
+SSH, production app secrets, or an infra release token. Production apply is
+owned by infra after staging deploy, independent off-VPS qualification,
+attestation verification, and protected production eligibility checks.
 
 ### Web post-deploy checks
 
