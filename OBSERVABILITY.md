@@ -21,6 +21,7 @@ NutsNews uses multiple observability layers:
 | Lighthouse CI | GitHub Actions quality checks for public web performance, accessibility, SEO, best practices, and Core Web Vitals-style regressions |
 | Better Stack Logs | Existing app/Worker structured log searches until those repos migrate |
 | Grafana Cloud | VPS infrastructure metrics, centralized Loki logs, Explore queries, dashboards, quota alerts, and backup alerts |
+| Backend Health Report | Daily read-only backend host report from GitHub Actions with JSON artifact and optional SMTP delivery |
 | Sentry | Application error monitoring |
 | Cloudflare | CDN and Worker visibility |
 | Cloudflare Cache Observability | Expected-vs-actual cache header dashboard, scheduled checks, and GitHub Actions alerting |

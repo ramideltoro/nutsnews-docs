@@ -24,6 +24,7 @@ This folder is organized by what you are trying to do: understand the product, c
 | Review backend host security baseline | [Backend Security Baseline](NUTSNEWS_BACKEND_SECURITY_BASELINE.md) |
 | Review backend backup and restore baseline | [Backend Backup and Restore](NUTSNEWS_BACKEND_BACKUP_RESTORE.md) |
 | Review backend monitoring baseline | [Backend Monitoring](NUTSNEWS_BACKEND_MONITORING.md) |
+| Review backend health report automation | [Backend Health Report](NUTSNEWS_BACKEND_HEALTH_REPORT.md) |
 | Review backend service baseline attestation | [Backend Service Baseline](NUTSNEWS_BACKEND_SERVICE_BASELINE.md) |
 | Run the protected VPS baseline workflow or trigger an on-demand report | [Protected Ansible Apply](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md); [Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md) |
 | Run protected VPS package maintenance or reboot | [VPS Maintenance](NUTSNEWS_VPS_MAINTENANCE.md) |
@@ -72,6 +73,7 @@ These docs explain the product and the system at a high level.
 | [Backend Security Baseline](NUTSNEWS_BACKEND_SECURITY_BASELINE.md) | Backend SSH hardening desired state, verification commands, and apply blocker |
 | [Backend Backup and Restore](NUTSNEWS_BACKEND_BACKUP_RESTORE.md) | Backend backup scope, retention, restore-test gate, secret boundary, and recovery order |
 | [Backend Monitoring](NUTSNEWS_BACKEND_MONITORING.md) | Backend host smoke checks, alert thresholds, log retention, and alert-delivery blocker |
+| [Backend Health Report](NUTSNEWS_BACKEND_HEALTH_REPORT.md) | Scheduled read-only backend host reports from GitHub Actions, JSON artifacts, SMTP delivery, and rollback |
 | [Backend Service Baseline](NUTSNEWS_BACKEND_SERVICE_BASELINE.md) | Read-only live service inventory, public exposure policy, and re-attestation trigger |
 | [Protected Ansible Apply](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md) | Manual protected GitHub Actions workflow for check/apply runs against the VPS baseline, plus the separate on-demand health report workflow |
 | [VPS Service Foundation](NUTSNEWS_VPS_SERVICE_FOUNDATION.md) | Docker, Compose, `/opt/nutsnews`, Caddy, and public infrastructure health routing |
@@ -195,6 +197,7 @@ These docs explain the product and the system at a high level.
 | --- | --- |
 | [Observability](OBSERVABILITY.md) | Logs, errors, dashboards, and health checks |
 | [VPS Production Runtime 500 Incident](NUTSNEWS_VPS_PRODUCTION_RUNTIME_500_INCIDENT.md) | Correlated RSC 500 evidence, GitOps recovery, protected Supabase migration, and schema-compatible release promotion |
+| [Backend Health Report](NUTSNEWS_BACKEND_HEALTH_REPORT.md) | Daily backend host health report, generated JSON, email delivery, and read-only evidence |
 | [Grafana Cloud Observability](NUTSNEWS_GRAFANA_CLOUD_OBSERVABILITY.md) | VPS host/container/service/app/log dashboards, quota alerts, and Synthetic Monitoring setup |
 | [Cloudflare Cache Observability](CLOUDFLARE_CACHE_OBSERVABILITY.md) | Expected-vs-actual cache header reports and alerts |
 | [UptimeRobot Onboarding](UPTIMEROBOT_ONBOARDING.md) | External uptime monitors |
