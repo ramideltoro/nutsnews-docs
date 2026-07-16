@@ -19,6 +19,7 @@ SSH from an operator machine remains for read-only verification or documented br
 The backend repo adds:
 
 - `.github/workflows/backend-checks.yml`
+- `.github/workflows/backend-backup-maintenance.yml`
 - `.github/workflows/backend-controlled-maintenance.yml`
 - `.github/workflows/backend-cloudflare-routing.yml`
 - `.github/workflows/protected-backend-ansible-apply.yml`
@@ -46,6 +47,11 @@ Optional early-bootstrap secrets:
 | --- | --- |
 | `NUTSNEWS_BACKEND_ANSIBLE_USER` | Override for the inventory SSH user |
 | `NUTSNEWS_BACKEND_BECOME_PASSWORD` | Sudo password if passwordless sudo is not ready |
+| `RESTIC_REPOSITORY` | Encrypted restic repository for service-aware backend backups |
+| `RESTIC_PASSWORD` | Restic repository encryption password |
+| `AWS_ACCESS_KEY_ID` | S3-compatible restic access key when `NUTSNEWS_BACKEND_RESTIC_PROVIDER=s3` |
+| `AWS_SECRET_ACCESS_KEY` | S3-compatible restic secret key when `NUTSNEWS_BACKEND_RESTIC_PROVIDER=s3` |
+| `AWS_DEFAULT_REGION` | Optional S3-compatible region |
 
 Prefer a dedicated automation user with key-based SSH and reviewed sudo behavior. If a sudo password is temporarily used, rotate it after the automation user exists.
 
@@ -96,6 +102,8 @@ Backend-changing workflows have fixed safety gates:
   apply and rollback run enforced preflight and post-change gates.
 - `Backend Controlled Maintenance`: uses its fixed maintenance pre/post-check
   runner for `security-upgrade` and `reboot`.
+- `Backend Backup Maintenance`: starts only fixed backup, verify, and
+  restore-drill systemd units, then uploads sanitized status JSON.
 
 The gates validate required secret presence by name only, never print values,
 and upload JSON/Markdown reports that list the change description, blockers,
@@ -110,8 +118,10 @@ Rollback paths are fixed-purpose:
 - security update and reboot recovery follow the controlled maintenance runbook.
 
 Foundational work can still deploy missing safety components because current
-`not_configured` backup, restore, Docker, app, and alert surfaces are visible
-but not critical blockers for the baseline-apply profile.
+`not_configured` Docker, app, and alert surfaces are visible but not critical
+blockers for the baseline-apply profile. Backup freshness and restore
+verification become healthy after the backup workflow runs `backup`, `verify`,
+and `restore-drill`.
 
 ## Check Mode Service Guards
 
