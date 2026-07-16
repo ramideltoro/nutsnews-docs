@@ -106,6 +106,35 @@ sudo fail2ban-client set sshd unbanip <ip-address>
 
 Controlled ban testing should use a disposable test source IP and immediately unban that IP afterward.
 
+## Swap Safety Buffer
+
+Backend issue #5 adds a small persistent swapfile through the backend Ansible baseline role.
+
+Decision:
+
+- Use a 2 GiB disk swapfile at `/swapfile`.
+- Use `vm.swappiness = 10`.
+- Prefer swapfile over zram for now because it is simple to inspect, persist, disable, and recover on this fresh host with ample disk.
+
+Implementation shape:
+
+- Create `/swapfile`.
+- Set root ownership and `0600` permissions.
+- Format with `mkswap` when newly created.
+- Add `/swapfile none swap sw 0 0` to `/etc/fstab`.
+- Enable swap during real apply mode.
+- Write `/etc/sysctl.d/99-nutsnews-backend-swap.conf`.
+- Capture `swapon --show` and `free -h` in workflow logs.
+
+Verification after approved apply:
+
+```bash
+ssh -i ~/.ssh/servercheap_65_75_201_18 rami@65.75.201.18 'swapon --show'
+ssh -i ~/.ssh/servercheap_65_75_201_18 rami@65.75.201.18 'free -h'
+ssh -i ~/.ssh/servercheap_65_75_201_18 rami@65.75.201.18 'grep -E "^/swapfile\\s+none\\s+swap\\s+" /etc/fstab'
+ssh -i ~/.ssh/servercheap_65_75_201_18 rami@65.75.201.18 'cat /proc/sys/vm/swappiness'
+```
+
 ## Current Blocker
 
-SSH hardening, OS package maintenance, UFW firewall baseline, and fail2ban SSH protection cannot be considered complete until the `production-backend` Environment and required secrets exist, the protected workflow applies the role, and read-only audits confirm the effective server state.
+SSH hardening, OS package maintenance, UFW firewall baseline, fail2ban SSH protection, and swap baseline cannot be considered complete until the `production-backend` Environment and required secrets exist, the protected workflow applies the role, and read-only audits confirm the effective server state.
