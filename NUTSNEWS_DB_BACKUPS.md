@@ -89,7 +89,7 @@ The `ramideltoro/nutsnews` app repo keeps its scheduled `Supabase Backup` workfl
 
 ### Expert Summary
 
-Issue #110 adds `scripts/supabase_restore_fire_drill.mjs` to validate backup manifests, artifact checksums, freshness, required table coverage, and required non-empty tables before mutating any database. Routine runs use `--local-supabase`, which reads the local Supabase database URL and refuses non-local restore targets unless `NUTSNEWS_RESTORE_FIRE_DRILL_ALLOW_REMOTE=true` is explicitly set for an isolated remote drill. The script truncates only the exported tables in the disposable target, restores rows with PostgreSQL `jsonb_populate_recordset`, filters generated columns such as `articles.search_vector` out of the insert projection, writes the generated restore SQL to a temporary file before invoking `psql --file` so large restores do not fail on stdin pipe limits, runs the existing `supabase/restore_validation.sql`, and writes Markdown/JSON reports under `reports/supabase-restore/`. The fire drill also exposed that production `article_ai_reviews.id` values are UUIDs, so the app migration set now aligns fresh disposable databases with that UUID primary key while refusing to rewrite a populated bigint table implicitly. The scheduled workflow uploads both `supabase-rest-backup` and `supabase-restore-fire-drill-report` artifacts with 14-day retention. Rollback is to revert the app PR that added the restore script/workflow wiring and keep the older backup artifact path; production data is not changed by the fire drill.
+Issue #110 adds `scripts/supabase_restore_fire_drill.mjs` to validate backup manifests, artifact checksums, freshness, required table coverage, and required non-empty tables before mutating any database. Routine runs use `--local-supabase`, which reads the local Supabase database URL and refuses non-local restore targets unless `NUTSNEWS_RESTORE_FIRE_DRILL_ALLOW_REMOTE=true` is explicitly set for an isolated remote drill. The script truncates only the exported tables in the disposable target, restores rows with PostgreSQL `jsonb_populate_recordset`, filters generated columns such as `articles.search_vector` out of the insert projection, lets the target database defaults fill insertable columns missing from REST backup payloads, writes the generated restore SQL to a temporary file before invoking `psql --file` so large restores do not fail on stdin pipe limits, runs the existing `supabase/restore_validation.sql`, and writes Markdown/JSON reports under `reports/supabase-restore/`. The backup exporter keeps limited REST artifacts referentially closed for article-dependent tables, so sampled child rows only reference sampled parent articles. The fire drill also exposed that production `article_ai_reviews.id` values are UUIDs, so the app migration set now aligns fresh disposable databases with that UUID primary key while refusing to rewrite a populated bigint table implicitly. The scheduled workflow uploads both `supabase-rest-backup` and `supabase-restore-fire-drill-report` artifacts with 14-day retention. Rollback is to revert the app PR that added the restore script/workflow wiring and keep the older backup artifact path; production data is not changed by the fire drill.
 
 ```mermaid
 flowchart TD
@@ -127,6 +127,12 @@ Failure next steps:
 4. Confirm the disposable Supabase reset reached the current repo migrations.
 5. Rerun the workflow manually after fixing the failed export, schema, or validation query.
 6. Do not use that backup for production recovery until the fire drill passes.
+
+The first live successful issue #110 restore record was manual `Supabase Backup`
+run `29519427266` on 2026-07-16 from app commit
+`b44c41c48d4e90a12c9dd6e1f0698543e68915bd`. The protected production
+migration workflow then used that backup evidence in run `29519643924` and
+completed successfully.
 
 Risks and mitigations:
 
