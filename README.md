@@ -118,6 +118,7 @@ These docs explain the product and the system at a high level.
 | [Secure Image Proxy/Cache Design](IMAGE_PROXY_CACHE_DESIGN.md) | Issue #105 design for optional Cloudflare image proxy/cache, domain controls, quotas, rollout, and kill switches |
 | [Performance and Resiliency](PERFORMANCE_AND_RESILIENCY.md) | Caching, pagination, indexes, sharding, and reliability |
 | [Homepage Performance Budget](HOMEPAGE_PERFORMANCE_BUDGET.md) | Homepage LCP, JS, CSS, image, and transfer budgets |
+| [Web Visual Regression Tests](WEB_VISUAL_REGRESSION_TESTS.md) | Playwright screenshot baselines for public page layout states |
 | [Cloudflare Cache Observability](CLOUDFLARE_CACHE_OBSERVABILITY.md) | Cache policy dashboard, scheduled alerts, route expectations, and common fixes |
 
 #### Data protection and recovery
@@ -183,6 +184,7 @@ These docs explain the product and the system at a high level.
 | Doc | Use it for |
 | --- | --- |
 | [Homepage Performance Budget](HOMEPAGE_PERFORMANCE_BUDGET.md) | Build-size report, hard budgets, and common fixes |
+| [Web Visual Regression Tests](WEB_VISUAL_REGRESSION_TESTS.md) | Screenshot snapshots, update workflow, and failure artifacts |
 | [Multilingual Quality and Fallbacks](MULTILINGUAL_QUALITY_AND_FALLBACKS.md) | Translation coverage report, language-code checks, and fallback quality rules |
 | [Lighthouse CI Onboarding](LIGHTHOUSE_CI_ONBOARDING.md) | Lighthouse CI setup and thresholds |
 | [PageSpeed Insights](PAGESPEED_INSIGHTS.md) | Manual production speed checks |
@@ -206,6 +208,7 @@ These docs explain the product and the system at a high level.
 | [Public API Contract Tests](PUBLIC_API_CONTRACT_TESTS.md) | Mocked contract checks for `/api/articles`, `/api/search`, `/api/contact`, sitemap, and robots |
 | [Web Offline E2E Regression Test](WEB_OFFLINE_E2E_REGRESSION_TEST.md) | Fully mocked public web flow test before preview deploy |
 | [Web Public Reader Smoke Test](WEB_PUBLIC_READER_SMOKE_TEST.md) | PR Playwright smoke coverage for home feed, infinite scroll, language switching, contact validation, public pages, and article detail |
+| [Web Visual Regression Tests](WEB_VISUAL_REGRESSION_TESTS.md) | Public-page screenshot snapshots for desktop/mobile and representative UI states |
 | [Vercel Preview Smoke Test](VERCEL_PREVIEW_SMOKE_TEST.md) | Live PR preview checks after Vercel deploys |
 | Worker Offline E2E Regression Test | See ramideltoro/nutsnews-worker |
 | [Worker Local AI Lock](NUTSNEWS_WORKER_LOCAL_AI_LOCK.md) | Why the Worker repo prevents accidental OpenAI-first deploys |
