@@ -12,7 +12,7 @@ The audit checks the live site for the core fields that matter before manually u
 - homepage page-level schema
 - article page `Article`, `NewsArticle`, or `BlogPosting` schema
 - article headline, description, image, dates, publisher, and `mainEntityOfPage`
-- sitemap article URL discovery
+- sitemap index traversal and article URL discovery
 
 ## Local usage
 
@@ -47,6 +47,10 @@ Reports are written to:
 web/reports/seo/seo-structured-data-audit.md
 web/reports/seo/seo-structured-data-audit.json
 ```
+
+## Sitemap Discovery
+
+The audit checks `/sitemap-index.xml` first and follows same-origin sitemap entries, including article sitemap shards. It falls back to `/sitemap.xml` for compatibility with older deployments. Traversal is capped so a bad sitemap index cannot turn the audit into an unbounded crawl.
 
 ## GitHub Actions
 

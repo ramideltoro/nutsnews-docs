@@ -100,6 +100,7 @@ These docs explain the product and the system at a high level.
 | [Public Pages Theme Consistency](NUTSNEWS_PUBLIC_PAGES_THEME_CONSISTENCY.md) | Theme behavior across public pages |
 | [Privacy Analytics And Consent](PRIVACY_ANALYTICS_CONSENT.md) | GA4 consent gate, allowed event taxonomy, disallowed data, retention, and rollback |
 | [Publisher Attribution And Content Use](PUBLISHER_ATTRIBUTION_AND_CONTENT_USE.md) | Publisher credit, summary/excerpt limits, source removal workflow, and future digest/social requirements |
+| [Sitemap Scaling Strategy](SITEMAP_SCALING_STRATEGY.md) | Sitemap index, article sitemap shards, crawler discovery, cache policy, and SEO audit coverage |
 
 #### UI and polish
 
@@ -212,6 +213,7 @@ These docs explain the product and the system at a high level.
 | [PageSpeed Insights](PAGESPEED_INSIGHTS.md) | Manual production speed checks |
 | [axe Playwright Accessibility CI](AXE_PLAYWRIGHT_ACCESSIBILITY_CI.md) | Accessibility regression checks |
 | [SEO Structured Data Audit](SEO_STRUCTURED_DATA_AUDIT.md) | SEO and structured data review |
+| [Sitemap Scaling Strategy](SITEMAP_SCALING_STRATEGY.md) | Sitemap index and shard validation for large article archives |
 
 #### Security checks
 
