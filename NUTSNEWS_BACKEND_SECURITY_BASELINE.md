@@ -82,6 +82,30 @@ ssh -i ~/.ssh/servercheap_65_75_201_18 rami@65.75.201.18 'ss -tulpen 2>/dev/null
 ssh -i ~/.ssh/servercheap_65_75_201_18 rami@65.75.201.18 'hostname && whoami'
 ```
 
+## SSH Brute-Force Protection
+
+Backend issue #4 adds repo-managed fail2ban protection for SSH through the backend Ansible baseline role.
+
+Implementation shape:
+
+- Install `fail2ban`.
+- Write `/etc/fail2ban/jail.d/nutsnews-sshd.local`.
+- Enable the `sshd` jail with the systemd backend.
+- Use `maxretry = 5`, `findtime = 10m`, and `bantime = 1h`.
+- Ignore localhost addresses.
+- Enable and start the fail2ban service.
+- Capture `fail2ban-client status sshd` in workflow logs.
+
+Verification after approved apply:
+
+```bash
+sudo fail2ban-client status sshd
+ssh -i ~/.ssh/servercheap_65_75_201_18 rami@65.75.201.18 'hostname && whoami'
+sudo fail2ban-client set sshd unbanip <ip-address>
+```
+
+Controlled ban testing should use a disposable test source IP and immediately unban that IP afterward.
+
 ## Current Blocker
 
-SSH hardening, OS package maintenance, and UFW firewall baseline cannot be considered complete until the `production-backend` Environment and required secrets exist, the protected workflow applies the role, and read-only audits confirm the effective server state.
+SSH hardening, OS package maintenance, UFW firewall baseline, and fail2ban SSH protection cannot be considered complete until the `production-backend` Environment and required secrets exist, the protected workflow applies the role, and read-only audits confirm the effective server state.
