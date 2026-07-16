@@ -20,6 +20,7 @@ This folder is organized by what you are trying to do: understand the product, c
 | Bootstrap the backend server | [Backend Bootstrap](NUTSNEWS_BACKEND_BOOTSTRAP.md) |
 | Bootstrap backend credentials | [Backend Credential Bootstrap](NUTSNEWS_BACKEND_CREDENTIAL_BOOTSTRAP.md) |
 | Run the protected backend apply workflow | [Backend Protected Apply](NUTSNEWS_BACKEND_PROTECTED_APPLY.md) |
+| Run the backend drift check | [Backend Drift Check](NUTSNEWS_BACKEND_DRIFT_CHECK.md) |
 | Review backend host security baseline | [Backend Security Baseline](NUTSNEWS_BACKEND_SECURITY_BASELINE.md) |
 | Review backend backup and restore baseline | [Backend Backup and Restore](NUTSNEWS_BACKEND_BACKUP_RESTORE.md) |
 | Review backend monitoring baseline | [Backend Monitoring](NUTSNEWS_BACKEND_MONITORING.md) |
@@ -67,6 +68,7 @@ These docs explain the product and the system at a high level.
 | [Backend Bootstrap](NUTSNEWS_BACKEND_BOOTSTRAP.md) | Backend server host contract, runtime direction, repo boundaries, and initial Ansible scaffold |
 | [Backend Credential Bootstrap](NUTSNEWS_BACKEND_CREDENTIAL_BOOTSTRAP.md) | Protected GitHub Environment setup, credential inventory, provider secret names, readiness workflow, and rollback |
 | [Backend Protected Apply](NUTSNEWS_BACKEND_PROTECTED_APPLY.md) | Manual protected backend Ansible check/apply workflow, Environment secrets, blockers, and validation |
+| [Backend Drift Check](NUTSNEWS_BACKEND_DRIFT_CHECK.md) | Protected read-only drift workflow, classification semantics, current evidence, and rollback boundary |
 | [Backend Security Baseline](NUTSNEWS_BACKEND_SECURITY_BASELINE.md) | Backend SSH hardening desired state, verification commands, and apply blocker |
 | [Backend Backup and Restore](NUTSNEWS_BACKEND_BACKUP_RESTORE.md) | Backend backup scope, retention, restore-test gate, secret boundary, and recovery order |
 | [Backend Monitoring](NUTSNEWS_BACKEND_MONITORING.md) | Backend host smoke checks, alert thresholds, log retention, and alert-delivery blocker |
