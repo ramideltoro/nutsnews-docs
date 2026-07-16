@@ -18,6 +18,7 @@ This folder is organized by what you are trying to do: understand the product, c
 | Understand the VPS operating model | [Infra Operations Platform](NUTSNEWS_INFRA_OPERATIONS_PLATFORM.md) |
 | Bootstrap the VPS baseline | [VPS Ansible Bootstrap](NUTSNEWS_VPS_ANSIBLE_BOOTSTRAP.md) |
 | Run the protected VPS baseline workflow or trigger an on-demand report | [Protected Ansible Apply](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md); [Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md) |
+| Run protected VPS package maintenance or reboot | [VPS Maintenance](NUTSNEWS_VPS_MAINTENANCE.md) |
 | Synchronize reviewed Vercel Production variables to the VPS | [Vercel-to-VPS environment synchronization](NUTSNEWS_VERCEL_VPS_ENV_SYNC.md) |
 | Understand the VPS service foundation | [VPS Service Foundation](NUTSNEWS_VPS_SERVICE_FOUNDATION.md) |
 | Review production/staging VPS runtime isolation | [VPS Runtime Environment Isolation](NUTSNEWS_VPS_RUNTIME_ENVIRONMENT_ISOLATION.md) |
@@ -65,6 +66,7 @@ These docs explain the product and the system at a high level.
 | [Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md) | Read-only VPS dashboard, local collector, public Google OAuth route, status JSON, and recovery notes |
 | [VPS Alert Email Policy](VPS_ALERT_EMAIL_POLICY.md) | Stable alert identity, cooldown/escalation behavior, backup freshness semantics, and read-only troubleshooting |
 | [VPS Backups](NUTSNEWS_VPS_BACKUPS.md) | Encrypted restic backups to a dedicated OneDrive rclone remote, setup secrets, status, alerts, and validation |
+| [VPS Maintenance](NUTSNEWS_VPS_MAINTENANCE.md) | Protected package maintenance, reboot approval, post-reboot validation, and failure handling |
 | [VPS Restore](NUTSNEWS_VPS_RESTORE.md) | Restoring encrypted VPS snapshots to staging, copying selected data/config, and restore testing |
 | [VPS Disaster Recovery](NUTSNEWS_VPS_DISASTER_RECOVERY.md) | Rebuilding on another VPS provider, restoring data, verifying, cutting over DNS, and rollback |
 | [Grafana Cloud Observability](NUTSNEWS_GRAFANA_CLOUD_OBSERVABILITY.md) | Grafana Alloy on the VPS, OpenTofu-managed dashboards/alerts, Synthetic Monitoring, and free-tier guardrails |

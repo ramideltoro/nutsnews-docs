@@ -141,6 +141,12 @@ secrets, production app secrets, or the protected Environment are available.
 The old direct `nutsnews-production-release` dispatch path is paused until the
 staging-first handoff is activated.
 
+Routine host package maintenance and reboots use a separate fixed-purpose
+workflow, `Protected VPS Maintenance`. It still attaches to the protected
+`production-vps` Environment, but it does not run Ansible baseline apply and it
+does not accept arbitrary SSH commands. See
+[VPS Maintenance](NUTSNEWS_VPS_MAINTENANCE.md).
+
 ## Gate Rehearsal And Bypass Inventory
 
 ### Simple Summary

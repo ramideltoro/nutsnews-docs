@@ -115,8 +115,8 @@ It also shows whether `apt-daily-upgrade.timer` is active and whether the last
 `apt-daily-upgrade.service` run succeeded.
 
 If security updates sit around too long, the portal raises a warning. That is a
-signal to use the reviewed maintenance path, not a reason to run package
-upgrades manually over SSH.
+signal to use `Protected VPS Maintenance`, not a reason to run package upgrades
+manually over SSH.
 
 ### Intermediate Summary
 
@@ -172,9 +172,8 @@ Operational response:
 2. Confirm whether security updates are pending because the daily timer has not
    run yet, because unattended-upgrades failed, or because a reboot or non-auto
    package path is needed.
-3. Use the protected GitOps maintenance path once available. Until then, track
-   the maintenance follow-through in the infra issue rather than making routine
-   manual package changes.
+3. Use `Protected VPS Maintenance` for reviewed preflight, package maintenance,
+   reboot, and post-reboot validation.
 
 ## Expert Summary
 
