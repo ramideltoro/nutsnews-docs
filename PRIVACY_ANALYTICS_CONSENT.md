@@ -2,6 +2,8 @@
 
 Related issue: `ramideltoro/nutsnews#114`
 
+Related app PR: `ramideltoro/nutsnews#235`
+
 ## Simple Summary
 
 NutsNews keeps website analytics off unless a reader chooses to allow a small amount of anonymous traffic measurement. The privacy page explains the choice, and the site respects browser privacy signals.
