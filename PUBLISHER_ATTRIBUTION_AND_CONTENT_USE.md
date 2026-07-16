@@ -2,7 +2,7 @@
 
 Related issue: `ramideltoro/nutsnews#113`
 
-Related app branch: `ramideltoro/nutsnews@issue-113-publisher-compliance`
+Related app PR: `ramideltoro/nutsnews#236`
 
 ## Simple Summary
 
