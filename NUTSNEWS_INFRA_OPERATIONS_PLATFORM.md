@@ -98,6 +98,21 @@ The infra repo has a first-pass GitHub Actions stability layer. It is intentiona
 
 The workflows are scaffold-safe. If Terraform, Ansible, Compose, Dockerfile, or portal app files do not exist yet, the related jobs skip cleanly. That is not laziness; that is avoiding fake failures from folders that are still wearing name tags.
 
+The PR and push workflows also use path-aware cost controls. Infrastructure, runtime, portal, and supply-chain workflows start with a changed-path classifier that writes a summary into the Actions run. Docs-only and runbook-only changes keep the workflow visible but skip unrelated heavyweight jobs. Workflow Safety, Gitleaks, and nightly audits remain conservative and ungated.
+
+```mermaid
+flowchart LR
+  files["Changed files"] --> classify["CI path classifier"]
+  classify --> docsOnly{"Docs/runbooks only?"}
+  docsOnly -- "Yes" --> skipHeavy["Skip unrelated heavyweight jobs"]
+  docsOnly -- "No" --> runFocused["Run matching infra, runtime, portal, and supply-chain jobs"]
+  classify --> summary["Actions summary explains active categories"]
+  files --> always["Always-on safety checks"]
+  always --> wf["Workflow Safety"]
+  always --> secrets["Gitleaks"]
+  schedule["Nightly schedule"] --> audit["Deep audit scans"]
+```
+
 ## VPS And Home Server Topology
 
 ```mermaid
