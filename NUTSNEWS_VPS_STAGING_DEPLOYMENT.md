@@ -107,6 +107,16 @@ qualification evidence, then run the protected production release/apply
 workflow with the matching image, source, build, migration, schema, and
 Supabase project identity.
 
+For the July 16, 2026 production recovery, the reviewed production manifest
+promotion uses app source commit `6fd45791f26a81a6c804549b0c53468c62eccdab`,
+image digest
+`sha256:8eff7cf67f43ce4dd53b63c61b6dad8eb38b39dbb67e5ac716d026981be7dcb5`,
+build `29529818438-1`, migration head `20260716180000`, schema marker
+`20260712170000`, and Supabase project ref `mpqfulvvagyzqneiaqky`. Production
+apply must still run only through `Protected Ansible Apply` after the matching
+staging deployment, staging qualification, production backup, and protected
+production Supabase migration have succeeded.
+
 ## Staging Auto-Idle After Qualification Expiry
 
 ### Simple Summary
