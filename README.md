@@ -17,6 +17,7 @@ This folder is organized by what you are trying to do: understand the product, c
 | Run the platform | [Operations](OPERATIONS.md) |
 | Understand the VPS operating model | [Infra Operations Platform](NUTSNEWS_INFRA_OPERATIONS_PLATFORM.md) |
 | Bootstrap the VPS baseline | [VPS Ansible Bootstrap](NUTSNEWS_VPS_ANSIBLE_BOOTSTRAP.md) |
+| Bootstrap the backend server | [Backend Bootstrap](NUTSNEWS_BACKEND_BOOTSTRAP.md) |
 | Run the protected VPS baseline workflow or trigger an on-demand report | [Protected Ansible Apply](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md); [Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md) |
 | Run protected VPS package maintenance or reboot | [VPS Maintenance](NUTSNEWS_VPS_MAINTENANCE.md) |
 | Synchronize reviewed Vercel Production variables to the VPS | [Vercel-to-VPS environment synchronization](NUTSNEWS_VERCEL_VPS_ENV_SYNC.md) |
@@ -57,6 +58,7 @@ These docs explain the product and the system at a high level.
 | [Operations](OPERATIONS.md) | Day-to-day operating model, admin portal, and maintenance tasks |
 | [Infra Operations Platform](NUTSNEWS_INFRA_OPERATIONS_PLATFORM.md) | VPS GitOps model, CI stability layer, Ops Portal goal, support-node rules, reports, and provider migration strategy |
 | [VPS Ansible Bootstrap](NUTSNEWS_VPS_ANSIBLE_BOOTSTRAP.md) | First Ubuntu VPS baseline, SSH lockout prevention, firewall, updates, logging, and recovery flow |
+| [Backend Bootstrap](NUTSNEWS_BACKEND_BOOTSTRAP.md) | Backend server host contract, runtime direction, repo boundaries, and initial Ansible scaffold |
 | [Protected Ansible Apply](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md) | Manual protected GitHub Actions workflow for check/apply runs against the VPS baseline, plus the separate on-demand health report workflow |
 | [VPS Service Foundation](NUTSNEWS_VPS_SERVICE_FOUNDATION.md) | Docker, Compose, `/opt/nutsnews`, Caddy, and public infrastructure health routing |
 | [VPS Runtime Environment Isolation](NUTSNEWS_VPS_RUNTIME_ENVIRONMENT_ISOLATION.md) | Separate production/staging Compose identities, state, Caddy boundary, immutable digest rule, and #118 blocker |
