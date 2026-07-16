@@ -106,6 +106,37 @@ sudo fail2ban-client set sshd unbanip <ip-address>
 
 Controlled ban testing should use a disposable test source IP and immediately unban that IP afterward.
 
+## Abuse Protection Decision
+
+Backend issue #24 records the broader abuse-protection decision for the current SSH-only backend phase.
+
+Decision:
+
+- Keep fail2ban as the selected tool for SSH protection.
+- Defer CrowdSec and HTTP/Caddy enforcement until Caddy, public HTTP/HTTPS, backend app routes, and real access logs exist.
+- Start any future HTTP abuse controls in detection/report-only mode before blocking.
+- Do not run a protected apply, restart, firewall mutation, or production enforcement change without separate explicit approval.
+
+Current allowlist policy:
+
+- SSH jail allowlist is localhost-only: `127.0.0.1/8` and `::1`.
+- Cloudflare edge ranges, GitHub Actions callbacks, uptime probes, and operator ranges must be documented before any future HTTP enforcement.
+- Operator IPs must not be committed unless there is a reviewed operational reason.
+
+False-positive-sensitive probes required before future HTTP blocking:
+
+- `/health`
+- `/healthz`
+- `/readyz`
+- auth provider redirects/callbacks
+- admin redirects and dashboard access boundaries
+
+Backend validation:
+
+```bash
+python3 scripts/validate_abuse_protection_decision.py
+```
+
 ## Swap Safety Buffer
 
 Backend issue #5 adds a small persistent swapfile through the backend Ansible baseline role.
