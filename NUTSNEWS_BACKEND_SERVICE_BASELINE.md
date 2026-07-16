@@ -75,6 +75,30 @@ Expert Summary:
 
 The backend repo now has `docs/backend-redis-valkey-decision.json`, `runbooks/REDIS_VALKEY_DECISION.md`, and `scripts/validate_redis_valkey_decision.py`. The validator fails if the service baseline stops marking Redis/Valkey as not deployed while the decision still says `do_not_install_now`. Any future Redis/Valkey implementation must be private-only, authenticated or equivalently access-bound, resource-capped, observable, and covered by persistence/backup/fallback rules before protected apply.
 
+### Dedicated Search Service
+
+Backend issue #29 records a no-install decision for a dedicated search daemon.
+
+Simple Summary:
+
+NutsNews is not adding Meilisearch, Typesense, OpenSearch, or Elasticsearch to the backend server right now because the app already has working Postgres search.
+
+Intermediate Summary:
+
+The current app has a Supabase/Postgres full-text search migration with a generated `tsvector`, a GIN index, and `public.search_articles`. The `/api/search` route already bounds query inputs, uses a runtime feature flag, and emits public search cache headers. A separate search daemon would add always-on memory, disk, backup, rebuild, and observability work before there is measured need.
+
+Expert Summary:
+
+The backend repo now has `docs/backend-search-service-decision.json`, `runbooks/SEARCH_SERVICE_DECISION.md`, and `scripts/validate_search_service_decision.py`. The validator fails if the service baseline stops marking search service as not deployed while the decision still says `keep_postgres_full_text_search_now`. A future search service requires private-only binding, resource sizing, rebuild or snapshot strategy, health checks, low-cardinality observability, app fallback, and a concrete `ramideltoro/nutsnews` integration issue before protected apply.
+
+References used for resource expectations:
+
+- PostgreSQL text-search indexes: https://www.postgresql.org/docs/current/textsearch-indexes.html
+- Meilisearch hardware FAQ: https://meilisearch.com/docs/resources/help/faq
+- Meilisearch memory configuration: https://meilisearch.com/docs/resources/self_hosting/configuration/reference
+- Typesense system requirements: https://typesense.org/docs/guide/system-requirements.html
+- Typesense memory sizing: https://cloud-help-center.typesense.org/article/22-choosing-how-much-memory-you-need
+
 ## Re-Attestation Trigger
 
 Update the attestation after protected apply changes listeners or services, after Docker/Caddy/app/database/cache/search/dashboard work lands, or whenever read-only audit finds drift.
