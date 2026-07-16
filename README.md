@@ -114,6 +114,7 @@ These docs explain the product and the system at a high level.
 | Doc | Use it for |
 | --- | --- |
 | [Admin Article Reviews](ADMIN_ARTICLE_REVIEWS.md) | Accepted/rejected stories, filters, and review investigation |
+| [Admin Audit Log](ADMIN_AUDIT_LOG.md) | Protected audit trail for sensitive admin changes, retention, privacy, and validation |
 | [Incident Response Policy](INCIDENT_RESPONSE_POLICY.md) | SEV1/SEV2/SEV3 definitions, alert routing, incident checklist, and post-incident review template |
 | [Production Readiness Dashboard](PRODUCTION_READINESS_DASHBOARD.md) | Admin green/yellow/red scorecard for shipping readiness across public API health, Worker freshness, DB growth, translations, images, backups, and CI |
 | [Responsive Admin Dashboards](ADMIN_RESPONSIVE_DASHBOARDS.md) | Mobile-friendly admin dashboard patterns |
