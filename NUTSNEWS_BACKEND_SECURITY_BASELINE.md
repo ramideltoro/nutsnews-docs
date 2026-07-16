@@ -53,6 +53,35 @@ ssh -i ~/.ssh/servercheap_65_75_201_18 rami@65.75.201.18 'systemctl --failed --n
 ssh -i ~/.ssh/servercheap_65_75_201_18 rami@65.75.201.18 'hostname && whoami'
 ```
 
+## UFW Firewall Baseline
+
+Backend issue #3 adds repo-managed UFW policy through the backend Ansible baseline role.
+
+Current public port policy:
+
+| Port | Protocol | Purpose |
+| --- | --- | --- |
+| `22` | TCP | SSH |
+
+Implementation shape:
+
+- Install UFW.
+- Set `IPV6=yes` in `/etc/default/ufw`.
+- Reset UFW rules during approved apply.
+- Set default incoming policy to deny.
+- Set default outgoing policy to allow.
+- Allow only TCP `22` in the current phase.
+- Keep `80/tcp` and `443/tcp` disabled until a reviewed reverse-proxy/routing PR enables them.
+- Capture `ufw status verbose` in workflow logs.
+
+Verification after approved apply:
+
+```bash
+sudo ufw status verbose
+ssh -i ~/.ssh/servercheap_65_75_201_18 rami@65.75.201.18 'ss -tulpen 2>/dev/null || ss -tulpn'
+ssh -i ~/.ssh/servercheap_65_75_201_18 rami@65.75.201.18 'hostname && whoami'
+```
+
 ## Current Blocker
 
-SSH hardening and OS package maintenance cannot be considered complete until the `production-backend` Environment and required secrets exist, the protected workflow applies the role, and read-only audits confirm the effective server state.
+SSH hardening, OS package maintenance, and UFW firewall baseline cannot be considered complete until the `production-backend` Environment and required secrets exist, the protected workflow applies the role, and read-only audits confirm the effective server state.
