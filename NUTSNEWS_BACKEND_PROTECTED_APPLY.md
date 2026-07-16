@@ -56,6 +56,15 @@ roles_path = roles
 
 If the workflow fails with `the role 'backend_baseline' was not found`, confirm the checked-out commit contains `ansible/ansible.cfg` and rerun check mode before approving apply mode.
 
+## Check Mode Service Guards
+
+Check mode is a non-mutating preview. If the backend host does not yet have
+`fail2ban`, `sysstat`, or the managed swapfile, Ansible may report the package
+or file creation as a pending change and skip dependent service, permission, or
+format steps until apply mode. A skipped dependent step in that case is expected;
+a failed dependent step means the backend role needs another check-mode guard
+before apply mode is approved.
+
 ## Current Limitation
 
 The workflow cannot prove issue #10 complete until:
