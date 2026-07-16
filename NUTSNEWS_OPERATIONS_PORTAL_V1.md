@@ -166,6 +166,38 @@ Resource visibility stays cheap-VPS friendly:
 - per-process network byte totals are explicitly marked unavailable unless we approve extra telemetry later
 - the UI is static HTML/CSS/JS, not a frontend framework doing jazz hands on a tiny VPS
 
+## Collector Cadences
+
+### Simple
+
+The Ops Portal still refreshes every minute. Fast health data stays fresh, while slower scans reuse a short local cache so the tiny VPS is not spending a large slice of a CPU core rebuilding the same status every minute.
+
+### Intermediate
+
+The collector writes slow-section cache data to `/opt/nutsnews/portal-assets/data/collector-slow-cache.json`. Docker inspect/image metadata, Docker Compose listings, process rankings, log excerpts, security/update scans, backup filesystem metadata, local free-tier storage rows, OOM journal evidence, and Alloy visibility each have their own TTL. The public `status.json` includes `collector.runtime_seconds`, `collector.slow_sections`, and per-section `_collector_cache` metadata with `live`, `fresh_cache`, `stale_cache`, or `unavailable` state.
+
+`stale_cache` means the collector kept the last sanitized section after a refresh failure. That is intentional: it preserves useful portal context while making the failure visible. Critical host state such as CPU, memory, root disk, network counters, important systemd services, and basic Docker container presence still updates on the minute timer.
+
+### Expert
+
+The GitOps-managed TTL defaults are five minutes for Docker enrichment, Compose listings, process tables, logs, backups, and Alloy visibility; fifteen minutes for security/update scans, local free-tier storage rows, and OOM journal evidence; and one hour for the existing disk hotspot `du` scan. The timer cadence remains one minute so alerts can still evaluate fresh critical state. Tune these values through the Ansible role defaults and protected apply, not by editing files on the VPS.
+
+```mermaid
+flowchart TD
+  timer["collector timer\n1 minute"] --> fast["fast health\nCPU, memory, disk,\nnetwork, services,\nDocker ps"]
+  timer --> slow{"slow section\nTTL valid?"}
+  slow -- "yes" --> cache["collector-slow-cache.json\nfresh_cache"]
+  slow -- "no" --> scan["run bounded slow scan"]
+  scan -- "success" --> live["status.json section\nstate live"]
+  scan -- "failure with old data" --> stale["status.json section\nstate stale_cache"]
+  scan -- "failure without old data" --> unavailable["status.json section\nstate unavailable"]
+  fast --> status["status.json"]
+  cache --> status
+  live --> status
+  stale --> status
+  unavailable --> status
+```
+
 ## Portal Architecture
 
 ```mermaid
