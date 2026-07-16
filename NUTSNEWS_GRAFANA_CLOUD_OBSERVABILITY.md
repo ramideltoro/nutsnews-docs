@@ -235,6 +235,34 @@ sudo find /var/lib/nutsnews/alloy/textfile -maxdepth 1 -type f -name '*.prom' -p
 
 The `journalctl` count must be `0` after the 30-minute post-apply window has aged out pre-fix lines.
 
+## Disabling Alloy
+
+### Simple
+
+`enable_grafana_alloy=false` means Alloy must be off. Protected apply now stops and masks the service, disables the textfile timer, and removes the managed credentials/config files instead of leaving an old agent running.
+
+### Intermediate
+
+Use `Protected Ansible Apply` with `run_mode=check` first. The disabled-state diff should show removal of the managed Alloy env file, Alloy config, systemd drop-in, and textfile service/timer units, plus `alloy.service` moving to stopped/disabled/masked when the unit exists. Then rerun apply with `confirm_apply=vps.nutsnews.com`.
+
+The package and Grafana apt repository can remain installed. That keeps rollback simple while still removing the managed credential and config artifacts that would let the service keep sending telemetry.
+
+### Expert
+
+Disabled convergence is deliberately separate from the enabled installation block. This prevents a false disabled state where the Ops Portal says Alloy is disabled but an older `alloy.service` process, drop-in, and root-only env file are still present. Re-enabling is the rollback path: set `enable_grafana_alloy=true`, rerun check/apply, and Ansible un-masks `alloy.service`, recreates the managed env/config from protected Environment secrets, starts the textfile timer, and repeats readiness and journal validation.
+
+```mermaid
+flowchart TD
+    A[Protected Ansible Apply] --> B{enable_grafana_alloy}
+    B -->|true| C[Render env/config/drop-in]
+    C --> D[Unmask and start alloy.service]
+    D --> E[Validate readiness and journals]
+    B -->|false| F[Stop textfile timer]
+    F --> G[Stop, disable, and mask alloy.service]
+    G --> H[Remove managed env/config/drop-in/unit files]
+    H --> I[Ops Portal reports disabled runtime]
+```
+
 Use Loki Explore after apply:
 
 ```logql
