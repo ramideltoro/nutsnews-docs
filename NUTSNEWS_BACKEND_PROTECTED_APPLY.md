@@ -20,8 +20,11 @@ The backend repo adds:
 
 - `.github/workflows/backend-checks.yml`
 - `.github/workflows/backend-controlled-maintenance.yml`
+- `.github/workflows/backend-cloudflare-routing.yml`
 - `.github/workflows/protected-backend-ansible-apply.yml`
+- `runbooks/DEPLOYMENT_SAFETY_GATES.md`
 - `runbooks/PROTECTED_BACKEND_APPLY.md`
+- `scripts/backend_deployment_safety.py`
 - `scripts/validate_no_secret_files.py`
 
 The protected workflow is manual-only, defaults to check mode, and uses the GitHub Environment named `production-backend`.
@@ -82,6 +85,33 @@ Docker/Caddy/backend health, root disk and inode pressure, active-alert state,
 reboot-required state, package-update count, and unattended-upgrade
 availability. A reboot remains blocked while backup freshness or active-alert
 state is not healthy.
+
+## Deployment Safety Gates
+
+Backend-changing workflows have fixed safety gates:
+
+- `Protected Backend Ansible Apply`: check mode runs a non-blocking dry-run
+  gate; apply mode runs enforced preflight and post-change gates.
+- `Backend Cloudflare Routing`: check mode runs a non-blocking dry-run gate;
+  apply and rollback run enforced preflight and post-change gates.
+- `Backend Controlled Maintenance`: uses its fixed maintenance pre/post-check
+  runner for `security-upgrade` and `reboot`.
+
+The gates validate required secret presence by name only, never print values,
+and upload JSON/Markdown reports that list the change description, blockers,
+and verified checks. Missing or unknown evidence fails closed when that evidence
+is critical for the selected workflow profile.
+
+Rollback paths are fixed-purpose:
+
+- protected Ansible changes roll back through git revert or a rollback PR plus
+  protected check/apply;
+- Cloudflare routing rolls back through `run_mode=rollback`;
+- security update and reboot recovery follow the controlled maintenance runbook.
+
+Foundational work can still deploy missing safety components because current
+`not_configured` backup, restore, Docker, app, and alert surfaces are visible
+but not critical blockers for the baseline-apply profile.
 
 ## Check Mode Service Guards
 
