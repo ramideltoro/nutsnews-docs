@@ -8,15 +8,16 @@ The admin now has one page that says whether NutsNews looks ready to ship, using
 
 ## Intermediate Summary
 
-The production readiness dashboard helps an admin decide whether NutsNews is healthy enough to promote in under 30 seconds. It checks public feed/API readiness, the latest Worker/controller run, database growth, translation coverage, image coverage, backup restore verification, and CI status. Backup and CI status are live when a read-only GitHub token is configured; otherwise those cards stay yellow and link admins to GitHub Actions for manual verification.
+The production readiness dashboard helps an admin decide whether NutsNews is healthy enough to promote in under 30 seconds. It checks SLO/error-budget posture, public feed/API readiness, the latest Worker/controller run, database growth, translation coverage, image coverage, backup restore verification, and CI status. Backup and CI status are live when a read-only GitHub token is configured; otherwise those cards stay yellow and link admins to GitHub Actions for manual verification.
 
 ## Expert Summary
 
-Issue #86 adds a protected Next.js admin route at `/admin/readiness`, backed by `web/lib/adminProductionReadiness.ts`. Issue #110 extends the backup card so it can read the latest `Supabase Backup` workflow run when `ACTIONS_READ_TOKEN` is configured. The loader uses server-side Supabase service-role reads for `articles`, `public_feed_snapshot`, `worker_runs`, and `article_summaries`; it does not expose credentials to the browser. The GitHub-backed signals use a server-only GitHub REST API call to `/repos/ramideltoro/nutsnews/actions/runs?branch=main&per_page=50`. The call sends the required GitHub API headers, is cached/revalidated for 300 seconds, matches workflows by explicit workflow file/name mappings, and returns only sanitized workflow names, status, conclusion, branch, commit SHA, updated time, and links to the admin UI. Backup freshness is green only when the latest `Supabase Backup` run completed successfully within 30 hours, which means the workflow exported backup artifacts, restored them into disposable local Supabase, and ran `supabase/restore_validation.sql`.
+Issue #86 adds a protected Next.js admin route at `/admin/readiness`, backed by `web/lib/adminProductionReadiness.ts`. Issue #89 adds a derived `SLO and error budgets` signal that rolls up existing readiness signals against the SLO policy. Issue #110 extends the backup card so it can read the latest `Supabase Backup` workflow run when `ACTIONS_READ_TOKEN` is configured. The loader uses server-side Supabase service-role reads for `articles`, `public_feed_snapshot`, `worker_runs`, and `article_summaries`; it does not expose credentials to the browser. The GitHub-backed signals use a server-only GitHub REST API call to `/repos/ramideltoro/nutsnews/actions/runs?branch=main&per_page=50`. The call sends the required GitHub API headers, is cached/revalidated for 300 seconds, matches workflows by explicit workflow file/name mappings, and returns only sanitized workflow names, status, conclusion, branch, commit SHA, updated time, and links to the admin UI. Backup freshness is green only when the latest `Supabase Backup` run completed successfully within 30 hours, which means the workflow exported backup artifacts, restored them into disposable local Supabase, and ran `supabase/restore_validation.sql`.
 
 ## What Changed
 
 - Added an admin-facing `/admin/readiness` scorecard.
+- Added an SLO/error-budget card that links red/yellow readiness findings to the SLO runbook.
 - Added the Production Readiness card to the admin landing page.
 - Added a focused regression script for the readiness dashboard contract.
 - Added yellow verification states for backup freshness and unconfigured CI status rather than faking live success.
@@ -41,6 +42,7 @@ The admin landing page now links to Production Readiness. The new page groups si
 
 | Signal | Source | Green means | Yellow means | Red means |
 | --- | --- | --- | --- | --- |
+| SLO and error budgets | Derived from reader/API, degradation, Worker, DB growth, translation, backup, CI, and configuration signals | Core live indicators are inside the defined SLO budget | One or more SLO signals needs High/Medium classification | One or more critical readiness signals is burning error budget |
 | Public API health | `public_feed_snapshot` and recent `articles` rows | Snapshot has enough rows for a first page | Articles exist but snapshot is short | Neither source has enough rows |
 | Latest Worker/controller success | Latest `worker_runs` row | Latest success is fresh | Latest success is aging or missing | Latest run failed or is stale |
 | DB growth signal | Recent published `articles` rows | Published rows arrived in 24 hours | Growth exists in 7 days but not 24 hours | No recent published growth |
@@ -132,6 +134,8 @@ flowchart TD
   P --> G
   R --> G
   Q --> G
+  G --> S[SLO and error budgets signal]
+  S --> T[SLO runbook and incident class]
   G --> H{Any red?}
   H -->|Yes| I[Overall red: do not promote]
   H -->|No| J{Any yellow?}
@@ -160,6 +164,8 @@ Revert the app PR that adds or changes `/admin/readiness`, `web/lib/adminProduct
 ## Related
 
 - App issue: https://github.com/ramideltoro/nutsnews/issues/86
+- SLO issue: https://github.com/ramideltoro/nutsnews/issues/89
 - Backup restore issue: https://github.com/ramideltoro/nutsnews/issues/110
+- SLO runbook: [SERVICE_LEVEL_OBJECTIVES.md](SERVICE_LEVEL_OBJECTIVES.md)
 - Backup runbook: [NUTSNEWS_DB_BACKUPS.md](NUTSNEWS_DB_BACKUPS.md)
 - GitHub Actions automation: [GITHUB_ACTIONS_AUTOMATION.md](GITHUB_ACTIONS_AUTOMATION.md)
