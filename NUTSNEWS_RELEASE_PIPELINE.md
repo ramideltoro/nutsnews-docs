@@ -61,7 +61,8 @@ The release identity bundle is:
 - migration head
 - rollback-compatible schema version
 - production Supabase project reference
-- Vercel Production deployment URL for the same source commit
+- Vercel Production deployment evidence and public alias URL for the same
+  source commit
 
 The app `Container Image` workflow uploads `nutsnews-staging-release` metadata.
 `Request Verified Staging Release` dispatches only `nutsnews-staging-release`
@@ -75,9 +76,11 @@ verifies that attestation before retaining the evidence artifact.
 `Promote NutsNews Production Release` starts only after that qualification
 workflow succeeds, or by a tightly validated manual dispatch for the exact
 qualification run. It re-derives the release contract from the exact app source
-commit, verifies Vercel Production through GitHub deployment status and
-`/healthz`, verifies production Supabase via the browser-safe Vercel runtime
-config and the public `nutsnews_migration_schema_contract` RPC, revalidates the
+commit, verifies Vercel Production through GitHub deployment status, then reads
+`/healthz` and browser-safe runtime config from `https://www.nutsnews.com`.
+This keeps the same-source Vercel Production gate while avoiding protected
+per-deployment `.vercel.app` URLs. The workflow verifies production Supabase
+through the public `nutsnews_migration_schema_contract` RPC, revalidates the
 staging attestation and current staging deployment, then creates or reuses the
 production GitOps PR.
 
@@ -177,7 +180,7 @@ sequenceDiagram
 | Staging handoff | `staging-release.yml` | Only the validated `nutsnews-staging-release` payload is dispatched to infra | Staging deploy is not requested |
 | Staging deploy | `nutsnews-staging-deploy.yml` | VPS staging runtime reports the expected source, build, digest, schema, and isolation | Qualification is not eligible |
 | Staging qualification | `nutsnews-staging-qualification.yml` | Live staging tests pass and the exact-candidate attestation verifies | Production promotion is not eligible |
-| Vercel Production | `nutsnews-release-promotion.yml` | GitHub Deployment from `vercel[bot]` for the same commit is successful and `/healthz` reports that commit | Promotion stops before GitOps PR |
+| Vercel Production | `nutsnews-release-promotion.yml` | GitHub Deployment from `vercel[bot]` for the same commit is successful and `https://www.nutsnews.com/healthz` reports that commit | Promotion stops before GitOps PR |
 | Production Supabase contract | `nutsnews-release-promotion.yml` plus app migration workflow | Runtime config identifies production and the public schema contract RPC matches migration head, schema version, and fingerprint | Promotion fails and points to `production-supabase-migration.yml` |
 | Current staging attestation | `verify_production_eligibility.py` | Fresh trusted attestation matches release identity and the same deployment is still current successful staging | Promotion stops before GitOps PR or protected apply |
 | GitOps promotion PR | `nutsnews-release-promotion.yml` | Manifest PR checks pass and PR merges to infra `main` | Protected apply is not dispatched |

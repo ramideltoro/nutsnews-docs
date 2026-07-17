@@ -17,7 +17,8 @@ exact run and uses the required confirmation phrase. It verifies:
 
 - exact staging qualification attestation;
 - current successful staging deployment identity;
-- same-source Vercel Production deployment and JSON `/healthz` identity;
+- same-source Vercel Production deployment evidence and public production alias
+  JSON `/healthz` identity;
 - compatible production Supabase schema contract;
 - reviewed GitOps manifest PR and checks;
 - protected production apply with the complete release identity bundle.
@@ -26,11 +27,12 @@ If production Supabase is behind, promotion fails and directs the operator to
 the protected app workflow `production-supabase-migration.yml`. It does not run
 production migrations automatically.
 
-If the Vercel deployment URL returns HTTP 401, a deployment-protection page,
-an alias page, or any other non-app response for `/healthz`, promotion now
-fails with a concise Vercel health-gate error and does not print the response
-body. Resolve Vercel deployment protection, alias routing, or the automation
-bypass before rerunning promotion.
+The Vercel gate treats the successful `vercel[bot]` Production deployment as
+deployment evidence, then checks `https://www.nutsnews.com/healthz` for the
+same source commit. This avoids false failures when Vercel protects the
+per-deployment `.vercel.app` URL. If the public production alias returns HTTP
+401, non-JSON, or the wrong commit, promotion keeps polling until its deadline
+and then fails with the last concise alias-health error.
 
 ## Expert Summary
 
@@ -40,16 +42,19 @@ manifest PR only after Vercel, Supabase, and staging-attestation gates pass.
 `Protected Ansible Apply` still performs the pre-secret production eligibility
 check and post-apply Docker/public-health identity verification.
 
-The Vercel gate reads `/healthz?release=<source_commit>` from the successful
-Production deployment URL with `Accept: application/json`, parses the response
-body explicitly, and treats HTTP errors or non-JSON responses as hard gate
-failures. This keeps deployment-protection or routing issues readable in
-Actions logs without leaking a full response body into the workflow output.
+The Vercel gate still resolves GitHub Deployment records for the exact source
+commit and requires the latest `vercel[bot]` Production status to be
+successful. The status URL remains evidence only. Health and runtime-config
+verification use the allowlisted public alias `https://www.nutsnews.com`, with
+`Accept: application/json` and an explicit source-commit/header match. This
+keeps protected `.vercel.app` deployment URLs from blocking valid production
+deployments while preserving the same-source Vercel gate.
 
 ```mermaid
 flowchart LR
-  staging["Qualified staging run"] --> vercel["Vercel Production\nsame source commit"]
-  vercel --> supabase["Production Supabase\nschema contract"]
+  staging["Qualified staging run"] --> vercel["Vercel Production deployment\nsame source commit"]
+  vercel --> alias["Public production alias\n/healthz same commit"]
+  alias --> supabase["Production Supabase\nschema contract"]
   supabase --> pr["GitOps manifest PR"]
   pr --> apply["Protected Ansible Apply"]
   apply --> verify["Docker + /healthz identity"]
@@ -69,6 +74,8 @@ flowchart LR
   clearer Vercel `/healthz` non-JSON failure handling.
 - `ramideltoro/nutsnews-infra` PR #244:
   clearer Vercel `/healthz` HTTP status failure handling.
+- `ramideltoro/nutsnews-infra` PR #247:
+  public production alias verification for protected Vercel deployment URLs.
 
 ## Remaining Risks
 
