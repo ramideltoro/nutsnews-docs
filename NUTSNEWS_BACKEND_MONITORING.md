@@ -119,6 +119,26 @@ The rules use the backend textfile metrics and explicit `noDataState` settings
 so intentionally not-configured services do not page as failures. Notification
 routing, deduplication, cooldowns, and recovery messages are managed separately.
 
+## Off-Box Synthetic Monitoring
+
+Backend issue #30 adds `.github/workflows/backend-synthetic-monitor.yml` in
+`ramideltoro/nutsnews-backend`.
+
+The workflow runs hourly from GitHub-hosted runners and checks public endpoints
+without authentication or production mutation:
+
+- `https://www.nutsnews.com/`
+- `https://nutsnews.com/` redirect behavior
+- `https://backend.nutsnews.com/healthz`
+- `https://backend.nutsnews.com/` expected current `404`
+- Supabase public status API as the auth-provider availability signal
+
+Each run uploads `backend-synthetic-report.json`, writes a GitHub step summary,
+and sends email only on failures through the existing NutsNews reporting SMTP
+secret names. The report includes endpoint, HTTP status, failure class, source
+provider/location, and last successful check timestamp when a previous artifact
+is available.
+
 ## Grafana Cloud Metrics
 
 Backend issue #35 adds the repo-managed Grafana Cloud metrics path from
