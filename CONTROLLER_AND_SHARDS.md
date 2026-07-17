@@ -63,7 +63,7 @@ The production controller is configured with `SHARD_COUNT=3`, `SHARD_RUN_INTERVA
 
 On 2026-07-17, production Supabase showed 49 active `rss_feeds` rows out of 763 total rows. With `FEEDS_PER_SHARD=20`, only shards 0, 1, and 2 can return feed rows. Worker telemetry showed repeated `run_source=manual` rows for shards 3 through 24 with `feed_count=0`, `fetched_count=0`, and `accepted_count=0`. The controller was redeployed with `SHARD_COUNT=3`; `https://nutsnews-controller.nutsnews.workers.dev/?shard=3` now fails fast with `Invalid shard. Use a number from 0 to 2.` A manual shard-2 controller run returned `shardCount=3`, `feedCount=9`, `fetchedCount=304`, and refreshed the public feed snapshot at `2026-07-17T03:11:09Z`.
 
-The same incident showed that shard 0 could spend almost two minutes in Local AI and translation fallback work. Long runs accepted articles but sometimes failed to save `worker_runs`, `ai_usage_runs`, review rows, or `public_feed_snapshot` before the invocation ran out of useful request budget. Production Worker shards now use bounded external fetches and deploy with `SUMMARY_TRANSLATION_LIMIT=0`, `HOLD_ARTICLES_FOR_TRANSLATIONS=false`, `LOCAL_AI_TIMEOUT_MS=5000`, `OPENAI_TIMEOUT_MS=30000`, `RSS_FEED_FETCH_TIMEOUT_MS=15000`, and `ARTICLE_PAGE_FETCH_TIMEOUT_MS=10000`. Translations should be backfilled separately instead of blocking the publishing path.
+The same incident showed that shard 0 could spend almost two minutes in Local AI and translation fallback work. Long runs accepted articles but sometimes failed to save `worker_runs`, `ai_usage_runs`, review rows, or `public_feed_snapshot` before the invocation ran out of useful request budget. Production Worker shards now use bounded external fetches and deploy with `SUMMARY_TRANSLATION_LIMIT=0`, `HOLD_ARTICLES_FOR_TRANSLATIONS=false`, `LOCAL_AI_TIMEOUT_MS=15000`, `OPENAI_TIMEOUT_MS=30000`, `RSS_FEED_FETCH_TIMEOUT_MS=15000`, and `ARTICLE_PAGE_FETCH_TIMEOUT_MS=10000`. Translations should be backfilled separately instead of blocking the publishing path.
 
 ```mermaid
 flowchart LR
@@ -87,7 +87,7 @@ Operational notes:
 * Increase `SHARD_COUNT` only when active feeds exceed the current capacity. At 20 feeds per shard, 1-20 active feeds need 1 shard, 21-40 need 2 shards, and 41-60 need 3 shards.
 * If feed management intentionally re-enables many sources, update the controller `SHARD_COUNT` and Worker generated configs in the same deployment.
 * Keep `SUMMARY_TRANSLATION_LIMIT=0` and `HOLD_ARTICLES_FOR_TRANSLATIONS=false` until translation backlog processing has separate budget controls. Publishing freshness is the priority for the scheduled refresh path.
-* Keep `LOCAL_AI_TIMEOUT_MS` short enough that OpenAI fallback can run before the Worker reaches subrequest or wall-time limits.
+* Keep `LOCAL_AI_TIMEOUT_MS` long enough for the home-server model to answer during normal load, but short enough that OpenAI fallback can run before the Worker reaches subrequest or wall-time limits. The current production default is 15000 ms.
 * Do not treat `success=true` alone as ingestion health. Check `feed_count`, `fetched_count`, `eligible_for_ai_count`, and `accepted_count`.
 * Rollback for shard count is to redeploy the previous controller config, but only do this if active feed count again requires more than 3 shards or if a new controller bug appears. Rollback for translation hold is to restore `SUMMARY_TRANSLATION_LIMIT=5` and `HOLD_ARTICLES_FOR_TRANSLATIONS=true` only after proving shard refreshes still save reviews, usage, worker telemetry, and snapshots.
 
