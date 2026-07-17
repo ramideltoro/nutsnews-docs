@@ -138,8 +138,15 @@ identity bundle:
 The verifier rejects missing, expired, tampered, stale, superseded, skipped, or
 mismatched staging qualification evidence before production SSH keys, deploy
 secrets, production app secrets, or the protected Environment are available.
-The old direct `nutsnews-production-release` dispatch path is paused until the
-staging-first handoff is activated.
+
+New app releases should enter through `nutsnews-release-promotion.yml`, not by
+manual Protected Ansible Apply dispatch. That promotion workflow starts from a
+successful staging qualification run, verifies the same source commit has
+already reached Vercel Production, verifies the production Supabase schema
+contract, creates or reuses the reviewed GitOps manifest PR, waits for checks,
+merges it, and then dispatches this workflow with the complete release identity
+bundle. The old direct `nutsnews-production-release` dispatch is not a valid
+entry point.
 
 Routine host package maintenance and reboots use a separate fixed-purpose
 workflow, `Protected VPS Maintenance`. It still attaches to the protected
@@ -157,9 +164,9 @@ skipped suites, expired evidence, digest/source/build mismatches, staging drift,
 superseded candidates, and rollback selection mistakes must stop before the
 workflow reaches production secrets or deploy authority.
 
-Normal direct routes from `built` to production are closed or fail-closed. The
-old app repository production dispatch remains paused, mutable tags are rejected,
-and the only production app mutation paths are the no-secret attestation gate in
+Normal direct routes from `built` to production are closed. Mutable tags are
+rejected, the old app repository production dispatch is not accepted, and the
+only production app mutation paths are the staging-qualified promotion into
 `Protected Ansible Apply` and the fixed recorded last-known-good rollback path.
 
 ### Intermediate Summary
@@ -169,9 +176,10 @@ Issue
 adds an explicit rehearsal validator in
 `ansible/tests/validate_gate_rehearsal.py`. It checks that the already-covered
 negative cases remain present, that `production-vps` is not attached before the
-eligibility job, that the old direct `nutsnews-production-release` path fails
-closed before legacy dispatch code, and that no other workflow can mutate the
-production app digest.
+eligibility job, that direct `nutsnews-production-release` dispatch is absent,
+that the promotion workflow verifies Vercel Production, production Supabase,
+and current staging qualification before GitOps PR creation, and that no other
+workflow can mutate the production app digest.
 
 The validator also inventories allowed `production-vps` workflows. Backups,
 health reports, Grafana workflows, portal status verification, protected apply,
@@ -179,11 +187,11 @@ and fixed rollback may use that Environment for their fixed purpose. They must
 not accept arbitrary commands or app image tags. App digest promotion still goes
 through the protected apply gate only.
 
-The `ramideltoro/nutsnews` app `main` branch protection and the final
-staging-first app handoff are completed by
-[nutsnews #176](https://github.com/ramideltoro/nutsnews/issues/176). Until that
-activation, the old direct production dispatch is deliberately paused rather
-than trusted.
+The `ramideltoro/nutsnews` app `main` branch protection and staging handoff are
+separate from production VPS mutation. The app can request only staging; infra
+promotion is responsible for proving staging qualification, Vercel Production
+same-source deployment, production Supabase compatibility, reviewed manifest
+state, and protected apply eligibility.
 
 ### Expert Summary
 
@@ -205,7 +213,8 @@ database down migration.
 flowchart TD
   build["App build produces immutable digest"] --> stage["Deploy Verified Staging Candidate"]
   stage --> qualify["Off-VPS staging qualification"]
-  qualify --> gate{"No-secret production verifier"}
+  qualify --> promotion["Promotion verifies Vercel Production\nand production Supabase contract"]
+  promotion --> gate{"No-secret production verifier"}
   gate -- "known-good, fresh, exact match" --> env["production-vps Environment"]
   gate -- "missing / expired / tampered / mismatched / skipped / drifted / superseded" --> block["Block before production secrets"]
   env --> apply["Protected Ansible Apply"]

@@ -203,21 +203,27 @@ controlled repair). Do not claim or attempt automatic reverse migrations.
 
 The container build publishes immutable metadata containing the image digest,
 source commit, build ID, `migration_head`, and rollback-compatible
-`schema_version`. `Promote Verified Production Release` verifies the live
-production database contract before sending those values to
-`ramideltoro/nutsnews-infra`.
+`schema_version`. The app repository sends only the validated staging handoff to
+`ramideltoro/nutsnews-infra`; it does not send a direct production release
+dispatch.
 
-The infrastructure promotion refuses an incomplete or malformed schema
-contract. Its generated GitOps pull request updates the digest and source
-identity together with the migration head, schema marker, and derived
-configuration generation. The release handoff also carries the verified
-Supabase project reference. Protected Ansible Apply verifies all six release
-inputs against the merged manifest and rejects a synchronized production
-runtime whose project differs from the reviewed release project. Production
-and staging both receive the OCI attestation environment fields; an enabled
-production render is rejected
-if its build, configuration generation, migration head, or schema marker is
-missing or malformed.
+Infra promotion derives the migration head and schema marker again from the
+exact app source commit, then verifies the live production database contract
+before it can create the production GitOps manifest PR. The check uses Vercel
+Production runtime identity to confirm the production Supabase project and then
+calls `nutsnews_migration_schema_contract`. If the production schema is behind,
+promotion fails and points to the protected
+`production-supabase-migration.yml` workflow. Promotion does not auto-migrate
+production.
+
+The generated GitOps pull request updates the digest and source identity
+together with the migration head, schema marker, verified Supabase project
+reference, and derived configuration generation. Protected Ansible Apply
+verifies the complete release bundle against the merged manifest and rejects a
+synchronized production runtime whose project differs from the reviewed release
+project. Production and staging both receive the OCI attestation environment
+fields; an enabled production render is rejected if its build, configuration
+generation, migration head, or schema marker is missing or malformed.
 
 An application rollback remains a digest rollback to the recorded
 last-known-good image. The additive schema and unchanged legacy marker preserve
