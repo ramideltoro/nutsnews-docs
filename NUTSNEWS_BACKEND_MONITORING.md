@@ -55,6 +55,45 @@ Until the backend app exists, application status is `not_deployed`.
 - Backend app logs: `/var/log/nutsnews/*.log`, daily rotation, 14 retained rotations, compressed.
 - Logs must not contain secrets, tokens, private keys, database dumps, or full environment output.
 
+## Grafana Cloud Logs
+
+Backend issue #36 adds Grafana Cloud Loki log shipping through the backend
+Grafana Alloy deployment in `ramideltoro/nutsnews-backend`.
+
+Secret names in the GitHub `production-backend` environment:
+
+- `GRAFANA_CLOUD_LOKI_URL`
+- `GRAFANA_CLOUD_LOKI_USERNAME`
+- `GRAFANA_CLOUD_LOKI_PASSWORD`
+
+Collected sources:
+
+- filtered systemd journal units for Caddy, Alloy, backup/restore verification,
+  NutsNews timers, SSH, UFW, fail2ban, unattended-upgrades, and apt timers;
+- `/var/log/auth.log` and `/var/log/fail2ban.log` through the host `adm` group;
+- `/var/log/caddy/access.log`, `/var/log/caddy/error.log`, and
+  `/var/log/nutsnews/*.log` when those files exist.
+
+Alloy remains least-privilege: it runs as the package-managed `alloy` user and
+is added only to `systemd-journal` and `adm` for log reads. Docker/Compose
+container logs are intentionally excluded until backend app containers exist and
+a reviewed socket-free or otherwise least-privilege collection path is added.
+
+Before logs are shipped, Alloy drops private-key markers and oversized lines,
+redacts authorization headers, cookies, token/password/API-key style values,
+query strings, and email addresses, truncates long lines, and keeps only stable
+labels:
+
+```text
+environment, host, source, service, unit, severity, filename, job
+```
+
+Grafana objects:
+
+- Folder: `NutsNews Backend Ops` (`nutsnews-backend-ops`)
+- Logs dashboard: `NutsNews Backend Logs` (`nutsnews-backend-logs`)
+- Datasource type: Grafana Loki (`loki`)
+
 ## Grafana Cloud Metrics
 
 Backend issue #35 adds the repo-managed Grafana Cloud metrics path from
@@ -103,12 +142,14 @@ gh workflow run backend-grafana-metrics.yml \
 Expected live evidence:
 
 - `alloy` service is active.
+- `id alloy` includes only narrow log-read groups such as `adm` and `systemd-journal`.
 - `nutsnews-metrics-textfile.timer` is enabled and active.
 - `ss -tuln` does not show public listeners on `9100`, `9090`, `9091`, or `12345`.
 - Grafana verification returns data for:
   - `up{job="nutsnews-backend-host"}`
   - `nutsnews_backend_backup_stage_healthy{stage="backup"}`
   - `nutsnews_backend_public_endpoint_healthy`
+  - `{host="backend.nutsnews.com",source="journal"}`
 
 ## Status
 
