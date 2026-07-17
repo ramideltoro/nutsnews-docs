@@ -92,7 +92,8 @@ Grafana objects:
 
 - Folder: `NutsNews Backend Ops` (`nutsnews-backend-ops`)
 - Logs dashboard: `NutsNews Backend Logs` (`nutsnews-backend-logs`)
-- Managed logs datasource: `grafanacloud-nutsnews-backend-loki` (`grafanacloud-loki`)
+- Live logs datasource verified on 2026-07-17: `grafanacloud-kindcantaloupe2036-logs` (`grafanacloud-logs`)
+- Managed fallback logs datasource if no Cloud Logs datasource exists: `grafanacloud-nutsnews-backend-loki` (`grafanacloud-loki`)
 - Datasource type: Grafana Loki (`loki`)
 
 The backend provisioner intentionally avoids Grafana's alert-state-history Loki
