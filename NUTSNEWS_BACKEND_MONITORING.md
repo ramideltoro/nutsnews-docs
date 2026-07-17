@@ -42,12 +42,31 @@ Until the backend app exists, application status is `not_deployed`.
 | Signal | Warning | Critical |
 | --- | --- | --- |
 | Root disk used | 80% | 90% |
+| Root inode used | 80% | 90% |
 | Memory used | 80% | 90% |
 | Load average per CPU | 1.5 | 2.5 |
 | Failed systemd units | any failed unit | any failed unit after one recheck |
 | Pending reboot | present after maintenance window | present after approved reboot window |
 | Backend endpoint | one failed check | two consecutive failed checks |
 | Backup freshness | workload-specific | beyond restore policy RPO |
+
+## Cleanup Maintenance
+
+Backend issue #41 adds `.github/workflows/backend-cleanup-maintenance.yml` in
+`ramideltoro/nutsnews-backend`.
+
+The workflow has `report`, `dry-run`, and protected `apply` actions. It is
+allowlist-based and only targets stale temp files, apt package archives,
+dangling Docker images, and Docker build cache older than 7 days. It protects
+Caddy state, Docker volumes, backup state/repositories, database data, app
+persistent data, ops dashboard files, and core host configuration.
+
+Cleanup `apply` requires the `production-backend` Environment and
+`confirm_apply=backend.nutsnews.com`. Reports and dry-runs upload
+`backend-cleanup-maintenance-report.json` without deleting anything.
+
+The backend health report exposes `cleanup_last_run`; it remains
+`not_configured` until an approved cleanup apply writes the host state file.
 
 ## Log Retention
 

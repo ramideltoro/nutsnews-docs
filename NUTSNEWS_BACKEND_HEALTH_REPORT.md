@@ -36,6 +36,8 @@ The generated report includes:
 - reboot-required and package-update state;
 - SSH, UFW, fail2ban, Docker, Caddy, PostgreSQL, Alloy, and sysstat service states;
 - backup tool presence such as restic/rclone;
+- cleanup last-run status when `/var/lib/nutsnews/cleanup/last-cleanup.json`
+  exists;
 - relevant timers and backend units;
 - public listener inventory;
 - recent critical journal entries visible to the read-only audit user;
