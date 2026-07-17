@@ -41,6 +41,146 @@ The homepage uses the same edge-aware helper for its initial article load and ca
 
 ---
 
+## Issue #92 Graceful Degradation Mode
+
+Related links:
+
+- Issue: [ramideltoro/nutsnews#92](https://github.com/ramideltoro/nutsnews/issues/92)
+- App PR: [ramideltoro/nutsnews#239](https://github.com/ramideltoro/nutsnews/pull/239)
+
+### Simple Summary
+
+If the news feed systems are having a bad moment, NutsNews now stays calm. It can show saved good-news cards when they exist, or a clear refresh message when nothing safe is available.
+
+### Intermediate Summary
+
+The web app now treats the homepage feed as a degraded service instead of only success or failure. The normal order is Supabase `public_feed_snapshot`, Supabase `articles`, Cloudflare edge snapshot, and then a stable maintenance payload. Readers see maintenance copy instead of a broken or generic empty feed. Admin readiness now includes a graceful degradation signal that tells operators whether the reader is protected by a snapshot, relying on database fallback, or blocked.
+
+### Expert Summary
+
+`HomeFeedPayload` can now include degradation metadata with a mode, reason, safe service states, and log timestamp. `/api/home-feed` and `/api/articles?home=1` return HTTP 200 for home-feed maintenance states with `X-NutsNews-Degradation-Mode` and `X-NutsNews-Degradation-Reason` headers. Non-home article API failures still fail closed. `getHomeFeedDataWithEdgeFallback` logs warning events when snapshot reads fail, when edge snapshot recovery is used, and when maintenance payloads are returned. The maintenance payload preserves the known homepage section ids with empty article arrays so the reader layout remains stable. No database migration, secret, or environment-variable change is required.
+
+```mermaid
+flowchart TD
+  A[Homepage or home-feed API request] --> B[Supabase public_feed_snapshot]
+  B -->|hit| C[Normal reader feed]
+  B -->|empty or error| D[Supabase articles fallback]
+  D -->|rows| E[Database fallback reader feed]
+  D -->|empty or error| F[Cloudflare edge snapshot]
+  F -->|hit| G[Degraded last-known-good feed]
+  F -->|miss, error, or unconfigured| H[Maintenance payload]
+  H --> I[Reader maintenance copy]
+  H --> J[Degradation headers]
+  K[Admin readiness] --> L[Graceful degradation signal]
+  L --> B
+  L --> M[Worker shard and local AI dashboards]
+```
+
+### Who Is Affected
+
+- Readers see a clearer maintenance message when all public feed sources are unavailable.
+- Operators see a new `/admin/readiness` signal for public feed fallback coverage.
+- API consumers of home-feed mode can check degradation headers and payload metadata while still receiving a stable JSON shape.
+- Worker maintainers keep ownership of ingestion and local AI fallback behavior in the worker repo; the app now surfaces the risk and links operators to the right dashboards.
+
+### Operational Behavior
+
+Normal healthy behavior:
+
+```text
+public_feed_snapshot -> reader feed
+```
+
+Supabase snapshot issue:
+
+```text
+public_feed_snapshot -> articles fallback -> reader feed
+```
+
+Supabase read outage with edge snapshot available:
+
+```text
+public_feed_snapshot -> articles fallback -> Cloudflare edge snapshot -> degraded reader feed
+```
+
+Full public feed outage:
+
+```text
+public_feed_snapshot -> articles fallback -> Cloudflare edge snapshot -> maintenance payload
+```
+
+The maintenance payload includes:
+
+```text
+articles: []
+nextPage: null
+nextCursor: null
+sections: [{ id: "community", articles: [] }, ...]
+degradation.mode: "maintenance"
+degradation.reason: "no_public_feed_data" or "home_feed_exception"
+```
+
+### Headers and Logs
+
+Home-feed maintenance and degraded responses include:
+
+```text
+X-NutsNews-Degradation-Mode: degraded | maintenance
+X-NutsNews-Degradation-Reason: edge_snapshot_fallback | no_public_feed_data | home_feed_exception
+```
+
+Expected warning events include:
+
+```text
+web.home_feed.snapshot_read_failed
+web.home_feed.fallback_read_failed
+web.home_feed.edge_snapshot_degraded
+web.home_feed.maintenance_returned
+api.home_feed.maintenance_returned
+api.articles.home_maintenance_returned
+```
+
+### Verification
+
+Local checks used for the app PR:
+
+```bash
+cd web
+npm run test:routes
+npm run test:api-contracts
+npm run test:admin-production-readiness
+npm run test:runtime-safety
+npm run build
+npm run test:e2e:offline
+```
+
+The plain `npm run build` requires a valid NutsNews runtime-safety environment. For local synthetic validation, use staging-safe fixture values instead of production secrets.
+
+Browser verification for the maintenance state can point the app at a mock Supabase endpoint returning HTTP 503 and open:
+
+```text
+/?qualification=nutsnews-test-issue-92
+```
+
+Expected result:
+
+```text
+NutsNews is refreshing the feed right now. Please check back soon.
+```
+
+### Risks, Mitigations, and Rollback
+
+| Risk | Mitigation |
+| --- | --- |
+| A home-feed API caller might treat HTTP 200 as fully healthy. | Degradation headers and payload metadata explicitly mark degraded or maintenance responses. |
+| The reader could show a generic empty feed during an outage. | `ArticleFeed` switches to maintenance copy when `degradation.mode` is `maintenance`. |
+| Empty maintenance sections could change the homepage layout contract. | The payload preserves stable section ids with empty article arrays. |
+| Worker or local AI failures still need worker-owned fixes. | The admin signal points operators to Worker shard and local AI dashboards; worker implementation remains in `ramideltoro/nutsnews-worker`. |
+
+Rollback is a normal revert of the app PR. No Supabase migration, Cloudflare KV change, secret rotation, or environment-variable rollback is needed.
+
+---
+
 ## Homepage Category Backfill
 
 ### Simple Summary
