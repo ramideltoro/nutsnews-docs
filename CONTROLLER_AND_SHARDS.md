@@ -47,6 +47,45 @@ Controller URL:
 https://nutsnews-controller.nutsnews.workers.dev/
 ```
 
+## Current Production Shard Topology
+
+Updated: 2026-07-17.
+
+### Simple Summary
+
+NutsNews currently has 49 active RSS feeds. The controller should only rotate through shards 0, 1, and 2, because those are the only shards with feeds right now.
+
+### Intermediate Summary
+
+The production controller is configured with `SHARD_COUNT=3`, `SHARD_RUN_INTERVAL_MINUTES=5`, and `FEEDS_PER_SHARD=20`. This covers the active feed set without spending most controller runs on empty shards. A previous 25-shard controller configuration caused frequent successful-but-empty Worker runs against shards 3 through 24, which made ingestion look quiet and delayed useful feed checks.
+
+### Expert Summary
+
+On 2026-07-17, production Supabase showed 49 active `rss_feeds` rows out of 763 total rows. With `FEEDS_PER_SHARD=20`, only shards 0, 1, and 2 can return feed rows. Worker telemetry showed repeated `run_source=manual` rows for shards 3 through 24 with `feed_count=0`, `fetched_count=0`, and `accepted_count=0`. The controller was redeployed with `SHARD_COUNT=3`; `https://nutsnews-controller.nutsnews.workers.dev/?shard=3` now fails fast with `Invalid shard. Use a number from 0 to 2.` A manual shard-2 controller run returned `shardCount=3`, `feedCount=9`, `fetchedCount=304`, and refreshed the public feed snapshot at `2026-07-17T03:11:09Z`.
+
+```mermaid
+flowchart LR
+  subgraph Before["Before: 25-shard controller"]
+    A1["Controller cron every 5 min"] --> B1["Shard index 0..24"]
+    B1 --> C1["Shards 0..2 have active feeds"]
+    B1 --> D1["Shards 3..24 have feed_count=0"]
+    D1 --> E1["Many successful empty runs"]
+  end
+
+  subgraph After["After: 3-shard controller"]
+    A2["Controller cron every 5 min"] --> B2["Shard index 0..2"]
+    B2 --> C2["All controller targets have active feeds"]
+    C2 --> D2["Useful RSS checks every rotation"]
+  end
+```
+
+Operational notes:
+
+* Increase `SHARD_COUNT` only when active feeds exceed the current capacity. At 20 feeds per shard, 1-20 active feeds need 1 shard, 21-40 need 2 shards, and 41-60 need 3 shards.
+* If feed management intentionally re-enables many sources, update the controller `SHARD_COUNT` and Worker generated configs in the same deployment.
+* Do not treat `success=true` alone as ingestion health. Check `feed_count`, `fetched_count`, `eligible_for_ai_count`, and `accepted_count`.
+* Rollback is to redeploy the previous controller config, but only do this if active feed count again requires more than 3 shards or if a new controller bug appears.
+
 ---
 
 ## Manual Controller Trigger
@@ -64,17 +103,19 @@ Expected top-level response:
 ```json
 {
   "message": "NutsNews controller run complete",
-  "mode": "automatic",
-  "shardCount": 25,
+  "controllerMode": "automatic",
+  "shardCount": 3,
   "shardRunIntervalMinutes": 5,
   "maxAiReviewsPerShard": 12,
   "requestId": "<uuid>",
-  "shardIndex": 0,
-  "shardUrl": "https://nutsnews-worker-0.nutsnews.workers.dev/?limit=12",
-  "ok": true,
-  "status": 200,
-  "response": {
-    "message": "NutsNews refresh complete"
+  "result": {
+    "shardIndex": 0,
+    "shardUrl": "https://nutsnews-worker-0.nutsnews.workers.dev/?limit=12",
+    "ok": true,
+    "status": 200,
+    "response": {
+      "message": "NutsNews refresh complete"
+    }
   }
 }
 ```
@@ -93,20 +134,19 @@ Examples:
 
 ```bash
 curl "https://nutsnews-controller.nutsnews.workers.dev/?shard=1"
-curl "https://nutsnews-controller.nutsnews.workers.dev/?shard=12"
-curl "https://nutsnews-controller.nutsnews.workers.dev/?shard=24"
+curl "https://nutsnews-controller.nutsnews.workers.dev/?shard=2"
 ```
 
-The controller validates the shard index. With 25 shards, valid values are:
+The controller validates the shard index. With the current 3-shard production controller, valid values are:
 
 ```text
-0 through 24
+0 through 2
 ```
 
 Invalid example:
 
 ```bash
-curl "https://nutsnews-controller.nutsnews.workers.dev/?shard=99"
+curl "https://nutsnews-controller.nutsnews.workers.dev/?shard=3"
 ```
 
 Expected failure response:
@@ -117,7 +157,7 @@ Expected failure response:
   "requestId": "<uuid>",
   "error": {
     "name": "Error",
-    "message": "Invalid shard. Use a number from 0 to 24."
+    "message": "Invalid shard. Use a number from 0 to 2."
   }
 }
 ```
@@ -136,8 +176,7 @@ Examples:
 
 ```bash
 curl "https://nutsnews-worker-1.nutsnews.workers.dev/?limit=1"
-curl "https://nutsnews-worker-12.nutsnews.workers.dev/?limit=1"
-curl "https://nutsnews-worker-24.nutsnews.workers.dev/?limit=1"
+curl "https://nutsnews-worker-2.nutsnews.workers.dev/?limit=1"
 ```
 
 Use a small limit during manual testing to control OpenAI usage:
@@ -156,10 +195,10 @@ curl "https://nutsnews-worker-0.nutsnews.workers.dev/?limit=12"
 
 ## Test Every Shard Directly
 
-Run this from your terminal to test all 25 shards with a low AI review limit:
+Run this from your terminal to test all current controller shards with a low AI review limit:
 
 ```bash
-for shard in $(seq 0 24); do
+for shard in $(seq 0 2); do
   echo "== shard $shard =="
   curl -s "https://nutsnews-worker-${shard}.nutsnews.workers.dev/?limit=1" \
     | python3 -m json.tool
@@ -171,7 +210,7 @@ done
 If `python3 -m json.tool` is too noisy, use a compact check:
 
 ```bash
-for shard in $(seq 0 24); do
+for shard in $(seq 0 2); do
   echo "== shard $shard =="
   curl -s "https://nutsnews-worker-${shard}.nutsnews.workers.dev/?limit=1" \
     | grep -E 'message|shardIndex|feedCount|acceptedCount|workerRunSaveOk' || true
@@ -187,7 +226,7 @@ done
 This calls each shard through the controller instead of calling the shard URLs directly:
 
 ```bash
-for shard in $(seq 0 24); do
+for shard in $(seq 0 2); do
   echo "== controller shard $shard =="
   curl -s "https://nutsnews-controller.nutsnews.workers.dev/?shard=${shard}" \
     | python3 -m json.tool
@@ -207,16 +246,19 @@ The controller returns these fields:
 | Field | Meaning |
 | --- | --- |
 | `message` | Controller status message |
-| `mode` | `automatic` or `manual` |
+| `controllerMode` | `automatic` or `manual` |
+| `requestedMode` | `refresh` or `translate-backlog` |
+| `translationBacklogEnabled` | Whether the controller also calls the translation backlog mode |
 | `shardCount` | Total configured shard count |
 | `shardRunIntervalMinutes` | Rotation interval used for automatic shard selection |
 | `maxAiReviewsPerShard` | AI review limit sent to the shard |
 | `requestId` | UUID used to correlate logs |
-| `shardIndex` | Shard selected or manually requested |
-| `shardUrl` | Worker URL called by the controller |
-| `ok` | Whether the shard HTTP response was OK |
-| `status` | HTTP status returned by the shard call |
-| `response` | Parsed shard response body |
+| `result.shardIndex` | Shard selected or manually requested |
+| `result.shardUrl` | Worker URL called by the controller |
+| `result.ok` | Whether the shard HTTP response was OK |
+| `result.status` | HTTP status returned by the shard call |
+| `result.response` | Parsed shard response body |
+| `translationBacklogResult` | Parsed result from the translation backlog call when enabled |
 
 ---
 
