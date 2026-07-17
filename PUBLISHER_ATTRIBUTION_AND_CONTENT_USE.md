@@ -85,7 +85,7 @@ Before launching digest, newsletter, source pages, archive pages, related storie
 - Include publisher/source name beside each story.
 - Link the story title or CTA to the original publisher URL.
 - Keep summaries short and non-substitutive.
-- Do not add custom analytics around outbound publisher clicks unless the analytics allowlist is updated first.
+- Keep outbound publisher-click analytics within the privacy allowlist: consent-gated, aggregate-only, and no raw URLs or visitor identifiers in event payloads.
 - Include removal/correction handling in launch docs and PR release notes.
 
 ## Risks And Mitigations
