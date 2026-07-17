@@ -6,7 +6,7 @@ This document maps the staging-qualified production release path across:
 
 - `ramideltoro/nutsnews` at inspected `origin/main` commit `1a44391`
 - `ramideltoro/nutsnews-infra` at inspected `origin/main` commit `bab60bc`
-- `ramideltoro/nutsnews-docs` at base `main` commit `77500d1`
+- `ramideltoro/nutsnews-docs` at base `main` commit `0682a0e`
 
 It documents repository-owned behavior and workflow boundaries. It does not
 contain secret values and does not authorize manual production database changes,
@@ -40,6 +40,12 @@ Before the production VPS can change, infra verifies:
 If the production Supabase schema is behind, promotion fails and points the
 operator to `ramideltoro/nutsnews/.github/workflows/production-supabase-migration.yml`.
 The production promotion workflow does not auto-migrate production.
+
+The explicit Vercel production workflow also sanitizes shell-sensitive names
+from the pulled Vercel Production env file before running the local prebuilt
+build. This prevents a Vercel env variable named like `PATH`, `Path`, `SHELL`,
+or `HOME` from breaking the GitHub runner shell while keeping the secret values
+inside Vercel and GitHub Actions.
 
 ## Intermediate Summary
 
@@ -84,6 +90,11 @@ PR. After the protected VPS apply succeeds, infra dispatches the app
 repository's explicit Vercel production workflow and waits for the deployment
 URL plus public aliases to report the same source commit.
 
+The Vercel production workflow still pulls the Vercel Production environment
+for the build, but it removes only runner-control names that can make `vercel
+build --prod` fail locally. Application and secret configuration values remain
+available to the build; the workflow does not print or export their values.
+
 The promotion workflow does not attach the `production-vps` environment. It
 uses the existing infra release token only after the Supabase and
 staging-attestation gates pass, so the token is used for GitOps mechanics:
@@ -113,6 +124,9 @@ The production path deliberately separates evidence from mutation:
 - Vercel Production deploys only after the protected VPS apply passes, and the
   release remains failed unless the deployment URL and public aliases report
   the same source commit.
+- The Vercel local prebuilt build sanitizes only shell-sensitive env names
+  after `vercel pull`, so platform configuration cannot remove the GitHub
+  runner's shell path before `vercel build --prod`.
 
 The release is not transactionally atomic across Vercel, Supabase, GitHub, and
 the VPS. The safety property is narrower and testable: every production VPS app
@@ -190,8 +204,32 @@ sequenceDiagram
 | GitOps promotion PR | `nutsnews-release-promotion.yml` | Manifest PR checks pass and PR merges to infra `main` | Protected apply is not dispatched |
 | Protected eligibility | `protected-ansible-apply.yml` | No-secret verifier accepts the merged manifest and complete release bundle before `production-vps` secrets | Production secrets and SSH remain unavailable |
 | Production apply | `protected-ansible-apply.yml` | Ansible applies the reviewed digest and post-apply Docker/health/smoke checks match | Workflow fails; use fixed rollback only if production mutated |
-| Vercel Production | `vercel-production-release.yml` dispatched by infra after VPS apply | Deployment URL, `www.nutsnews.com`, and `nutsnews.com` report the same source commit and `vercel-production` target | Coupled release fails after VPS apply; fix the Vercel blocker or use protected rollback if needed |
+| Vercel Production | `vercel-production-release.yml` dispatched by infra after VPS apply | The local prebuilt build sanitizes shell-sensitive pulled env names; deployment URL, `www.nutsnews.com`, and `nutsnews.com` report the same source commit and `vercel-production` target | Coupled release fails after VPS apply; fix the Vercel blocker or use protected rollback if needed |
 | Fixed rollback | `protected-nutsnews-rollback.yml` | Only the recorded last-known-good digest is selected from reviewed manifest history | Arbitrary digest, tag, SSH, or DB down migration is rejected |
+
+## Vercel Local Build Environment Guard
+
+The app workflow uses `vercel pull --environment=production` followed by a
+local `vercel build --prod` and `vercel deploy --prebuilt --prod`. That local
+build runs on a GitHub Actions runner, not on Vercel infrastructure. If a
+pulled Vercel Production variable has a process-control name such as `PATH`,
+`Path`, `SHELL`, or `HOME`, it can override the runner environment that the
+Vercel CLI uses to spawn the install command. The observed failure mode is a
+same-release Vercel deploy stopping at `Error: spawn sh ENOENT` after the VPS
+apply has already passed.
+
+The mitigation is intentionally narrow: after `vercel pull`, the workflow
+rewrites only `.vercel/.env.production.local` entries whose names match that
+small shell-sensitive set. It does not remove application configuration, does
+not print values, and does not change the source-controlled Vercel project
+settings. The `production_release_workflow_regression.mjs` check asserts that
+this sanitization remains present in the release workflow.
+
+Rollback is to revert the app workflow change and rerun the coupled promotion
+only after confirming the Vercel Production environment no longer contains a
+shell-sensitive process-control name. Do not work around this by running a
+standalone Vercel production deploy, because that would bypass the coupled VPS
+and Vercel release contract.
 
 ## Production Supabase Procedure
 
