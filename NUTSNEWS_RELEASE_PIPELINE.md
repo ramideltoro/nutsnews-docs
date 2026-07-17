@@ -5,8 +5,8 @@ Current as of July 17, 2026.
 This document maps the staging-qualified production release path across:
 
 - `ramideltoro/nutsnews` at inspected `origin/main` commit `1a44391`
-- `ramideltoro/nutsnews-infra` at inspected `origin/main` commit `db766ed`
-- `ramideltoro/nutsnews-docs` at base `main` commit `56f88b0`
+- `ramideltoro/nutsnews-infra` at inspected `origin/main` commit `6826905`
+- `ramideltoro/nutsnews-docs` at base `main` commit `d2afd6e`
 
 It documents repository-owned behavior and workflow boundaries. It does not
 contain secret values and does not authorize manual production database changes,
@@ -108,7 +108,9 @@ The production path deliberately separates evidence from mutation:
 - Protected Ansible Apply rechecks the same release identity before secrets and
   SSH are available.
 - Post-apply verification fails the run if Docker image identity or public
-  `/healthz` identity does not match.
+  `/healthz` source/build/image-target identity does not match. The VPS image
+  health target remains `vps`; runtime readiness and smoke checks verify the
+  reviewed `production-vps` target.
 - Vercel Production deploys only after the protected VPS apply passes, and the
   release remains failed unless the deployment URL and public aliases report
   the same source commit.
