@@ -114,11 +114,18 @@ Initial alert rules cover:
 - reboot-required warning after 24 hours;
 - missing backend journal logs in Loki;
 - backend log volume above the free-tier guardrail threshold.
+- SSH authentication failure spikes;
+- fail2ban SSH ban events.
 
 The rules use the backend textfile metrics and explicit `noDataState` settings
 so intentionally not-configured services do not page as failures. Notification
 routing, deduplication, cooldowns, and recovery messages are managed by the
 backend report artifacts described below.
+
+The abuse-detection rules added for backend issue #40 are report-only. They do
+not mutate UFW, Caddy, Cloudflare, fail2ban, or host firewall policy. Their Loki
+queries are scoped to stable `security` labels and avoid IP, path, user, request
+ID, and raw-message labels.
 
 ## Off-Box Synthetic Monitoring
 

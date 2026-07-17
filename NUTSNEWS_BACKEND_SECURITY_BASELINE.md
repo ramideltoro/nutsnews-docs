@@ -108,14 +108,28 @@ Controlled ban testing should use a disposable test source IP and immediately un
 
 ## Abuse Protection Decision
 
-Backend issue #24 records the broader abuse-protection decision for the current SSH-only backend phase.
+Backend issue #24 records the broader abuse-protection decision for the current
+SSH-only backend phase. Backend issue #40 adds detection/report-only
+maintenance automation for abuse signals.
 
 Decision:
 
 - Keep fail2ban as the selected tool for SSH protection.
-- Defer CrowdSec and HTTP/Caddy enforcement until Caddy, public HTTP/HTTPS, backend app routes, and real access logs exist.
+- Surface SSH authentication failure spikes and fail2ban SSH ban events through
+  Grafana/Loki detection alerts.
+- Defer CrowdSec, Cloudflare blocking rules, and HTTP/Caddy enforcement until
+  backend app routes, app/admin probes, and real route logs exist.
 - Start any future HTTP abuse controls in detection/report-only mode before blocking.
 - Do not run a protected apply, restart, firewall mutation, or production enforcement change without separate explicit approval.
+
+Detection alert UIDs:
+
+- `nn-backend-ssh-auth-spike`
+- `nn-backend-fail2ban-ban-events`
+
+These alerts use low-cardinality Loki queries scoped to
+`host="backend.nutsnews.com"` and `service="security"`. They do not group or
+route on IP address, path, user, request ID, or raw message text.
 
 Current allowlist policy:
 
@@ -135,6 +149,7 @@ Backend validation:
 
 ```bash
 python3 scripts/validate_abuse_protection_decision.py
+python3 scripts/provision_grafana_metrics.py --check
 ```
 
 ## Swap Safety Buffer
