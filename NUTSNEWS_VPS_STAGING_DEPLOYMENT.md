@@ -89,6 +89,48 @@ After the `staging-vps` Environment approval, the workflow:
 Rerunning a candidate is idempotent at the Compose layer and intentionally
 creates another GitHub Deployment history entry for auditability.
 
+## Sanitized Apply Failure Diagnostics
+
+### Simple Summary
+
+When staging apply fails, the workflow now says which safe checkpoint failed
+without showing the private deployment output.
+
+### Intermediate Summary
+
+The fixed staging command already returns a small JSON error envelope with a
+safe code, reviewed Ansible task label, diagnostic class, and controller
+version. The deploy workflow now parses that envelope during apply, just as it
+already did for check mode. Operators can see whether the failure is a reviewed
+task, syntax, missing file, undefined variable, or other classified controller
+problem, while raw Ansible output, rendered diffs, request JSON, environment
+values, and secrets remain hidden.
+
+### Expert Summary
+
+The `Apply through the server-side fixed staging command` step captures the SSH
+exit status and reads only the forced-command response file. A passing response
+must be exactly `{"ok": true, "operation": "apply"}` with exit status 0.
+Failures are accepted for logging only if their fields match the same strict
+allowlist used by check mode: `code` is lowercase snake case, `task` is a
+bounded reviewed task label, `diagnostic` is lowercase snake case, and
+`controller` is empty, `unknown`, or a dotted Ansible core version. Anything
+else fails as an invalid gateway response. The workflow never prints the
+Ansible stdout/stderr body across the forced-command boundary.
+
+```mermaid
+flowchart LR
+  apply["Fixed staging apply command"] --> result["Private result JSON"]
+  result --> ok{"Exit 0 and exact apply success?"}
+  ok -- yes --> ready["Continue to /readyz and digest verify"]
+  ok -- no --> validate["Validate safe error envelope"]
+  validate --> report["Print code, task, diagnostic, controller only"]
+  report --> fix["Fix reviewed GitOps automation or host bundle, then rerun candidate"]
+```
+
+Related infrastructure change:
+[ramideltoro/nutsnews-infra#245](https://github.com/ramideltoro/nutsnews-infra/pull/245).
+
 ## Production-Health Recovery Note
 
 The staging deploy verifier still proves that staging is isolated from
