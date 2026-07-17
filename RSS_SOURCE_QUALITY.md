@@ -81,6 +81,116 @@ Rollback is to revert the app PR that adds the migration, `supabase/rss_source_p
 
 ---
 
+## Issue #95 Source Trust Tiers And Publisher Allowlist
+
+Issue: https://github.com/ramideltoro/nutsnews/issues/95
+
+App PR: https://github.com/ramideltoro/nutsnews/pull/243
+
+### Simple Summary
+
+NutsNews now has labels for how much we trust each news source. Good sources can be marked trusted, new sources can stay experimental, risky sources can go on a watchlist, and bad sources can be disabled.
+
+### Intermediate Summary
+
+RSS feeds now have durable `source_trust_tier` and `publisher_allowlist_status` fields in Supabase. The `/admin/feeds` page shows the trust tier beside the quality score, shows the publisher allowlist state, recommends a tier from source-quality signals, and lets admins update the tier without a deploy. Setting a source to `disabled` or a publisher to `blocked` keeps the feed inactive so Worker shards cannot select it.
+
+### Expert Summary
+
+Issue #95 adds migration `20260717093000_add_source_trust_tiers.sql`. It extends `public.rss_feeds` with `source_trust_tier` (`trusted`, `watchlist`, `experimental`, `disabled`) and `publisher_allowlist_status` (`allowlisted`, `candidate`, `blocked`), adds consistency constraints and indexes, appends trust fields and `recommended_trust_tier` to `public.feed_quality_scores`, and adds `set_rss_feed_trust_tier_with_audit(...)`. The existing `set_rss_feed_active_with_audit(...)` RPC now keeps disabled sources consistent by moving disabled feeds to `disabled`/`blocked` and restoring re-enabled feeds to `experimental`/`candidate` unless another tier is set.
+
+### Trust Tier Rules
+
+| Tier | Meaning | Operational use |
+| --- | --- | --- |
+| `trusted` | Proven direct publisher source | Safe to prioritize when expanding shards |
+| `watchlist` | Active source with quality or reliability concerns | Review quality signals before keeping or expanding |
+| `experimental` | New or not-yet-proven source | Keep active only while collecting health and quality history |
+| `disabled` | Source should not be selected | Enforced inactive and paired with `publisher_allowlist_status = 'blocked'` |
+
+### Publisher Allowlist States
+
+| Status | Meaning |
+| --- | --- |
+| `allowlisted` | Publisher is approved for trusted/source-expansion use |
+| `candidate` | Publisher is under evaluation |
+| `blocked` | Publisher is blocked and the feed must remain inactive |
+
+### Admin Workflow
+
+1. Open `/admin/feeds`.
+2. Review the source card's trust-tier pill, quality score, allowlist pill, and tier recommendation.
+3. Use the Tier and Allowlist menus to promote, watchlist, or disable a source.
+4. Confirm the matching event in `/admin/audit`.
+
+Low-quality or repeatedly failing active feeds should normally move to `watchlist` first. If the source is not useful or keeps failing, set the tier to `disabled` or the allowlist to `blocked`; either path makes the feed inactive.
+
+### Data Flow
+
+```mermaid
+flowchart TD
+  A[Admin opens /admin/feeds] --> B[Supabase feed_quality_scores]
+  B --> C[Quality score and recommended_trust_tier]
+  C --> D{Admin chooses tier or allowlist state}
+  D -->|Trusted or watchlist or experimental| E[set_rss_feed_trust_tier_with_audit]
+  D -->|Disabled or blocked| F[set_rss_feed_trust_tier_with_audit sets is_active=false]
+  E --> G[admin_audit_events records before/after values]
+  F --> G
+  G --> H[Worker shards select only active feeds]
+```
+
+### Verification Queries
+
+Find sources whose tier does not match the quality recommendation:
+
+```sql
+select
+  source,
+  feed_url,
+  source_trust_tier,
+  publisher_allowlist_status,
+  recommended_trust_tier,
+  quality_score,
+  quality_grade,
+  tier_recommendation_reason
+from public.feed_quality_scores
+where source_trust_tier <> recommended_trust_tier
+order by quality_score asc, source asc;
+```
+
+Verify disabled/blocked consistency:
+
+```sql
+select
+  id,
+  source,
+  url,
+  is_active,
+  source_trust_tier,
+  publisher_allowlist_status
+from public.rss_feeds
+where
+  (source_trust_tier = 'disabled' and (is_active = true or publisher_allowlist_status <> 'blocked'))
+  or (publisher_allowlist_status = 'blocked' and source_trust_tier <> 'disabled');
+```
+
+This consistency query should return zero rows.
+
+### Risks And Mitigations
+
+| Risk | Mitigation |
+| --- | --- |
+| Admin accidentally disables a useful feed | Tier changes are audited with before/after values, and re-enabling restores the source to experimental/candidate for review. |
+| Trust tier drifts away from measured quality | `feed_quality_scores.recommended_trust_tier` and the admin summary surface mismatches. |
+| Blocked publishers remain active | Database constraints and RPC behavior pair `disabled` with `blocked` and force inactive status. |
+| Worker code does not understand trust tiers yet | Worker shards already select by `is_active`; trust tiers add admin control without changing Worker selection semantics. |
+
+### Rollback
+
+Rollback is to revert the application PR that adds migration `20260717093000_add_source_trust_tiers.sql`, admin UI wiring, and regression tests. If the migration has already been applied, first export any admin tier decisions that need to be preserved, then drop the new RPC, constraints, indexes, and columns only after accepting that source trust state and allowlist state will be lost. The existing `is_active` feed-selection behavior remains the fallback control.
+
+---
+
 ## What Changed
 
 NutsNews now has a computed Supabase view:
@@ -94,6 +204,10 @@ The view gives each RSS feed:
 * `quality_score` from 0 to 100
 * `quality_grade`
 * `quality_reason`
+* `source_trust_tier`
+* `publisher_allowlist_status`
+* `recommended_trust_tier`
+* `tier_recommendation_reason`
 * Success rate
 * Thumbnail rate
 * Accepted rate
@@ -162,6 +276,10 @@ Open:
 The feed management dashboard now shows:
 
 * Quality score badge on each feed card
+* Source trust tier beside the quality score
+* Publisher allowlist status
+* Quality-based recommended trust tier
+* Tier and allowlist update controls
 * Quality reason
 * Quality grade
 * Success rate
@@ -189,6 +307,9 @@ select
   source,
   feed_url,
   is_active,
+  source_trust_tier,
+  publisher_allowlist_status,
+  recommended_trust_tier,
   quality_score,
   quality_grade,
   success_rate_pct,
@@ -198,9 +319,10 @@ select
   duplicate_rate_pct,
   total_fetch_count,
   total_accepted_count,
-  quality_reason
+  quality_reason,
+  tier_recommendation_reason
 from public.feed_quality_scores
-order by quality_score desc, total_accepted_count desc, source asc;
+order by source_trust_tier asc, quality_score desc, total_accepted_count desc, source asc;
 ```
 
 Find active feeds that should be reviewed or replaced:
@@ -209,6 +331,9 @@ Find active feeds that should be reviewed or replaced:
 select
   source,
   feed_url,
+  source_trust_tier,
+  publisher_allowlist_status,
+  recommended_trust_tier,
   quality_score,
   quality_grade,
   quality_reason,
@@ -306,3 +431,9 @@ supabase db push
 ```
 
 After migration, refresh `/admin/feeds` to see scores.
+
+Issue #95 trust-tier fields and audited admin updates are added by:
+
+```text
+supabase/migrations/20260717093000_add_source_trust_tiers.sql
+```
