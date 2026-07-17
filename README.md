@@ -49,6 +49,7 @@ This folder is organized by what you are trying to do: understand the product, c
 | Fix a production issue | [Troubleshooting](TROUBLESHOOTING.md) |
 | Check cost and quota risk | [Free-Tier Guardrails](FREE_TIER_GUARDRAILS.md) |
 | Validate public API contracts | [Public API Contract Tests](PUBLIC_API_CONTRACT_TESTS.md) |
+| Plan a formal external public API | [Public API Plan](PUBLIC_API_PLAN.md) |
 | Work on translations | [Multi-language Summaries](MULTI_LANGUAGE_SUMMARIES.md); [Multilingual Quality and Fallbacks](MULTILINGUAL_QUALITY_AND_FALLBACKS.md) |
 | Work on local AI | [Worker Local AI Lock](NUTSNEWS_WORKER_LOCAL_AI_LOCK.md); see ramideltoro/nutsnews-worker |
 | Investigate worker queue pressure | [Worker Backpressure and Lock Safety](WORKER_BACKPRESSURE_AND_LOCK_SAFETY.md) |
@@ -112,6 +113,7 @@ These docs explain the product and the system at a high level.
 | [Public Pages Theme Consistency](NUTSNEWS_PUBLIC_PAGES_THEME_CONSISTENCY.md) | Theme behavior across public pages |
 | [Privacy Analytics And Consent](PRIVACY_ANALYTICS_CONSENT.md) | GA4 consent gate, allowed event taxonomy, disallowed data, retention, and rollback |
 | [Publisher Attribution And Content Use](PUBLISHER_ATTRIBUTION_AND_CONTENT_USE.md) | Publisher credit, summary/excerpt limits, source removal workflow, and future digest/social requirements |
+| [Public API Plan](PUBLIC_API_PLAN.md) | Future formal external public API use cases, fields, rate limits, caching, versioning, and privacy constraints |
 | [Sitemap Scaling Strategy](SITEMAP_SCALING_STRATEGY.md) | Sitemap index, article sitemap shards, crawler discovery, cache policy, and SEO audit coverage |
 
 #### UI and polish
