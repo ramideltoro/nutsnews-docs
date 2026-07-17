@@ -101,10 +101,12 @@ without showing the private deployment output.
 The fixed staging command already returns a small JSON error envelope with a
 safe code, reviewed Ansible task label, diagnostic class, and controller
 version. The deploy workflow now parses that envelope during apply, just as it
-already did for check mode. Operators can see whether the failure is a reviewed
-task, syntax, missing file, undefined variable, or other classified controller
-problem, while raw Ansible output, rendered diffs, request JSON, environment
-values, and secrets remain hidden.
+already did for check mode. If Ansible runs an `always` cleanup block after a
+failure, the label points at the reviewed task that emitted the failure rather
+than the cleanup task that ran last. Operators can see whether the failure is a
+reviewed task, syntax, missing file, undefined variable, or other classified
+controller problem, while raw Ansible output, rendered diffs, request JSON,
+environment values, and secrets remain hidden.
 
 ### Expert Summary
 
@@ -116,7 +118,10 @@ allowlist used by check mode: `code` is lowercase snake case, `task` is a
 bounded reviewed task label, `diagnostic` is lowercase snake case, and
 `controller` is empty, `unknown`, or a dotted Ansible core version. Anything
 else fails as an invalid gateway response. The workflow never prints the
-Ansible stdout/stderr body across the forced-command boundary.
+Ansible stdout/stderr body across the forced-command boundary. The server-side
+parser walks Ansible task output and records the most recent reviewed task that
+emitted `fatal`, `FAILED`, or `UNREACHABLE`; it falls back to the last reviewed
+task only if no explicit failed task can be detected.
 
 ```mermaid
 flowchart LR
