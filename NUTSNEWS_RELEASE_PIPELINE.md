@@ -1,12 +1,12 @@
 # NutsNews Release Pipeline
 
-Current as of July 16, 2026.
+Current as of July 17, 2026.
 
 This document maps the current deployment and release pipeline across:
 
-- `ramideltoro/nutsnews` at inspected `origin/main` commit `56d52c8`
-- `ramideltoro/nutsnews-infra` at inspected `origin/main` commit `ba85e4e`
-- `ramideltoro/nutsnews-docs` at base `main` commit `4be778b`
+- `ramideltoro/nutsnews` at inspected `origin/main` commit `49110fa`
+- `ramideltoro/nutsnews-infra` at inspected `origin/main` commit `e18b59d`
+- `ramideltoro/nutsnews-docs` at base `main` commit `6fd821d`
 
 It describes repository-owned behavior and read-only GitHub state. It does not
 document any secret values, and it does not require a deploy, restart, protected
@@ -19,35 +19,39 @@ branch becomes releaseable only through a pull request to `main`. The app
 repository's active `main` ruleset requires the `Release candidate` check, which
 depends on the container build and migration gate.
 
-After a reviewed change reaches app `main`, the deployment paths split:
+After a reviewed change reaches app `main`, production deployment is a single
+coupled release chain:
 
-- Vercel builds and deploys through the Vercel GitHub integration. The repo
-  reacts to Vercel `deployment_status` events for preview smoke checks and
-  production cache purge behavior, but the Vercel project build settings are not
-  stored in the repo.
-- The VPS path builds and publishes an immutable GHCR image for the exact app
-  commit, records digest metadata, asks `ramideltoro/nutsnews-infra` to deploy
-  that exact digest to isolated staging, requires independent off-VPS
-  qualification of the same staged digest, and then allows production only
-  through infra-owned production eligibility and Protected Ansible Apply.
+- The app repository disables Vercel Git auto-deploys for `main` in
+  `web/vercel.json`. Preview deployments may still use Vercel's GitHub
+  integration, but production Vercel deploys no longer happen independently.
+- `Container Image` builds and publishes an immutable GHCR image for the exact
+  app commit, records digest metadata, and includes the migration head, schema
+  marker, and production Supabase project reference.
+- `Request Verified Staging Release` asks `ramideltoro/nutsnews-infra` to
+  deploy that exact digest to isolated staging.
+- Independent off-VPS staging qualification attests the exact candidate and
+  dispatches `nutsnews-production-release` in infra.
+- Infra promotion creates or reuses the reviewed GitOps VPS release PR, waits
+  for checks, merges it, runs Protected Ansible Apply, verifies VPS production,
+  then dispatches the app repository's `Deploy Vercel Production Release`
+  workflow for the same source commit and waits for it to pass.
 
-The app repository cannot directly promote VPS production. The old
-`nutsnews-production-release` dispatch workflow in infra is present but paused
-at the first step. Current VPS production release authority sits in
-`ramideltoro/nutsnews-infra`, reviewed production manifest state, staging
-qualification attestations, and the protected `production-vps` apply workflow.
+The release is complete only when both VPS production and Vercel production
+verify the same source identity inside that chain. If either target fails, the
+workflow fails and the release is not considered complete.
 
 ## Repository Ownership
 
 | Deployment part | Owning repository or system | Current responsibility |
 | --- | --- | --- |
-| Web source, route code, runtime safety, readiness, web checks | `ramideltoro/nutsnews` | Next.js source, app CI, route tests, migration checks, image build, Vercel smoke workflows, runtime identity and readiness contracts |
-| Vercel deploy artifact | Vercel project settings plus `ramideltoro/nutsnews` source | Vercel builds from GitHub and emits `deployment_status`; repo-owned workflows smoke successful preview deployments and purge cache after production deployment status |
+| Web source, route code, runtime safety, readiness, web checks | `ramideltoro/nutsnews` | Next.js source, app CI, route tests, migration checks, image build, Vercel preview smoke workflows, explicit production Vercel workflow, runtime identity and readiness contracts |
+| Vercel deploy artifact | `ramideltoro/nutsnews` workflow plus Vercel project | `web/vercel.json` disables `main` Git auto-deploys; `.github/workflows/vercel-production-release.yml` builds and deploys production only after infra dispatches the post-VPS release event |
 | Immutable VPS image artifact | `ramideltoro/nutsnews` | `Container Image` publishes `ghcr.io/ramideltoro/nutsnews:<source-sha>` and records `repository@sha256:<digest>` metadata |
 | Staging deploy and verification on VPS | `ramideltoro/nutsnews-infra` | Validates app candidate, applies only the fixed staging Ansible path, creates GitHub Deployment evidence, verifies isolation and digest identity |
 | Independent qualification | `ramideltoro/nutsnews-infra` using exact app source | Runs off-VPS staging tests against the exact staged digest, then writes and verifies an attestation |
 | Production migration gate | `ramideltoro/nutsnews` | Manual protected Supabase migration workflow, fresh backup requirement, forward-only locked migration, schema contract verification |
-| Production VPS promotion and deploy | `ramideltoro/nutsnews-infra` | Production eligibility, reviewed manifest, Protected Ansible Apply, Compose/Caddy/env rendering, post-deploy verification, rollback |
+| Coupled production promotion and deploy | `ramideltoro/nutsnews-infra` plus app Vercel workflow | Production eligibility, reviewed manifest, Protected Ansible Apply, Compose/Caddy/env rendering, VPS verification, Vercel production dispatch, Vercel verification, rollback |
 | Release documentation | `ramideltoro/nutsnews-docs` | Canonical docs-only description of the release path |
 
 ## Level 0 Overview
@@ -58,16 +62,15 @@ flowchart LR
   PR --> PRChecks["GitHub PR checks\nWeb CI, Container Image, Release candidate"]
   PRChecks --> Main["ramideltoro/nutsnews main"]
 
-  Main --> Vercel["Vercel path\nnative Vercel build and deploy"]
-  Vercel --> VercelVerify["Vercel deployment_status smoke\nand production cache purge"]
-
   Main --> Image["Image and metadata path\nGHCR full-SHA tag, digest, build artifact"]
   Image --> StagingDispatch["Verified staging handoff\nrepository_dispatch to infra"]
   StagingDispatch --> Staging["staging VPS path\nfixed staging deploy"]
   Staging --> Qualify["Independent qualification\nstaging-tests attestation"]
   Qualify --> Promotion["Protected production promotion\ninfra eligibility and manifest"]
   Promotion --> Prod["production VPS\nProtected Ansible Apply"]
-  Prod --> Verify["Post-deploy verification\nhealth, readiness, routes, DB contract, identity"]
+  Prod --> Verify["VPS post-deploy verification\nhealth, readiness, routes, DB contract, identity"]
+  Verify --> Vercel["Vercel production deploy\nexplicit post-VPS workflow"]
+  Vercel --> VercelVerify["Vercel production verification\nsame source commit and aliases"]
 ```
 
 ## Level 1 Production Pipeline Chain
@@ -80,11 +83,8 @@ flowchart TD
   RequiredCheck -- "No" --> BlockMerge["Block app main merge"]
   RequiredCheck -- "Yes" --> Merge["Merge to app main"]
 
-  Merge --> VercelProd["Vercel Git integration deploys\noutside the OCI VPS gate"]
-  VercelProd --> VercelEvents["deployment_status workflows\npreview smoke or production cache purge"]
-
   Merge --> BuildImage["Container Image publish job\nbuild and push GHCR image"]
-  BuildImage --> Metadata["nutsnews-staging-release artifact\nsource, build, digest, migration metadata"]
+  BuildImage --> Metadata["nutsnews-staging-release artifact\nsource, build, digest, migration, schema, Supabase ref"]
   Metadata --> Handoff["Request Verified Staging Release\nvalidate artifact and dispatch infra"]
 
   Handoff --> InfraPreflight["Infra staging preflight\nno staging secrets, source and OCI provenance"]
@@ -96,9 +96,10 @@ flowchart TD
 
   StageVerify --> Qualify["staging-tests qualification\nCloudflare Access, live routes, synthetic staging data"]
   Qualify --> Attestation["Exact-candidate attestation\nimage digest, source, build, deployment, config, suite"]
-  Attestation --> QualGate{"Fresh, current, exact attestation?"}
+  Attestation --> ProdDispatch["Dispatch nutsnews-production-release\nqualified candidate only"]
+  ProdDispatch --> QualGate{"Fresh, current, exact attestation?"}
   QualGate -- "No" --> NoProduction["Not production eligible"]
-  QualGate -- "Yes" --> Manifest["Reviewed infra release state\nproduction manifest or complete apply inputs"]
+  QualGate -- "Yes" --> Manifest["Reviewed infra release PR\nproduction manifest"]
 
   Manifest --> MigrationGate{"Production DB contract ready?"}
   MigrationGate -- "No" --> ProdMigration["Manual production-supabase migration\nfresh backup, approval, forward-only lock"]
@@ -109,7 +110,9 @@ flowchart TD
   Eligible -- "Yes" --> ProdEnv["production-vps environment\ncheck/apply approval and secrets"]
   ProdEnv --> Ansible["Ansible baseline and app release\nrender env, Compose up by digest, Caddy routes"]
   Ansible --> PostVerify["Post-deploy verification\nDocker identity, healthz, readyz, app smoke, DB contract"]
-  PostVerify --> Done{"Verification passed?"}
+  PostVerify --> VercelDeploy["Dispatch app Vercel production workflow\nsame source commit"]
+  VercelDeploy --> VercelCheck["Vercel build, deploy, and alias health verification"]
+  VercelCheck --> Done{"Both targets verified?"}
   Done -- "Yes" --> ReleaseComplete["Production release complete"]
   Done -- "No" --> Rollback["Stop and use protected rollback\nrecorded last-known-good only"]
 ```
@@ -132,8 +135,6 @@ sequenceDiagram
   App->>App: Run PR checks, including Release candidate
   App-->>Dev: Merge is blocked unless required checks pass
   Dev->>App: Merge reviewed PR to main
-  App->>Vercel: Vercel Git integration builds same source commit
-  Vercel-->>App: deployment_status event for smoke or cache workflow
   App->>GHCR: Build and publish full-SHA image tag
   GHCR-->>App: Immutable repository@sha256 digest
   App->>App: Upload staging release metadata artifact
@@ -144,11 +145,16 @@ sequenceDiagram
   Infra->>Tests: Start independent qualification for exact staging Deployment
   Tests->>Stage: Verify Cloudflare Access, identity, routes, data boundary
   Tests-->>Infra: Attest exact digest, source, build, deployment, config, suite
-  Dev->>Infra: Promote through reviewed release state and Protected Ansible Apply
+  Tests->>Infra: repository_dispatch nutsnews-production-release
+  Infra->>Infra: Create or reuse reviewed release PR and merge after checks
   Infra->>Infra: Verify production eligibility before production-vps secrets
   Infra->>Prod: Apply production release by immutable digest
   Prod-->>Infra: Docker identity, healthz, readyz, smoke, DB contract
-  Infra-->>Dev: Release complete or stop and use protected rollback
+  Infra->>App: repository_dispatch nutsnews-vercel-production-release
+  App->>Vercel: Build and deploy Vercel production for same source commit
+  Vercel-->>App: Production deployment URL and alias health
+  App-->>Infra: Vercel production workflow passed or failed
+  Infra-->>Dev: Release complete only after both targets verify
 ```
 
 ## What Happens At Each Stage
@@ -187,31 +193,34 @@ and build.
 
 ### Merge To Main
 
-On merge to app `main`, the Vercel and VPS paths are intentionally separate.
+On merge to app `main`, Vercel production does not deploy from the Vercel
+GitHub integration. `web/vercel.json` disables Vercel Git auto-deploys for
+`main`, so the production website cannot move ahead of the VPS release chain.
+Preview deployments may still use the Vercel integration and the existing
+preview smoke workflow.
 
-The Vercel path uses Vercel's native build/deploy behavior. The app repository
-does not contain a `vercel.json` at the inspected commit, so exact Vercel root,
-build command, environment mapping, and production domain settings are project
-settings rather than repo-owned release logic. The repo-owned Vercel workflows
-are event consumers: preview smoke tests for successful preview deployments and
-Cloudflare cache purge for production deployment status.
-
-The VPS path is owned by GitHub Actions and infra. `Container Image` publishes
-`ghcr.io/ramideltoro/nutsnews:<full-source-sha>` and records the registry
-digest, source commit, source workflow run ID, build ID, deployment target,
-migration head, and schema version in the `nutsnews-staging-release` artifact.
-`Request Verified Staging Release` consumes only that artifact from the same
-successful `Container Image` push run and dispatches
-`nutsnews-staging-release` to `ramideltoro/nutsnews-infra` using
-`NUTSNEWS_INFRA_STAGING_TOKEN`.
+The production path starts with GitHub Actions and infra. `Container Image`
+publishes `ghcr.io/ramideltoro/nutsnews:<full-source-sha>` and records the
+registry digest, source commit, source workflow run ID, build ID, deployment
+target, migration head, schema version, and production Supabase project
+reference in the `nutsnews-staging-release` artifact. `Request Verified Staging
+Release` consumes only that artifact from the same successful `Container Image`
+push run and dispatches `nutsnews-staging-release` to
+`ramideltoro/nutsnews-infra` using `NUTSNEWS_INFRA_STAGING_TOKEN`.
 
 ### Vercel Versus VPS
 
 Vercel and the VPS use the same source commit but not the same deployment
 configuration or artifact. Vercel builds a native Vercel artifact. The VPS
-pulls a GHCR image by immutable digest. Runtime readiness explicitly keeps
-Vercel outside the OCI staging-promotion gate: when `VERCEL=1` and the target
-is not a VPS target, readiness can pass after runtime safety policy evaluation.
+pulls a GHCR image by immutable digest. They are coupled by workflow order and
+identity, not by a shared binary artifact: Vercel production deploys only after
+the protected VPS release has applied and verified.
+
+Runtime readiness explicitly keeps Vercel outside the OCI staging-promotion
+gate because Vercel does not run the GHCR image. The Vercel production workflow
+therefore verifies `/healthz` on the Vercel deployment URL, `www.nutsnews.com`,
+and `nutsnews.com` for the same source commit and `vercel-production` target.
+VPS readiness remains the stronger digest and database-contract gate.
 
 The VPS targets require stronger identity:
 
@@ -294,9 +303,11 @@ verifies:
 
 On success, the workflow writes and verifies an artifact attestation for the
 exact image repository, digest, source commit, build ID, source workflow run,
-staging deployment ID, config generation, and test-suite revision. Production
-eligibility treats missing, failed, skipped, expired, superseded, drifted, or
-mismatched qualification as not eligible.
+staging deployment ID, config generation, migration head, schema version,
+production Supabase project reference, and test-suite revision. It then
+dispatches `nutsnews-production-release` to the infra promotion workflow with
+that exact identity. Production eligibility treats missing, failed, skipped,
+expired, superseded, drifted, or mismatched qualification as not eligible.
 
 ### Migration Safety And Database Contract
 
@@ -340,11 +351,15 @@ check returns `503` and blocks staging qualification or production verification.
 
 ### Production Promotion
 
-Current production promotion is infra-owned. The paused
-`nutsnews-release-promotion.yml` direct repository-dispatch workflow must not be
-treated as the active release path.
+Current production promotion is infra-owned and active through
+`nutsnews-release-promotion.yml`. It accepts only the
+`nutsnews-production-release` dispatch produced after successful staging
+qualification, creates or reuses a reviewed infra release PR, waits for checks,
+merges that PR, runs Protected Ansible Apply, waits for VPS verification, then
+dispatches the app repository's Vercel production workflow for the same source
+commit.
 
-A production app release currently requires:
+A production app release requires:
 
 1. A successful app `Container Image` push artifact.
 2. A successful infra staging deployment for that exact image digest and source
@@ -363,6 +378,14 @@ A production app release currently requires:
 5. A production database contract that matches the release.
 6. `Protected Ansible Apply` production eligibility before any `production-vps`
    secrets are available.
+7. Successful Vercel production build/deploy and alias health verification for
+   the same source commit after the VPS apply passes.
+
+The promotion workflow itself does not attach the `production-vps` environment.
+It coordinates reviewed GitOps state and dispatches the protected apply
+workflow. The only app-repository production dispatch it can make is
+`nutsnews-vercel-production-release`, and that happens after the protected VPS
+apply run has passed.
 
 The first activated staging-first proof recorded in live GitHub history used
 app Container Image run `29470127264`, app source commit
@@ -414,7 +437,7 @@ identity, and state markers.
 
 ### Production Verification, Stop, And Rollback
 
-Protected Ansible Apply verifies after production deployment:
+Protected Ansible Apply verifies after VPS production deployment:
 
 - Docker image reference and resolved digest over SSH;
 - running and healthy container state;
@@ -427,13 +450,22 @@ Protected Ansible Apply verifies after production deployment:
 - public app routes, `/api/articles`, static asset behavior, security headers,
   CORS shape, contact validation failure behavior, and auth session surface.
 
+After those checks pass, infra dispatches `Deploy Vercel Production Release` in
+the app repository. That workflow builds and deploys the exact source commit to
+Vercel production, then verifies `/healthz` on the deployment URL,
+`https://www.nutsnews.com/healthz`, and `https://nutsnews.com/healthz`. The
+release is complete only after that Vercel workflow passes.
+
 If any gate fails before production apply, production remains unchanged. If
 production verification fails after a mutation, use
 `Protected NutsNews Rollback`, which selects only the current reviewed
 last-known-good digest, creates a normal rollback PR, and dispatches Protected
-Ansible Apply with rollback inputs. Do not recover by deploying a mutable tag,
-editing Docker manually, bypassing GitHub Deployment evidence, or running a
-database down migration.
+Ansible Apply with rollback inputs. If VPS verification passes but the final
+Vercel production workflow fails, treat the coupled release as failed: rerun
+only after correcting the Vercel blocker, or use the protected rollback path if
+the VPS state must be restored. Do not recover by deploying a mutable tag,
+editing Docker manually, bypassing GitHub Deployment evidence, manually pushing
+a standalone Vercel production build, or running a database down migration.
 
 ## Gates Table
 
@@ -443,19 +475,20 @@ database down migration.
 | Web CI | PR or push touching `web/**` | `ramideltoro/nutsnews/.github/workflows/web-ci.yml` | Web source, staging CI fixture env | Typecheck, tests, lint, security header, build results | All scripted web checks pass | Check fails; PR cannot be considered healthy |
 | Container image PR validation | PR to app `main` | `ramideltoro/nutsnews/.github/workflows/container-image.yml` | PR source, Dockerfile, migration files, test fixtures | Local image smoke result, migration gate result | Build-test and migration-gate pass; `Release candidate` passes | Required check fails and blocks merge |
 | App main ruleset | Attempt to merge to app `main` | GitHub ruleset `Require PRs and Release candidate on main` | PR review path and `Release candidate` check | Protected merge decision | Strict required status check `Release candidate` is successful | Merge rejected |
-| Vercel deploy path | Vercel GitHub integration sees commit/deployment | Vercel plus app `deployment_status` workflows | Git commit and Vercel project settings | Vercel deployment URL/status | Vercel succeeds; preview smoke or cache purge workflow succeeds where applicable | Vercel deployment or repo-owned smoke/cache workflow fails; it does not authorize VPS production |
-| Image publish | Push to app `main` | `ramideltoro/nutsnews/.github/workflows/container-image.yml` publish job | Main source commit, Dockerfile, migration contract | GHCR full-SHA image and `nutsnews-staging-release` metadata artifact | Image pushed by digest; metadata matches source/run/build/migration identity | No staging handoff artifact; VPS path stops |
+| Vercel preview path | Vercel GitHub integration sees a preview deployment | Vercel plus app preview `deployment_status` workflow | Git commit and Vercel preview project settings | Vercel preview deployment URL/status | Preview smoke workflow succeeds where applicable | Preview smoke fails; no production authority is granted |
+| Image publish | Push to app `main` | `ramideltoro/nutsnews/.github/workflows/container-image.yml` publish job | Main source commit, Dockerfile, migration contract, production Supabase project ref variable | GHCR full-SHA image and `nutsnews-staging-release` metadata artifact | Image pushed by digest; metadata matches source/run/build/migration/schema/Supabase identity | No staging handoff artifact; production path stops |
 | Staging handoff | Successful app `Container Image` workflow_run on `main` | `ramideltoro/nutsnews/.github/workflows/staging-release.yml` | Metadata artifact, triggering run identity, `NUTSNEWS_INFRA_STAGING_TOKEN` | `nutsnews-staging-release` repository_dispatch to infra | Artifact and workflow identity match; dispatch succeeds | Infra staging deploy is not requested |
 | Staging candidate preflight | Infra receives `nutsnews-staging-release` | `ramideltoro/nutsnews-infra/.github/workflows/nutsnews-staging-deploy.yml` preflight | Strict candidate payload, app workflow run, GHCR digest/provenance | Validated staging deployment ID and release vars | Source reachable from app `main`; OCI provenance and metadata exact | Stops before `staging-vps` secrets or SSH |
 | Staging deploy | Preflight success | `nutsnews-infra` `Deploy Verified NutsNews Staging Candidate` deploy job | `staging-vps`, SSH secret names, staging app env names, fixed Ansible play | Staging Compose deployment, GitHub Deployment evidence, actual digest | `/readyz` passes; actual digest matches; staging/prod isolation checks pass | Deployment status fails; no production eligibility |
-| Independent qualification | Successful staging deploy workflow_run or confirmed manual dispatch | `ramideltoro/nutsnews-infra/.github/workflows/nutsnews-staging-qualification.yml` | Exact GitHub Deployment, app source commit, staging Access and staging Supabase test secret names | Sanitized evidence and artifact attestation | Live staging identity, routes, data boundary, digest, config, and test suite all match | Candidate is not production eligible |
+| Independent qualification | Successful staging deploy workflow_run or confirmed manual dispatch | `ramideltoro/nutsnews-infra/.github/workflows/nutsnews-staging-qualification.yml` | Exact GitHub Deployment, app source commit, staging Access and staging Supabase test secret names | Sanitized evidence, artifact attestation, `nutsnews-production-release` dispatch | Live staging identity, routes, data boundary, digest, config, migration/schema/Supabase identity, and test suite all match | Candidate is not production eligible; production dispatch is not sent |
 | Staging Supabase migration | Manual workflow_dispatch | `ramideltoro/nutsnews/.github/workflows/staging-supabase-migration.yml` | Source SHA, migration head, confirmation, `staging-supabase`, `NUTSNEWS_STAGING_MIGRATION_DATABASE_URL` | Staging schema at expected head/fingerprint | Forward migration under lock and contract verification pass | Staging `/readyz` or qualification fails until fixed |
 | Production Supabase migration | Manual workflow_dispatch after fresh backup | `ramideltoro/nutsnews/.github/workflows/production-supabase-migration.yml` | Source SHA, migration head, backup run ID, confirmation, `production-supabase`, production Supabase token and project ref names | Production schema snapshot and verified contract | Backup fresh; forward migration under lock; head, marker, and fingerprint match | Production release remains blocked; no app DB contract pass |
-| Infra production release state | Infra PR or reviewed manifest/apply inputs | `ramideltoro/nutsnews-infra` manifest and promotion scripts | Source commit, image digest, build ID, workflow run, migration head, schema version, Supabase project ref | Reviewed production manifest or complete apply input bundle | Values are complete, immutable, and match qualification evidence | Protected apply eligibility fails |
+| Infra production promotion | `nutsnews-production-release` from successful qualification | `ramideltoro/nutsnews-infra/.github/workflows/nutsnews-release-promotion.yml` | Source commit, image digest, build ID, workflow run, migration head, schema version, Supabase project ref, staging deployment ID, qualification run ID | Reviewed production manifest PR, merged manifest, Protected Ansible Apply dispatch | PR checks pass, PR merges, manifest matches release, protected VPS apply passes | Promotion workflow fails; Vercel production is not dispatched |
 | Infra main protection | PR to infra `main` | GitHub classic branch protection on `ramideltoro/nutsnews-infra` | Infra branch and required checks | Merge decision | Required checks such as Guardrails, Actionlint, Security scan, YAML lint, Ansible lint, Compose config, and portal checks pass | Infra merge rejected |
 | Production eligibility | Protected Ansible Apply dispatch | `ramideltoro/nutsnews-infra/.github/workflows/protected-ansible-apply.yml` no-secret job | Reviewed release state or complete release inputs, staging qualification attestation | Eligibility decision | Exact digest/source/build/run/deployment/config/test attestation is fresh, current, and not superseded | Stops before `production-vps` secrets |
 | Protected Ansible Apply | Manual workflow_dispatch check/apply | `ramideltoro/nutsnews-infra/.github/workflows/protected-ansible-apply.yml` | `run_mode`, `confirm_apply`, `production-vps`, SSH/env secret names, release bundle if app release | Applied Compose/Caddy/env state and app markers | Check/apply succeeds and Ansible validates runtime contract | Apply fails; inspect logs; use rollback only if production mutation occurred |
-| Production post-deploy verification | Protected apply app release | Protected Ansible Apply verification steps plus app smoke script | Running VPS, expected digest/source/build/config, production URL | Verified Docker identity, `/healthz`, `/readyz`, routes, DB contract, smoke result | All identity, readiness, route, and DB checks pass | Release is failed; use fixed recorded last-known-good rollback path |
+| VPS post-deploy verification | Protected apply app release | Protected Ansible Apply verification steps plus app smoke script | Running VPS, expected digest/source/build/config, production URL | Verified Docker identity, `/healthz`, `/readyz`, routes, DB contract, smoke result | All identity, readiness, route, and DB checks pass | Release is failed; use fixed recorded last-known-good rollback path |
+| Vercel production deploy | VPS protected apply passed inside promotion workflow | `ramideltoro/nutsnews/.github/workflows/vercel-production-release.yml` | Same source commit, build ID, image digest, protected VPS apply run ID, Vercel secrets | Vercel production deployment URL and alias health verification | Deployment URL, `www.nutsnews.com`, and `nutsnews.com` report same source commit and `vercel-production` | Coupled release fails; fix Vercel blocker or roll back VPS if needed |
 | Rollback | Failed production release or operator decision | `ramideltoro/nutsnews-infra/.github/workflows/protected-nutsnews-rollback.yml` | Failed digest, reason, confirmation, current reviewed last-known-good | Rollback PR and Protected Ansible Apply dispatch | Only recorded last-known-good digest is selected and applied through protected path | No arbitrary rollback digest; manual Docker rollback is not approved |
 
 ## Source Map
@@ -465,7 +498,7 @@ database down migration.
 | Diagram or claim | Source files, workflows, or live state |
 | --- | --- |
 | App PR checks, required release candidate, branch ruleset | `.github/workflows/web-ci.yml`; `.github/workflows/container-image.yml`; live GitHub ruleset `Require PRs and Release candidate on main` |
-| Vercel preview smoke and production cache behavior | `.github/workflows/vercel-preview-smoke.yml`; `.github/workflows/cloudflare-production-cache-purge.yml` |
+| Vercel preview smoke and explicit production deploy behavior | `.github/workflows/vercel-preview-smoke.yml`; `.github/workflows/vercel-production-release.yml`; `web/vercel.json` |
 | Image build and publish metadata | `.github/workflows/container-image.yml`; `web/Dockerfile`; `scripts/dual_target_web_smoke.mjs`; `scripts/release_candidate_guard.mjs`; `scripts/production_release_workflow_regression.mjs` |
 | Staging handoff from app to infra | `.github/workflows/staging-release.yml`; `.github/workflows/staging-release-regression.yml` |
 | Runtime scripts and web checks | `web/package.json`; `scripts/dual_target_web_smoke.mjs`; `scripts/staging_qualification.mjs`; `scripts/assert_migration_contract.mjs`; `scripts/verify_migration_schema.mjs`; `scripts/verify_migration_lock.mjs`; `scripts/verify_old_digest_compatibility.mjs` |
@@ -479,8 +512,7 @@ database down migration.
 | --- | --- |
 | Staging deploy, candidate validation, fixed staging apply | `.github/workflows/nutsnews-staging-deploy.yml`; `ansible/playbooks/deploy-staging.yml`; `ansible/scripts/validate_staging_candidate.py`; `runbooks/NUTSNEWS_STAGING_DEPLOY.md` |
 | Independent qualification and exact-candidate attestation | `.github/workflows/nutsnews-staging-qualification.yml`; `ansible/scripts/staging_qualification.py`; `runbooks/NUTSNEWS_STAGING_QUALIFICATION.md` |
-| Production eligibility and Protected Ansible Apply | `.github/workflows/protected-ansible-apply.yml`; `ansible/scripts/verify_production_eligibility.py`; `runbooks/PROTECTED_ANSIBLE_APPLY.md` |
-| Paused direct production release dispatch | `.github/workflows/nutsnews-release-promotion.yml` |
+| Production eligibility, release promotion, and Protected Ansible Apply | `.github/workflows/nutsnews-release-promotion.yml`; `.github/workflows/protected-ansible-apply.yml`; `ansible/scripts/verify_production_eligibility.py`; `runbooks/PROTECTED_ANSIBLE_APPLY.md` |
 | Rollback path | `.github/workflows/protected-nutsnews-rollback.yml`; `ansible/scripts/rollback_nutsnews_release.py` |
 | Promotion manifest generation and validation | `ansible/scripts/promote_nutsnews_release.py`; `ansible/inventories/production/host_vars/vps.nutsnews.com.yml` |
 | Production/staging isolation, Compose, Caddy, env rendering | `compose/nutsnews/compose.yml`; `compose/caddy/Caddyfile`; `compose/caddy/compose.yml`; `ansible/roles/vps_service_foundation/defaults/main.yml`; `ansible/roles/vps_service_foundation/tasks/nutsnews_environment_validate.yml`; `ansible/roles/vps_service_foundation/tasks/nutsnews_production_runtime_contract.yml`; `ansible/roles/vps_service_foundation/templates/nutsnews-app.env.j2`; `ansible/roles/vps_service_foundation/templates/nutsnews-app.routes.j2`; `ansible/roles/vps_service_foundation/templates/nutsnews-app.public.routes.j2`; `ansible/roles/vps_service_foundation/templates/nutsnews-app-release.json.j2`; `ansible/roles/vps_service_foundation/templates/nutsnews-app-apply.json.j2` |
@@ -498,13 +530,10 @@ database down migration.
 
 ## Known Unknowns And Needs Confirmation
 
-- Vercel project settings are not stored in the inspected app repository. Exact
-  Vercel root directory, build command, production branch mapping, environment
-  variable definitions, deployment protection, and domain settings need
-  confirmation in Vercel.
-- The repo proves Vercel `deployment_status` consumers, but it does not prove
-  that every Vercel deployment was created from the same settings currently in
-  the Vercel project.
+- Vercel project settings still live in Vercel. The repo now owns the
+  production deploy command path and disables `main` Git auto-deploys, but root
+  directory, environment values, deployment protection, and domain settings
+  still need confirmation in Vercel when auditing the service.
 - The app repository's `main` protection is an active GitHub ruleset. The infra
   repository's `main` protection is classic branch protection. The docs repo
   did not return branch protection or rulesets in the checks performed for this
@@ -512,11 +541,10 @@ database down migration.
 - GitHub environment metadata confirms the environment names and returned
   protection rules, but branch-policy environment rules do not by themselves
   reveal every policy detail a repository admin may rely on operationally.
-- The paused `nutsnews-release-promotion.yml` workflow means this repo state
-  does not prove a fully automated staging-attestation-to-production-dispatch
-  path. Production promotion should be treated as protected infra-controlled
-  release state plus Protected Ansible Apply until that workflow is intentionally
-  reactivated or replaced.
+- VPS and Vercel cannot be made transactionally atomic by GitHub Actions. The
+  pipeline prevents independent Vercel production deploys and fails the coupled
+  release if final Vercel verification fails after VPS apply; operators must
+  fix and rerun or use protected rollback if the VPS state must be restored.
 - This documentation did not SSH to the VPS, inspect live containers, deploy,
   restart services, run Protected Ansible Apply, rotate secrets, or change
   GitHub settings. Runtime host state is represented from repo files, protected
@@ -538,4 +566,6 @@ database down migration.
   `NUTSNEWS_STAGING_TEST_USER_EMAIL`,
   `NUTSNEWS_STAGING_TEST_USER_PASSWORD`,
   `NUTSNEWS_VPS_SSH_PRIVATE_KEY`, `NUTSNEWS_VPS_KNOWN_HOSTS`, and
-  `NUTSNEWS_APP_ENVS_JSON`; values must remain only in their protected systems.
+  `NUTSNEWS_APP_ENVS_JSON`, `VERCEL_TOKEN`, `VERCEL_ORG_ID`,
+  `VERCEL_PROJECT_ID`, and `NUTSNEWS_APP_RELEASE_TOKEN`; values must remain
+  only in their protected systems.

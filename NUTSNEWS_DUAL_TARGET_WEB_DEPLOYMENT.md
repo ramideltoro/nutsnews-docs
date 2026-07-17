@@ -6,18 +6,18 @@ delivered to Vercel and to an immutable, GitOps-managed VPS rollout.
 Issue: [nutsnews-infra #67](https://github.com/ramideltoro/nutsnews-infra/issues/67)
 
 Status: Vercel remains the production host for `nutsnews.com`, and the VPS app
-is live at `vps.nutsnews.com`. The automatic per-`main` app handoff is
-staging-first: the app repository may request only an immutable staging
-candidate. Production promotion is owned by `ramideltoro/nutsnews-infra` and
-is allowed only after the matching off-VPS staging qualification attestation
-passes.
+is live at `vps.nutsnews.com`. Production deployment is coupled: Vercel
+`main` Git auto-deploys are disabled, the app repository may request only an
+immutable staging candidate, and `ramideltoro/nutsnews-infra` deploys Vercel
+production only after the matching VPS production apply and verification pass.
 
 ## Simple Summary
 
 NutsNews has one website codebase. After a reviewed change reaches `main`,
-Vercel builds it normally and GitHub builds a matching container for the VPS.
-The app repository can ask infra to stage that exact digest, but it cannot ask
-infra to apply production directly.
+GitHub builds a matching container for the VPS and the release goes through
+staging, qualification, VPS production apply, and only then Vercel production.
+The app repository can ask infra to stage that exact digest, but it cannot move
+either production target by itself.
 
 `nutsnews.com` stays on Vercel. `vps.nutsnews.com` is a separately observable
 VPS target; this automation does not move canonical traffic or introduce
@@ -25,25 +25,27 @@ failover.
 
 ## Intermediate Summary
 
-`ramideltoro/nutsnews` owns the Next.js source, Vercel build, production OCI
-image, portable health endpoint, smoke checks, and build identity. A pull
-request may build the image for validation but never publishes it. Every push
-to `main` builds and publishes an immutable full-commit image and records its
-registry digest as a small, safe artifact.
+`ramideltoro/nutsnews` owns the Next.js source, explicit Vercel production
+workflow, production OCI image, portable health endpoint, smoke checks, and
+build identity. A pull request may build the image for validation but never
+publishes it. Every push to `main` builds and publishes an immutable
+full-commit image and records its registry digest as a small, safe artifact.
 
 The staging release workflow consumes only the trusted `Container Image`
 metadata artifact for the same `main` workflow run. It sends a strict staging
 candidate containing the source commit, image repository, immutable digest,
-build ID, and source workflow run ID to `ramideltoro/nutsnews-infra`.
+build ID, source workflow run ID, migration head, schema marker, and production
+Supabase project reference to `ramideltoro/nutsnews-infra`.
 
 `ramideltoro/nutsnews-infra` owns staging deploy, independent qualification,
-production eligibility, protected apply, verification, and rollback. Runtime
-secrets remain only in the protected infrastructure Environments, and the app
-handoff token is not a VPS credential or production release token.
+production eligibility, the GitOps release PR, protected apply, VPS
+verification, final Vercel production dispatch, and rollback. Runtime secrets
+remain only in the protected infrastructure Environments, and the app handoff
+token is not a VPS credential or production release token.
 
 Vercel does not consume the GHCR image. Vercel and the VPS produce different
-platform artifacts from the same source commit, which is the required parity
-invariant.
+platform artifacts from the same source commit, and both production targets
+must verify that commit in one promotion chain.
 
 ## Expert Summary
 
@@ -75,8 +77,8 @@ the scoped `GITHUB_TOKEN`.
 
 | Repository | Owns | Must not own |
 | --- | --- | --- |
-| `ramideltoro/nutsnews` | Next.js source, Vercel deployment, Dockerfile, GHCR publishing, portable health/build identity, target-neutral smoke checks | VPS SSH deployment, Ansible, Compose promotion, production route toggles |
-| `ramideltoro/nutsnews-infra` | Immutable digest promotion, Ansible, Compose, Caddy, protected rollout, Ops Portal status, rollback digest | A copy, fork, or vendored bundle of the Next.js source |
+| `ramideltoro/nutsnews` | Next.js source, explicit Vercel production deployment workflow, Dockerfile, GHCR publishing, portable health/build identity, target-neutral smoke checks | VPS SSH deployment, Ansible, Compose promotion, production route toggles, independent Vercel `main` production deploys |
+| `ramideltoro/nutsnews-infra` | Immutable digest promotion, Ansible, Compose, Caddy, protected rollout, Ops Portal status, Vercel production dispatch after VPS apply, rollback digest | A copy, fork, or vendored bundle of the Next.js source |
 | `ramideltoro/nutsnews-docs` | Canonical deployment, environment, rollout, rollback, and troubleshooting guidance | Runtime configuration or secrets |
 | `ramideltoro/nutsnews-worker` | Scheduled ingestion and background automation | Web image publishing or VPS web rollout |
 
@@ -90,8 +92,10 @@ Required invariants:
 - A VPS production promotion starts only after infra verifies a fresh staging
   qualification attestation for the exact digest, source, build, staging
   deployment, config generation, and test-suite revision.
-- Vercel Production status is tracked independently and is not VPS production
-  authorization.
+- Vercel Production deploys only after the protected VPS apply verifies the
+  same source commit.
+- A production release is incomplete if either VPS production or Vercel
+  production fails verification.
 - Every automated release produces a normal infra PR, passing promotion checks,
   a merge, a protected apply, and runtime identity verification.
 - Database migrations are single-flight, explicit, and auditable. Neither
@@ -102,7 +106,6 @@ Required invariants:
 ```mermaid
 flowchart TD
   commit["One reviewed Git commit\nramideltoro/nutsnews"]
-  commit --> vercel["Vercel Git build\nweb/ -> native Vercel artifact"]
   commit --> actions["GitHub Actions\nNode 22 container build"]
   actions --> ghcr["GHCR\nfull-commit tag + immutable digest + metadata"]
   ghcr --> dispatch["Constrained staging repository dispatch"]
@@ -113,7 +116,8 @@ flowchart TD
   gate --> apply["Protected Ansible Apply"]
   apply --> ssh["Read-only SSH\nrunning digest + health"]
   ssh --> vps["Public VPS /healthz\nsource/build/target identity"]
-  vercel --> status["Independent Vercel Production status"]
+  vps --> vercelProd["Explicit Vercel production deploy\nsame source commit"]
+  vercelProd --> status["Vercel /healthz alias verification"]
 ```
 
 There is deliberately no arrow from GHCR to Vercel. The shared identity is the
@@ -125,10 +129,10 @@ Every target must expose a secret-free identity that operators can compare:
 
 | Field | Vercel | VPS image and Ops Portal |
 | --- | --- | --- |
-| Source commit | Vercel Git metadata normalized into the portable build ID | Full Git commit recorded at image build and promotion |
+| Source commit | Exact commit checked out by the post-VPS Vercel workflow | Full Git commit recorded at image build and promotion |
 | Build ID | Portable application build identifier | Same identifier in `/healthz`, image labels, and portal status |
 | Image digest | Not applicable | Registry-resolved `sha256` digest and actual running digest |
-| Deployment target | `vercel` | `production-vps` |
+| Deployment target | `vercel-production` | `production-vps` |
 | Last-known-good digest | Not applicable; use Vercel deployment rollback | Reviewed prior VPS digest |
 
 OCI labels may include the public repository URL and source revision. They must
@@ -450,7 +454,7 @@ target.
 | `NUTSNEWS_PUBLIC_SENTRY_DSN` | Optional | Public | Runtime | Vercel Production environment | Synced into VPS app environment | Runtime label governs delivery; staging must not send production-labeled telemetry |
 | `NUTSNEWS_PUBLIC_GA_ID` | Optional | Public | Runtime | Vercel Production environment | Synced into VPS app environment | Enabled only when production side effects are live |
 | `NUTSNEWS_PUBLIC_IOS_APP_STORE_URL` | Optional | Public | Runtime | Vercel Production environment | Synced into VPS app environment | Normally identical |
-| `NUTSNEWS_SOURCE_COMMIT` | Required | Public | Runtime/image metadata | Derived from Vercel Git metadata | Derived from reviewed release manifest | Must identify the same source commit |
+| `NUTSNEWS_SOURCE_COMMIT` | Required | Public | Runtime/image metadata | Derived from the explicit Vercel production workflow checkout | Derived from reviewed release manifest | Must identify the same source commit |
 | `NUTSNEWS_BUILD_ID` | Required | Public | Runtime/image metadata | Derived from Vercel/GitHub build metadata | Derived from reviewed release manifest | Must match the portable build identity |
 | `NUTSNEWS_DEPLOYMENT_TARGET` | Required | Public | Runtime | Vercel deployment metadata | Derived from reviewed release manifest | Image qualification uses `vps-staging` for staging and `production-vps` for production; `/healthz` remains build identity while `/readyz` reports this runtime target |
 | `NUTSNEWS_EXPECTED_IMAGE_DIGEST` | Required on image targets | Public | Runtime | Not applicable | Derived from reviewed release manifest | Must equal the promoted `sha256` digest |
@@ -563,9 +567,10 @@ A tag is a lookup aid. Promotion always records and deploys the digest.
 This setup is required before enabling the automation in a new repository or
 after rotating its staging dispatch credential:
 
-1. Keep Vercel's Git integration connected to `ramideltoro/nutsnews` so a push
-   to `main` continues to produce normal preview and production Vercel records.
-   These records are observability inputs, not VPS authorization.
+1. Keep Vercel preview integration connected as needed, but keep Vercel
+   production Git auto-deploys for `main` disabled in `web/vercel.json`.
+   Production Vercel deploys must come from `Deploy Vercel Production Release`
+   after infra reports a successful protected VPS apply.
 2. Create a **fine-grained** GitHub personal access token owned by the release
    operator. Limit repository access to `ramideltoro/nutsnews-infra` only, give
    it `Contents: read and write` only because GitHub's repository dispatch API
@@ -575,11 +580,17 @@ after rotating its staging dispatch credential:
    `NUTSNEWS_INFRA_STAGING_TOKEN`. Do not store a production release token,
    deploy SSH key, production app secret, or `production-vps` Environment
    material in `ramideltoro/nutsnews`.
-4. Merge the reviewed infra staging receiver, off-VPS qualifier, production
-   eligibility gate, protected apply, and rollback workflows first.
-5. Merge the reviewed application staging handoff workflow. Its next `main`
-   release is the first automatic proof of build, stage, qualify, exact-digest
-   production gate, and verification.
+4. Store `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` in the app
+   repository for the explicit Vercel production workflow.
+5. Store `NUTSNEWS_APP_RELEASE_TOKEN` in infra so promotion can dispatch and
+   watch the app repository's Vercel production workflow.
+6. Merge the reviewed infra staging receiver, off-VPS qualifier, production
+   eligibility gate, protected apply, production promotion, and rollback
+   workflows first.
+7. Merge the reviewed application staging handoff and Vercel production
+   workflow. Its next `main` release is the first automatic proof of build,
+   stage, qualify, exact-digest production gate, VPS verification, Vercel
+   production deploy, and Vercel alias verification.
 
 If the staging token is absent, expired, or too broad/narrow, the handoff fails
 before staging mutates. Do not replace it with a broad personal token, an infra
@@ -638,8 +649,9 @@ testing on the eventual public host.
 
 The public app route at `vps.nutsnews.com` is live, but `nutsnews.com` remains
 the Vercel-backed canonical production hostname. A normal automated release
-updates the already reviewed VPS route; it does not alter DNS, canonical URLs,
-or traffic ownership.
+updates the already reviewed VPS route and then deploys the same source commit
+to Vercel production; it does not alter DNS, canonical URLs, or traffic
+ownership.
 
 The public route must continue to:
 
