@@ -38,12 +38,16 @@ The generated report includes:
 - backup tool presence such as restic/rclone;
 - cleanup last-run status when `/var/lib/nutsnews/cleanup/last-cleanup.json`
   exists;
+- recovery last-run status when `/var/lib/nutsnews/recovery/last-recovery.json`
+  exists;
 - relevant timers and backend units;
 - public listener inventory;
 - recent critical journal entries visible to the read-only audit user;
 - delivery status without recipient or credential values.
 
-Current backend services that are not deployed, such as Docker, Caddy, PostgreSQL, Alloy, and restic, appear as `not_configured` rather than failed production services.
+Backend services that are intentionally absent, such as Docker or PostgreSQL in
+the current phase, appear as `not_configured` rather than failed production
+services.
 
 ## Required Secrets
 
@@ -80,6 +84,7 @@ Backend validation for the change:
 
 ```bash
 python3 scripts/validate_no_secret_files.py
+python3 scripts/validate_recovery_workflows.py
 python3 scripts/validate_backend_credential_inventory.py
 python3 scripts/validate_service_baseline.py
 python3 scripts/validate_abuse_protection_decision.py

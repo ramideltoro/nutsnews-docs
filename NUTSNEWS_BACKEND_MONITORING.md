@@ -68,6 +68,23 @@ Cleanup `apply` requires the `production-backend` Environment and
 The backend health report exposes `cleanup_last_run`; it remains
 `not_configured` until an approved cleanup apply writes the host state file.
 
+## Recovery Workflows
+
+Backend issue #42 adds `.github/workflows/backend-recovery.yml` in
+`ramideltoro/nutsnews-backend`.
+
+The workflow has `check` and protected `apply` modes. It accepts only fixed
+actions: diagnostics, backup status, backup trigger, restore-drill trigger,
+Caddy reload/restart, Alloy restart, fail2ban restart, metrics refresh, and
+ops-dashboard status refresh. It does not accept arbitrary commands, service
+names, shell scripts, Ansible tags, paths, or user supplied remote snippets.
+
+Mutating `apply` runs require the `production-backend` Environment and
+`confirm_target=backend.nutsnews.com`. Each action has action-specific
+prechecks and postchecks. Approved mutating applies write
+`/var/lib/nutsnews/recovery/last-recovery.json`, and the backend health report
+exposes that state as `recovery_last_run`.
+
 ## Log Retention
 
 - System journal: persistent, capped at 512 MiB, retained up to 14 days.

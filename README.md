@@ -27,6 +27,7 @@ This folder is organized by what you are trying to do: understand the product, c
 | Review backend monitoring baseline | [Backend Monitoring](NUTSNEWS_BACKEND_MONITORING.md) |
 | Review backend health report automation | [Backend Health Report](NUTSNEWS_BACKEND_HEALTH_REPORT.md) |
 | Run backend cleanup report or dry-run | [Backend Cleanup Maintenance](NUTSNEWS_BACKEND_CLEANUP_MAINTENANCE.md) |
+| Run fixed backend recovery checks or actions | [Backend Recovery](NUTSNEWS_BACKEND_RECOVERY.md) |
 | Review backend service baseline attestation | [Backend Service Baseline](NUTSNEWS_BACKEND_SERVICE_BASELINE.md) |
 | Run the protected VPS baseline workflow or trigger an on-demand report | [Protected Ansible Apply](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md); [Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md) |
 | Run protected VPS package maintenance or reboot | [VPS Maintenance](NUTSNEWS_VPS_MAINTENANCE.md) |
@@ -78,6 +79,7 @@ These docs explain the product and the system at a high level.
 | [Backend Monitoring](NUTSNEWS_BACKEND_MONITORING.md) | Backend host smoke checks, alert thresholds, log retention, and alert-delivery blocker |
 | [Backend Health Report](NUTSNEWS_BACKEND_HEALTH_REPORT.md) | Scheduled read-only backend host reports from GitHub Actions, JSON artifacts, SMTP delivery, and rollback |
 | [Backend Cleanup Maintenance](NUTSNEWS_BACKEND_CLEANUP_MAINTENANCE.md) | Fixed-purpose backend cleanup report, dry-run, protected apply, allowlists, and protected paths |
+| [Backend Recovery](NUTSNEWS_BACKEND_RECOVERY.md) | Fixed-purpose backend recovery checks, protected service actions, pre/postchecks, and last-run evidence |
 | [Backend Service Baseline](NUTSNEWS_BACKEND_SERVICE_BASELINE.md) | Read-only live service inventory, public exposure policy, and re-attestation trigger |
 | [Protected Ansible Apply](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md) | Manual protected GitHub Actions workflow for check/apply runs against the VPS baseline, plus the separate on-demand health report workflow |
 | [VPS Service Foundation](NUTSNEWS_VPS_SERVICE_FOUNDATION.md) | Docker, Compose, `/opt/nutsnews`, Caddy, and public infrastructure health routing |
