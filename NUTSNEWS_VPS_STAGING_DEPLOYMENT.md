@@ -664,41 +664,45 @@ If the application repository is private, `staging-tests` also provides
 `NUTSNEWS_STAGING_TESTS_SOURCE_TOKEN` with read-only checkout access to
 `ramideltoro/nutsnews`; public checkout can use the default token.
 
-#### Staging target identity alignment
+#### Staging health and readiness target split
 
 ##### Simple Summary
 
-The staging qualification test now treats the app's health and readiness
-answers as the same staging target. If staging says it is `vps-staging`, the
-test expects both checks to agree.
+The staging qualification test checks two labels on purpose. The simple health
+answer comes from the image and says `vps`; the ready answer comes from the
+staging runtime and says `vps-staging`.
 
 ##### Intermediate Summary
 
-The deployed-staging qualification suite uses `vps-staging` as the expected
-deployment target for both `/healthz` and `/readyz`. This keeps the app suite
-aligned with the live VPS staging runtime and prevents an exact candidate from
-failing because the suite expects the older image-build target name `vps` on
-the health endpoint. Operators still get the independent infra-side pre/post
-identity checks, so source commit, build ID, digest, config generation,
-runtime environment, deployment target, and hostname drift continue to fail
-closed.
+The deployed-staging qualification suite expects `/healthz` to keep the static
+image deployment target `vps`, while `/readyz` and runtime config must report
+the live staging target `vps-staging`. This matches how the Next.js health
+route is built and how the runtime readiness route is rendered by the VPS
+environment. Operators still get the independent infra-side pre/post identity
+checks, so source commit, build ID, digest, config generation, runtime
+environment, deployment target, and hostname drift continue to fail closed.
 
 ##### Expert Summary
 
-`ramideltoro/nutsnews` passes the same verified staging target into
-`scripts/dual_target_web_smoke.mjs` for the health and readiness target
+`ramideltoro/nutsnews` passes `NUTSNEWS_EXPECTED_HEALTH_DEPLOYMENT_TARGET=vps`
+into `scripts/dual_target_web_smoke.mjs` while keeping
+`NUTSNEWS_EXPECTED_DEPLOYMENT_TARGET=vps-staging` for readiness/runtime
 assertions. The infra qualifier still checks the GitHub Deployment evidence,
 then independently reads the live health/ready identity before and after the
 suite. This change affects only the application suite's expected health target;
 it does not grant production authority, change staging credentials, alter the
 attestation predicate, or relax the `staging-tests` boundary. Related app
-change: `ramideltoro/nutsnews#249`.
+changes: `ramideltoro/nutsnews#249` and `ramideltoro/nutsnews#250`.
 
 ```mermaid
 flowchart LR
   deploy[Staging deploy ready] --> identity[Infra pre-identity check]
-  identity --> suite[App suite expects vps-staging health and ready targets]
+  identity --> suite[App suite smoke]
+  suite --> health[/healthz expects image target vps]
+  suite --> ready[/readyz expects runtime target vps-staging]
   suite --> post[Infra post-identity drift check]
+  health --> post
+  ready --> post
   post --> attest[Pass predicate only if all required suites pass]
 ```
 
