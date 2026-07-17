@@ -6,6 +6,81 @@ A smaller set of reliable sources is better than hundreds of weak or noisy feeds
 
 ---
 
+## Issue #5 Google News RSS Discovery-Only Policy
+
+Issue: https://github.com/ramideltoro/nutsnews/issues/5
+
+App PR: https://github.com/ramideltoro/nutsnews/pull/242
+
+### Simple Summary
+
+NutsNews should use feeds from the real publishers, not Google News RSS, when publishing stories. Google News can help discover sources, but it should not be an active story feed.
+
+### Intermediate Summary
+
+Google News RSS rows may exist only as inactive discovery references. Active `rss_feeds` rows must point to direct publisher feeds so article URLs, thumbnails, attribution, and source quality stay clean. On 2026-07-17, production Supabase had 49 active feeds and `active_google_feeds = 0`; no production data change was needed.
+
+### Expert Summary
+
+Issue #5 adds a database guardrail in `supabase/migrations/20260717032000_keep_google_news_discovery_only.sql`. The constraint permits `news.google.com` URLs only when `rss_feeds.is_active = false`, so inactive discovery records remain possible while Worker-selected active feeds stay direct-publisher-only. The app repo also adds `supabase/rss_source_policy.sql` with the zero-count acceptance query and controlled remediation update, `scripts/rss_source_policy_regression.mjs` to protect the policy, and `activeGoogleFeedCount` in `scripts/feed_health_report.mjs`.
+
+### Operating Rule
+
+| Source type | Allowed active? | Use |
+| --- | --- | --- |
+| Direct publisher RSS | Yes | Primary ingestion and publishing source |
+| Google News RSS (`news.google.com`) | No | Discovery-only reference; must remain inactive |
+| Weak direct publisher RSS | Maybe | Evaluate with feed quality score and disable if it stays poor |
+
+### Verification Queries
+
+This acceptance query must return zero:
+
+```sql
+select count(*) as active_google_feeds
+from public.rss_feeds
+where is_active = true
+  and url ilike '%news.google.com%';
+```
+
+If a Google News row is accidentally active, use the controlled remediation query from `supabase/rss_source_policy.sql`:
+
+```sql
+update public.rss_feeds
+set is_active = false
+where is_active = true
+  and url ilike '%news.google.com%'
+returning id, source, url, is_active;
+```
+
+### Data Flow
+
+```mermaid
+flowchart TD
+  A[Operator or import adds RSS row] --> B{URL contains news.google.com?}
+  B -->|No| C[May be active if source quality is acceptable]
+  B -->|Yes| D{is_active=false?}
+  D -->|Yes| E[Allowed as discovery-only reference]
+  D -->|No| F[Database check rejects active primary-source use]
+  C --> G[Worker selects active direct publisher feeds]
+  E --> H[Not selected by Worker shards]
+```
+
+### Risks And Mitigations
+
+| Risk | Mitigation |
+| --- | --- |
+| A future import accidentally enables Google News RSS | The database check constraint rejects active `news.google.com` rows. |
+| Operators still need Google News for discovery | Inactive rows remain allowed, and the policy SQL documents discovery-only use. |
+| Active feed count changes after disabling a row | Replace Google News with direct publisher RSS before increasing shard counts. |
+| Production migration fails because a Google News row is active | Run the verification query first; disable active Google News rows with the controlled remediation SQL. |
+
+### Rollback
+
+Rollback is to revert the app PR that adds the migration, `supabase/rss_source_policy.sql`, report count, and regression script. If the migration has already been applied and must be reverted, drop `rss_feeds_google_news_discovery_only_check` only after explicitly accepting the risk that Google News RSS can be re-enabled as a primary source.
+
+---
+
 ## What Changed
 
 NutsNews now has a computed Supabase view:
