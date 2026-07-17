@@ -26,11 +26,11 @@ If production Supabase is behind, promotion fails and directs the operator to
 the protected app workflow `production-supabase-migration.yml`. It does not run
 production migrations automatically.
 
-If the Vercel deployment URL returns a deployment-protection page, alias page,
-or other non-JSON response for `/healthz`, promotion now fails with a concise
-Vercel health-gate error and does not print the HTML body. Resolve Vercel
-deployment protection, alias routing, or the automation bypass before rerunning
-promotion.
+If the Vercel deployment URL returns HTTP 401, a deployment-protection page,
+an alias page, or any other non-app response for `/healthz`, promotion now
+fails with a concise Vercel health-gate error and does not print the response
+body. Resolve Vercel deployment protection, alias routing, or the automation
+bypass before rerunning promotion.
 
 ## Expert Summary
 
@@ -42,9 +42,9 @@ check and post-apply Docker/public-health identity verification.
 
 The Vercel gate reads `/healthz?release=<source_commit>` from the successful
 Production deployment URL with `Accept: application/json`, parses the response
-body explicitly, and treats non-JSON responses as a hard gate failure. This
-keeps deployment-protection or routing issues readable in Actions logs without
-leaking a full HTML response body into the workflow output.
+body explicitly, and treats HTTP errors or non-JSON responses as hard gate
+failures. This keeps deployment-protection or routing issues readable in
+Actions logs without leaking a full response body into the workflow output.
 
 ```mermaid
 flowchart LR
@@ -67,6 +67,8 @@ flowchart LR
   staging-qualified production promotion implementation.
 - `ramideltoro/nutsnews-infra` PR #243:
   clearer Vercel `/healthz` non-JSON failure handling.
+- `ramideltoro/nutsnews-infra` PR #244:
+  clearer Vercel `/healthz` HTTP status failure handling.
 
 ## Remaining Risks
 
