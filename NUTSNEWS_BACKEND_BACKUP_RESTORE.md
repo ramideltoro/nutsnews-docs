@@ -4,9 +4,10 @@ This documents the backup and restore policy for `ramideltoro/nutsnews-backend` 
 
 ## Current State
 
-The backend host has no deployed app runtime, database service, upload storage,
-or production backend app state yet. It does have host baseline, Caddy,
-dashboard, and backup-status state covered by the service-aware backup matrix.
+The backend host has no deployed app runtime, upload storage, or production
+backend app state yet. It does have host baseline, Caddy, dashboard,
+backup-status state, and a private PostgreSQL restore/failover target covered
+by the service-aware backup matrix.
 
 The backend repo source of truth is:
 
@@ -27,7 +28,7 @@ Backups must survive VPS loss. Provider snapshots are supplemental only and must
 | Host and reverse proxy config | Backend repo through Ansible plus restic evidence | Recreate from repo and protected apply; restore selected state as needed |
 | Ops dashboard/status metadata | Backend host collectors | Backed up for incident evidence and exposed in dashboard/reporting |
 | Application uploads/local state | Future backend issue | Off-server backups required before production use |
-| PostgreSQL data | Future database issue | Encrypted off-server backups plus restore drills before production use |
+| PostgreSQL data | Backend issue #13 | Host state is covered by service-aware restic paths; staging Supabase restore drills prove database restore readiness before production use |
 | Logs | Host retention plus future off-server policy | Retain enough for troubleshooting without unbounded raw logs |
 
 ## Initial Retention Baseline
@@ -47,7 +48,7 @@ Before production traffic or production data depends on this backend host:
 
 1. Restore the latest backup to an isolated path or non-production host.
 2. Verify ownership and permissions.
-3. For database backups, start a non-production PostgreSQL instance and run integrity checks.
+3. For database backups, run the backend PostgreSQL failover drill in `restore-staging` mode and verify `/var/lib/nutsnews/postgres/status.json`.
 4. Confirm the restored data satisfies the documented RPO/RTO.
 5. Record snapshot ID, restore target, validation commands, and result in the relevant issue or PR.
 
@@ -99,10 +100,14 @@ The runner writes:
 | `/var/lib/nutsnews/backups/last-backup.json` | latest backup freshness, snapshot id, included paths, quota status |
 | `/var/lib/nutsnews/backups/last-verification.json` | latest restic check result |
 | `/var/lib/nutsnews/backups/last-restore-verification.json` | lightweight restore-drill result |
+| `/var/lib/nutsnews/postgres/status.json` | PostgreSQL restore/failover readiness and latest staging restore drill result |
 
 The health report and loopback-only ops dashboard expose backup failure, stale
 backup, unverified latest snapshot, and storage/quota warning as separate
 signals.
+
+PostgreSQL-specific restore flow is documented in
+[NutsNews Backend PostgreSQL Failover Target](NUTSNEWS_BACKEND_POSTGRES_FAILOVER.md).
 
 ## Recovery Order
 
