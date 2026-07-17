@@ -191,6 +191,204 @@ Rollback is to revert the application PR that adds migration `20260717093000_add
 
 ---
 
+## Issue #38 Feed Source Expansion Plan
+
+Issue: https://github.com/ramideltoro/nutsnews/issues/38
+
+Docs-only completion: no application PR required.
+
+### Simple Summary
+
+Add new news feeds slowly. Turn on a small group, watch whether they work, keep the good ones, and turn off the bad ones before adding more.
+
+### Intermediate Summary
+
+Feed expansion must happen in controlled validation batches. Activate no more than 10 new feeds at once, and never exceed current shard capacity without first updating the controller/shard configuration. Keep each batch in `experimental`/`candidate` state until it has enough health and quality history, then promote strong sources or disable weak ones.
+
+### Expert Summary
+
+Issue #38 defines an operations plan for expanding active `rss_feeds` safely. With the current production controller guidance of `SHARD_COUNT=3` and `FEEDS_PER_SHARD=20`, active feed capacity is 60. The last verified active count in this doc set was 49, leaving 11 spare active-feed slots before shard configuration must be revisited. Expansion batches should use the audited admin RPCs from issue #95, preserve Google News RSS as discovery-only from issue #5, and rely on `feed_quality_scores` to decide whether sources stay active, move to `watchlist`, promote to `trusted`, or roll back to `disabled`/`blocked`.
+
+### Batch Size
+
+Use this batch limit:
+
+```text
+validation_batch_size = min(10, shard_capacity - current_active_feeds)
+```
+
+Rules:
+
+* Activate one validation batch at a time.
+* Wait for at least 3 Worker checks or 24 hours before adding the next batch.
+* Stop expansion if active feeds reach current shard capacity.
+* Increase `SHARD_COUNT` only when active feeds exceed the current capacity formula in `CONTROLLER_AND_SHARDS.md`.
+* Do not activate Google News RSS rows; they remain discovery-only.
+
+### Preflight Queries
+
+Check current active capacity:
+
+```sql
+select
+  count(*) filter (where is_active = true) as active_feeds,
+  count(*) filter (where is_active = false) as inactive_feeds,
+  count(*) filter (where is_active = true and url ilike '%news.google.com%') as active_google_feeds
+from public.rss_feeds;
+```
+
+Find candidate direct-publisher rows for the next batch:
+
+```sql
+select
+  id,
+  source,
+  url,
+  source_trust_tier,
+  publisher_allowlist_status
+from public.rss_feeds
+where is_active = false
+  and url not ilike '%news.google.com%'
+  and coalesce(source_trust_tier, 'experimental') in ('experimental', 'watchlist', 'disabled')
+order by created_at asc, source asc
+limit 10;
+```
+
+### Activation Query
+
+Use the audited activation RPC so `/admin/audit` records who changed the feed. Replace the feed URLs and actor email before running.
+
+```sql
+with activation_batch(feed_url) as (
+  values
+    ('https://publisher.example/feed.xml'),
+    ('https://another-publisher.example/rss')
+)
+select result.*
+from activation_batch batch
+cross join lateral public.set_rss_feed_active_with_audit(
+  'operator@example.com',
+  batch.feed_url,
+  true
+) as result;
+```
+
+After activation, keep the batch as `experimental`/`candidate` unless a source already has a documented reason to be trusted.
+
+### Success Criteria
+
+Keep a new feed active after the validation window only if all of these are true:
+
+| Signal | Pass threshold |
+| --- | --- |
+| Fetch history | `total_fetch_count >= 3` |
+| Success rate | `success_rate_pct >= 70` |
+| Consecutive failures | `< 3` |
+| Quality score | `quality_score >= 50` |
+| Source policy | Direct publisher RSS; no active `news.google.com` URL |
+| Attribution | Source and original URLs point to the publisher, not a redirect aggregator |
+
+Promote to `trusted` only after stronger evidence:
+
+* `quality_score >= 85`
+* `total_accepted_count >= 3`
+* No repeated fetch or thumbnail failures
+* Publisher attribution is clean
+
+Move to `watchlist` when the feed is useful but below the trusted threshold. Disable it when it fails the pass criteria after the validation window.
+
+### Review Query
+
+Review the active validation batch:
+
+```sql
+select
+  source,
+  feed_url,
+  source_trust_tier,
+  publisher_allowlist_status,
+  recommended_trust_tier,
+  quality_score,
+  quality_grade,
+  total_fetch_count,
+  success_rate_pct,
+  thumbnail_rate_pct,
+  accepted_rate_pct,
+  consecutive_failure_count,
+  quality_reason,
+  tier_recommendation_reason
+from public.feed_quality_scores
+where is_active = true
+  and source_trust_tier in ('experimental', 'watchlist')
+order by quality_score asc, consecutive_failure_count desc, source asc;
+```
+
+### Rollback And Deactivation Query
+
+Use the audited tier RPC to disable or block a failed batch. Replace the feed URLs and actor email before running.
+
+```sql
+with rollback_batch(feed_url) as (
+  values
+    ('https://publisher.example/feed.xml'),
+    ('https://another-publisher.example/rss')
+)
+select result.*
+from rollback_batch batch
+cross join lateral public.set_rss_feed_trust_tier_with_audit(
+  'operator@example.com',
+  batch.feed_url,
+  'disabled',
+  'blocked'
+) as result;
+```
+
+Confirm rollback:
+
+```sql
+select source, url, is_active, source_trust_tier, publisher_allowlist_status
+from public.rss_feeds
+where url in (
+  'https://publisher.example/feed.xml',
+  'https://another-publisher.example/rss'
+);
+```
+
+The confirmation rows should show `is_active = false`, `source_trust_tier = 'disabled'`, and `publisher_allowlist_status = 'blocked'`.
+
+### Expansion Flow
+
+```mermaid
+flowchart TD
+  A[Review inactive direct-publisher candidates] --> B{Spare shard capacity?}
+  B -->|No| C[Update shard plan before activating more feeds]
+  B -->|Yes| D[Activate <=10 feeds with audited RPC]
+  D --> E[Run Worker checks for 24h or at least 3 fetches]
+  E --> F{Meets success criteria?}
+  F -->|Yes, strong| G[Promote to trusted and allowlisted]
+  F -->|Yes, marginal| H[Keep active on watchlist]
+  F -->|No| I[Disable and block with audited rollback RPC]
+  G --> J[Start next controlled batch]
+  H --> J
+  I --> J
+```
+
+### Risks And Mitigations
+
+| Risk | Mitigation |
+| --- | --- |
+| Adding too many feeds overloads shard time | Limit each validation batch to 10 or spare shard capacity, whichever is lower. |
+| Weak feeds crowd out reliable sources | Use `feed_quality_scores` pass/fail criteria before starting another batch. |
+| Google News RSS returns as a primary source | Keep the issue #5 active-Google query at zero before activation. |
+| Source changes lack audit history | Use `set_rss_feed_active_with_audit` and `set_rss_feed_trust_tier_with_audit`, not unaudited direct updates. |
+| Active feed count exceeds shard capacity | Stop expansion and update controller/shard capacity before activating more rows. |
+
+### Rollback
+
+Rollback for an expansion batch is to run the audited deactivation query above, confirm every failed feed is inactive/disabled/blocked, and wait for Worker shards to complete one normal cycle. If the batch caused shard timeouts or empty shard rotations, pause additional activation and revisit `SHARD_COUNT`, `FEEDS_PER_SHARD`, and the source quality thresholds before trying again.
+
+---
+
 ## What Changed
 
 NutsNews now has a computed Supabase view:
