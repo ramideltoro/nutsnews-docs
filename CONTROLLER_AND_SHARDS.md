@@ -57,11 +57,13 @@ NutsNews currently has 49 active RSS feeds. The controller should only rotate th
 
 ### Intermediate Summary
 
-The production controller is configured with `SHARD_COUNT=3`, `SHARD_RUN_INTERVAL_MINUTES=5`, and `FEEDS_PER_SHARD=20`. This covers the active feed set without spending most controller runs on empty shards. A previous 25-shard controller configuration caused frequent successful-but-empty Worker runs against shards 3 through 24, which made ingestion look quiet and delayed useful feed checks.
+The production controller is configured with `SHARD_COUNT=3`, `SHARD_RUN_INTERVAL_MINUTES=5`, `FEEDS_PER_SHARD=20`, and `MAX_AI_REVIEWS_PER_SHARD=3`. This covers the active feed set without spending most controller runs on empty shards. A previous 25-shard controller configuration caused frequent successful-but-empty Worker runs against shards 3 through 24, which made ingestion look quiet and delayed useful feed checks.
 
 ### Expert Summary
 
 On 2026-07-17, production Supabase showed 49 active `rss_feeds` rows out of 763 total rows. With `FEEDS_PER_SHARD=20`, only shards 0, 1, and 2 can return feed rows. Worker telemetry showed repeated `run_source=manual` rows for shards 3 through 24 with `feed_count=0`, `fetched_count=0`, and `accepted_count=0`. The controller was redeployed with `SHARD_COUNT=3`; `https://nutsnews-controller.nutsnews.workers.dev/?shard=3` now fails fast with `Invalid shard. Use a number from 0 to 2.` A manual shard-2 controller run returned `shardCount=3`, `feedCount=9`, `fetchedCount=304`, and refreshed the public feed snapshot at `2026-07-17T03:11:09Z`.
+
+The same incident showed that shard 0 could spend almost two minutes in Local AI and translation fallback work. Long runs accepted articles but sometimes failed to save `worker_runs`, `ai_usage_runs`, review rows, or `public_feed_snapshot` before the invocation ran out of useful request budget. Production Worker shards now use bounded external fetches and deploy with `SUMMARY_TRANSLATION_LIMIT=0`, `HOLD_ARTICLES_FOR_TRANSLATIONS=false`, `LOCAL_AI_TIMEOUT_MS=5000`, `OPENAI_TIMEOUT_MS=30000`, `RSS_FEED_FETCH_TIMEOUT_MS=15000`, and `ARTICLE_PAGE_FETCH_TIMEOUT_MS=10000`. Translations should be backfilled separately instead of blocking the publishing path.
 
 ```mermaid
 flowchart LR
@@ -74,8 +76,9 @@ flowchart LR
 
   subgraph After["After: 3-shard controller"]
     A2["Controller cron every 5 min"] --> B2["Shard index 0..2"]
-    B2 --> C2["All controller targets have active feeds"]
-    C2 --> D2["Useful RSS checks every rotation"]
+    B2 --> C2["At most 3 AI reviews per shard"]
+    C2 --> D2["Publish first; translations do not block refresh"]
+    D2 --> E2["Useful RSS checks every rotation"]
   end
 ```
 
@@ -83,8 +86,10 @@ Operational notes:
 
 * Increase `SHARD_COUNT` only when active feeds exceed the current capacity. At 20 feeds per shard, 1-20 active feeds need 1 shard, 21-40 need 2 shards, and 41-60 need 3 shards.
 * If feed management intentionally re-enables many sources, update the controller `SHARD_COUNT` and Worker generated configs in the same deployment.
+* Keep `SUMMARY_TRANSLATION_LIMIT=0` and `HOLD_ARTICLES_FOR_TRANSLATIONS=false` until translation backlog processing has separate budget controls. Publishing freshness is the priority for the scheduled refresh path.
+* Keep `LOCAL_AI_TIMEOUT_MS` short enough that OpenAI fallback can run before the Worker reaches subrequest or wall-time limits.
 * Do not treat `success=true` alone as ingestion health. Check `feed_count`, `fetched_count`, `eligible_for_ai_count`, and `accepted_count`.
-* Rollback is to redeploy the previous controller config, but only do this if active feed count again requires more than 3 shards or if a new controller bug appears.
+* Rollback for shard count is to redeploy the previous controller config, but only do this if active feed count again requires more than 3 shards or if a new controller bug appears. Rollback for translation hold is to restore `SUMMARY_TRANSLATION_LIMIT=5` and `HOLD_ARTICLES_FOR_TRANSLATIONS=true` only after proving shard refreshes still save reviews, usage, worker telemetry, and snapshots.
 
 ---
 
@@ -106,11 +111,11 @@ Expected top-level response:
   "controllerMode": "automatic",
   "shardCount": 3,
   "shardRunIntervalMinutes": 5,
-  "maxAiReviewsPerShard": 12,
+  "maxAiReviewsPerShard": 3,
   "requestId": "<uuid>",
   "result": {
     "shardIndex": 0,
-    "shardUrl": "https://nutsnews-worker-0.nutsnews.workers.dev/?limit=12",
+    "shardUrl": "https://nutsnews-worker-0.nutsnews.workers.dev/?limit=3",
     "ok": true,
     "status": 200,
     "response": {
@@ -188,7 +193,7 @@ curl "https://nutsnews-worker-0.nutsnews.workers.dev/?limit=1"
 Use the normal shard limit when testing production-like behavior:
 
 ```bash
-curl "https://nutsnews-worker-0.nutsnews.workers.dev/?limit=12"
+curl "https://nutsnews-worker-0.nutsnews.workers.dev/?limit=3"
 ```
 
 ---
