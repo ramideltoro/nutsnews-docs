@@ -45,6 +45,7 @@ This folder is organized by what you are trying to do: understand the product, c
 | Set up VPS Grafana Cloud observability | [Grafana Cloud Observability](NUTSNEWS_GRAFANA_CLOUD_OBSERVABILITY.md) |
 | Ship a change | [Deployment Checklist](DEPLOYMENT_CHECKLIST.md) |
 | Understand the current end-to-end release pipeline | [Release Pipeline](NUTSNEWS_RELEASE_PIPELINE.md) |
+| Write or review production release notes | [Release Notes Workflow](RELEASE_NOTES_WORKFLOW.md) |
 | Understand the Vercel + VPS web delivery model | [Dual-Target Web Deployment](NUTSNEWS_DUAL_TARGET_WEB_DEPLOYMENT.md) |
 | Fix a production issue | [Troubleshooting](TROUBLESHOOTING.md) |
 | Check cost and quota risk | [Free-Tier Guardrails](FREE_TIER_GUARDRAILS.md) |
@@ -196,6 +197,7 @@ These docs explain the product and the system at a high level.
 | --- | --- |
 | [Deployment Checklist](DEPLOYMENT_CHECKLIST.md) | Safe release steps for web, DB, and cache |
 | [Release Pipeline](NUTSNEWS_RELEASE_PIPELINE.md) | Current end-to-end commit, PR, Vercel, image, staging, qualification, protected promotion, production VPS, and verification pipeline |
+| [Release Notes Workflow](RELEASE_NOTES_WORKFLOW.md) | Manual release-note format, cross-repo checklist, evidence, automation boundary, and rollback notes |
 | [Dual-Target Web Deployment](NUTSNEWS_DUAL_TARGET_WEB_DEPLOYMENT.md) | Build identity, environment parity, image publishing, digest promotion, protected rollout, and rollback |
 | [Dependency Updates](DEPENDENCY_UPDATES.md) | npm audit, safe upgrades, Dependabot, and validation |
 | [Mandatory NutsNews Docs Policy](updates/README_MANDATORY_NUTSNEWS_DOCS_POLICY.md) | Required docs updates, release-note summaries, diagrams, and app/docs PR linkage for every NutsNews change |
