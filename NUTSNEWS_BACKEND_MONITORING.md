@@ -99,6 +99,26 @@ Grafana objects:
 The backend provisioner intentionally avoids Grafana's alert-state-history Loki
 datasource because that stores alert history, not backend host logs.
 
+## Grafana Alert Guardrails
+
+Backend issue #25 adds a repo-managed Grafana alert group named
+`NutsNews Backend Guardrails` in the `NutsNews Backend Ops` folder.
+
+Initial alert rules cover:
+
+- missing backend host metrics;
+- unhealthy `/healthz` endpoint;
+- failed systemd units;
+- unhealthy backup, verification, or restore-drill stages;
+- root disk warning above 80%;
+- reboot-required warning after 24 hours;
+- missing backend journal logs in Loki;
+- backend log volume above the free-tier guardrail threshold.
+
+The rules use the backend textfile metrics and explicit `noDataState` settings
+so intentionally not-configured services do not page as failures. Notification
+routing, deduplication, cooldowns, and recovery messages are managed separately.
+
 ## Grafana Cloud Metrics
 
 Backend issue #35 adds the repo-managed Grafana Cloud metrics path from
