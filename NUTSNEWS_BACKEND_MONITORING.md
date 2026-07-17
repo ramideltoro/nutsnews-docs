@@ -117,7 +117,8 @@ Initial alert rules cover:
 
 The rules use the backend textfile metrics and explicit `noDataState` settings
 so intentionally not-configured services do not page as failures. Notification
-routing, deduplication, cooldowns, and recovery messages are managed separately.
+routing, deduplication, cooldowns, and recovery messages are managed by the
+backend report artifacts described below.
 
 ## Off-Box Synthetic Monitoring
 
@@ -134,10 +135,55 @@ without authentication or production mutation:
 - Supabase public status API as the auth-provider availability signal
 
 Each run uploads `backend-synthetic-report.json`, writes a GitHub step summary,
-and sends email only on failures through the existing NutsNews reporting SMTP
-secret names. The report includes endpoint, HTTP status, failure class, source
-provider/location, and last successful check timestamp when a previous artifact
-is available.
+and sends email only on unsuppressed alert notifications through the existing
+NutsNews reporting SMTP secret names. The report includes endpoint, HTTP status,
+failure class, source provider/location, alerting summary, alert state, and last
+successful check timestamp when a previous completed artifact is available.
+
+## Alert Deduplication And Recovery
+
+Backend issue #39 adds artifact-backed alert state to the recurring health
+report and off-box synthetic monitor.
+
+State storage:
+
+- `backend-health-report.yml` downloads the previous completed
+  `backend-health-report` artifact from `main`.
+- `backend-synthetic-monitor.yml` downloads the previous completed
+  `backend-synthetic-report` artifact from `main`.
+- Each new report writes `alert_state.alerts` back into the next uploaded JSON
+  artifact.
+
+Fingerprint inputs:
+
+- source;
+- service/check name;
+- severity;
+- failure class;
+- normalized message text with volatile timestamps, long hex IDs, and numbers
+  replaced.
+
+Cooldown policy:
+
+- health report alerts: `24` hours;
+- synthetic monitor alerts: `1` hour.
+
+Visible fields in JSON artifacts and GitHub summaries:
+
+- active alert count;
+- notification count;
+- suppressed count for the current run;
+- cumulative suppressed count on each active alert record;
+- recovered count;
+- last sent timestamp;
+- last error;
+- notification list;
+- suppressed list.
+
+Alert severities are `warning`, `critical`, `unknown`, and `recovered`.
+Healthy and intentionally `not_configured` health checks do not create alert
+candidates. Recovery notifications are emitted when an active fingerprint from
+the previous artifact is absent from the current run.
 
 ## Grafana Cloud Metrics
 
