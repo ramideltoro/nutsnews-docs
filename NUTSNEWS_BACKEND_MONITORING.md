@@ -92,7 +92,11 @@ Grafana objects:
 
 - Folder: `NutsNews Backend Ops` (`nutsnews-backend-ops`)
 - Logs dashboard: `NutsNews Backend Logs` (`nutsnews-backend-logs`)
+- Managed logs datasource: `grafanacloud-nutsnews-backend-loki` (`grafanacloud-loki`)
 - Datasource type: Grafana Loki (`loki`)
+
+The backend provisioner intentionally avoids Grafana's alert-state-history Loki
+datasource because that stores alert history, not backend host logs.
 
 ## Grafana Cloud Metrics
 
