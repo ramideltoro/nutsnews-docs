@@ -691,7 +691,8 @@ assertions. The infra qualifier still checks the GitHub Deployment evidence,
 then independently reads the live health/ready identity before and after the
 suite. This change affects only the application suite's expected health target;
 it does not grant production authority, change staging credentials, alter the
-attestation predicate, or relax the `staging-tests` boundary.
+attestation predicate, or relax the `staging-tests` boundary. Related app
+change: `ramideltoro/nutsnews#249`.
 
 ```mermaid
 flowchart LR
