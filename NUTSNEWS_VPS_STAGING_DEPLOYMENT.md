@@ -827,13 +827,15 @@ GitHub Deployments for the current staging deployment. A redeploy, changed
 digest, changed staging deployment ID, changed config generation, skipped
 required suite, or expired predicate fails closed.
 
-`nutsnews-production-release` is an infra-owned promotion event, not an
-approved app handoff. `ramideltoro/nutsnews` may request only
+Production promotion starts from a successful infra-owned staging
+qualification workflow run, not from an app handoff or direct production
+repository dispatch. `ramideltoro/nutsnews` may request only
 `nutsnews-staging-release` with its staging dispatch credential. The
-staging-qualification workflow in `ramideltoro/nutsnews-infra` may emit the
-production release event only after the exact candidate passes and is attested.
-Reintroducing an app-held infra release token, mutable tags, independent
-Vercel production `main` auto-deploys, or `production-vps` access in the app
+staging-qualification workflow in `ramideltoro/nutsnews-infra` must finish
+successfully after attesting the exact candidate; `nutsnews-release-promotion`
+then starts from that successful run. Reintroducing an app-held infra release
+token, mutable tags, independent Vercel production `main` auto-deploys, direct
+`nutsnews-production-release` dispatch, or `production-vps` access in the app
 repository is a workflow regression.
 
 ### Expert Summary

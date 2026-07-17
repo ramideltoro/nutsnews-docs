@@ -4,9 +4,9 @@ Current as of July 17, 2026.
 
 This document maps the staging-qualified production release path across:
 
-- `ramideltoro/nutsnews` at inspected `origin/main` commit `49110fa`
-- `ramideltoro/nutsnews-infra` at inspected `origin/main` commit `e18b59d`
-- `ramideltoro/nutsnews-docs` at base `main` commit `87c2b84`
+- `ramideltoro/nutsnews` at inspected `origin/main` commit `1a44391`
+- `ramideltoro/nutsnews-infra` at inspected `origin/main` commit `db766ed`
+- `ramideltoro/nutsnews-docs` at base `main` commit `56f88b0`
 
 It documents repository-owned behavior and workflow boundaries. It does not
 contain secret values and does not authorize manual production database changes,
@@ -29,12 +29,13 @@ Before the production VPS can change, infra verifies:
 1. the signed staging qualification attestation for the exact image, source,
    build, staging deployment, config generation, and test-suite revision;
 2. the candidate is still the current successful staging deployment;
-3. Vercel Production has successfully deployed the same source commit;
-4. production Supabase already exposes the compatible migration/schema contract,
+3. production Supabase already exposes the compatible migration/schema contract,
    or the protected production migration workflow has already applied it;
-5. the reviewed GitOps production manifest PR passes checks and merges;
-6. `Protected Ansible Apply` accepts the complete release identity bundle before
+4. the reviewed GitOps production manifest PR passes checks and merges;
+5. `Protected Ansible Apply` accepts the complete release identity bundle before
    it reaches `production-vps` secrets.
+6. the app repository's explicit Vercel production workflow deploys and
+   verifies the same source commit only after the VPS apply succeeds.
 
 If the production Supabase schema is behind, promotion fails and points the
 operator to `ramideltoro/nutsnews/.github/workflows/production-supabase-migration.yml`.
@@ -61,8 +62,8 @@ The release identity bundle is:
 - migration head
 - rollback-compatible schema version
 - production Supabase project reference
-- Vercel Production deployment evidence and public alias URL for the same
-  source commit
+- post-VPS Vercel Production deployment evidence and public alias URL for the
+  same source commit
 
 The app `Container Image` workflow uploads `nutsnews-staging-release` metadata.
 `Request Verified Staging Release` dispatches only `nutsnews-staging-release`
@@ -76,16 +77,15 @@ verifies that attestation before retaining the evidence artifact.
 `Promote NutsNews Production Release` starts only after that qualification
 workflow succeeds, or by a tightly validated manual dispatch for the exact
 qualification run. It re-derives the release contract from the exact app source
-commit, verifies Vercel Production through GitHub deployment status, then reads
-`/healthz` and browser-safe runtime config from `https://www.nutsnews.com`.
-This keeps the same-source Vercel Production gate while avoiding protected
-per-deployment `.vercel.app` URLs. The workflow verifies production Supabase
-through the public `nutsnews_migration_schema_contract` RPC, revalidates the
-staging attestation and current staging deployment, then creates or reuses the
-production GitOps PR.
+commit, verifies production Supabase through the public
+`nutsnews_migration_schema_contract` RPC, revalidates the staging attestation
+and current staging deployment, then creates or reuses the production GitOps
+PR. After the protected VPS apply succeeds, infra dispatches the app
+repository's explicit Vercel production workflow and waits for the deployment
+URL plus public aliases to report the same source commit.
 
 The promotion workflow does not attach the `production-vps` environment. It
-uses the existing infra release token only after the Vercel, Supabase, and
+uses the existing infra release token only after the Supabase and
 staging-attestation gates pass, so the token is used for GitOps mechanics:
 branch push, PR creation, check waiting, merge, and protected workflow dispatch.
 The production mutation still happens only inside `Protected Ansible Apply`
@@ -100,8 +100,6 @@ The production path deliberately separates evidence from mutation:
 - Staging deployment proves the digest can run on the VPS staging runtime.
 - Staging qualification proves the live staged candidate and writes signed,
   short-lived eligibility evidence.
-- Vercel Production must independently report the same source commit before
-  VPS promotion proceeds.
 - The production Supabase contract must already match the release migration
   head, legacy schema marker, and catalog fingerprint before VPS promotion
   proceeds.
@@ -111,12 +109,15 @@ The production path deliberately separates evidence from mutation:
   SSH are available.
 - Post-apply verification fails the run if Docker image identity or public
   `/healthz` identity does not match.
+- Vercel Production deploys only after the protected VPS apply passes, and the
+  release remains failed unless the deployment URL and public aliases report
+  the same source commit.
 
 The release is not transactionally atomic across Vercel, Supabase, GitHub, and
 the VPS. The safety property is narrower and testable: every production VPS app
-mutation must be traceable to a current staging qualification, same-commit
-Vercel Production deployment, compatible production Supabase schema, reviewed
-manifest PR, and protected apply run.
+mutation must be traceable to a current staging qualification, compatible
+production Supabase schema, reviewed manifest PR, protected apply run, and
+same-commit post-VPS Vercel Production deployment.
 
 ## Pipeline Diagram
 
@@ -127,9 +128,7 @@ flowchart TD
   handoff --> staging["Infra staging deploy\nstaging-vps"]
   staging --> qualification["Independent staging qualification\nstaging-tests attestation"]
   qualification --> promotion["Production promotion workflow\nqualification run only"]
-  promotion --> vercel{"Vercel Production\nsame source commit?"}
-  vercel -- "No" --> stopVercel["Stop before GitOps PR"]
-  vercel -- "Yes" --> supabase{"Production Supabase\ncontract compatible?"}
+  promotion --> supabase{"Production Supabase\ncontract compatible?"}
   supabase -- "No" --> migrate["Run protected production-supabase-migration\nthen rerun promotion"]
   supabase -- "Yes" --> attest{"Current staging attestation\nstill exact?"}
   attest -- "No" --> stopAttest["Stop before GitOps PR"]
@@ -139,7 +138,9 @@ flowchart TD
   checks -- "Yes" --> merge["Merge PR"]
   merge --> apply["Protected Ansible Apply\ncomplete release bundle"]
   apply --> verify["Docker + public health identity\nsafe production smoke"]
-  verify --> done["Production VPS release complete"]
+  verify --> vercel["Dispatch explicit Vercel production workflow\nsame source commit"]
+  vercel --> vercelVerify["Deployment URL + aliases\nsame source commit"]
+  vercelVerify --> done["Coupled release complete"]
 ```
 
 ## Sequence Diagram
@@ -162,13 +163,16 @@ sequenceDiagram
   Infra->>Stage: Run off-VPS staging qualification
   Infra->>Infra: Attest exact staging qualification predicate
   Infra->>Infra: Start production promotion from qualification run
-  Infra->>Vercel: Verify GitHub deployment status and /healthz source commit
   Infra->>Supabase: Verify public schema contract RPC through Vercel runtime config
   Infra->>Infra: Verify attestation and current staging deployment
   Infra->>Infra: Create or reuse production manifest PR, wait for checks, merge
   Infra->>Infra: Dispatch Protected Ansible Apply with release identity bundle
   Infra->>Prod: Apply reviewed digest through production-vps
   Prod-->>Infra: Docker image and public /healthz identity match
+  Infra->>App: repository_dispatch nutsnews-vercel-production-release
+  App->>Vercel: Deploy explicit production workflow for same source commit
+  Vercel-->>App: Deployment URL and aliases report same source commit
+  App-->>Infra: Vercel production workflow passed
 ```
 
 ## Gate Table
@@ -180,12 +184,12 @@ sequenceDiagram
 | Staging handoff | `staging-release.yml` | Only the validated `nutsnews-staging-release` payload is dispatched to infra | Staging deploy is not requested |
 | Staging deploy | `nutsnews-staging-deploy.yml` | VPS staging runtime reports the expected source, build, digest, schema, and isolation | Qualification is not eligible |
 | Staging qualification | `nutsnews-staging-qualification.yml` | Live staging tests pass and the exact-candidate attestation verifies | Production promotion is not eligible |
-| Vercel Production | `nutsnews-release-promotion.yml` | GitHub Deployment from `vercel[bot]` for the same commit is successful and `https://www.nutsnews.com/healthz` reports that commit | Promotion stops before GitOps PR |
 | Production Supabase contract | `nutsnews-release-promotion.yml` plus app migration workflow | Runtime config identifies production and the public schema contract RPC matches migration head, schema version, and fingerprint | Promotion fails and points to `production-supabase-migration.yml` |
 | Current staging attestation | `verify_production_eligibility.py` | Fresh trusted attestation matches release identity and the same deployment is still current successful staging | Promotion stops before GitOps PR or protected apply |
 | GitOps promotion PR | `nutsnews-release-promotion.yml` | Manifest PR checks pass and PR merges to infra `main` | Protected apply is not dispatched |
 | Protected eligibility | `protected-ansible-apply.yml` | No-secret verifier accepts the merged manifest and complete release bundle before `production-vps` secrets | Production secrets and SSH remain unavailable |
 | Production apply | `protected-ansible-apply.yml` | Ansible applies the reviewed digest and post-apply Docker/health/smoke checks match | Workflow fails; use fixed rollback only if production mutated |
+| Vercel Production | `vercel-production-release.yml` dispatched by infra after VPS apply | Deployment URL, `www.nutsnews.com`, and `nutsnews.com` report the same source commit and `vercel-production` target | Coupled release fails after VPS apply; fix the Vercel blocker or use protected rollback if needed |
 | Fixed rollback | `protected-nutsnews-rollback.yml` | Only the recorded last-known-good digest is selected from reviewed manifest history | Arbitrary digest, tag, SSH, or DB down migration is rejected |
 
 ## Production Supabase Procedure
@@ -209,9 +213,8 @@ run ID if the qualification is still fresh and current.
 
 - Do not dispatch `Protected Ansible Apply` for a new app digest until the
   promotion workflow has merged the reviewed production manifest.
-- Do not treat a Vercel Production deployment as VPS authorization. It is a
-  same-source prerequisite, not a replacement for staging qualification or
-  protected apply.
+- Do not run a standalone Vercel Production deployment for a release. Vercel
+  production follows protected VPS apply through the coupled promotion chain.
 - Do not treat staging qualification as database migration approval. Production
   Supabase migration remains a separate protected workflow.
 - Do not use mutable image tags, manual Docker edits, direct SSH deployment,
