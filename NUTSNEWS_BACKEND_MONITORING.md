@@ -343,6 +343,23 @@ Live dashboards expect low-cardinality PHP-FPM metrics, parsed Caddy log fields,
 New Relic infrastructure samples, and systemd service state metrics or
 equivalent service-health events.
 
+Backend issues #151, #152, #153, and #154 add PostgreSQL dashboard definitions
+for:
+
+- database availability, connection capacity, transactions, cache behavior,
+  deadlocks, checkpoints, and storage;
+- APM-to-PostgreSQL correlation using transaction database time, datastore
+  spans, wait events, and trace IDs;
+- query performance using query IDs, statement types, execution count, elapsed
+  time, disk reads/writes, and plan rows without showing raw SQL text;
+- operations signals for blocking sessions, wait events, vacuum freshness,
+  bloat, table/index storage, and optional replication lag.
+
+These dashboards assume the New Relic on-host PostgreSQL integration. Table and
+index metrics require read access to collected tables, and query diagnostics
+require `pg_stat_statements` plus statistics-reader permissions for the New
+Relic integration role.
+
 ## Status
 
 Issue #7 is complete. Issue #35 owns the Grafana Cloud metrics/dashboard layer, while issue #36 owns Loki log shipping and issue #25 ties metrics, logs, dashboards, and guardrails into the full observability baseline.
