@@ -309,6 +309,23 @@ backend validation commands run only in offline/check mode and must not pretend
 that dashboards, APM, infrastructure, logs, or PostgreSQL integrations are
 reporting.
 
+### APM Dashboard Pack
+
+Backend issues #138, #140, #141, and #142 add versioned New Relic dashboard
+definitions for:
+
+- backend error rate, exceptions, failing transactions, and trace context;
+- transaction slow paths, database time, outbound time, and repeated slow
+  endpoints;
+- PHP APM throughput, latency percentiles, latency distribution, and Apdex;
+- outbound dependency volume, latency, errors, host facets, and transaction
+  contribution.
+
+The dashboard definitions remain reviewable repo state until
+`scripts/provision_newrelic_dashboards.py` is run with New Relic credentials.
+The definitions use a 24 hour default window, bounded facets, and repo-managed
+dashboard names under the `NutsNews Backend - ` prefix.
+
 ## Status
 
 Issue #7 is complete. Issue #35 owns the Grafana Cloud metrics/dashboard layer, while issue #36 owns Loki log shipping and issue #25 ties metrics, logs, dashboards, and guardrails into the full observability baseline.
