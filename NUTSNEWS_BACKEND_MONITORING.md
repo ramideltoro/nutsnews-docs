@@ -91,6 +91,64 @@ exposes that state as `recovery_last_run`.
 - Backend app logs: `/var/log/nutsnews/*.log`, daily rotation, 14 retained rotations, compressed.
 - Logs must not contain secrets, tokens, private keys, database dumps, or full environment output.
 
+## New Relic Host Log Guardrails
+
+### Simple Summary
+
+The backend now has a safer New Relic log setup plan. It sends only useful
+problem and security logs, and it stops sending the noisy New Relic CLI log that
+can contain secret-looking command output.
+
+### Intermediate Summary
+
+Backend issue
+[`ramideltoro/nutsnews-backend#155`](https://github.com/ramideltoro/nutsnews-backend/issues/155)
+is handled through a repo-managed host fallback because live New Relic
+obfuscation and Pipeline Cloud drop-rule mutations are blocked by account RBAC.
+When the protected backend apply workflow has a New Relic ingest key, it enables
+`backend_newrelic_logs_enabled`, removes guided-install `discovered.yml` and
+`logging.yml`, and installs
+`/etc/newrelic-infra/logging.d/nutsnews-backend.yml`.
+
+Forwarding is intentionally allowlisted:
+
+- Caddy access logs only for 4xx/5xx responses, plus Caddy error logs.
+- PostgreSQL warning/error/deadlock/checkpoint/autovacuum/duration signals.
+- NutsNews app warning/error/correlation lines.
+- `auth.log` and `fail2ban.log` security events.
+- New Relic infrastructure warning/error lines.
+
+The managed config does not forward `/root/.newrelic/newrelic-cli.log`,
+`dpkg.log`, `cloud-init.log`, `alternatives.log`, or broad unfiltered syslog.
+Rollback is to disable `backend_newrelic_logs_enabled` or revert the backend PR
+and rerun protected backend apply; the New Relic infrastructure agent remains
+installed but stops receiving the curated config.
+
+### Expert Summary
+
+The backend Ansible baseline owns the host-side New Relic log source list rather
+than relying on New Relic account-side obfuscation/drop-rule APIs that currently
+return `ACCESS_DENIED`. The control path is:
+
+```mermaid
+flowchart LR
+  pr["Backend PR"] --> checks["Backend Checks"]
+  checks --> merge["Merge to main"]
+  merge --> apply["Protected backend Ansible apply"]
+  apply --> nrdir["/etc/newrelic-infra/logging.d"]
+  nrdir --> remove["Remove discovered.yml and logging.yml"]
+  nrdir --> install["Install nutsnews-backend.yml"]
+  install --> restart["Restart newrelic-infra"]
+  restart --> nr["New Relic Logs"]
+```
+
+This change reduces free-tier ingest risk before data leaves the host. It is not
+a replacement for New Relic account-level obfuscation; if the account later
+allows custom obfuscation expressions or Pipeline Cloud rules, those can be
+added as a second layer. Verification should check the protected apply diff, the
+post-apply `newrelic-infra` service state, and New Relic NRQL counts for future
+logs. Historical New Relic logs are not rewritten by this change.
+
 ## Grafana Cloud Logs
 
 Backend issue #36 adds Grafana Cloud Loki log shipping through the backend
