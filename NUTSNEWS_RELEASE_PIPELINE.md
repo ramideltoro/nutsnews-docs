@@ -5,7 +5,8 @@ Current as of July 18, 2026.
 This document maps the staging-qualified production release path across:
 
 - `ramideltoro/nutsnews` for app source, workflows, Vercel release, and
-  GitHub Actions pinning policy;
+  GitHub Actions pinning policy, including remote verification that pinned
+  action SHAs are commits in the referenced repositories;
 - `ramideltoro/nutsnews-infra` for VPS staging, qualification, promotion,
   protected apply, and rollback dispatches;
 - `ramideltoro/nutsnews-docs` for cross-repo release documentation.
