@@ -275,6 +275,11 @@ NutsNews reporting SMTP secret names. The report includes endpoint, HTTP status,
 failure class, source provider/location, alerting summary, alert state, and last
 successful check timestamp when a previous completed artifact is available.
 
+For backend issue #172, New Relic acceptance currently uses the live simple
+synthetic monitor `NutsNews Backend Health Ping`. Scripted API synthetics remain
+documented in the backend live configuration as a future upgrade because New
+Relic returned `PAYMENT_REQUIRED` when the scripted monitor was created.
+
 ## Alert Deduplication And Recovery
 
 Backend issue #39 adds artifact-backed alert state to the recurring health
