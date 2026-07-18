@@ -417,6 +417,8 @@ flowchart TD
   apply --> verify["Verify Docker digest, health identity,\nand safe smoke surfaces"]
 ```
 
+The rollback step now evaluates only required checks on the rollback PR, and it no longer treats skipped checks as hard failures. That prevents false negatives when non-required checks are intentionally skipped by path filters or optional pipeline branches.
+
 If Ansible exits non-zero, the workflow fails. Do not retry apply mode repeatedly as a coping mechanism. Read the failing task, fix the source of truth, and rerun check mode.
 
 ## What Can Go Wrong
