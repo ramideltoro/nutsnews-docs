@@ -285,6 +285,30 @@ Expected live evidence:
   - `nutsnews_backend_public_endpoint_healthy`
   - `{host="backend.nutsnews.com",source="journal"}`
 
+## New Relic Foundation
+
+Backend issues #134, #135, #136, #137, and #139 establish the repo-managed
+New Relic foundation without storing credentials in git.
+
+The backend repo owns:
+
+- `docs/newrelic-observability-taxonomy.json` for the canonical service name,
+  tags, dashboard naming, entity grouping, and workload grouping;
+- `docs/newrelic/dashboards/*.json` for versioned dashboard definitions;
+- `scripts/provision_newrelic_dashboards.py` for NerdGraph dashboard
+  create/update operations;
+- `scripts/backend_newrelic_observability_check.py` for safe post-deploy or
+  post-rotation reporting checks;
+- `runbooks/NEW_RELIC_OBSERVABILITY.md` for API keys, rotation, validation,
+  and source links.
+
+Live New Relic provisioning requires `NEW_RELIC_USER_KEY`,
+`NEW_RELIC_ACCOUNT_ID`, and `NEW_RELIC_REGION`. Agent ingest requires
+`NEW_RELIC_LICENSE_KEY` and `NEW_RELIC_APP_NAME`. Without those values, the
+backend validation commands run only in offline/check mode and must not pretend
+that dashboards, APM, infrastructure, logs, or PostgreSQL integrations are
+reporting.
+
 ## Status
 
 Issue #7 is complete. Issue #35 owns the Grafana Cloud metrics/dashboard layer, while issue #36 owns Loki log shipping and issue #25 ties metrics, logs, dashboards, and guardrails into the full observability baseline.
