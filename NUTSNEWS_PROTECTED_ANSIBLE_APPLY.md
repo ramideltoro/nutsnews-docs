@@ -146,7 +146,10 @@ already reached Vercel Production, verifies the production Supabase schema
 contract, creates or reuses the reviewed GitOps manifest PR, waits for checks,
 merges it, and then dispatches this workflow with the complete release identity
 bundle. The old direct `nutsnews-production-release` dispatch is not a valid
-entry point.
+entry point. For production app releases, `sync_vercel_production` is enforced as
+`true` by default; if an operator provides complete release identity inputs and
+`sync_vercel_production=false`, the workflow fails before any production
+mutation except the fixed-recorded rollback replay path.
 
 Routine host package maintenance and reboots use a separate fixed-purpose
 workflow, `Protected VPS Maintenance`. It still attaches to the protected

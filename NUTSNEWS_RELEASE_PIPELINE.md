@@ -230,9 +230,11 @@ build control guard remains present in the release workflow.
 
 Rollback is to revert the app workflow change and rerun the coupled promotion
 only after confirming the Vercel Production environment no longer contains a
-shell-sensitive process-control name. Do not work around this by running a
-standalone Vercel production deploy, because that would bypass the coupled VPS
-and Vercel release contract.
+shell-sensitive process-control name. The Vercel production workflow now accepts
+only the infra repository dispatch path (`nutsnews-vercel-production-release`) and
+is not manually dispatchable in normal operations. Do not work around this by
+running a standalone Vercel production deploy, because that would bypass the
+coupled VPS and Vercel release contract.
 
 ## Production Supabase Procedure
 
