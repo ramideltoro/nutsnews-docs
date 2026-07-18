@@ -397,6 +397,22 @@ selection and common triage flows. Live New Relic SLO, Apdex, anomaly-alert,
 and change-tracking mutations still require New Relic account credentials and
 permissions.
 
+Backend issues #148, #169, and #171 add trace diagnostics and telemetry review
+artifacts:
+
+- `backend-trace-diagnostics` shows trace count, slow spans, error traces,
+  database spans, outbound spans, service dependencies, and trace-to-log pivots;
+- `scripts/backend_newrelic_observability_check.py --enforce` now checks PHP
+  distributed tracing configuration;
+- `docs/newrelic-cache-queue-decision.json` records that no backend-owned cache
+  or queue dashboard should exist until a real workload is introduced;
+- `docs/newrelic-telemetry-privacy-review.json` covers logs, APM attributes,
+  custom events, query attributes, and synthetics with allowlist/denylist
+  boundaries.
+
+Real trace existence and live New Relic privacy/drop-filter behavior still
+require account credentials and backend request traffic.
+
 ## Status
 
 Issue #7 is complete. Issue #35 owns the Grafana Cloud metrics/dashboard layer, while issue #36 owns Loki log shipping and issue #25 ties metrics, logs, dashboards, and guardrails into the full observability baseline.
