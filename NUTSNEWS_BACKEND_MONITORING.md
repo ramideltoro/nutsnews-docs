@@ -149,6 +149,40 @@ added as a second layer. Verification should check the protected apply diff, the
 post-apply `newrelic-infra` service state, and New Relic NRQL counts for future
 logs. Historical New Relic logs are not rewritten by this change.
 
+## New Relic Background Job Metrics
+
+Backend issue
+[`ramideltoro/nutsnews-backend#170`](https://github.com/ramideltoro/nutsnews-backend/issues/170)
+adds a repo-managed New Relic Metric API emitter for backend-owned scheduled
+jobs. The protected backend Ansible apply installs
+`nutsnews-newrelic-job-metrics.service` and
+`nutsnews-newrelic-job-metrics.timer` when a New Relic ingest key is available
+in the `production-backend` GitHub Environment.
+
+The one-shot service reads bounded systemd state for these backend-owned jobs:
+
+- `nutsnews-backup.service`
+- `nutsnews-backup-verify.service`
+- `nutsnews-restore-drill.service`
+- `nutsnews-metrics-textfile.service`
+- `nutsnews-ops-dashboard-collect.service`
+
+It sends low-cardinality gauges under `Custom/NutsNews/job/*` for duration,
+success, failure, active state, and restart count. Allowed attributes are
+limited to `job.name`, `workflow.name`, `systemd.unit`, `systemd.timer`,
+`environment`, and `status`.
+
+Operational files:
+
+- root-only environment: `/etc/nutsnews-newrelic/metric-api.env`
+- job inventory: `/etc/nutsnews-newrelic/background-jobs.json`
+- last safe status report: `/var/lib/nutsnews/newrelic/job-metrics-last.json`
+
+The New Relic `backend-systemd-service-health` dashboard includes panels for
+background job duration, last success/failure state, active state, and restart
+count. App and feed-worker job instrumentation remains owned by their
+respective repositories.
+
 ## Grafana Cloud Logs
 
 Backend issue #36 adds Grafana Cloud Loki log shipping through the backend
