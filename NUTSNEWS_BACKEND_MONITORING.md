@@ -378,6 +378,25 @@ Live New Relic parsing, obfuscation, and drop-filter rules still require New
 Relic account access and may depend on account features. Until then, the repo
 policy is the intended implementation contract.
 
+Backend issues #161, #166, #173, and #175 add service-quality and release
+dashboard definitions plus `docs/newrelic-service-levels.json`:
+
+- initial production SLOs cover availability, latency, error-free requests, and
+  feed freshness over a 30 day period;
+- the initial backend API Apdex target is 0.5 seconds, to be revisited after
+  seven stable production days;
+- golden metric views cover throughput, latency, error rate, host saturation,
+  and PHP-FPM saturation;
+- baseline views compare current throughput, latency, error rate, and log
+  volume against last week;
+- release-health views show `Deployment` markers, before/after health, new
+  exception classes, log regressions, and rollback decision signals.
+
+The backend New Relic runbook now doubles as the operator README for dashboard
+selection and common triage flows. Live New Relic SLO, Apdex, anomaly-alert,
+and change-tracking mutations still require New Relic account credentials and
+permissions.
+
 ## Status
 
 Issue #7 is complete. Issue #35 owns the Grafana Cloud metrics/dashboard layer, while issue #36 owns Loki log shipping and issue #25 ties metrics, logs, dashboards, and guardrails into the full observability baseline.
