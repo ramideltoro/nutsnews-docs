@@ -360,6 +360,24 @@ index metrics require read access to collected tables, and query diagnostics
 require `pg_stat_statements` plus statistics-reader permissions for the New
 Relic integration role.
 
+Backend issues #155, #156, #157, and #158 add the repo-side log policy and log
+dashboard definitions:
+
+- `docs/newrelic-log-policy.json` defines required structured fields,
+  excluded fields, redaction classes, retained log categories, drop-rule intent,
+  and expected daily ingest volume;
+- logs should be queryable by `request.id`, `trace.id`, `route`,
+  `http.statusCode`, `duration.ms`, `deployment.version`, `exception.class`,
+  and `message.safe`;
+- the ingest dashboard uses `NrConsumption` and `NrMTDConsumption` to track
+  monthly usage, 24 hour run rate, noisy usage groups, and noisy log sources;
+- the logs diagnostics dashboard uses parsed fields for severity, route/status,
+  host/unit, deployment, exception class, and trace/request pivots.
+
+Live New Relic parsing, obfuscation, and drop-filter rules still require New
+Relic account access and may depend on account features. Until then, the repo
+policy is the intended implementation contract.
+
 ## Status
 
 Issue #7 is complete. Issue #35 owns the Grafana Cloud metrics/dashboard layer, while issue #36 owns Loki log shipping and issue #25 ties metrics, logs, dashboards, and guardrails into the full observability baseline.
