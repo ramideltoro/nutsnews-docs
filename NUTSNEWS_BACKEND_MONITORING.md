@@ -326,6 +326,23 @@ The dashboard definitions remain reviewable repo state until
 The definitions use a 24 hour default window, bounded facets, and repo-managed
 dashboard names under the `NutsNews Backend - ` prefix.
 
+Backend issues #144, #146, #147, and #149 add runtime and host dashboard
+definitions for:
+
+- PHP-FPM worker capacity, listen queue pressure, max children, slow requests,
+  process churn, and APM latency correlation;
+- Caddy request volume by status code, redirects, 4xx/5xx trends, request
+  latency, bounded parsed paths, and bounded user-agent facets;
+- backend host CPU, load, memory, swap, disk, network, and top process resource
+  use;
+- systemd service state, restarts, failed/inactive units, critical process
+  presence, and service-scoped logs.
+
+This pack does not expose a PHP-FPM status endpoint or change Caddy routing.
+Live dashboards expect low-cardinality PHP-FPM metrics, parsed Caddy log fields,
+New Relic infrastructure samples, and systemd service state metrics or
+equivalent service-health events.
+
 ## Status
 
 Issue #7 is complete. Issue #35 owns the Grafana Cloud metrics/dashboard layer, while issue #36 owns Loki log shipping and issue #25 ties metrics, logs, dashboards, and guardrails into the full observability baseline.
