@@ -1,5 +1,12 @@
 # Staging-Qualified Production Promotion Update
 
+Current note: this file describes the earlier July 2026 staging-qualified VPS
+promotion model. The current Vercel production-domain behavior is documented in
+`updates/README_ACTION_SHA_PINNING_AND_VERCEL_STAGED_PROMOTION.md`: Vercel now
+deploys a staged production candidate with `--skip-domain`, smoke-tests the
+staged URL, and promotes with `vercel promote` only after that staged
+qualification passes.
+
 ## Simple Summary
 
 Production VPS promotion now has one intended path: a release must pass staging
