@@ -413,6 +413,18 @@ artifacts:
 Real trace existence and live New Relic privacy/drop-filter behavior still
 require account credentials and backend request traffic.
 
+Backend issues #174 and #176 add operator-facing demo and dashboard UX
+artifacts:
+
+- `docs/newrelic-dashboard-ux.json` maps the dashboard pack to supported
+  global filters, primary operator questions, drilldowns, and dependency
+  signals;
+- `runbooks/NEW_RELIC_OBSERVABILITY_DEMO.md` provides bounded walkthroughs for
+  latency, error-rate, PostgreSQL, host, log, and release-health demo paths;
+- the backend validator now checks that every repo-managed New Relic dashboard
+  has UX coverage and that the demo runbook stays linked from the main
+  observability runbook.
+
 ## Status
 
 Issue #7 is complete. Issue #35 owns the Grafana Cloud metrics/dashboard layer, while issue #36 owns Loki log shipping and issue #25 ties metrics, logs, dashboards, and guardrails into the full observability baseline.
