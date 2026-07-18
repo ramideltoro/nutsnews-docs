@@ -425,6 +425,21 @@ artifacts:
   has UX coverage and that the demo runbook stays linked from the main
   observability runbook.
 
+Backend issues #143, #145, #150, #159, #160, #163, #165, #167, #168, #170,
+and #172 now have a repo-owned live configuration contract:
+
+- `docs/newrelic-live-configuration.json` defines key transactions, custom
+  attributes, custom metrics, background job telemetry, alert policies,
+  notification workflow expectations, synthetics, deployment markers, workload
+  grouping, and Errors Inbox triage;
+- `scripts/newrelic_change_tracking.py` and
+  `.github/workflows/backend-newrelic-change-tracking.yml` provide a fail-safe
+  CI path for New Relic deployment markers once account credentials and the APM
+  entity GUID are present;
+- live New Relic provisioning and verification still require New Relic account
+  credentials, entity access, configured destinations, and backend request
+  traffic.
+
 ## Status
 
 Issue #7 is complete. Issue #35 owns the Grafana Cloud metrics/dashboard layer, while issue #36 owns Loki log shipping and issue #25 ties metrics, logs, dashboards, and guardrails into the full observability baseline.
