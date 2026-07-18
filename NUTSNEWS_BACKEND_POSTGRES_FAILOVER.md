@@ -102,6 +102,14 @@ Restore drill modes:
 confirm_restore=restore-staging-to-backend-postgres
 ```
 
+Each restore drops and recreates `nutsnews_restore_rehearsal`. After schema and
+data replay, the restore runner reapplies rehearsal database grants for
+`nutsnews_readonly`, `nutsnews_migration_validation`, and
+`nutsnews_app_rehearsal` so parity, smoke, and benchmark validation can connect
+with protected migration credentials. The validation role is allowed to bypass
+restored RLS only for aggregate-only migration checks; production app access
+remains blocked until a separate cutover approval.
+
 ## Secret Names
 
 The protected `production-backend` Environment owns these names:
@@ -109,6 +117,10 @@ The protected `production-backend` Environment owns these names:
 ```text
 NUTSNEWS_BACKEND_POSTGRES_APP_PASSWORD
 NUTSNEWS_BACKEND_POSTGRES_READONLY_PASSWORD
+NUTSNEWS_BACKEND_POSTGRES_MIGRATION_RESTORE_PASSWORD
+NUTSNEWS_BACKEND_POSTGRES_MIGRATION_VALIDATION_PASSWORD
+NUTSNEWS_BACKEND_POSTGRES_MIGRATION_REPLICATION_PASSWORD
+NUTSNEWS_BACKEND_POSTGRES_MIGRATION_APP_REHEARSAL_PASSWORD
 SUPABASE_ACCESS_TOKEN
 NUTSNEWS_STAGING_SUPABASE_PROJECT_REF
 ```
