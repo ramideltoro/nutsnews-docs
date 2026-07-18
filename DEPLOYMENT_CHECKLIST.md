@@ -289,6 +289,19 @@ NEXT_PUBLIC_TURNSTILE_SITE_KEY
 TURNSTILE_SECRET_KEY
 ```
 
+### Required runtime/data policy
+
+Set the runtime policy separately for **Production** and **Preview**. Preview is staging, not a writable production schema.
+
+| Target | Runtime/data/credential identity | Side effects | Supabase credentials |
+|---|---|---|---|
+| Production | `production` / `production` / `production` | `live` | Production project only |
+| Preview | `staging` / `staging` / `staging` | `disabled` by default | Separate staging project only |
+
+For both targets configure `NUTSNEWS_RUNTIME_ENV`, `NUTSNEWS_SIDE_EFFECTS_MODE`, `NUTSNEWS_DATA_ENV`, `NUTSNEWS_SUPABASE_CREDENTIALS_ENV`, `NUTSNEWS_SUPABASE_PROJECT_REF`, and `NUTSNEWS_PRODUCTION_SUPABASE_PROJECT_REF`. Also configure the two `NEXT_PUBLIC_NUTSNEWS_*` values so the browser cannot initialize production Sentry telemetry in Preview.
+
+Before promoting a deployment, request `/api/health`. A `503` with `runtime-safety-policy` is a release blocker; correct the identity/configuration without logging or copying secrets.
+
 ### Deploy web
 
 Normal Vercel production deploy and immutable image publishing are triggered by
@@ -322,6 +335,8 @@ must not request production apply, use `production-vps`, or carry production
 SSH, production app secrets, or an infra release token. Production apply is
 owned by infra after staging deploy, independent off-VPS qualification,
 attestation verification, and protected production eligibility checks.
+
+Do not run `post_deploy_verify.sh`, Worker/controller smoke triggers, AI backfills, cache purges, indexing, or production analytics from Preview/staging. Those commands require the explicit Production + `live` policy.
 
 ### Web post-deploy checks
 
@@ -865,6 +880,8 @@ Check that:
 ### Web rollback
 
 Use Vercel deployment rollback if the web app is broken.
+
+For production releases promoted by the GitHub Actions coupling workflow, Vercel deployment failures after a successful VPS apply now trigger an automated VPS rollback via `protected-nutsnews-rollback.yml`, so the app should not end up in a split-brain state.
 
 Then verify:
 
