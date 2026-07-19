@@ -119,6 +119,11 @@ rendered through the root-only Ansible path with `no_log`. The workflow and
 portal must never print values. Mutable image references are rejected whenever
 the application is enabled.
 
+For VPS app releases, `/healthz` is the static OCI image identity and reports
+the image build target `vps`. `/readyz` and `/api/runtime-config` are runtime
+identity checks and must report the production VPS deployment target
+`production-vps`.
+
 The protected workflow selects only the production app runtime. Staging has a
 separate runtime identity but remains disabled pending the measured capacity
 decision; it has no Caddy route, credentials, TLS/access boundary, or deployment
