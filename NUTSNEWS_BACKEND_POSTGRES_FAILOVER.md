@@ -97,6 +97,55 @@ to `supabase_primary`, or disable `NUTSNEWS_BACKEND_WORKER_API_ENABLED` and
 rerun protected backend apply. Supabase remains the production primary until a
 separate cutover approval says otherwise.
 
+## App Compatibility Boundary
+
+The web app now has issue `ramideltoro/nutsnews#255` as the app-side
+provider-mode tracker. App runtime safety recognizes three modes:
+
+| Mode | Production write owner | Expected use |
+| --- | --- | --- |
+| `supabase_primary` | Supabase | Default and explicit rollback mode. |
+| `backend_postgres_shadow` | Supabase | App can prove backend API configuration while reads and writes still use Supabase. |
+| `backend_postgres_primary` | Backend PostgreSQL compatibility API | Future cutover mode only, gated by explicit confirmation and backend app API parity. |
+
+`backend_postgres_primary` must require
+`NUTSNEWS_BACKEND_POSTGRES_PRIMARY_CONFIRMATION=enable-backend-postgres-primary`
+and must fail closed if app code attempts direct Supabase primary access.
+Non-production can exercise backend-primary runtime safety with a mock or
+non-production backend API endpoint and without writing to Supabase.
+
+The app compatibility API is separate from the worker API. Before production
+cutover, the backend must expose a least-privilege app route, likely:
+
+```text
+https://backend.nutsnews.com/api/app/db/*
+```
+
+That route must cover the app's public and admin database surfaces before the
+app can leave `supabase_primary`: public feed snapshots, article detail and
+sitemap reads, search, runtime feature flags, quota usage writes, article
+engagement writes, readiness schema-contract replacement, and admin dashboard
+reads for feed, article, shard, cost, AI, audit, cache, feature-flag, and
+production-readiness workflows. No browser bundle may receive backend API
+tokens or service-role credentials.
+
+```mermaid
+flowchart TD
+    A[App runtime policy] --> B{NUTSNEWS_DATABASE_PROVIDER_MODE}
+    B -->|supabase_primary| C[Supabase PostgREST remains primary]
+    B -->|backend_postgres_shadow| D[Supabase primary plus backend API config smoke]
+    B -->|backend_postgres_primary| E[Backend app DB compatibility API]
+    E --> F[Backend PostgreSQL primary]
+    C -. explicit rollback .-> A
+    D -. rollback .-> C
+    E -. rollback window .-> C
+```
+
+The current cutover blocker is backend app API provisioning and parity evidence.
+Do not set the production app to `backend_postgres_primary` until the backend
+issue linked from `ramideltoro/nutsnews#255` proves that app route with
+non-production smoke tests and production cutover runbook links.
+
 ## Access Boundary
 
 PostgreSQL:
@@ -249,7 +298,9 @@ Production cutover is not enabled by issue #13. Before production traffic can wr
 
 - approved production Supabase dump or reviewed replication catch-up;
 - paused writers;
-- PostgREST-compatible API layer or app-owned database API change;
+- PostgREST-compatible API layer or app-owned database API change for the web
+  app, with issue `ramideltoro/nutsnews#255` and the backend app API blocker
+  closed or explicitly waived in the production cutover record;
 - worker API shadow parity evidence for feeds, articles, summaries, reviews,
   run logging, quota logging, feed health, and public feed snapshot refresh;
 - app/worker environment switch plan;
