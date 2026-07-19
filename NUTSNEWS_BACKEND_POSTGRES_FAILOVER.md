@@ -144,6 +144,48 @@ available:
 | Backend contract evidence | `ramideltoro/nutsnews-backend#249`, merge commit `e4704050e48704a9127c7d2c6366e05ba42d64b1` | machine-readable contract now records provisioned app route and smoke evidence |
 | Cutover dry-run refresh | `backend-production-cutover` run `29694281117` | passed with `status=dry_run_ready` and `mutation_performed=false`; remaining blockers are writer pause, provider-switch owner approval, final go/no-go, and rollback owner coverage |
 
+## Worker Writer-Pause Guard
+
+The worker now has a deployable production writer-pause guard for the cutover
+window, but the guard is not enabled by default. The normal deployed value is:
+
+```text
+NUTSNEWS_PRODUCTION_WRITES_PAUSED=false
+```
+
+When a separate cutover approval says to pause worker writes, set:
+
+```text
+NUTSNEWS_PRODUCTION_WRITES_PAUSED=true
+```
+
+and redeploy through the worker pipeline. Manual refresh requests then return
+HTTP 423 before rate limits, Redis locks, database clients, feed fetching, AI
+review, or Supabase/backend writes run. Scheduled refreshes exit before run
+locks or database writes. Public snapshot and status endpoints stay available
+for read-side cutover validation.
+
+As of 2026-07-19, the worker pause capability has implementation and deployment
+evidence:
+
+| Gate | Evidence | Result |
+| --- | --- | --- |
+| Worker writer-pause PR | `ramideltoro/nutsnews-worker#32`, merge commit `5dfb14db5f4f119b1e3840e116306835f1a7fe83` | added `NUTSNEWS_PRODUCTION_WRITES_PAUSED` guard for manual and scheduled refresh paths |
+| Worker PR checks | PR #32 head `09fa930455fa9c963aaf3aa3fad2114643c1f5f6` | passed worker pipeline, TypeScript, offline E2E, shadow target validation, workflow lint, secrets scan, dependency review, OSV, AI safety evals, and CodeQL |
+| Worker main deploy | Worker Pipeline run `29694794130` | passed CI and deployed worker shards/controller to Cloudflare with the pause flag defaulting to `false` |
+| Worker smoke coverage | `npm run test:db-provider-modes` in `ramideltoro/nutsnews-worker` | passed backend-primary without Supabase bindings, explicit Supabase rollback, manual 423 pause response, and scheduled pause no-op coverage |
+
+```mermaid
+flowchart TD
+    A[Manual refresh request] --> B{NUTSNEWS_PRODUCTION_WRITES_PAUSED}
+    C[Cron scheduled handler] --> B
+    B -->|true| D[Skip before locks and database writes]
+    B -->|false| E[Existing provider-mode refresh flow]
+    E --> F[Supabase primary rollback]
+    E --> G[Backend shadow or future primary]
+    H[Public snapshot and status endpoints] --> I[Read-side validation remains available]
+```
+
 ```mermaid
 flowchart TD
     A[App runtime policy] --> B{NUTSNEWS_DATABASE_PROVIDER_MODE}
@@ -156,10 +198,12 @@ flowchart TD
     E -. rollback window .-> C
 ```
 
-The current production cutover blocker is app shadow parity plus final
+The current production cutover blocker is all-writer pause execution, app shadow
+parity, provider-switch owner approval, rollback owner coverage, and final
 production approval. Do not set the production app to `backend_postgres_primary`
 until the backend cutover issues link current parity evidence, writer-pause
-evidence, rollback coverage, and the protected production cutover approval.
+execution evidence, rollback coverage, and the protected production cutover
+approval.
 Rollback remains explicit: set the app provider mode back to
 `supabase_primary`, remove or ignore backend API credentials, and keep Supabase
 as the production primary.
