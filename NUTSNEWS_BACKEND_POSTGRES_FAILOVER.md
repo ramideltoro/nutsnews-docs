@@ -211,13 +211,14 @@ boolean and `X-NutsNews-Production-Writes-Paused`; runtime public config exposes
 only the same boolean and no backend tokens, service-role keys, project refs, or
 database URLs beyond the existing public Supabase URL allowlist.
 
-As of 2026-07-19, the app pause capability has implementation and PR-check
-evidence:
+As of 2026-07-19, the app pause capability has implementation, merge, and
+main-branch evidence:
 
 | Gate | Evidence | Result |
 | --- | --- | --- |
-| App writer-pause PR | `ramideltoro/nutsnews#261`, head commit `48e8df7586cf80c167e849fab9144c8028a9e19a` | adds `NUTSNEWS_PRODUCTION_WRITES_PAUSED` to app runtime safety, readiness, public config, and API contract allowlists |
+| App writer-pause PR | `ramideltoro/nutsnews#261`, head commit `48e8df7586cf80c167e849fab9144c8028a9e19a`, merge commit `936062eee2ed097817a81f881920faa9808c2fac` | adds `NUTSNEWS_PRODUCTION_WRITES_PAUSED` to app runtime safety, readiness, public config, and API contract allowlists |
 | App PR checks | PR #261 check suite | passed Web CI, container image build/smoke, API compatibility, Vercel preview, public reader smoke, visual regression, accessibility, Lighthouse, CodeQL, Snyk, OSV, dependency review, and secret scan |
+| App main checks | merge commit `936062eee2ed097817a81f881920faa9808c2fac` | passed Web CI, container image build/smoke, immutable image publish, API compatibility, public reader smoke, visual regression, accessibility, Lighthouse, CodeQL, Snyk, OSV, Gitleaks, SEO, cache, homepage budget, staging-release regression, and staging-candidate request |
 | Local app smoke | `npm run test:runtime-safety`, `node scripts/api_contract_compatibility_regression.mjs`, `npm run test:routes`, `npm run test:components`, `npx tsc --noEmit`, `npm run lint`, and CI-style fixture `npm run build` | passed; bare local build without runtime env failed closed with existing `runtime_environment_invalid` |
 
 ```mermaid
