@@ -85,6 +85,7 @@ These docs explain the product and the system at a high level.
 | [Backend Recovery](NUTSNEWS_BACKEND_RECOVERY.md) | Fixed-purpose backend recovery checks, protected service actions, pre/postchecks, and last-run evidence |
 | [Backend OpenAI Maintenance Robot](NUTSNEWS_BACKEND_OPENAI_MAINTENANCE_ROBOT.md) | Daily OpenAI-assisted maintenance scan, scan labels, issue routing, artifacts, and safety boundaries |
 | [Backend Service Baseline](NUTSNEWS_BACKEND_SERVICE_BASELINE.md) | Read-only live service inventory, public exposure policy, and re-attestation trigger |
+| [Backend PostgreSQL Failover](NUTSNEWS_BACKEND_POSTGRES_FAILOVER.md) | Backend PostgreSQL shadow target, worker compatibility API, parity gates, and rollback boundary |
 | [Protected Ansible Apply](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md) | Manual protected GitHub Actions workflow for check/apply runs against the VPS baseline, plus the separate on-demand health report workflow |
 | [VPS Service Foundation](NUTSNEWS_VPS_SERVICE_FOUNDATION.md) | Docker, Compose, `/opt/nutsnews`, Caddy, and public infrastructure health routing |
 | [VPS Runtime Environment Isolation](NUTSNEWS_VPS_RUNTIME_ENVIRONMENT_ISOLATION.md) | Separate production/staging Compose identities, state, Caddy boundary, immutable digest rule, and #118 blocker |

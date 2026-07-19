@@ -6,7 +6,7 @@ NutsNews now has a private backup database place on the backend server. It is no
 
 ## Intermediate Summary
 
-`ramideltoro/nutsnews-backend` provisions PostgreSQL on `backend.nutsnews.com` through the protected Ansible pipeline. PostgreSQL and Adminer are bound to `127.0.0.1` only, so operators must use an SSH tunnel. Supabase remains the production writer. Protected GitHub Actions drills restore staging and production-shadow data into backend PostgreSQL targets, attach one-way logical replication for the primary shadow, and publish readiness to the ops dashboard, metrics, and health report.
+`ramideltoro/nutsnews-backend` provisions PostgreSQL on `backend.nutsnews.com` through the protected Ansible pipeline. PostgreSQL and Adminer are bound to `127.0.0.1` only, so operators must use an SSH tunnel. Supabase remains the production writer. Protected GitHub Actions drills restore staging and production-shadow data into backend PostgreSQL targets, attach one-way logical replication for the primary shadow, and publish readiness to the ops dashboard, metrics, and health report. A feature-flagged worker compatibility API can expose bounded worker database operations for shadow validation before any primary cutover.
 
 ## Expert Summary
 
@@ -49,6 +49,48 @@ The future-primary shadow database used for production-shadow migration gates is
 ```text
 nutsnews_primary_shadow
 ```
+
+## Worker Compatibility API
+
+Backend issue `ramideltoro/nutsnews-backend#242` owns the backend worker
+database compatibility route required by `ramideltoro/nutsnews-worker#27`.
+
+The public route shape is:
+
+```text
+https://backend.nutsnews.com/api/worker/db/*
+```
+
+The route is disabled unless the protected backend apply receives:
+
+```text
+NUTSNEWS_BACKEND_WORKER_API_ENABLED=true
+```
+
+Requests authenticate with:
+
+```text
+Authorization: Bearer <NUTSNEWS_BACKEND_API_TOKEN>
+```
+
+Shadow mode must stay least-privilege and read-only: the backend API connects to
+`nutsnews_primary_shadow` as `nutsnews_readonly`, accepts only bounded
+allow-listed worker operations, and rejects write operations before touching
+PostgreSQL. This lets the worker compare backend reads without writing to
+Supabase or the backend database.
+
+Backend-primary writes require all of these conditions:
+
+- worker provider mode is `backend_postgres_primary`;
+- backend protected apply has `NUTSNEWS_BACKEND_WORKER_API_WRITES_ENABLED=true`;
+- parity, smoke, rollback, and cutover evidence has been linked from the backend
+  migration runbooks and issues.
+
+Keep `NUTSNEWS_BACKEND_WORKER_API_WRITES_ENABLED=false` during shadow
+validation. Rollback before production cutover is explicit: set the worker back
+to `supabase_primary`, or disable `NUTSNEWS_BACKEND_WORKER_API_ENABLED` and
+rerun protected backend apply. Supabase remains the production primary until a
+separate cutover approval says otherwise.
 
 ## Access Boundary
 
@@ -157,6 +199,7 @@ NUTSNEWS_BACKEND_POSTGRES_MIGRATION_RESTORE_PASSWORD
 NUTSNEWS_BACKEND_POSTGRES_MIGRATION_VALIDATION_PASSWORD
 NUTSNEWS_BACKEND_POSTGRES_MIGRATION_REPLICATION_PASSWORD
 NUTSNEWS_BACKEND_POSTGRES_MIGRATION_APP_REHEARSAL_PASSWORD
+NUTSNEWS_BACKEND_API_TOKEN
 SUPABASE_ACCESS_TOKEN
 NUTSNEWS_STAGING_SUPABASE_PROJECT_REF
 ```
@@ -201,6 +244,8 @@ Production cutover is not enabled by issue #13. Before production traffic can wr
 - approved production Supabase dump or reviewed replication catch-up;
 - paused writers;
 - PostgREST-compatible API layer or app-owned database API change;
+- worker API shadow parity evidence for feeds, articles, summaries, reviews,
+  run logging, quota logging, feed health, and public feed snapshot refresh;
 - app/worker environment switch plan;
 - smoke tests;
 - rollback window;

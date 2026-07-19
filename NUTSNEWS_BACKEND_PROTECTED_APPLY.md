@@ -53,6 +53,14 @@ Optional early-bootstrap secrets:
 | `AWS_SECRET_ACCESS_KEY` | S3-compatible restic secret key when `NUTSNEWS_BACKEND_RESTIC_PROVIDER=s3` |
 | `AWS_DEFAULT_REGION` | Optional S3-compatible region |
 
+Worker database compatibility API inputs:
+
+| Name | Type | Purpose |
+| --- | --- | --- |
+| `NUTSNEWS_BACKEND_WORKER_API_ENABLED` | Environment variable | Enables the Caddy `/api/worker/db/*` route and loopback worker API service. Keep `false` until the route is intentionally provisioned. |
+| `NUTSNEWS_BACKEND_WORKER_API_WRITES_ENABLED` | Environment variable | Allows backend-primary worker writes. Keep `false` for shadow validation and rollback readiness. |
+| `NUTSNEWS_BACKEND_API_TOKEN` | Environment secret | Bearer token used by the worker compatibility API. Store only in the protected `production-backend` Environment and rotate if exposed. |
+
 Prefer a dedicated automation user with key-based SSH and reviewed sudo behavior. If a sudo password is temporarily used, rotate it after the automation user exists.
 
 ## Ansible Role Path
