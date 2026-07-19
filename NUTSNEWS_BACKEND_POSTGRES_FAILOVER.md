@@ -141,6 +141,8 @@ available:
 | Protected apply | `protected-backend-ansible-apply` run `29693776534` | passed in `apply` mode with deployment safety preflight and postcheck |
 | Backend app-route smoke | `python3 scripts/backend_app_db_api_smoke.py` against `https://backend.nutsnews.com/api/app/db` | passed: smoke 200, snapshot rows 5, shadow write 409, primary guarded write 403 |
 | App helper shadow smoke | `callBackendDatabaseOperation` from `ramideltoro/nutsnews` against `https://backend.nutsnews.com/api/app/db` | passed: provider `backend_postgres`, writes disabled, snapshot rows 3, no Supabase writes |
+| Backend contract evidence | `ramideltoro/nutsnews-backend#249`, merge commit `e4704050e48704a9127c7d2c6366e05ba42d64b1` | machine-readable contract now records provisioned app route and smoke evidence |
+| Cutover dry-run refresh | `backend-production-cutover` run `29694281117` | passed with `status=dry_run_ready` and `mutation_performed=false`; remaining blockers are writer pause, provider-switch owner approval, final go/no-go, and rollback owner coverage |
 
 ```mermaid
 flowchart TD
