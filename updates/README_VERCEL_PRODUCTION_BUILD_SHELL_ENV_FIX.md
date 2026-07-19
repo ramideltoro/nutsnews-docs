@@ -1,11 +1,13 @@
-# Vercel Production Build Shell Env and Remote Staging Fix
+# Vercel Production Build Shell Env, Remote Staging, and Bypass Smoke Fix
 
 ## Simple Summary
 
 The production deploy robot failed because it could not find the shell program
 it needs to start the build. The guarded release path now avoids that fragile
 local build step: Vercel builds the release remotely, the staged URL is checked
-first, and the public domains move only after the check passes.
+first, and the public domains move only after the check passes. A later staged
+smoke failure showed that API-style checks must use Vercel's bypass header
+without asking for a browser cookie.
 
 ## Intermediate Summary
 
@@ -36,6 +38,15 @@ the Vercel project root is already configured as `web`, so Vercel looked for
 `~/work/nutsnews/nutsnews/web/web`. App PR #265 removes `working-directory:
 web` from the remote staging step and adds a regression guard so the deploy
 runs from the repository root. The staged smoke step still runs from `web/`.
+
+Production Vercel run `29699988008` confirmed that remote staging from the repo
+root works and created staged deployment
+`https://nutsnews-2qwwioebp-nutsnews.vercel.app`, but the staged smoke failed
+with `redirect count exceeded`. The direct staged `/healthz` response redirected
+to Vercel SSO, and the Node smoke helper was sending both
+`x-vercel-protection-bypass` and `x-vercel-set-bypass-cookie: true`. App PR #266
+keeps programmatic `fetch` smoke on the header-only bypass path by default and
+leaves bypass-cookie setup as an explicit opt-in for browser-like callers.
 
 Observed live state after the failed promotion/rollback attempt:
 
@@ -73,6 +84,9 @@ surface:
   --archive=tgz`;
 - run the remote staging deploy from the repository root so the Vercel project
   root setting is applied exactly once;
+- send `x-vercel-protection-bypass` without `x-vercel-set-bypass-cookie` from
+  Node-based smoke and production identity checks unless
+  `VERCEL_SET_BYPASS_COOKIE=true` or `samesitenone` is explicitly set;
 - pass `NUTSNEWS_SOURCE_COMMIT`, `NUTSNEWS_BUILD_ID`,
   `NUTSNEWS_CONFIG_GENERATION`, `NUTSNEWS_DEPLOYMENT_TARGET`, and matching
   `NEXT_PUBLIC_` identity values through both `--build-env` and `--env`;
@@ -88,13 +102,13 @@ flowchart TD
   pull --> strip["remove HOME/PATH/SHELL/Path"]
   strip --> staged["remote vercel deploy with skip-domain"]
   staged --> identity["build/runtime identity flags"]
-  identity --> smoke["staged smoke"]
+  identity --> smoke["staged smoke with header-only bypass"]
   smoke --> promote["promote production aliases"]
 ```
 
 ## Operational Impact
 
-Operators can retry the guarded production promotion after PR #265 merges. The
+Operators can retry the guarded production promotion after PR #266 merges. The
 latest live VPS check already serves the qualified app image and reports:
 
 - source commit: `936062eee2ed097817a81f881920faa9808c2fac`;
@@ -116,13 +130,17 @@ passes smoke and promotion verifies `www.nutsnews.com` and `nutsnews.com`.
   source commit, build ID, config generation, and deployment target.
 - If Vercel fails after aliases are promoted, use the protected rollback path
   instead of editing VPS or Vercel state manually.
+- If a browser-oriented smoke flow needs a bypass cookie, set
+  `VERCEL_SET_BYPASS_COOKIE=true` or `samesitenone` explicitly for that caller
+  instead of changing the API-smoke default.
 
 ## Rollback
 
-Revert app PR #264 to restore the local prebuilt Vercel path. Reverting PR #263
-would restore the raw shell-control dotenv write, and reverting PR #262 as well
-would restore the original JSON-quoted formatting. For an in-flight split
-release, use the protected NutsNews rollback workflow or rerun the guarded
+Revert app PR #266 to restore the default bypass-cookie request in programmatic
+smoke. Revert app PR #264 to restore the local prebuilt Vercel path. Reverting
+PR #263 would restore the raw shell-control dotenv write, and reverting PR #262
+as well would restore the original JSON-quoted formatting. For an in-flight
+split release, use the protected NutsNews rollback workflow or rerun the guarded
 promotion after fixes land; do not manually edit `/etc/nutsnews`, Docker
 Compose, or Vercel production aliases.
 
@@ -132,13 +150,18 @@ Compose, or Vercel production aliases.
 - Follow-up app PR: https://github.com/ramideltoro/nutsnews/pull/263
 - Remote staging app PR: https://github.com/ramideltoro/nutsnews/pull/264
 - Remote staging root fix PR: https://github.com/ramideltoro/nutsnews/pull/265
+- Vercel bypass smoke fix PR: https://github.com/ramideltoro/nutsnews/pull/266
 - Failed Vercel workflow: https://github.com/ramideltoro/nutsnews/actions/runs/29697127993
 - Follow-up failed Vercel workflow: https://github.com/ramideltoro/nutsnews/actions/runs/29698142670
 - Remote staging failure trigger evidence: https://github.com/ramideltoro/nutsnews/actions/runs/29698656625
 - Remote staging root path failure: https://github.com/ramideltoro/nutsnews/actions/runs/29699383698
+- Header/cookie staged smoke failure: https://github.com/ramideltoro/nutsnews/actions/runs/29699988008
+- Staged deployment from run `29699988008`: https://nutsnews-2qwwioebp-nutsnews.vercel.app
 - Parent promotion with deterministic rollback handling: https://github.com/ramideltoro/nutsnews-infra/actions/runs/29698512054
 - Parent promotion for root path failure: https://github.com/ramideltoro/nutsnews-infra/actions/runs/29699170344
 - Failed rollback attempt: https://github.com/ramideltoro/nutsnews-infra/actions/runs/29698674573
 - Successful fixed VPS apply: https://github.com/ramideltoro/nutsnews-infra/actions/runs/29697967440
 - Infra health-target verifier fix: https://github.com/ramideltoro/nutsnews-infra/pull/267
 - Infra smoke health-target fix: https://github.com/ramideltoro/nutsnews-infra/pull/268
+- Vercel Protection Bypass for Automation: https://vercel.com/docs/deployment-protection/methods-to-bypass-deployment-protection/protection-bypass-automation
+- Vercel Automated and Agent Access: https://vercel.com/docs/deployment-protection/automated-agent-access
