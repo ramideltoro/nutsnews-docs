@@ -73,6 +73,14 @@ Mitigation: fallback requires `previous_manifest.last_known_good_digest == resto
 Risk: Vercel redeploy may fail for environment/config reasons unrelated to restored digest.
 Mitigation: restore run evidence is captured in artifacts; operators run normal read-only verification after restore and can rerun rollback flow from fixed manifest state.
 
+Risk: a failed Vercel child workflow can be hidden if the parent promotion
+workflow fails before writing `run_conclusion` and `deploy_failed` outputs.
+Mitigation: infra PR #269 fixes the observed jq quoting bug in
+`nutsnews-release-promotion.yml` and adds regression coverage for the
+`deploy_failed` output path. The observed failure was promotion run
+`29697948255`, where Vercel child run `29698142670` failed but the parent hit
+`failed to parse jq expression` while reading the conclusion.
+
 Rollback notes:
 - If a release is already partially coupled, trigger the existing fixed rollback path first through the protected rollback workflow and follow standard environment/environmental verification.
 - If the Vercel API is unavailable, the workflow surfaces deployment failure and skips silent success paths; manual release re-run requires a fresh promotion input identity.
@@ -100,6 +108,9 @@ flowchart TD
 - `ramideltoro/nutsnews-infra/ansible/scripts/rollback_nutsnews_release.py`
 - `ramideltoro/nutsnews-infra/ansible/scripts/verify_production_eligibility.py`
 - `ramideltoro/nutsnews/.github/workflows/vercel-production-release.yml`
+- Infra PR #269: https://github.com/ramideltoro/nutsnews-infra/pull/269
+- Parent promotion failure-output evidence: https://github.com/ramideltoro/nutsnews-infra/actions/runs/29697948255
+- Failed Vercel child evidence: https://github.com/ramideltoro/nutsnews/actions/runs/29698142670
 
 ## Related issues
 
