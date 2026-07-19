@@ -30,6 +30,13 @@ guarded production workflow to stage a remote Vercel production deployment with
 and `--env` flags, smoke the staged deployment, and promote it only after that
 smoke passes.
 
+Production Vercel run `29699383698` confirmed that the shell failure was gone,
+but exposed a new path issue: the workflow ran `vercel deploy` from `web/` while
+the Vercel project root is already configured as `web`, so Vercel looked for
+`~/work/nutsnews/nutsnews/web/web`. App PR #265 removes `working-directory:
+web` from the remote staging step and adds a regression guard so the deploy
+runs from the repository root. The staged smoke step still runs from `web/`.
+
 Observed live state after the failed promotion/rollback attempt:
 
 - VPS: healthy on `936062eee2ed097817a81f881920faa9808c2fac`,
@@ -64,6 +71,8 @@ surface:
 - replace `vercel build --prod` and `vercel deploy --prebuilt --prod
   --skip-domain` with `vercel deploy --prod --skip-domain --force
   --archive=tgz`;
+- run the remote staging deploy from the repository root so the Vercel project
+  root setting is applied exactly once;
 - pass `NUTSNEWS_SOURCE_COMMIT`, `NUTSNEWS_BUILD_ID`,
   `NUTSNEWS_CONFIG_GENERATION`, `NUTSNEWS_DEPLOYMENT_TARGET`, and matching
   `NEXT_PUBLIC_` identity values through both `--build-env` and `--env`;
@@ -75,7 +84,8 @@ surface:
 
 ```mermaid
 flowchart TD
-  pull["vercel pull production env"] --> strip["remove HOME/PATH/SHELL/Path"]
+  root["repository root checkout"] --> pull["vercel pull production env"]
+  pull --> strip["remove HOME/PATH/SHELL/Path"]
   strip --> staged["remote vercel deploy with skip-domain"]
   staged --> identity["build/runtime identity flags"]
   identity --> smoke["staged smoke"]
@@ -84,7 +94,7 @@ flowchart TD
 
 ## Operational Impact
 
-Operators can retry the guarded production promotion after PR #264 merges. The
+Operators can retry the guarded production promotion after PR #265 merges. The
 latest live VPS check already serves the qualified app image and reports:
 
 - source commit: `936062eee2ed097817a81f881920faa9808c2fac`;
@@ -121,10 +131,13 @@ Compose, or Vercel production aliases.
 - App PR: https://github.com/ramideltoro/nutsnews/pull/262
 - Follow-up app PR: https://github.com/ramideltoro/nutsnews/pull/263
 - Remote staging app PR: https://github.com/ramideltoro/nutsnews/pull/264
+- Remote staging root fix PR: https://github.com/ramideltoro/nutsnews/pull/265
 - Failed Vercel workflow: https://github.com/ramideltoro/nutsnews/actions/runs/29697127993
 - Follow-up failed Vercel workflow: https://github.com/ramideltoro/nutsnews/actions/runs/29698142670
 - Remote staging failure trigger evidence: https://github.com/ramideltoro/nutsnews/actions/runs/29698656625
+- Remote staging root path failure: https://github.com/ramideltoro/nutsnews/actions/runs/29699383698
 - Parent promotion with deterministic rollback handling: https://github.com/ramideltoro/nutsnews-infra/actions/runs/29698512054
+- Parent promotion for root path failure: https://github.com/ramideltoro/nutsnews-infra/actions/runs/29699170344
 - Failed rollback attempt: https://github.com/ramideltoro/nutsnews-infra/actions/runs/29698674573
 - Successful fixed VPS apply: https://github.com/ramideltoro/nutsnews-infra/actions/runs/29697967440
 - Infra health-target verifier fix: https://github.com/ramideltoro/nutsnews-infra/pull/267
