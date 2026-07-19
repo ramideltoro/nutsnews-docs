@@ -6,11 +6,11 @@ NutsNews now has a private backup database place on the backend server. It is no
 
 ## Intermediate Summary
 
-`ramideltoro/nutsnews-backend` provisions PostgreSQL on `backend.nutsnews.com` through the protected Ansible pipeline. PostgreSQL and Adminer are bound to `127.0.0.1` only, so operators must use an SSH tunnel. Supabase remains the production writer. Protected GitHub Actions drills restore staging and production-shadow data into backend PostgreSQL targets, attach one-way logical replication for the primary shadow, and publish readiness to the ops dashboard, metrics, and health report. A feature-flagged worker compatibility API can expose bounded worker database operations for shadow validation before any primary cutover.
+`ramideltoro/nutsnews-backend` provisions PostgreSQL on `backend.nutsnews.com` through the protected Ansible pipeline. PostgreSQL and Adminer are bound to `127.0.0.1` only, so operators must use an SSH tunnel. Supabase remains the production writer. Protected GitHub Actions drills restore staging and production-shadow data into backend PostgreSQL targets, attach one-way logical replication for the primary shadow, and publish readiness to the ops dashboard, metrics, and health report. Feature-flagged worker and app compatibility APIs expose bounded database operations for shadow validation before any primary cutover.
 
 ## Expert Summary
 
-Backend issue #13 establishes a single-writer, restore-verified failover target, not active-active replication. The backend repo adds PostgreSQL 18-compatible Ubuntu package provisioning, SCRAM auth for local roles, loopback-only Adminer through Caddy/PHP-FPM, staging and production-shadow logical restore drills, one-way production logical replication into `nutsnews_primary_shadow`, PostgreSQL readiness metrics, and an ADR that forbids production cutover until a separate app/API compatibility and cutover approval exists. Sync-back to Supabase is not supported; failback remains a controlled forward-recovery procedure to avoid split-brain.
+Backend issue #13 establishes a single-writer, restore-verified failover target, not active-active replication. The backend repo adds PostgreSQL 18-compatible Ubuntu package provisioning, SCRAM auth for local roles, loopback-only Adminer through Caddy/PHP-FPM, staging and production-shadow logical restore drills, one-way production logical replication into `nutsnews_primary_shadow`, PostgreSQL readiness metrics, worker and app compatibility routes, and an ADR that forbids production cutover until parity evidence and cutover approval exist. Sync-back to Supabase is not supported; failback remains a controlled forward-recovery procedure to avoid split-brain.
 
 ## Control Flow
 
@@ -125,10 +125,22 @@ https://backend.nutsnews.com/api/app/db/*
 That route has app-specific allow-listed operations for public feed snapshots,
 article detail and sitemap reads, search, runtime feature flags, readiness
 schema-contract replacement, bounded admin dashboard read snapshots, quota usage
-writes, article engagement writes, and runtime feature flag writes. It remains
-disabled until protected backend apply enables the loopback service and Caddy
-route. No browser bundle may receive backend API tokens or service-role
-credentials.
+writes, article engagement writes, and runtime feature flag writes. It is
+enabled by the protected backend apply only when the loopback compatibility
+service is enabled; backend-primary writes remain disabled unless the protected
+apply explicitly sets the write guardrail on. No browser bundle may receive
+backend API tokens or service-role credentials.
+
+As of 2026-07-19, app-route provisioning and non-production smoke evidence is
+available:
+
+| Gate | Evidence | Result |
+| --- | --- | --- |
+| Backend app route PR | `ramideltoro/nutsnews-backend#248`, merge commit `7cdbdd79815009a3e1cfee6ab75820c78df1e902` | `/api/app/db/*` added beside `/api/worker/db/*` |
+| Protected check | `protected-backend-ansible-apply` run `29693574619` | passed in `check` mode |
+| Protected apply | `protected-backend-ansible-apply` run `29693776534` | passed in `apply` mode with deployment safety preflight and postcheck |
+| Backend app-route smoke | `python3 scripts/backend_app_db_api_smoke.py` against `https://backend.nutsnews.com/api/app/db` | passed: smoke 200, snapshot rows 5, shadow write 409, primary guarded write 403 |
+| App helper shadow smoke | `callBackendDatabaseOperation` from `ramideltoro/nutsnews` against `https://backend.nutsnews.com/api/app/db` | passed: provider `backend_postgres`, writes disabled, snapshot rows 3, no Supabase writes |
 
 ```mermaid
 flowchart TD
@@ -142,11 +154,13 @@ flowchart TD
     E -. rollback window .-> C
 ```
 
-The current cutover blocker is protected apply plus live app-route smoke and
-parity evidence. Do not set the production app to `backend_postgres_primary`
-until `ramideltoro/nutsnews-backend#247` has protected apply evidence,
-non-production app-route smoke evidence, app shadow parity links, and production
-cutover runbook links.
+The current production cutover blocker is app shadow parity plus final
+production approval. Do not set the production app to `backend_postgres_primary`
+until the backend cutover issues link current parity evidence, writer-pause
+evidence, rollback coverage, and the protected production cutover approval.
+Rollback remains explicit: set the app provider mode back to
+`supabase_primary`, remove or ignore backend API credentials, and keep Supabase
+as the production primary.
 
 ## Access Boundary
 
