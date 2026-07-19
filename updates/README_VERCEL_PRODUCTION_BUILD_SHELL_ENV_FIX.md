@@ -1,11 +1,11 @@
-# Vercel Production Build Shell Env Fix
+# Vercel Production Build Shell Env and Remote Staging Fix
 
 ## Simple Summary
 
 The production deploy robot failed because it could not find the shell program
-it needs to start the build. The final fix keeps shell settings out of the
-Vercel env file and uses the GitHub runner shell settings only for the build
-process.
+it needs to start the build. The guarded release path now avoids that fragile
+local build step: Vercel builds the release remotely, the staged URL is checked
+first, and the public domains move only after the check passes.
 
 ## Intermediate Summary
 
@@ -23,72 +23,109 @@ of JSON-quoted lines. A follow-up Vercel production run,
 `SHELL` from `.vercel/.env.production.local` entirely, then exports those shell
 controls only in the GitHub Actions process before running `vercel build`.
 
-The change does not alter release evidence, deployment targets, Supabase
-configuration, runtime app behavior, or production secrets.
+Production Vercel run `29698656625` showed the same `spawn sh ENOENT` failure
+even after shell-control dotenv stripping. App PR #264 therefore changes the
+guarded production workflow to stage a remote Vercel production deployment with
+`--prod --skip-domain`, pass release identity through explicit `--build-env`
+and `--env` flags, smoke the staged deployment, and promote it only after that
+smoke passes.
+
+Observed live state after the failed promotion/rollback attempt:
+
+- VPS: healthy on `936062eee2ed097817a81f881920faa9808c2fac`,
+  build `29695471125-1`, target `production-vps`.
+- Vercel public aliases: still healthy on previous commit
+  `d4e82d0134707d72e4a5ca29baa6aa365acb925c`, target
+  `vercel-production`.
+
+The change does not alter Supabase configuration, production secrets, app
+runtime behavior, or the staged-smoke-before-promote safety gate.
 
 ## Expert Summary
 
-The workflow still follows the same release chain:
+The workflow still follows the same release chain, but Vercel now owns the
+production build step:
 
 - infra staging deployment and off-VPS qualification;
 - protected VPS apply with exact release identity;
-- Vercel staged production build with `--skip-domain`;
+- Vercel remote production deployment with `--skip-domain`;
 - staged smoke;
 - `vercel promote`;
 - public alias identity verification.
 
-The failure is limited to the app-side Vercel local build environment. The
-first patch removed JSON quoting, but the Vercel CLI still loaded shell-control
-values from the pulled dotenv file before its local install command. The final
-patch strips shell-control names from the dotenv file instead of rewriting them:
+The failure is limited to the app-side Vercel local build environment. The first
+patch removed JSON quoting, and the second patch stripped shell-control names
+from the dotenv file. A third run still failed when `vercel build --prod`
+started the install command. The remote staging patch removes that local build
+surface:
 
 - remove `HOME`, `PATH`, `Path`, and `SHELL` from
   `.vercel/.env.production.local`;
-- export `HOME`, `PATH`, and `SHELL=/bin/sh` in the GitHub Actions shell
-  process;
-- keep `vercel build --prod`, `vercel deploy --prebuilt --prod --skip-domain`,
-  staged smoke, `vercel promote`, and public alias verification unchanged;
+- replace `vercel build --prod` and `vercel deploy --prebuilt --prod
+  --skip-domain` with `vercel deploy --prod --skip-domain --force
+  --archive=tgz`;
+- pass `NUTSNEWS_SOURCE_COMMIT`, `NUTSNEWS_BUILD_ID`,
+  `NUTSNEWS_CONFIG_GENERATION`, `NUTSNEWS_DEPLOYMENT_TARGET`, and matching
+  `NEXT_PUBLIC_` identity values through both `--build-env` and `--env`;
+- keep staged smoke, deployment ID lookup, `vercel promote`, public alias
+  verification, and sanitized release evidence;
 - update `scripts/production_release_workflow_regression.mjs` so future changes
-  cannot reintroduce shell-control dotenv writes.
+  cannot reintroduce local prebuilt production deployment or omit remote
+  identity flags.
 
 ```mermaid
 flowchart TD
   pull["vercel pull production env"] --> strip["remove HOME/PATH/SHELL/Path"]
-  strip --> export["export runner HOME/PATH/SHELL"]
-  export --> build["vercel build can spawn sh"]
-  build --> staged["deploy prebuilt with skip-domain"]
-  staged --> smoke["staged smoke"]
+  strip --> staged["remote vercel deploy with skip-domain"]
+  staged --> identity["build/runtime identity flags"]
+  identity --> smoke["staged smoke"]
   smoke --> promote["promote production aliases"]
 ```
 
 ## Operational Impact
 
-Operators can retry the guarded production promotion after PR #263 merges. The
-latest successful VPS protected apply run `29697967440` already verified the
-new VPS image, public `/healthz`, and safe production smoke against
-`https://vps.nutsnews.com/`.
+Operators can retry the guarded production promotion after PR #264 merges. The
+latest live VPS check already serves the qualified app image and reports:
+
+- source commit: `936062eee2ed097817a81f881920faa9808c2fac`;
+- build ID: `29695471125-1`;
+- deployment target: `production-vps`;
+- readiness: production, live side effects, Supabase primary,
+  `productionWritesPaused=false`.
+
+Vercel public aliases should converge only after the remote staged deployment
+passes smoke and promotion verifies `www.nutsnews.com` and `nutsnews.com`.
 
 ## Risks And Mitigations
 
-- If Vercel local-build parsing changes again, the workflow still stages the
-  deployment without assigning domains and runs smoke before promotion.
+- If remote Vercel builds differ from local prebuilt behavior, the workflow
+  still stages the deployment without assigning domains and runs smoke before
+  promotion.
+- If remote build/runtime identity values are not applied, smoke and public
+  alias checks fail because `/healthz` and runtime config must report the exact
+  source commit, build ID, config generation, and deployment target.
 - If Vercel fails after aliases are promoted, use the protected rollback path
   instead of editing VPS or Vercel state manually.
 
 ## Rollback
 
-Revert app PR #263 to restore the raw shell-control dotenv write. Reverting PR
-#262 as well would restore the original JSON-quoted formatting. For an
-in-flight split release, use the protected NutsNews rollback workflow from
-`ramideltoro/nutsnews-infra`; do not manually edit `/etc/nutsnews`, Docker
+Revert app PR #264 to restore the local prebuilt Vercel path. Reverting PR #263
+would restore the raw shell-control dotenv write, and reverting PR #262 as well
+would restore the original JSON-quoted formatting. For an in-flight split
+release, use the protected NutsNews rollback workflow or rerun the guarded
+promotion after fixes land; do not manually edit `/etc/nutsnews`, Docker
 Compose, or Vercel production aliases.
 
 ## Related Links
 
 - App PR: https://github.com/ramideltoro/nutsnews/pull/262
 - Follow-up app PR: https://github.com/ramideltoro/nutsnews/pull/263
+- Remote staging app PR: https://github.com/ramideltoro/nutsnews/pull/264
 - Failed Vercel workflow: https://github.com/ramideltoro/nutsnews/actions/runs/29697127993
 - Follow-up failed Vercel workflow: https://github.com/ramideltoro/nutsnews/actions/runs/29698142670
+- Remote staging failure trigger evidence: https://github.com/ramideltoro/nutsnews/actions/runs/29698656625
+- Parent promotion with deterministic rollback handling: https://github.com/ramideltoro/nutsnews-infra/actions/runs/29698512054
+- Failed rollback attempt: https://github.com/ramideltoro/nutsnews-infra/actions/runs/29698674573
 - Successful fixed VPS apply: https://github.com/ramideltoro/nutsnews-infra/actions/runs/29697967440
 - Infra health-target verifier fix: https://github.com/ramideltoro/nutsnews-infra/pull/267
 - Infra smoke health-target fix: https://github.com/ramideltoro/nutsnews-infra/pull/268
