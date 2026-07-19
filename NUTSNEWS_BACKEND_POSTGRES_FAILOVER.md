@@ -74,10 +74,15 @@ Authorization: Bearer <NUTSNEWS_BACKEND_API_TOKEN>
 ```
 
 Shadow mode must stay least-privilege and read-only: the backend API connects to
-`nutsnews_primary_shadow` as `nutsnews_readonly`, accepts only bounded
+`nutsnews_primary_shadow` as `nutsnews_worker_api`, accepts only bounded
 allow-listed worker operations, and rejects write operations before touching
-PostgreSQL. This lets the worker compare backend reads without writing to
-Supabase or the backend database.
+PostgreSQL. The role has `BYPASSRLS` so restored Supabase RLS does not hide
+shadow rows from the server-side compatibility API, but its grants are limited
+to the Worker read objects used by the route: `articles`,
+`article_ai_reviews`, `article_summaries`, `feed_health`,
+`public_feed_snapshot`, `rss_feeds`, and `runtime_feature_flags`.
+`nutsnews_readonly` remains the generic operator-inspection role, not the Worker
+API runtime role.
 
 Backend-primary writes require all of these conditions:
 
@@ -199,6 +204,7 @@ NUTSNEWS_BACKEND_POSTGRES_MIGRATION_RESTORE_PASSWORD
 NUTSNEWS_BACKEND_POSTGRES_MIGRATION_VALIDATION_PASSWORD
 NUTSNEWS_BACKEND_POSTGRES_MIGRATION_REPLICATION_PASSWORD
 NUTSNEWS_BACKEND_POSTGRES_MIGRATION_APP_REHEARSAL_PASSWORD
+NUTSNEWS_BACKEND_POSTGRES_WORKER_API_PASSWORD
 NUTSNEWS_BACKEND_API_TOKEN
 SUPABASE_ACCESS_TOKEN
 NUTSNEWS_STAGING_SUPABASE_PROJECT_REF

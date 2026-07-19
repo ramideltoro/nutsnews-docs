@@ -60,6 +60,7 @@ Worker database compatibility API inputs:
 | `NUTSNEWS_BACKEND_WORKER_API_ENABLED` | Environment variable | Enables the Caddy `/api/worker/db/*` route and loopback worker API service. Keep `false` until the route is intentionally provisioned. |
 | `NUTSNEWS_BACKEND_WORKER_API_WRITES_ENABLED` | Environment variable | Allows backend-primary worker writes. Keep `false` for shadow validation and rollback readiness. |
 | `NUTSNEWS_BACKEND_API_TOKEN` | Environment secret | Bearer token used by the worker compatibility API. Store only in the protected `production-backend` Environment and rotate if exposed. |
+| `NUTSNEWS_BACKEND_POSTGRES_WORKER_API_PASSWORD` | Environment secret | Password for the dedicated `nutsnews_worker_api` Postgres role used by shadow reads. Rotate separately from app, migration, and generic readonly credentials. |
 
 Prefer a dedicated automation user with key-based SSH and reviewed sudo behavior. If a sudo password is temporarily used, rotate it after the automation user exists.
 
