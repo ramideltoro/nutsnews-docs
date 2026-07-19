@@ -186,6 +186,51 @@ flowchart TD
     H[Public snapshot and status endpoints] --> I[Read-side validation remains available]
 ```
 
+## App Writer-Pause Guard
+
+The app now has the same deployable production writer-pause control for app and
+admin write paths. The normal deployed value is:
+
+```text
+NUTSNEWS_PRODUCTION_WRITES_PAUSED=false
+```
+
+When a separate cutover approval says to pause app writes, set:
+
+```text
+NUTSNEWS_PRODUCTION_WRITES_PAUSED=true
+```
+
+in the app runtime environment and redeploy through the normal app release
+process. The pause is enforced in the central runtime safety layer, so app/admin
+data mutations, isolated quota and article-engagement writes, contact/external
+side effects, and telemetry delivery fail closed with
+`production_writes_paused`. Public reads, `/readyz`, and `/api/runtime-config`
+remain available. `/readyz` exposes both a JSON `productionWritesPaused`
+boolean and `X-NutsNews-Production-Writes-Paused`; runtime public config exposes
+only the same boolean and no backend tokens, service-role keys, project refs, or
+database URLs beyond the existing public Supabase URL allowlist.
+
+As of 2026-07-19, the app pause capability has implementation and PR-check
+evidence:
+
+| Gate | Evidence | Result |
+| --- | --- | --- |
+| App writer-pause PR | `ramideltoro/nutsnews#261`, head commit `48e8df7586cf80c167e849fab9144c8028a9e19a` | adds `NUTSNEWS_PRODUCTION_WRITES_PAUSED` to app runtime safety, readiness, public config, and API contract allowlists |
+| App PR checks | PR #261 check suite | passed Web CI, container image build/smoke, API compatibility, Vercel preview, public reader smoke, visual regression, accessibility, Lighthouse, CodeQL, Snyk, OSV, dependency review, and secret scan |
+| Local app smoke | `npm run test:runtime-safety`, `node scripts/api_contract_compatibility_regression.mjs`, `npm run test:routes`, `npm run test:components`, `npx tsc --noEmit`, `npm run lint`, and CI-style fixture `npm run build` | passed; bare local build without runtime env failed closed with existing `runtime_environment_invalid` |
+
+```mermaid
+flowchart TD
+    A[App/admin write or external side effect] --> B[Runtime safety policy]
+    B --> C{NUTSNEWS_PRODUCTION_WRITES_PAUSED}
+    C -->|true| D[Fail closed: production_writes_paused]
+    C -->|false| E[Existing production behavior]
+    F[Public reads and readiness] --> G[Remain available]
+    G --> H[/readyz and runtime config expose boolean only]
+    E --> I[Supabase primary rollback remains default]
+```
+
 ```mermaid
 flowchart TD
     A[App runtime policy] --> B{NUTSNEWS_DATABASE_PROVIDER_MODE}
@@ -198,12 +243,13 @@ flowchart TD
     E -. rollback window .-> C
 ```
 
-The current production cutover blocker is all-writer pause execution, app shadow
-parity, provider-switch owner approval, rollback owner coverage, and final
-production approval. Do not set the production app to `backend_postgres_primary`
-until the backend cutover issues link current parity evidence, writer-pause
-execution evidence, rollback coverage, and the protected production cutover
-approval.
+The current production cutover blocker is all-writer pause execution, provider
+switch owner approval, rollback owner coverage, and final production approval.
+Worker and app writer-pause guard implementation evidence exists, but neither
+production writer pause has been executed. Do not set the production app to
+`backend_postgres_primary` until the backend cutover issues link current parity
+evidence, writer-pause execution evidence, rollback coverage, and the protected
+production cutover approval.
 Rollback remains explicit: set the app provider mode back to
 `supabase_primary`, remove or ignore backend API credentials, and keep Supabase
 as the production primary.
