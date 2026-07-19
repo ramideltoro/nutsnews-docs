@@ -245,16 +245,63 @@ flowchart TD
     E -. rollback window .-> C
 ```
 
-The current production cutover blocker is all-writer pause execution, provider
-switch owner approval, rollback owner coverage, and final production approval.
-Worker and app writer-pause guard implementation evidence exists, but neither
-production writer pause has been executed. Do not set the production app to
-`backend_postgres_primary` until the backend cutover issues link current parity
-evidence, writer-pause execution evidence, rollback coverage, and the protected
+The current production cutover blockers are Supabase no-new-write watermark
+evidence after the live pause, provider switch owner approval, rollback owner
+coverage, final production approval, and protected DB gate refresh approval.
+Worker and app writer-pause execution evidence now exists, but this is not a
+database provider switch. Do not set the production app to
+`backend_postgres_primary` until the backend cutover issues link refreshed
+parity evidence, watermark evidence, rollback coverage, and the protected
 production cutover approval.
 Rollback remains explicit: set the app provider mode back to
 `supabase_primary`, remove or ignore backend API credentials, and keep Supabase
 as the production primary.
+
+## 2026-07-19 Live Pause Execution Evidence
+
+The production app and worker pause controls have now been executed, but the
+database provider has not been switched. Supabase remains the production writer.
+
+| Gate | Evidence | Result |
+| --- | --- | --- |
+| App production release | `ramideltoro/nutsnews` run `29704129436`, source commit `936062eee2ed097817a81f881920faa9808c2fac` | promoted with `PRODUCTION_WRITES_PAUSED=true`, staged smoke `pass`, production aliases verified |
+| App live readiness | `https://nutsnews.com/readyz` checked on 2026-07-19 | `productionWritesPaused=true`, `X-NutsNews-Production-Writes-Paused: true`, `databaseProviderMode=supabase_primary` |
+| App runtime config | `https://nutsnews.com/api/runtime-config` checked on 2026-07-19 | exposes the pause boolean and no backend API token |
+| Worker production deploy | `ramideltoro/nutsnews-worker` run `29703213882`, merge commit `352442e4be796114a64abb0cf135d387163bc072` | deployed all 25 worker shards with `NUTSNEWS_PRODUCTION_WRITES_PAUSED=true` |
+| Backend provider shadow dry-run | `ramideltoro/nutsnews-backend` run `29705168086` | `dry_run_ready`, no mutation |
+| Backend provider primary guard | `ramideltoro/nutsnews-backend` run `29705127819` | failed closed with `production_switch_requires_protected_cutover_workflow`, no mutation |
+| Backend rollback/final catch-up guard | `ramideltoro/nutsnews-backend` run `29705128499` | failed closed with `requires_live_writer_pause_evidence`, no mutation |
+
+The protected DB evidence refreshes are waiting for the `production-backend`
+environment before any job steps execute:
+
+- cutover dry-run: `29705124753`;
+- production replication health: `29705125374`;
+- production shadow parity: `29705126018`;
+- primary-shadow backup proof status: `29705126517`.
+
+Remaining before any protected production cutover mutation:
+
+- coordinated maintenance window approval;
+- Supabase no-new-write watermark evidence after the live pause timestamp;
+- app and worker provider-switch owner approval;
+- final go/no-go owner approval;
+- rollback owner coverage through the rollback window;
+- `production-backend` approval for refreshed DB gate evidence and the eventual
+  protected cutover run.
+
+```mermaid
+flowchart TD
+    A[Production app release] --> B[App writes paused]
+    C[Worker pipeline] --> D[25 worker shards paused]
+    B --> E[Provider still supabase_primary]
+    D --> E
+    E --> F[Supabase remains production writer]
+    F --> G{Cutover approvals complete?}
+    G -->|no| H[No provider switch or final sync]
+    G -->|yes| I[Protected backend cutover workflow]
+    H --> J[Collect no-new-write watermarks and owner approvals]
+```
 
 ## Access Boundary
 
