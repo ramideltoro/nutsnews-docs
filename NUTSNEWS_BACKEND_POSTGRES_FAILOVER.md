@@ -220,6 +220,7 @@ main-branch evidence:
 | App PR checks | PR #261 check suite | passed Web CI, container image build/smoke, API compatibility, Vercel preview, public reader smoke, visual regression, accessibility, Lighthouse, CodeQL, Snyk, OSV, dependency review, and secret scan |
 | App main checks | merge commit `936062eee2ed097817a81f881920faa9808c2fac` | passed Web CI, container image build/smoke, immutable image publish, API compatibility, public reader smoke, visual regression, accessibility, Lighthouse, CodeQL, Snyk, OSV, Gitleaks, SEO, cache, homepage budget, staging-release regression, and staging-candidate request |
 | Local app smoke | `npm run test:runtime-safety`, `node scripts/api_contract_compatibility_regression.mjs`, `npm run test:routes`, `npm run test:components`, `npx tsc --noEmit`, `npm run lint`, and CI-style fixture `npm run build` | passed; bare local build without runtime env failed closed with existing `runtime_environment_invalid` |
+| Cutover dry-run refresh | `backend-production-cutover` run `29695707354` | passed with `status=dry_run_ready`, `mutation_performed=false`, and `blockers=[]`; remaining external cutover items are coordinated maintenance window approval, actual app/worker writer-pause execution evidence, provider-switch owner approval, final go/no-go approval, and rollback owner coverage |
 
 ```mermaid
 flowchart TD
