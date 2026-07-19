@@ -114,20 +114,21 @@ and must fail closed if app code attempts direct Supabase primary access.
 Non-production can exercise backend-primary runtime safety with a mock or
 non-production backend API endpoint and without writing to Supabase.
 
-The app compatibility API is separate from the worker API. Before production
-cutover, the backend must expose a least-privilege app route, likely:
+The app compatibility API is separate from the worker operation allowlist but is
+served by the same loopback backend database compatibility service. Backend
+issue `ramideltoro/nutsnews-backend#247` commits the first app route:
 
 ```text
 https://backend.nutsnews.com/api/app/db/*
 ```
 
-That route must cover the app's public and admin database surfaces before the
-app can leave `supabase_primary`: public feed snapshots, article detail and
-sitemap reads, search, runtime feature flags, quota usage writes, article
-engagement writes, readiness schema-contract replacement, and admin dashboard
-reads for feed, article, shard, cost, AI, audit, cache, feature-flag, and
-production-readiness workflows. No browser bundle may receive backend API
-tokens or service-role credentials.
+That route has app-specific allow-listed operations for public feed snapshots,
+article detail and sitemap reads, search, runtime feature flags, readiness
+schema-contract replacement, bounded admin dashboard read snapshots, quota usage
+writes, article engagement writes, and runtime feature flag writes. It remains
+disabled until protected backend apply enables the loopback service and Caddy
+route. No browser bundle may receive backend API tokens or service-role
+credentials.
 
 ```mermaid
 flowchart TD
@@ -141,10 +142,11 @@ flowchart TD
     E -. rollback window .-> C
 ```
 
-The current cutover blocker is backend app API provisioning and parity evidence.
-Do not set the production app to `backend_postgres_primary` until the backend
-issue linked from `ramideltoro/nutsnews#255` proves that app route with
-non-production smoke tests and production cutover runbook links.
+The current cutover blocker is protected apply plus live app-route smoke and
+parity evidence. Do not set the production app to `backend_postgres_primary`
+until `ramideltoro/nutsnews-backend#247` has protected apply evidence,
+non-production app-route smoke evidence, app shadow parity links, and production
+cutover runbook links.
 
 ## Access Boundary
 
