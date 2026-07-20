@@ -96,13 +96,13 @@ Backend-primary writes require all of these conditions:
 
 When `NUTSNEWS_BACKEND_WORKER_API_WRITES_ENABLED=true`, the Worker compatibility
 API intentionally connects as `nutsnews_app` instead of `nutsnews_worker_api`.
-That app role must be able to run the complete Worker path: read feeds,
-dedupe/review state, existing summaries, feed health, and edge snapshot rows;
-insert or update accepted articles, reviews, summaries, health, AI usage, and
-worker run rows; update article publish status; and refresh
-`public_feed_snapshot`. A write-enabled smoke that only checks empty batch writes
-is insufficient; include at least one Worker read probe before declaring the
-backend-primary Worker path healthy.
+That app role must bypass restored Supabase RLS and be able to run the complete
+Worker path: read feeds, dedupe/review state, existing summaries, feed health,
+and edge snapshot rows; insert or update accepted articles, reviews, summaries,
+health, AI usage, and worker run rows; update article publish status; and
+refresh `public_feed_snapshot`. A write-enabled smoke that only checks empty
+batch writes is insufficient; include at least one Worker read probe before
+declaring the backend-primary Worker path healthy.
 
 Keep `NUTSNEWS_BACKEND_WORKER_API_WRITES_ENABLED=false` during shadow
 validation. Rollback before production cutover is explicit: set the worker back
