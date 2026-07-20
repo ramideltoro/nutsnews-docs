@@ -41,6 +41,80 @@ The homepage uses the same edge-aware helper for its initial article load and ca
 
 ---
 
+## Issue #281 Localized Edge Fallback
+
+Related links:
+
+- Issue: [ramideltoro/nutsnews#281](https://github.com/ramideltoro/nutsnews/issues/281)
+- App PR: [ramideltoro/nutsnews#283](https://github.com/ramideltoro/nutsnews/pull/283)
+
+### Simple Summary
+
+When a reader picks another language and the database has an outage, the backup feed now asks for that same language. If the backup has translated cards, readers see them. If it only has English, NutsNews still shows the cards and clearly marks them as English fallback.
+
+### Intermediate Summary
+
+The web app now forwards `/api/articles?lang=<code>` into the Cloudflare Worker edge snapshot request as `/public-feed-snapshot?lang=<code>`. Edge articles keep localized `title`, `ai_summary`, `language_code`, `requested_language_code`, and `translation_available` fields only when the Worker payload says a usable translation is present for the requested language. Older or English-only edge snapshots still return a stable feed with `language_code=en`, the requested language preserved, and `translation_available=false` for non-English requests.
+
+### Expert Summary
+
+`getEdgeFeedSnapshotPage` appends a normalized `lang` query parameter to the Worker URL. The web normalization step now treats a non-English edge article as translated only when `translation_available=true`, `language_code` matches the normalized requested language, and `requested_language_code` also matches. This prevents malformed or older edge payloads from claiming translation coverage while allowing localized Worker snapshots to survive Supabase outages. No migration, secret, environment variable, or Cloudflare binding change is required for the web change; Worker-side localized snapshot production is owned separately by `ramideltoro/nutsnews-backend`.
+
+```mermaid
+flowchart TD
+  A[Reader requests /api/articles?lang=fr] --> B[Supabase public feed read]
+  B -->|healthy| C[Normal localized feed]
+  B -->|outage or empty fallback| D[Web edge fallback helper]
+  D --> E[Worker /public-feed-snapshot?lang=fr]
+  E --> F{Usable fr metadata?}
+  F -->|yes| G[Return French edge title and summary]
+  F -->|no| H[Return English fallback metadata]
+  G --> I[dataSource=edge_feed_snapshot]
+  H --> I
+```
+
+### User and Admin Impact
+
+- Readers can keep seeing localized article cards from the edge fallback when the Worker snapshot includes translated content.
+- Readers still get safe English fallback instead of a broken feed when a translation is missing.
+- Operators continue to use the same data-source and edge snapshot headers to identify degraded reads.
+- The admin edge snapshot status remains unchanged; this update only changes request forwarding and article metadata normalization in the web app.
+
+### Verification
+
+Run the app regression checks:
+
+```bash
+cd web
+npm run test:routes
+npm run test:api-contracts
+npm run test:e2e:offline
+npm run test:e2e:public-smoke
+NUTSNEWS_RUNTIME_ENV=staging \
+NUTSNEWS_SIDE_EFFECTS_MODE=disabled \
+NUTSNEWS_DATA_ENVIRONMENT=staging \
+NUTSNEWS_SUPABASE_CREDENTIALS_ENV=staging \
+NUTSNEWS_SUPABASE_PROJECT_REF=stage-project \
+NUTSNEWS_PRODUCTION_SUPABASE_PROJECT_REF=production-project \
+NUTSNEWS_PUBLIC_SUPABASE_URL=https://stage-project.supabase.co \
+NUTSNEWS_PUBLIC_SUPABASE_ANON_KEY=test-anon-key \
+npm run build
+```
+
+The plain build needs a valid NutsNews runtime-safety environment. Fixture Supabase DNS warnings during sitemap generation are acceptable when the build uses a fake staging host and the command exits successfully.
+
+### Risks, Mitigations, and Rollback
+
+| Risk | Mitigation |
+| --- | --- |
+| A malformed Worker payload could mark English text as translated. | The web app now requires matching `language_code`, matching `requested_language_code`, and `translation_available=true` before preserving non-English metadata. |
+| Older edge snapshots may not include translation metadata. | The app keeps explicit English fallback metadata for missing or unusable translations. |
+| Worker localized snapshot production may lag behind the web change. | The web change is backward-compatible with English-only edge snapshots. |
+
+Rollback is a normal revert of the app PR. The edge fallback will stop forwarding `lang` and will again normalize all edge cards to English metadata. No database, Worker binding, or secret rollback is required.
+
+---
+
 ## Issue #92 Graceful Degradation Mode
 
 Related links:
