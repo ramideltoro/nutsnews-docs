@@ -58,7 +58,7 @@ The web app now forwards `/api/articles?lang=<code>` into the Cloudflare Worker 
 
 ### Expert Summary
 
-`getEdgeFeedSnapshotPage` appends a normalized `lang` query parameter to the Worker URL. The web normalization step now treats a non-English edge article as translated only when `translation_available=true`, `language_code` matches the normalized requested language, and `requested_language_code` also matches. This prevents malformed or older edge payloads from claiming translation coverage while allowing localized Worker snapshots to survive Supabase outages. No migration, secret, environment variable, or Cloudflare binding change is required for the web change; Worker-side localized snapshot production is owned separately by `ramideltoro/nutsnews-backend`.
+`getEdgeFeedSnapshotPage` appends a normalized `lang` query parameter to the Worker URL. The web normalization step now treats a non-English edge article as translated only when `translation_available=true`, `language_code` matches the normalized requested language, and `requested_language_code` also matches. This prevents malformed or older edge payloads from claiming translation coverage while allowing localized Worker snapshots to survive Supabase outages. No migration, secret, environment variable, or Cloudflare binding change is required for the web change. Backend-side localized row production is owned by `ramideltoro/nutsnews-backend`; per-language KV publishing and `/public-feed-snapshot?lang=...` serving are owned by `ramideltoro/nutsnews-worker`.
 
 ```mermaid
 flowchart TD
@@ -112,6 +112,74 @@ The plain build needs a valid NutsNews runtime-safety environment. Fixture Supab
 | Worker localized snapshot production may lag behind the web change. | The web change is backward-compatible with English-only edge snapshots. |
 
 Rollback is a normal revert of the app PR. The edge fallback will stop forwarding `lang` and will again normalize all edge cards to English metadata. No database, Worker binding, or secret rollback is required.
+
+---
+
+## Issue #262 Backend Localized Row Contract
+
+Related links:
+
+- Issue: [ramideltoro/nutsnews-backend#262](https://github.com/ramideltoro/nutsnews-backend/issues/262)
+- Backend PR: [ramideltoro/nutsnews-backend#264](https://github.com/ramideltoro/nutsnews-backend/pull/264)
+- Worker follow-up: [ramideltoro/nutsnews-worker#35](https://github.com/ramideltoro/nutsnews-worker/issues/35)
+
+### Simple Summary
+
+The backend can now prepare translated backup-feed rows for the Worker. If a French summary exists, the backend sends French text. If it does not, the backend sends English text and labels it as fallback.
+
+### Intermediate Summary
+
+The backend Worker DB API operation `load-public-feed-snapshot-rows` now accepts a language input. It reads the bounded `public.public_feed_snapshot` rows, looks up matching `public.article_summaries` rows for non-English languages, and returns article objects with `language_code`, `requested_language_code`, and `translation_available`. This gives the Worker a KV-ready localized payload at refresh time.
+
+### Expert Summary
+
+The backend change keeps edge serving free of live database reads by doing localization during snapshot refresh. `languageCode`, `requestedLanguageCode`, and `lang` are normalized to the supported NutsNews language set. For non-English requests, the backend performs one bounded `article_summaries` lookup by original URL and language. A row is treated as usable only when the language matches and both translated title and summary are nonblank. Missing or unusable translations retain the English `public_feed_snapshot` title and summary with `translation_available=false`. English requests skip the summary lookup and return English metadata directly.
+
+```mermaid
+flowchart TD
+  A[Worker refresh calls backend DB API] --> B[load-public-feed-snapshot-rows]
+  B --> C{Requested language}
+  C -->|en or missing| D[Return public_feed_snapshot rows with English metadata]
+  C -->|fr ja de-CH de el| E[Read public_feed_snapshot rows]
+  E --> F[Read matching article_summaries rows]
+  F --> G{Usable translation?}
+  G -->|yes| H[Return localized title and summary]
+  G -->|no| I[Return English fallback metadata]
+  D --> J[Worker can write KV snapshot]
+  H --> J
+  I --> J
+  J --> K[Serve later without live DB reads]
+```
+
+### Boundary Status
+
+Backend PR #264 does not by itself make `/public-feed-snapshot?lang=fr` return a French KV response. The route that stores per-language snapshots and selects a snapshot by `lang` lives in `ramideltoro/nutsnews-worker`; worker issue #35 tracks that remaining endpoint work.
+
+### Verification
+
+Backend checks used for PR #264:
+
+```bash
+python3 -m unittest tests.test_worker_db_api
+python3 scripts/validate_backend_api_compatibility_contract.py
+python3 scripts/backend_postgres_smoke_tests.py --offline
+python3 scripts/backend_app_db_api_smoke.py --offline
+git diff --check
+python3 -m unittest discover -s tests
+python3 scripts/validate_no_secret_files.py
+```
+
+The offline backend smoke commands are metadata-safe and do not require Supabase credentials or mutate production.
+
+### Risks, Mitigations, and Rollback
+
+| Risk | Mitigation |
+| --- | --- |
+| Existing Worker callers may not send a language. | The backend defaults to English and avoids the summary lookup. |
+| A bad translation row could be used in the edge snapshot. | The backend requires matching language plus nonblank title and summary before marking a translation available. |
+| The Worker endpoint may not consume localized rows yet. | The backend contract is backward-compatible, and worker issue #35 tracks per-language KV publishing and serving. |
+
+Rollback is a normal revert of backend PR #264. The Worker DB API will return the previous English-only row shape for `load-public-feed-snapshot-rows`. No migration, secret rotation, host mutation, or Cloudflare rollback is required.
 
 ---
 
