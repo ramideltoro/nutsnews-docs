@@ -46,6 +46,12 @@ Issue #279 pins the fallback policy in the public reader checks:
 - `npm run test:e2e:public-smoke` verifies the deterministic French fixture title and translation metadata.
 - `npm run test:e2e:preview` allows English fallback only when the live `/api/articles` payload marks the first article as `translation_available=false`, `language_code=en`, and `requested_language_code=<selected language>`.
 
+Issue #280 makes translation effectiveness release-blocking:
+
+- Simple: releases stop when the release-candidate translation fixture is missing rows, has critical bad rows, or falls below the required coverage.
+- Intermediate: the app release candidate now runs public reader smoke, `test:translation-release-gate`, and strict `audit:translations`; the scheduled translation coverage workflow still uploads operations reports without failing by default.
+- Expert: the strict audit mode is controlled by `TRANSLATION_QUALITY_FAIL_ON_CRITICAL`, `TRANSLATION_QUALITY_FAIL_ON_MISSING`, and `TRANSLATION_QUALITY_MIN_COVERAGE`. The release candidate uses `true`, `true`, and `100`; the scheduled report uses `false`, `false`, and `0`.
+
 ## Worker save policy
 
 The Worker validates local-AI and OpenAI translation responses before saving them to `public.article_summaries`.
@@ -99,11 +105,15 @@ TRANSLATION_QUALITY_REPORT_PATH=reports/translations/translation-quality.md \
 node scripts/audit_article_translations.mjs
 ```
 
-The workflow is intentionally warning/report oriented by default. Set this only when you want CI to fail on critical stored rows:
+The workflow is intentionally warning/report oriented by default. For release gates or protected qualification checks, set the strict flags explicitly:
 
 ```bash
 TRANSLATION_QUALITY_FAIL_ON_CRITICAL=true
+TRANSLATION_QUALITY_FAIL_ON_MISSING=true
+TRANSLATION_QUALITY_MIN_COVERAGE=100
 ```
+
+Leave the scheduled `translation-coverage.yml` workflow report-only unless operators intentionally want the daily report to page on production coverage drift.
 
 ## Backfill behavior
 

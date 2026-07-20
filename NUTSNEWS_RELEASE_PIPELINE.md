@@ -213,6 +213,7 @@ sequenceDiagram
 | Gate | Owning repo/workflow | Pass condition | Failure behavior |
 | --- | --- | --- | --- |
 | App PR checks | `ramideltoro/nutsnews` CI | Required app checks and release-candidate checks pass before merge | App `main` merge is blocked |
+| Article translation release gate | `container-image.yml` release-candidate job | Public reader language smoke passes, local translation gate regression proves missing/critical/low-coverage cases fail, and strict `audit:translations` passes with `TRANSLATION_QUALITY_FAIL_ON_CRITICAL=true`, `TRANSLATION_QUALITY_FAIL_ON_MISSING=true`, and `TRANSLATION_QUALITY_MIN_COVERAGE=100` | PR release candidate fails before merge; scheduled translation report remains report-only |
 | Image publish | `container-image.yml` | GHCR full-SHA image and digest metadata match the app `main` run | No staging handoff artifact |
 | Staging handoff | `staging-release.yml` | Only the validated `nutsnews-staging-release` payload is dispatched to infra | Staging deploy is not requested |
 | Staging deploy | `nutsnews-staging-deploy.yml` | VPS staging runtime reports the expected source, build, digest, schema, and isolation | Qualification is not eligible |
@@ -224,6 +225,62 @@ sequenceDiagram
 | Production apply | `protected-ansible-apply.yml` | Ansible applies the reviewed digest and post-apply Docker/health/smoke checks match | Workflow fails; use fixed rollback only if production mutated |
 | Vercel Production | `vercel-production-release.yml` dispatched by infra after VPS apply | The local prebuilt build rewrites shell-sensitive pulled env names to runner-safe control values; Vercel production is deployed with `--skip-domain`; the staged URL passes safe smoke; the Vercel deployment ID is promoted through Vercel; `www.nutsnews.com` and `nutsnews.com` report the same source commit and `vercel-production` target | Coupled release fails after VPS apply; Vercel failure is reported separately from VPS failure; fix the Vercel blocker or use protected rollback if needed |
 | Fixed rollback | `protected-nutsnews-rollback.yml` | Only the recorded last-known-good digest is selected from reviewed manifest history | Arbitrary digest, tag, SSH, or DB down migration is rejected |
+
+## Article Translation Release Gate
+
+Issue #280 makes article translation effectiveness release-blocking in the app
+repository release candidate path.
+
+Simple Summary: a release candidate now stops if the test article translations
+are missing, broken, or below the required coverage.
+
+Intermediate Summary: the app PR `Release candidate` job now runs the public
+reader smoke test, the translation release-gate regression, and a strict
+translation audit against a local Supabase-style fixture. Scheduled translation
+coverage still uploads operational reports and does not fail on production
+coverage drift by default.
+
+Expert Summary: `container-image.yml` seeds one visible release-gate article
+with `fr`, `ja`, `de-CH`, `de`, and `el` summary rows in the release-candidate
+fixture server. It runs `npm run test:translation-release-gate` to prove
+`scripts/audit_article_translations.mjs` exits nonzero for missing rows,
+critical quality issues, and coverage below the configured threshold. It then
+runs `npm run test:e2e:public-smoke` and a scoped strict
+`npm run audit:translations` invocation with:
+
+```text
+TRANSLATION_QUALITY_FAIL_ON_CRITICAL=true
+TRANSLATION_QUALITY_FAIL_ON_MISSING=true
+TRANSLATION_QUALITY_MIN_COVERAGE=100
+```
+
+The fixture `SUPABASE_SERVICE_ROLE_KEY` is scoped to the audit command, not the
+whole build step. `release_candidate_guard.mjs` and
+`production_release_workflow_regression.mjs` pin these checks so a future PR
+cannot quietly remove the release-blocking translation gate. The scheduled
+`translation-coverage.yml` workflow remains report-only with
+`TRANSLATION_QUALITY_FAIL_ON_CRITICAL=false`,
+`TRANSLATION_QUALITY_FAIL_ON_MISSING=false`, and
+`TRANSLATION_QUALITY_MIN_COVERAGE=0`.
+
+```mermaid
+flowchart TD
+  pr["Pull request to app main"] --> candidate["Release candidate job"]
+  candidate --> fixture["Start local Supabase-style translation fixture"]
+  fixture --> regression["test:translation-release-gate\nmissing + critical + low coverage must fail"]
+  regression --> smoke["test:e2e:public-smoke\nreader language flow"]
+  smoke --> audit["strict audit:translations\nmissing/critical/coverage fail"]
+  audit --> build["Typecheck, lint, security headers, build"]
+  build --> merge{"All release gates pass?"}
+  merge -- "Yes" --> main["Merge remains eligible"]
+  merge -- "No" --> blocked["PR/release candidate blocked"]
+  schedule["translation-coverage.yml schedule"] --> report["Report artifact only\nno release threshold"]
+```
+
+Rollback is to revert the app PR that added the release candidate translation
+checks and the matching docs commit. If the gate fails because real translations
+are missing, do not lower the release gate first; run the audit/backfill path
+and rerun the candidate.
 
 ## Vercel Local Build Environment Guard
 
@@ -289,7 +346,7 @@ run ID if the qualification is still fresh and current.
 
 | Repository | Source files or workflows |
 | --- | --- |
-| `ramideltoro/nutsnews` | `.github/workflows/container-image.yml`; `.github/workflows/staging-release.yml`; `.github/workflows/vercel-production-release.yml`; `.github/workflows/actionlint.yml`; `.github/workflows/production-supabase-migration.yml`; `.github/workflows/staging-supabase-migration.yml`; `scripts/migration_contract.mjs`; `scripts/production_release_workflow_regression.mjs`; `scripts/verify_github_actions_pinned.mjs`; `web/app/healthz/route.ts`; `web/app/readyz/route.ts`; `web/runtimePublicConfig.mjs` |
+| `ramideltoro/nutsnews` | `.github/workflows/container-image.yml`; `.github/workflows/staging-release.yml`; `.github/workflows/translation-coverage.yml`; `.github/workflows/vercel-production-release.yml`; `.github/workflows/actionlint.yml`; `.github/workflows/production-supabase-migration.yml`; `.github/workflows/staging-supabase-migration.yml`; `scripts/audit_article_translations.mjs`; `scripts/translation_release_gate_regression.mjs`; `scripts/migration_contract.mjs`; `scripts/production_release_workflow_regression.mjs`; `scripts/release_candidate_guard.mjs`; `scripts/verify_github_actions_pinned.mjs`; `web/app/healthz/route.ts`; `web/app/readyz/route.ts`; `web/runtimePublicConfig.mjs` |
 | `ramideltoro/nutsnews-infra` | `.github/workflows/nutsnews-staging-deploy.yml`; `.github/workflows/nutsnews-staging-qualification.yml`; `.github/workflows/nutsnews-release-promotion.yml`; `.github/workflows/protected-ansible-apply.yml`; `.github/workflows/protected-nutsnews-rollback.yml`; `ansible/scripts/staging_qualification.py`; `ansible/scripts/verify_production_eligibility.py`; `ansible/scripts/promote_nutsnews_release.py`; `ansible/inventories/production/host_vars/vps.nutsnews.com.yml` |
 | `ramideltoro/nutsnews-docs` | `NUTSNEWS_RELEASE_PIPELINE.md`; `NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md`; `MIGRATION_RELEASE_GATE.md` |
 
