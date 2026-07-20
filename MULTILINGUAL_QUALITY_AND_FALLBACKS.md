@@ -171,8 +171,9 @@ Issue #282 backfilled production article summary rows across the public feed and
 - Public feed: 474/500 rows available, 95% coverage, 0 critical issues.
 - Latest 500 published articles: 2455/2500 rows available, 98% coverage, 0 critical issues.
 - Full 500-candidate articles dry scan: 0 non-cached rows selected after live batches.
+- `translation_pending` articles with image and summary after final publish confirmation: 0.
 
-The remaining rows are cached provider failures, not scan misses. Follow `ramideltoro/nutsnews#287` before retrying the saved failure cache with `RETRY_FAILED=1`.
+The remaining recent rows are cached provider failures, not scan misses. Follow `ramideltoro/nutsnews#287` before retrying the saved failure cache with `RETRY_FAILED=1`. Follow `ramideltoro/nutsnews#289` for the older published-article backlog found outside the recent-content acceptance window.
 
 ## Troubleshooting
 

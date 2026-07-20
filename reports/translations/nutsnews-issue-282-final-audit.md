@@ -4,9 +4,9 @@ Generated on 2026-07-20 for `ramideltoro/nutsnews#282`.
 
 ## Simple summary
 
-The production backfill filled every non-cached missing translation row found in the public feed and latest-500 article scans. The remaining gaps are provider failures that were cached for a later retry. No critical translation quality issues remain in either final audit.
+The production backfill filled every non-cached missing translation row found in the public feed and latest-500 article scans. The remaining recent-content gaps are provider failures that were cached for a later retry. No critical translation quality issues remain in either final audit, and completed `translation_pending` articles were published.
 
-Follow-up provider work is tracked in `ramideltoro/nutsnews#287`.
+Follow-up provider work is tracked in `ramideltoro/nutsnews#287`. The wider historical backlog discovered during final confirmation is tracked separately in `ramideltoro/nutsnews#289`.
 
 ## Intermediate summary
 
@@ -30,13 +30,19 @@ Failure cache after live batches:
 
 | Metric | Count |
 | --- | ---: |
-| Failed rows cached | 49 |
-| `el` failures | 43 |
+| Failed rows cached | 55 |
+| `el` failures | 49 |
 | `ja` failures | 4 |
 | `de` failures | 1 |
 | `fr` failures | 1 |
-| Non-JSON provider responses | 29 |
-| Missing title/summary provider responses | 20 |
+| Non-JSON provider responses | 32 |
+| Missing title/summary provider responses | 23 |
+
+Pending publication status after the final no-op publish confirmation:
+
+| Metric | Count |
+| --- | ---: |
+| `translation_pending` articles with images and summaries | 0 |
 
 The final full articles dry scan selected no non-cached work:
 
@@ -60,6 +66,22 @@ Candidate articles scanned: 500
 Missing translation rows selected: 0
 Nothing to backfill.
 ```
+
+The final wider historical scan found additional older published-article gaps outside #282's recent-public-content acceptance criteria:
+
+| Metric | Count |
+| --- | ---: |
+| Published articles with image and summary | 1,923 |
+| Expected supported-language rows | 9,615 |
+| Existing rows for those published articles | 6,709 |
+| Missing historical rows | 2,906 |
+| Missing `fr` rows | 1 |
+| Missing `ja` rows | 3 |
+| Missing `de-CH` rows | 951 |
+| Missing `de` rows | 953 |
+| Missing `el` rows | 998 |
+
+That long-tail scope is tracked in `ramideltoro/nutsnews#289`.
 
 ## Expert summary
 
@@ -85,8 +107,9 @@ flowchart TD
   G --> H[Run articles source batches]
   H --> I[Publish fully translated articles]
   I --> J[Final public-feed and latest-500 audits]
-  J --> K{Non-cached rows remain?}
-  K -->|No| L[Open provider fallback follow-up for cached failures]
+  J --> K{Non-cached recent rows remain?}
+  K -->|No| L[Confirm translation_pending is zero]
+  L --> M[Open provider fallback and historical backlog follow-ups]
 ```
 
 ## Commands run
@@ -109,6 +132,29 @@ DRY_RUN=1 \
 PUBLISH_READY=1 \
 FAILED_TRANSLATION_CACHE=/tmp/nutsnews-282-translation-failures.json \
 node scripts/backfill_article_summaries.mjs
+```
+
+Final publish confirmation:
+
+```bash
+LANGUAGE_CODES=fr,ja,de-CH,de,el \
+BACKFILL_SOURCE=articles \
+CANDIDATE_LIMIT=500 \
+CANDIDATE_PAGE_SIZE=100 \
+SCAN_ALL_CANDIDATES=1 \
+BACKFILL_LIMIT=50 \
+PUBLISH_READY=1 \
+FAILED_TRANSLATION_CACHE=/tmp/nutsnews-282-translation-failures.json \
+node scripts/backfill_article_summaries.mjs
+```
+
+Result:
+
+```text
+Candidate articles scanned: 500
+Missing translation rows selected: 0
+Published/confirmed 456 fully translated article(s).
+Nothing to backfill.
 ```
 
 Live public-feed batches:
@@ -155,4 +201,4 @@ node scripts/audit_article_translations.mjs
 
 ## Remaining work
 
-The remaining missing rows are intentionally left out of repeated live retries because they already failed through the active provider path. To reach complete coverage, resolve `ramideltoro/nutsnews#287`, then rerun the saved failure cache with `RETRY_FAILED=1` against an authorized fallback provider.
+The remaining recent missing rows are intentionally left out of repeated live retries because they already failed through the active provider path. To reach complete recent-content coverage, resolve `ramideltoro/nutsnews#287`, then rerun the saved failure cache with `RETRY_FAILED=1` against an authorized fallback provider. To clear the older published-article backlog, resolve `ramideltoro/nutsnews#289`.
