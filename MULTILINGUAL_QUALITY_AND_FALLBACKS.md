@@ -166,6 +166,14 @@ node scripts/backfill_article_summaries.mjs
 
 Run small batches first to control AI cost and avoid Worker/API rate pressure.
 
+Issue #282 backfilled production article summary rows across the public feed and latest published article window. Final audits on 2026-07-20 reported:
+
+- Public feed: 474/500 rows available, 95% coverage, 0 critical issues.
+- Latest 500 published articles: 2455/2500 rows available, 98% coverage, 0 critical issues.
+- Full 500-candidate articles dry scan: 0 non-cached rows selected after live batches.
+
+The remaining rows are cached provider failures, not scan misses. Follow `ramideltoro/nutsnews#287` before retrying the saved failure cache with `RETRY_FAILED=1`.
+
 ## Troubleshooting
 
 If the dashboard shows missing translations:
