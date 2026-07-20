@@ -104,6 +104,63 @@ flowchart TD
   H -->|Yes| K[Set article status to published]
 ```
 
+## 2026-07-20 public snapshot translation guard
+
+### Simple Summary
+
+NutsNews now waits until a story has the needed translated card text before letting a newly accepted story enter the public feed. If a translation is still missing, readers keep seeing safe English fallback for old rows, and operators get clearer logs showing which translation rows are missing.
+
+### Intermediate Summary
+
+The direct Supabase Worker path now enforces the same publish rule as the backend path: `publishArticlesBatch` checks `public.article_summaries` for every enabled language before patching `public.articles.status=published`. The Worker still saves accepted articles as `translation_pending`, the backlog still fills missing rows, and `public_feed_snapshot` refresh is skipped when the publish guard reports missing translations. The web API keeps English fallback for missing or invalid rows, but it now logs `articles.localized_summaries_missing` with counts and sample URLs so fallback is visible in diagnostics. Article detail pages now honor `?lang=`, `?languageCode=`, or `?language=` by passing the normalized language to `getArticleById`.
+
+### Expert Summary
+
+The Worker Supabase client now loads existing `article_summaries` rows using the requested `original_url` set and the configured `ENABLED_SUMMARY_LANGUAGES`, computes publishable vs blocked URLs, and only patches publishable rows. Missing language pairs are returned as `missingTranslations` with `ok=false`, matching the backend-primary contract, so the higher-level Worker logger emits `worker.translation.publish_blocked_missing_summary_translation(s)` and avoids refreshing the public snapshot for incomplete publication batches. Generated Wrangler fallback deployments now default `HOLD_ARTICLES_FOR_TRANSLATIONS=true` even when `NUTSNEWS_ALLOW_OPENAI_FALLBACK_DEPLOYMENT=true`; `SUMMARY_TRANSLATION_LIMIT` can still be `0`, but that becomes a hidden backlog state rather than immediate public English-only exposure. The web app logs missing summary rows during `article_summaries` lookup and keeps `requested_language_code`, `language_code=en`, and `translation_available=false` for fallbacks.
+
+Read-only production checks on July 20, 2026 found:
+
+| Check | Result |
+| --- | --- |
+| `/api/articles?home=1&lang=fr` | Returned `requested_language_code=fr`, `language_code=en`, `translation_available=false` on visible first-page cards. |
+| `public_feed_snapshot` URL count | 1,932 distinct URLs. |
+| Missing `fr` rows | 10 of 1,932 snapshot URLs. |
+| Missing `ja` rows | 12 of 1,932 snapshot URLs. |
+| Missing `de-CH` rows | 960 of 1,932 snapshot URLs. |
+| Missing `de` rows | 962 of 1,932 snapshot URLs. |
+| Missing `el` rows | 1,007 of 1,932 snapshot URLs. |
+
+No production data was changed during these checks.
+
+```mermaid
+flowchart TD
+  A[Worker accepts article] --> B[Save articles row as translation_pending]
+  B --> C[Build/save enabled article_summaries rows]
+  C --> D[Load existing summary languages by original_url]
+  D --> E{All enabled summary rows exist?}
+  E -->|No| F[Return ok=false with missingTranslations]
+  F --> G[Log worker.translation publish-blocked diagnostics]
+  G --> H[Skip public_feed_snapshot refresh]
+  H --> I[Backlog/recovery retries missing rows later]
+  E -->|Yes| J[Patch status=published]
+  J --> K[Refresh public_feed_snapshot]
+  K --> L[Web /api/articles applies translated title and summary]
+  L --> M{Row missing or invalid?}
+  M -->|Yes| N[English fallback plus diagnostics]
+  M -->|No| O[Localized public card]
+```
+
+### Risks, Mitigations, and Rollback
+
+| Risk | Mitigation |
+| --- | --- |
+| New articles can remain hidden as `translation_pending` when translation providers fail or the translation task budget is `0`. | This is intentional safer behavior. Use `translate-backlog`, `scripts/backfill_article_summaries.mjs`, and Worker `worker.translation.*` logs to drain gaps before refreshing snapshots. |
+| A partial publish batch can publish fully translated rows while blocking incomplete rows, delaying snapshot refresh until a clean publish or backlog run. | The visible-feed invariant is preserved; operators can rerun the backlog after missing rows are saved. |
+| Existing already-published snapshot rows can still fall back until their missing `article_summaries` rows are backfilled. | The web API logs missing rows, and the existing audit/backfill scripts identify and fill historical gaps. |
+| Detail pages with `?lang=` are request-specific and can be dynamic. | `getArticleById(id, lang)` remains cached with the normalized language argument, and canonical URLs stay language-neutral. |
+
+Rollback is a normal revert of the Worker and web PRs. Reverting the Worker guard restores direct Supabase publish behavior that can expose newly accepted rows before all translation rows exist. Reverting the web change removes the missing-summary diagnostic log and detail-page language query support, but the public API keeps its older English fallback behavior. No database migration, secret rotation, or Cloudflare binding rollback is required.
+
 ## Admin dashboard
 
 Use:

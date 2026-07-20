@@ -50,7 +50,8 @@ When an article is accepted and saved, the Worker:
 5. Falls back to OpenAI if the home-server translation still fails.
 6. Retries the OpenAI translation once before giving up.
 7. Upserts successful results into `public.article_summaries`.
-8. Keeps `original_url` unchanged.
+8. Publishes only articles that have all enabled summary-language rows.
+9. Keeps `original_url` unchanged.
 
 This makes new card translations prefer the home server while preserving OpenAI as a safety net.
 
@@ -58,7 +59,8 @@ Default Worker config:
 
 ```text
 ENABLED_SUMMARY_LANGUAGES=fr,ja,de-CH,de,el
-SUMMARY_TRANSLATION_LIMIT=12
+SUMMARY_TRANSLATION_LIMIT=5
+HOLD_ARTICLES_FOR_TRANSLATIONS=true
 ```
 
 Home-server translation config uses the same local AI variables as local review:
@@ -85,14 +87,14 @@ The articles API supports a `lang` query parameter:
 /api/articles?page=0&lang=fr
 ```
 
-Fallback behavior:
+Fallback behavior for existing rows:
 
 ```text
 French summary exists → return French title/summary
 French summary missing → return English/default title/summary
 ```
 
-This lets the site show French when available without blocking new articles or requiring a full historical backfill first.
+Newly accepted articles should not reach the public snapshot until the enabled `article_summaries` rows exist. English fallback remains available for old rows, invalid rows, and emergency recovery, but missing rows should be treated as diagnostics/backlog work rather than normal publication flow.
 
 ## Web UI behavior
 
@@ -156,9 +158,9 @@ Existing articles must be backfilled once. New accepted articles are translated 
 
 ## Diagnosing missing translated cards
 
-If a few articles remain in English while the surrounding home-page articles are translated, do not assume the front end is broken. The frontend intentionally falls back to the English `articles` row whenever a matching row is missing from `public.article_summaries`.
+If a few articles remain in English while the surrounding home-page articles are translated, do not assume the front end is broken. The frontend intentionally falls back to the English `articles` row whenever a matching row is missing from `public.article_summaries`, and it logs `articles.localized_summaries_missing` with the requested language and missing-row counts.
 
-The first thing to check is whether a Worker run accepted more articles than `SUMMARY_TRANSLATION_LIMIT`. In the current Worker design, `SUMMARY_TRANSLATION_LIMIT` is an article count limit. Articles beyond that limit are still published, but they are skipped for translated summary generation.
+The first thing to check is whether a Worker run accepted more articles than the available summary translation task budget. Articles beyond that budget should remain `translation_pending` until a backlog or backfill run creates every enabled language row and publishes them.
 
 Run:
 
