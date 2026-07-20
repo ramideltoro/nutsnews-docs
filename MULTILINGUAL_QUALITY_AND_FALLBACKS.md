@@ -66,6 +66,44 @@ The Worker rejects and retries translations that have critical issues. Examples:
 
 Warnings are logged but do not block saving. This avoids throwing away usable translations because a heuristic is uncertain.
 
+## Backend publish guard
+
+Issue `ramideltoro/nutsnews-backend#263` adds a backend compatibility API guard so backend-primary Worker writes cannot make newly accepted articles visible before the enabled summary-language rows exist.
+
+Simple:
+
+- Accepted articles must be saved as `translation_pending`.
+- Publishing requires all enabled non-English summary rows in `public.article_summaries`.
+- If a row is missing, the backend leaves the article hidden and returns the missing article/language pairs for Worker logging and recovery.
+
+Intermediate:
+
+- `save-accepted-articles-batch` rejects rows that arrive with `status=published`.
+- `publish-articles-batch` requires `languageCodes` when `status=published`.
+- Supported publish-gate languages are `fr`, `ja`, `de-CH`, `de`, and `el`.
+- The backend checks every requested `original_url` and language pair before updating `public.articles.status`.
+- `load-summary-translation-recovery-articles` reads both `published` and `translation_pending` rows so later Worker runs can recover budget overflows and provider failures.
+
+Expert:
+
+- Missing rows return a structured response with `ok=false`, `requestedCount`, `publishedCount=0`, `blockedCount`, and `missingTranslations`.
+- Successful guarded publishes use `update public.articles set status = 'published' ... returning original_url`, so the response can report how many rows actually became visible.
+- Worker callers must pass their enabled summary language list to `publish-articles-batch`, treat `ok=false` as recoverable, and emit `worker.translation.*` diagnostics that include the returned article URL and language gaps.
+
+```mermaid
+flowchart TD
+  A[Worker accepts article] --> B[save-accepted-articles-batch]
+  B --> C{Article status is published?}
+  C -->|Yes| D[Backend rejects write]
+  C -->|No| E[Store article as translation_pending]
+  E --> F[Worker saves article_summaries]
+  F --> G[publish-articles-batch with languageCodes]
+  G --> H{All enabled rows exist?}
+  H -->|No| I[Return ok false with missingTranslations]
+  I --> J[Worker logs gaps and retries recovery]
+  H -->|Yes| K[Set article status to published]
+```
+
 ## Admin dashboard
 
 Use:
