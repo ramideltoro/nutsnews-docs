@@ -39,6 +39,8 @@ Outage fallback request:
 
 The homepage uses the same edge-aware helper for its initial article load and category sections.
 
+Translation visibility is guarded before this snapshot refresh should expose new rows. Newly accepted articles are saved as `translation_pending`, the Worker publishes them only after every enabled `public.article_summaries` row exists, and only then should `refresh_public_feed_snapshot` make them visible. See [Multilingual quality checks and fallback policy](MULTILINGUAL_QUALITY_AND_FALLBACKS.md#2026-07-20-public-snapshot-translation-guard) for the guarded publish flow, production coverage diagnostics, risks, and rollback.
+
 ---
 
 ## Issue #281 Localized Edge Fallback
