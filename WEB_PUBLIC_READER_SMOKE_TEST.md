@@ -8,7 +8,7 @@ This test checks that the main parts readers use still work, like seeing stories
 
 ## Intermediate Summary
 
-The web app now has PR smoke coverage for the public reader experience. The test runs the real Next.js app against local mock Supabase, Turnstile, and email services, so it does not need production secrets. It verifies article loading, infinite-scroll pagination, French language switching, invalid contact-form blocking, Privacy/About rendering, and a known article detail route.
+The web app now has PR smoke coverage for the public reader experience. The test runs the real Next.js app against local mock Supabase, Turnstile, and email services, so it does not need production secrets. It verifies article loading, infinite-scroll pagination, French language switching with translation metadata, invalid contact-form blocking, Privacy/About rendering, and a known article detail route.
 
 ## Expert Summary
 
@@ -18,7 +18,7 @@ Issue #87 adds `npm run test:e2e:public-smoke` in `web/package.json`, backed by 
 
 - Home page loads fixture-backed public article cards.
 - Infinite scroll requests another article page through cursor pagination and receives more articles.
-- Language switching to French reloads localized articles and updates the first article card language.
+- Language switching to French reloads localized articles, updates the first article card language, and confirms the API returned `languageCode=fr`, `language_code=fr`, `requested_language_code=fr`, and `translation_available=true` for the known French fixture.
 - Contact page renders and browser validation blocks an invalid submission before `/api/contact`.
 - Privacy and About pages render.
 - Article detail page opens from a stable `/articles/public-smoke-article-01` URL.
@@ -55,6 +55,12 @@ CI steps:
 5. Upload Playwright report, trace, screenshot, and video artifacts only on failure.
 
 The public reader smoke spec is intentionally isolated to `web/playwright.public-smoke.config.ts`. Accessibility CI uses `web/playwright.accessibility.config.ts` so it only selects `accessibility.spec.ts` and does not run smoke tests without the local mock harness. The shared `web/playwright.config.ts` remains available for the Vercel preview smoke command, which passes `tests/vercel-preview-smoke.spec.ts` explicitly.
+
+## Issue #279 translation reliability coverage
+
+- Simple: the smoke test now proves the visible French card came from a real translated fixture, not from a broad English fallback.
+- Intermediate: Playwright parses the `/api/articles?home=1&lang=fr` response and compares the known fixture title plus language metadata before checking the rendered card.
+- Expert: this complements the live preview smoke. Public smoke uses deterministic local data for the available-translation case; preview smoke handles live data by requiring API metadata before allowing English fallback.
 
 ## Failure Artifacts
 

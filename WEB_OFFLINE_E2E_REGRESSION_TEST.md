@@ -15,6 +15,8 @@ The test verifies:
 - Contact form submits through mocked Turnstile and mocked Resend.
 - A mock `quota_usage_events` email event is recorded.
 - Language switching renders translated article text for French, Japanese, Swiss German, German, Greek, and back to English.
+- A Supabase outage makes `/api/articles` use the edge snapshot fallback with `lang=fr`, preserving localized title, summary, `language_code`, `requested_language_code`, and `translation_available=true`.
+- A separate English-only fixture verifies the documented missing-translation fallback: the requested language remains `fr`, the card language is `en`, and `translation_available=false`.
 
 Run:
 
@@ -38,6 +40,13 @@ The test uses strict Playwright selectors and stable `data-testid` hooks for the
 
 Mock article images are served from the local mock external service so the test remains fully offline and Next Image does not try to resolve external DNS.
 
+## Issue #279 translation fallback coverage
+
+The outage path is now translation-aware. The mock Worker snapshot endpoint reads the `lang` query parameter and returns localized article rows when a matching `article_summaries` fixture exists.
+
+- Simple: if the database is down, a French reader still gets French edge snapshot cards when those translations exist.
+- Intermediate: the regression verifies both the happy path and an explicit missing-translation fallback, so English is accepted only for the English-only fixture.
+- Expert: `scripts/web_offline_e2e_regression.mjs` checks the response headers, `languageCode`, article title/summary, `language_code`, `requested_language_code`, and `translation_available` values for both localized fallback and missing-translation fallback.
 
 ## Stability notes
 

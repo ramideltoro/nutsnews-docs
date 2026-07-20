@@ -38,6 +38,14 @@ When a reader selects a non-English language:
 
 This policy keeps new articles visible immediately while the Worker or a backfill catches up.
 
+## Regression coverage
+
+Issue #279 pins the fallback policy in the public reader checks:
+
+- `npm run test:e2e:offline` verifies localized edge snapshot fallback during a mocked Supabase outage and separately verifies an explicit missing-translation English fallback.
+- `npm run test:e2e:public-smoke` verifies the deterministic French fixture title and translation metadata.
+- `npm run test:e2e:preview` allows English fallback only when the live `/api/articles` payload marks the first article as `translation_available=false`, `language_code=en`, and `requested_language_code=<selected language>`.
+
 ## Worker save policy
 
 The Worker validates local-AI and OpenAI translation responses before saving them to `public.article_summaries`.
