@@ -112,7 +112,7 @@ NutsNews now waits until a story has the needed translated card text before lett
 
 ### Intermediate Summary
 
-The direct Supabase Worker path now enforces the same publish rule as the backend path: `publishArticlesBatch` checks `public.article_summaries` for every enabled language before patching `public.articles.status=published`. The Worker still saves accepted articles as `translation_pending`, the backlog still fills missing rows, and `public_feed_snapshot` refresh is skipped when the publish guard reports missing translations. The web API keeps English fallback for missing or invalid rows, but it now logs `articles.localized_summaries_missing` with counts and sample URLs so fallback is visible in diagnostics. Article detail pages now honor `?lang=`, `?languageCode=`, or `?language=` by passing the normalized language to `getArticleById`.
+The direct Supabase Worker path now enforces the same publish rule as the backend path: `publishArticlesBatch` checks `public.article_summaries` for every enabled language before patching `public.articles.status=published`. The Worker still saves accepted articles as `translation_pending`, the backlog still fills missing rows, and `public_feed_snapshot` refresh is skipped when the publish guard reports missing translations. The web API keeps English fallback for missing or invalid rows, but it now logs `articles.localized_summaries_missing` with counts and sample URLs so fallback is visible in diagnostics. Article detail pages remain static and language-neutral until a non-dynamic localization path is added.
 
 ### Expert Summary
 
@@ -157,9 +157,44 @@ flowchart TD
 | New articles can remain hidden as `translation_pending` when translation providers fail or the translation task budget is `0`. | This is intentional safer behavior. Use `translate-backlog`, `scripts/backfill_article_summaries.mjs`, and Worker `worker.translation.*` logs to drain gaps before refreshing snapshots. |
 | A partial publish batch can publish fully translated rows while blocking incomplete rows, delaying snapshot refresh until a clean publish or backlog run. | The visible-feed invariant is preserved; operators can rerun the backlog after missing rows are saved. |
 | Existing already-published snapshot rows can still fall back until their missing `article_summaries` rows are backfilled. | The web API logs missing rows, and the existing audit/backfill scripts identify and fill historical gaps. |
-| Detail pages with `?lang=` are request-specific and can be dynamic. | `getArticleById(id, lang)` remains cached with the normalized language argument, and canonical URLs stay language-neutral. |
+| Detail pages must stay static to preserve the public route CPU/cache guardrails. | Server-rendered article detail pages do not read query parameters; future detail localization should use a client/API path or language-specific route that keeps the cached shell intact. |
 
-Rollback is a normal revert of the Worker and web PRs. Reverting the Worker guard restores direct Supabase publish behavior that can expose newly accepted rows before all translation rows exist. Reverting the web change removes the missing-summary diagnostic log and detail-page language query support, but the public API keeps its older English fallback behavior. No database migration, secret rotation, or Cloudflare binding rollback is required.
+Rollback is a normal revert of the Worker and web PRs. Reverting the Worker guard restores direct Supabase publish behavior that can expose newly accepted rows before all translation rows exist. Reverting the web change removes the missing-summary diagnostic log, but the public API keeps its older English fallback behavior. No database migration, secret rotation, or Cloudflare binding rollback is required.
+
+## 2026-07-20 article detail static cache correction
+
+### Simple Summary
+
+NutsNews fixed a staging problem where opening a story page could fail. Story cards still change language in the feed, but individual story pages stay on the fast, saved version until a safer language-specific story-page design is added.
+
+### Intermediate Summary
+
+The first multilingual web fix passed language selection into `/articles/[id]` through query parameters. Next.js treats page `searchParams` as request-specific data, which changed the article detail route away from its static cached contract and caused the staging qualification route check to return HTTP 500 with `DYNAMIC_SERVER_USAGE`. The hotfix removes server-side query language handling from the article detail page, restores the existing `generateStaticParams` plus `revalidate=3600` behavior, and keeps multilingual article card titles/summaries on the feed/API path.
+
+### Expert Summary
+
+`web/app/articles/[id]/page.tsx` must remain an SSG/ISR route because public CPU and cache regressions assert `generateStaticParams`, `export const revalidate = 3600`, and no server `searchParams` usage. The failed staging qualification proved that passing `lang`, `languageCode`, or `language` into the server page conflicted with that route contract. The corrected path calls `getArticleById(id)` for both metadata and page render, derives the page `lang` and date locale from the returned article row, and leaves feed localization in `/api/articles` and `article_summaries` lookup. Future detail localization should use a client-side enhancement or a language-specific URL/API design that does not make the static article page request-specific.
+
+```mermaid
+flowchart TD
+  A[Reader opens article card] --> B[/articles/id static page]
+  B --> C[generateStaticParams + ISR cache]
+  C --> D[getArticleById id]
+  D --> E[Stable article detail render]
+  A --> F[Feed/API language change]
+  F --> G[/api/articles?lang=selected]
+  G --> H[article_summaries localized card text]
+  H --> I[Translated visible feed card]
+```
+
+### Risks, Mitigations, and Rollback
+
+| Risk | Mitigation |
+| --- | --- |
+| Detail pages do not yet localize title and summary by selected UI language. | Feed cards localize through `/api/articles`; detail localization should be reintroduced only with a static-safe client/API or route design. |
+| Reverting this hotfix can bring back staging/prod HTTP 500s on article details. | Keep `test:public-route-cpu-cache` in release checks; it rejects server `searchParams` on the article page. |
+
+Rollback is to revert the article detail static-cache hotfix only if a replacement implementation preserves `generateStaticParams`, `revalidate=3600`, and the public route CPU/cache guard. No database, Worker, Vercel, Cloudflare, or secret rollback is required for this correction.
 
 ## Admin dashboard
 
