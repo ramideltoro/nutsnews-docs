@@ -57,22 +57,23 @@ Infra CI now skips unrelated heavy jobs on docs-only or runbook-only pull reques
 
 ### Intermediate Summary
 
-`ramideltoro/nutsnews-infra` classifies changed paths at the start of the infrastructure, runtime, portal, and supply-chain workflows. Docs-only and runbook-only changes keep the visible workflow record but skip expensive checks such as OpenTofu validation, TFLint, Checkov, Trivy, OSV, Compose validation, and portal app checks when those areas were not touched. The workflow summary shows the changed-file sample and active categories so a skipped job is explainable from the Actions run.
+`ramideltoro/nutsnews-infra` classifies changed paths at the start of the infrastructure, runtime, portal, and supply-chain workflows for pull requests targeting `main`. Docs-only and runbook-only changes keep the visible workflow record but skip expensive checks such as OpenTofu validation, TFLint, Checkov, Trivy, OSV, Compose validation, and portal app checks when those areas were not touched. The workflow summary shows the changed-file sample and active categories so a skipped job is explainable from the Actions run.
 
 ### Expert Summary
 
-The infra repo uses a repository-owned classifier instead of workflow-level `paths-ignore`, so required checks can complete with clear skip context rather than disappearing. Workflow-safety, restricted-event checks, Gitleaks, and scheduled nightly audits remain ungated. Python tooling for `yamllint` and `ansible-lint` is installed from pinned requirements files through a pinned `actions/setup-python` step with pip caching. The guardrail validator in workflow-safety fails if future edits remove the classifier, bypass the cache, gate the always-on security workflows, or stop validating the cost controls.
+The infra repo uses a repository-owned classifier instead of workflow-level `paths-ignore`, so required PR checks can complete with clear skip context rather than disappearing. Strict branch protection requires the named PR contexts before merge, so the required validation workflows do not also run automatically on the resulting `main` push. `workflow_dispatch` remains available for diagnostics, Gitleaks keeps scheduled coverage, and scheduled nightly audits remain separate ungated deep scans. Python tooling for `yamllint` and `ansible-lint` is installed from pinned requirements files through a pinned `actions/setup-python` step with pip caching. The guardrail validator in workflow-safety fails if future edits remove the classifier, restore duplicate main-push validation runs, bypass the cache, gate the always-on security workflows, or stop validating the cost controls.
 
 ```mermaid
 flowchart TD
-  A[PR or main push] --> B[Classify changed paths]
+  A[Pull request to main] --> B[Classify changed paths]
   B --> C{Docs or runbooks only?}
   C -->|Yes| D[Keep workflow record and summary]
   D --> E[Skip unrelated heavy jobs]
   C -->|No| F[Run matching infra/runtime/portal/supply-chain jobs]
   B --> G[Always run Workflow Safety]
   B --> H[Always run Secrets Scan]
-  I[Nightly schedule] --> J[Run deeper audits without PR path gates]
+  I[Manual dispatch] --> K[Run selected diagnostic workflow]
+  L[Nightly schedule] --> J[Run deeper audits without PR path gates]
 ```
 
 Operational rule: if a workflow, secret boundary, deployment path, runtime config, Terraform/OpenTofu file, Ansible role, Compose file, Dockerfile, portal file, dependency manifest, or scanner config changes, the matching safety checks should run. A docs-only skip is expected only when the changed files are documentation or runbooks.
