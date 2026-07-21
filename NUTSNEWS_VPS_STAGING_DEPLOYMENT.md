@@ -89,6 +89,20 @@ After the `staging-vps` Environment approval, the workflow:
 Rerunning a candidate is idempotent at the Compose layer and intentionally
 creates another GitHub Deployment history entry for auditability.
 
+## Staging Deploy Bundle Freshness
+
+The forced staging command accepts only the infra commit that last refreshed
+the root-owned staging deploy bundle on the VPS. Automated production release,
+pre-merge production, and fixed rollback protected applies therefore dispatch
+with `enable_staging_access=true` so the bundle marker stays aligned with the
+reviewed infra commit.
+
+If staging deployment fails with `unreviewed_infra_commit`, treat it as a stale
+bundle marker or stale workflow path. Fix the reviewed infra guard, rerun
+Protected Ansible Apply with staging access enabled, and then rerun the staging
+candidate. Do not edit `/opt/nutsnews/staging-deploy-bundle/infra-commit`
+manually.
+
 ## Sanitized Apply Failure Diagnostics
 
 ### Simple Summary

@@ -119,10 +119,8 @@ rendered through the root-only Ansible path with `no_log`. The workflow and
 portal must never print values. Mutable image references are rejected whenever
 the application is enabled.
 
-For VPS app releases, `/healthz` is the static OCI image identity and reports
-the image build target `vps`. `/readyz` and `/api/runtime-config` are runtime
-identity checks and must report the production VPS deployment target
-`production-vps`.
+For VPS app releases, `/healthz`, `/readyz`, and `/api/runtime-config` must all
+report the reviewed production VPS deployment target, `production-vps`.
 
 The protected workflow selects only the production app runtime. Staging has a
 separate runtime identity but remains disabled pending the measured capacity
@@ -155,6 +153,14 @@ entry point. For production app releases, `sync_vercel_production` is enforced a
 `true` by default; if an operator provides complete release identity inputs and
 `sync_vercel_production=false`, the workflow fails before any production
 mutation except the fixed-recorded rollback replay path.
+
+Automated production release, pre-merge production, and fixed rollback
+dispatches set `enable_staging_access=true` when they call Protected Ansible
+Apply. That keeps the root-owned staging deploy bundle on the VPS pinned to the
+currently reviewed infra commit. If the bundle marker is stale, the
+server-side staging fixed command rejects later staging deployments as
+`unreviewed_infra_commit`; rerun the reviewed protected apply path instead of
+editing the VPS by hand.
 
 Routine host package maintenance and reboots use a separate fixed-purpose
 workflow, `Protected VPS Maintenance`. It still attaches to the protected
