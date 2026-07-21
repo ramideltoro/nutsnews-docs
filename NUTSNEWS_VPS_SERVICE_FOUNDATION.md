@@ -8,9 +8,9 @@ The VPS now gets a small container foundation managed by Ansible. The playbook i
 
 The zram fallback is intentionally small: `/dev/zram0`, 1536 MiB of virtual compressed swap, `vm.swappiness=10`, and no changes to Docker memory limits. It is there to buy time during transient deploy, package upgrade, backup verification, or app spikes. It is not a capacity plan.
 
-Caddy now has four jobs. It exposes `https://vps.nutsnews.com/health` publicly for Better Stack, can route the digest-pinned NutsNews app on `https://vps.nutsnews.com`, serves the Google OAuth-protected Ops Portal at `https://ops.nutsnews.com`, and keeps `127.0.0.1:8080` available for local health checks and SSH tunnel fallback. It also enforces free Caddy-based rate limiting before traffic reaches health, portal, API, auth, admin, ops, or app handlers.
+Caddy now has five jobs. It exposes `https://vps.nutsnews.com/health` publicly for Better Stack, can route the digest-pinned NutsNews app on `https://vps.nutsnews.com`, hosts a dormant future primary origin for `nutsnews.com` and `www.nutsnews.com`, serves the Google OAuth-protected Ops Portal at `https://ops.nutsnews.com`, and keeps `127.0.0.1:8080` available for local health checks and SSH tunnel fallback. It also enforces free Caddy-based rate limiting before traffic reaches health, portal, API, auth, admin, ops, or app handlers.
 
-Issue [nutsnews-infra #67](https://github.com/ramideltoro/nutsnews-infra/issues/67) prepared the app deployment plumbing and staged health route. Issue #93 reviews the next promotion for only the `vps.nutsnews.com` public app route. `nutsnews.com` remains on Vercel.
+Issue [nutsnews-infra #67](https://github.com/ramideltoro/nutsnews-infra/issues/67) prepared the app deployment plumbing and staged health route. Issue #93 reviewed the promotion for only the `vps.nutsnews.com` public app route. Issue [nutsnews #393](https://github.com/ramideltoro/nutsnews/issues/393) prepares the VPS origin to answer the future primary hostnames, but Cloudflare routing still keeps `nutsnews.com` and `www.nutsnews.com` on Vercel until the separate cutover issue.
 
 ## Intermediate Summary
 
@@ -43,6 +43,7 @@ That role runs after the existing VPS baseline role. It manages:
 - a Better Stack-compatible `/health` endpoint for infrastructure health
 - a disabled app Compose project that accepts only an immutable GHCR digest
 - separately controlled health-only staged and public app routes
+- a dormant primary-host Caddy virtual host for `nutsnews.com` and `www.nutsnews.com`
 
 The protected Ansible workflow still defaults to check mode. In real apply mode, the service role can start Caddy and verify `http://127.0.0.1:8080/healthz`. In check mode, it skips Docker Compose mutation because pretending to start containers without Docker being installed yet is how automation starts gaslighting everyone.
 
@@ -59,9 +60,12 @@ The app and staging-access Compose projects still use `no-new-privileges`, but t
 This layer creates the runtime substrate and one narrow production route. The design is intentionally conservative:
 
 - Caddy publishes public ports `80` and `443` for `vps.nutsnews.com`.
+- Caddy also has a dormant `nutsnews.com` and `www.nutsnews.com` origin virtual host for pre-cutover direct-origin smoke tests.
 - Caddy binds those public Docker-published sockets on IPv4 (`0.0.0.0`) while the hostname has no production AAAA record.
 - The public host always keeps `/health` on the infrastructure health service.
 - The reviewed app route can proxy all other `vps.nutsnews.com` paths to the digest-pinned NutsNews app container.
+- The future primary origin redirects `nutsnews.com` to `https://www.nutsnews.com{uri}` and proxies `www.nutsnews.com` to the same app route.
+- The future primary origin uses Caddy internal TLS before cutover because Cloudflare is currently in `Full` SSL mode; requiring `Full (strict)` needs Cloudflare Origin CA or DNS-01 public origin certificates first.
 - Caddy exposes `ops.nutsnews.com` publicly behind the Ops Portal Google OAuth gateway.
 - Caddy keeps the loopback listener available on host `127.0.0.1:8080`.
 - Caddy applies rate limits keyed by client remote host, with IPv6 clients grouped by `/64`.
@@ -129,6 +133,55 @@ flowchart TD
   caddy --> health["Verify local /healthz returns ok"]
   caddy --> publicHealth["Expose public /health over HTTPS"]
 ```
+
+## VPS Primary Origin Prep
+
+### Simple
+
+The VPS can now answer the future primary hostnames before DNS moves. Operators
+test that path by forcing `nutsnews.com` and `www.nutsnews.com` to resolve to the
+VPS IP in a local `curl --resolve` command. Real visitor traffic still goes to
+Vercel until the Cloudflare cutover issue changes routing.
+
+### Intermediate
+
+The primary-origin preparation has these boundaries:
+
+- `vps.nutsnews.com` remains the direct VPS health and origin hostname.
+- `https://vps.nutsnews.com/health` remains infrastructure health.
+- `https://vps.nutsnews.com/healthz` and `/readyz` remain app health/readiness.
+- `nutsnews.com` redirects to `https://www.nutsnews.com{uri}` at the VPS origin.
+- `www.nutsnews.com` proxies to the same digest-pinned app route as the VPS public route.
+- Cloudflare DNS, proxy settings, workers, page rules, and visitor routing are not changed by this prep step.
+- Direct-origin smoke uses `curl -k --resolve` because the dormant primary host uses Caddy internal TLS until cutover certificate policy is finalized.
+
+### Expert
+
+```mermaid
+flowchart LR
+  operator["Operator smoke test"] --> resolve["curl --resolve host:443:VPS_IP"]
+  resolve --> caddy["Caddy on VPS"]
+  caddy --> apex{"Host is nutsnews.com?"}
+  apex -- "yes" --> redirect["308 to https://www.nutsnews.com{uri}"]
+  apex -- "no, www" --> app["Digest-pinned NutsNews app"]
+  cf["Cloudflare production DNS"] --> vercel["Vercel primary before cutover"]
+```
+
+Use this read-only smoke shape after protected apply:
+
+```bash
+VPS_IP="$(dig +short vps.nutsnews.com A | tail -n1)"
+curl -k --resolve "www.nutsnews.com:443:${VPS_IP}" -i https://www.nutsnews.com/healthz
+curl -k --resolve "www.nutsnews.com:443:${VPS_IP}" -i 'https://www.nutsnews.com/readyz?cache-bust='"$(date +%s)"
+curl -k --resolve "nutsnews.com:443:${VPS_IP}" -I https://nutsnews.com/
+```
+
+Rollback for a bad origin-prep apply is the protected GitOps path, not an SSH
+edit. Use the recorded last-known-good rollback workflow for app digest
+recovery, or revert the reviewed infra PR and rerun `Protected Ansible Apply`
+for Caddy-only route rollback. Verify `https://vps.nutsnews.com/healthz`,
+`/readyz`, admin access behavior, and the direct-origin `--resolve` checks after
+rollback.
 
 ## Runtime Layout
 
