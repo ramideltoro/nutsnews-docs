@@ -65,7 +65,7 @@ This layer creates the runtime substrate and one narrow production route. The de
 - The public host always keeps `/health` on the infrastructure health service.
 - The reviewed app route can proxy all other `vps.nutsnews.com` paths to the digest-pinned NutsNews app container.
 - The future primary origin redirects `nutsnews.com` to `https://www.nutsnews.com{uri}` and proxies `www.nutsnews.com` to the same app route.
-- The future primary origin uses Caddy internal TLS before cutover because Cloudflare is currently in `Full` SSL mode; requiring `Full (strict)` needs Cloudflare Origin CA or DNS-01 public origin certificates first.
+- The future primary origin uses Caddy internal TLS before cutover because Cloudflare is currently in `Full` SSL mode; Caddy sets `skip_install_trust` so the hardened container does not try to install the local CA root. Requiring `Full (strict)` needs Cloudflare Origin CA or DNS-01 public origin certificates first.
 - Caddy exposes `ops.nutsnews.com` publicly behind the Ops Portal Google OAuth gateway.
 - Caddy keeps the loopback listener available on host `127.0.0.1:8080`.
 - Caddy applies rate limits keyed by client remote host, with IPv6 clients grouped by `/64`.
@@ -154,6 +154,7 @@ The primary-origin preparation has these boundaries:
 - `www.nutsnews.com` proxies to the same digest-pinned app route as the VPS public route.
 - Cloudflare DNS, proxy settings, workers, page rules, and visitor routing are not changed by this prep step.
 - Direct-origin smoke uses `curl -k --resolve` because the dormant primary host uses Caddy internal TLS until cutover certificate policy is finalized.
+- Caddy sets `skip_install_trust` to avoid noisy local-CA trust-store install attempts inside the non-root, read-only container.
 
 ### Expert
 
