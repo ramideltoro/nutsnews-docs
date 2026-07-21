@@ -100,6 +100,8 @@ The workflows are scaffold-safe. If Terraform, Ansible, Compose, Dockerfile, or 
 
 The PR and push workflows also use path-aware cost controls. Infrastructure, runtime, portal, and supply-chain workflows start with a changed-path classifier that writes a summary into the Actions run. Docs-only and runbook-only changes keep the workflow visible but skip unrelated heavyweight jobs. Workflow Safety, Gitleaks, and nightly audits remain conservative and ungated.
 
+Dependabot checks the infra repo on a weekly Monday cadence. GitHub Actions updates are grouped into a single `github-actions` Dependabot PR so routine action refreshes do not fan out into several duplicate CI runs. Terraform, portal npm, and Compose Docker update entries keep their separate schedules and pull request limits.
+
 ```mermaid
 flowchart LR
   files["Changed files"] --> classify["CI path classifier"]
