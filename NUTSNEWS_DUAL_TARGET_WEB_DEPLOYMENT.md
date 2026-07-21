@@ -84,6 +84,119 @@ and a cache-busting query. Failback is allowed only when the current Cloudflare
 DNS records still match the Vercel fallback state and the direct VPS readiness
 probe is healthy.
 
+## Cloudflare DNS Failover Controller
+
+Issue [nutsnews #395](https://github.com/ramideltoro/nutsnews/issues/395)
+adds the infra-side Cloudflare DNS failover controller that will support the
+VPS-primary cutover without paid Cloudflare Load Balancing and without putting
+normal visitor traffic through a Worker.
+
+Simple Summary: Cloudflare DNS remains the production traffic switch. A
+scheduled Worker wakes a Durable Object every minute, and the Durable Object
+keeps a 15-second alarm loop that checks the direct VPS readiness endpoint.
+After three consecutive VPS readiness failures, the controller can update the
+managed apex and `www` DNS records to the Vercel fallback. When VPS readiness
+recovers and DNS is still on Vercel, the controller can fail back to the VPS.
+
+Intermediate Summary: The controller is deployed from
+`ramideltoro/nutsnews-infra` under `cloudflare/dns-failover/`. Its Worker uses
+`workers.dev` admin endpoints only; it has no route for `nutsnews.com/*` or
+`www.nutsnews.com/*`, so reader requests do not execute Worker code. The
+minute Cron Trigger is only a watchdog. The 15-second loop is owned by the
+Durable Object alarm and persists state in Durable Object storage:
+
+- active DNS target;
+- consecutive failure count;
+- consecutive recovery count;
+- last check timestamp;
+- last DNS update timestamp;
+- manual lock state and reason;
+- last health status, DNS action, and sanitized error summary.
+
+Expert Summary: The controller reads the current managed Cloudflare DNS record
+state before every automatic decision. It writes DNS only when the observed
+apex and `www` records are fully on the expected source state, the failure or
+recovery threshold is satisfied, the manual lock is off, the DNS-update
+cooldown has elapsed, and `AUTOMATIC_DNS_WRITES_ENABLED=true` has been set by
+the protected workflow. In the #395 preparation state, automatic writes remain
+disabled so the controller can be planned, deployed, and inspected without
+cutting production traffic over. Issue #396 owns enabling writes and changing
+the production apex/www routing during the actual cutover.
+
+```mermaid
+flowchart TD
+  cron["Cloudflare Cron Trigger\nonce per minute"] --> watchdog["Worker watchdog fetch\nworkers.dev only"]
+  watchdog --> durable["Durable Object\npersistent failover state"]
+  durable --> alarm["Durable Object alarm\n15-second loop"]
+  alarm --> readyz["https://vps.nutsnews.com/readyz\nno-store cache-busted probe"]
+  durable --> dnsRead["Read managed Cloudflare DNS records\napex + www"]
+  readyz --> decision{"Thresholds met\nand DNS state matches?"}
+  dnsRead --> decision
+  decision -- "3 VPS failures on VPS DNS" --> failover["Patch records to\nVercel fallback"]
+  decision -- "VPS recovered while DNS is Vercel" --> failback["Patch records to\nVPS primary"]
+  decision -- "writes disabled, locked, cooldown,\nor unexpected DNS state" --> observe["Persist state and log\nno DNS mutation"]
+```
+
+The protected infra workflow is
+`.github/workflows/cloudflare-dns-failover-apply.yml` in
+`ramideltoro/nutsnews-infra`. It runs only from infra `main`, uses the
+`cloudflare-admin` GitHub Environment, and requires explicit confirmation
+phrases before apply or before enabling automatic DNS writes.
+
+Required protected secrets:
+
+| Secret | Purpose |
+| --- | --- |
+| `NUTSNEWS_DNS_FAILOVER_DEPLOY_API_TOKEN` | Deploy the Worker script and Durable Object binding. |
+| `NUTSNEWS_DNS_FAILOVER_DNS_API_TOKEN` | Runtime Cloudflare DNS edit token scoped to the `nutsnews.com` zone. |
+| `NUTSNEWS_DNS_FAILOVER_ZONE_ID` | Zone ID for the `nutsnews.com` Cloudflare zone. |
+| `NUTSNEWS_DNS_FAILOVER_RECORDS_JSON` | JSON array containing only the managed apex and `www` record IDs, names, and type. |
+| `NUTSNEWS_DNS_FAILOVER_ADMIN_TOKEN` | Bearer token for protected workers.dev status and manual-control endpoints. |
+| `NUTSNEWS_CLOUDFLARE_ACCOUNT_ID` | Account ID used by Wrangler deploy. |
+
+Do not store these values in source control, logs, release notes, or issue
+comments. The source-controlled config intentionally stores only public
+hostnames, thresholds, TTL intent, and workflow wiring.
+
+Operator controls live behind the workers.dev admin token:
+
+| Endpoint | Use |
+| --- | --- |
+| `GET /status` | Inspect state, thresholds, write gate, managed names, and next alarm. |
+| `POST /watchdog` | Re-arm the Durable Object alarm from the Cron watchdog path. |
+| `POST /check-now` | Run an immediate health and DNS-state check. |
+| `POST /manual-lock` | Enable or clear the manual lock that suppresses automatic DNS writes. |
+| `POST /manual-failover` | Manually move managed DNS records to the Vercel fallback. |
+| `POST /manual-failback` | Manually move managed DNS records back to the VPS primary. |
+
+The infra runbook is
+`ramideltoro/nutsnews-infra/runbooks/CLOUDFLARE_DNS_FAILOVER.md`. It is the
+source of truth for plan/apply commands, confirmation phrases, endpoint
+examples, propagation expectations, and manual failover/failback steps.
+
+### Limits And Rollback
+
+Cloudflare proxied records use Auto TTL, currently 300 seconds. A DNS patch is
+therefore not an instant reader-visible failover; client, resolver, and
+Cloudflare edge behavior can take longer to converge. Operators should verify
+both direct-origin readiness and normal public hostname behavior before
+declaring failover or failback complete.
+
+Rollback options are ordered from least invasive to most invasive:
+
+1. Enable the manual lock through `/manual-lock` to stop automatic DNS changes.
+2. Use `/manual-failover` or `/manual-failback` when the controller is healthy
+   and the operator wants a controlled DNS move.
+3. Run the protected workflow again with `dns_writes_enabled=false` to keep the
+   Worker deployed but suppress automatic mutations.
+4. Revert the reviewed infra PR and redeploy the Worker config from infra
+   `main` if the controller implementation itself is bad.
+
+Do not hand-edit production DNS during normal operations. If emergency manual
+Cloudflare changes are unavoidable, document the record content before and
+after, enable the controller manual lock, and reconcile the infra runbook and
+state before re-enabling automatic writes.
+
 ## Expert Summary
 
 The application repository enables Next.js standalone output and builds a
