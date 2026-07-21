@@ -19,9 +19,11 @@ staging, qualification, VPS production apply, and only then Vercel production.
 The app repository can ask infra to stage that exact digest, but it cannot move
 either production target by itself.
 
-`nutsnews.com` stays on Vercel. `vps.nutsnews.com` is a separately observable
-VPS target; this automation does not move canonical traffic or introduce
-failover.
+Before cutover, `nutsnews.com` stays on Vercel and `vps.nutsnews.com` is a
+separately observable VPS target. The release checks are now prepared for the
+VPS-primary topology: after DNS cutover, `www.nutsnews.com` is the normal VPS
+production smoke target and Vercel is validated through a separate secondary
+target or controlled failover alias check.
 
 ## Intermediate Summary
 
@@ -46,6 +48,41 @@ token is not a VPS credential or production release token.
 Vercel does not consume the GHCR image. Vercel and the VPS produce different
 platform artifacts from the same source commit, and both production targets
 must verify that commit in one promotion chain.
+
+## VPS-Primary Release Check Topology
+
+Issue [nutsnews #394](https://github.com/ramideltoro/nutsnews/issues/394)
+updates the app-side release checks for the VPS-primary migration while keeping
+Vercel available as the secondary production server.
+
+Normal production validation uses these targets:
+
+| Purpose | Configuration | Default |
+| --- | --- | --- |
+| VPS-primary public smoke | `NUTSNEWS_VPS_PRODUCTION_URL`, then `NUTSNEWS_PRIMARY_PRODUCTION_URL` | `https://www.nutsnews.com/` |
+| VPS direct-origin checks | `NUTSNEWS_VPS_PRODUCTION_DIRECT_URL` | `https://vps.nutsnews.com/` |
+| Vercel secondary production smoke | `NUTSNEWS_VERCEL_SECONDARY_PRODUCTION_URLS`, otherwise the generated Vercel deployment URL | Generated `*.vercel.app` deployment URL |
+| Vercel controlled DNS failover check | `NUTSNEWS_VERIFY_VERCEL_FAILOVER_ALIASES=true` plus `NUTSNEWS_VERCEL_FAILOVER_PRODUCTION_ALIASES` | `https://www.nutsnews.com/,https://nutsnews.com/` only when the flag is true |
+| Cloudflare cache observability | `NUTSNEWS_CACHE_OBSERVABILITY_URL`, then `NUTSNEWS_PRIMARY_PRODUCTION_URL` | `https://www.nutsnews.com` |
+
+Do not put `https://www.nutsnews.com/` or `https://nutsnews.com/` in
+`NUTSNEWS_VERCEL_SECONDARY_PRODUCTION_URLS`. Those hostnames are the primary
+VPS production entrypoints after cutover. Vercel may verify them only during a
+deliberate DNS failover drill where Cloudflare currently points apex and `www`
+to the Vercel fallback records.
+
+The failover controller contract is:
+
+| Setting | Value |
+| --- | --- |
+| `NUTSNEWS_FAILOVER_HEALTH_CHECK_INTERVAL_SECONDS` | `15` |
+| `NUTSNEWS_FAILOVER_CONSECUTIVE_VPS_FAILURES` | `3` |
+| `NUTSNEWS_FAILBACK_DNS_STATE_GATE` | `current_dns_state_is_vercel_fallback_and_vps_ready` |
+
+Failover checks should probe the direct VPS readiness endpoint with no-store
+and a cache-busting query. Failback is allowed only when the current Cloudflare
+DNS records still match the Vercel fallback state and the direct VPS readiness
+probe is healthy.
 
 ## Expert Summary
 
@@ -117,7 +154,7 @@ flowchart TD
   apply --> ssh["Read-only SSH\nrunning digest + health"]
   ssh --> vps["Public VPS /healthz\nsource/build/target identity"]
   vps --> vercelProd["Explicit Vercel production deploy\nsame source commit"]
-  vercelProd --> status["Vercel /healthz alias verification"]
+  vercelProd --> status["Vercel secondary /healthz verification"]
 ```
 
 There is deliberately no arrow from GHCR to Vercel. The shared identity is the

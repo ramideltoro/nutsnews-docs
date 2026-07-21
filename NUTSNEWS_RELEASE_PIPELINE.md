@@ -83,8 +83,8 @@ The release identity bundle is:
 - migration head
 - rollback-compatible schema version
 - production Supabase project reference
-- post-VPS Vercel Production deployment evidence and public alias URL for the
-  same source commit
+- post-VPS Vercel Production deployment evidence and secondary target URL for
+  the same source commit
 
 The app `Container Image` workflow uploads `nutsnews-staging-release` metadata.
 `Request Verified Staging Release` dispatches only `nutsnews-staging-release`
@@ -108,7 +108,8 @@ ID. That workflow builds a production Vercel artifact, deploys it as a staged
 production deployment with no custom-domain assignment, resolves the Vercel
 deployment ID, runs the safe web smoke suite against the staged URL, promotes
 that deployment through Vercel only after the staged smoke passes, and then
-verifies the public aliases.
+verifies the configured Vercel secondary target. Apex and `www` are Vercel
+checks only during a controlled DNS failover validation.
 
 The infra promotion wait accepts the current `Dispatch-only Vercel production
 <source_commit>` run-name and the legacy `Deploy Vercel production
@@ -150,8 +151,10 @@ The production path deliberately separates evidence from mutation:
   readiness and smoke checks also verify the reviewed `production-vps` target.
 - Vercel Production deploys only after the protected VPS apply passes, and the
   release remains failed unless the staged deployment URL passes smoke, the
-  Vercel deployment ID is promoted through Vercel, and the public aliases
-  report the same source commit.
+  Vercel deployment ID is promoted through Vercel, and the configured Vercel
+  secondary production target reports the same source commit. The apex and
+  `www` production hostnames are checked as Vercel targets only during a
+  controlled DNS failover test.
 - Vercel deployment URL, deployment ID, source SHA, staged smoke result, and
   promotion result are recorded separately from the VPS OCI digest.
 - The Vercel local prebuilt build rewrites shell-sensitive env names after
@@ -186,7 +189,7 @@ flowchart TD
   verify --> vercelStage["Dispatch explicit Vercel production workflow\nstage with --skip-domain"]
   vercelStage --> vercelSmoke["Smoke staged Vercel URL\nrecord deployment ID"]
   vercelSmoke --> vercelPromote["vercel promote deployment ID"]
-  vercelPromote --> vercelVerify["Public aliases\nsame source commit"]
+  vercelPromote --> vercelVerify["Vercel secondary target\nsame source commit"]
   vercelVerify --> done["Coupled release complete"]
 ```
 
@@ -220,7 +223,7 @@ sequenceDiagram
   App->>Vercel: Deploy staged production build with --skip-domain
   Vercel-->>App: Staged URL and Vercel deployment ID
   App->>Vercel: Smoke staged URL, then promote deployment ID
-  Vercel-->>App: Public aliases report same source commit
+  Vercel-->>App: Secondary target reports same source commit
   App-->>Infra: Vercel production workflow passed
 ```
 
@@ -239,7 +242,7 @@ sequenceDiagram
 | GitOps promotion PR | `nutsnews-release-promotion.yml` | Manifest PR checks pass and PR merges to infra `main` | Protected apply is not dispatched |
 | Protected eligibility | `protected-ansible-apply.yml` | No-secret verifier accepts the merged manifest and complete release bundle before `production-vps` secrets | Production secrets and SSH remain unavailable |
 | Production apply | `protected-ansible-apply.yml` | Ansible applies the reviewed digest and post-apply Docker/health/smoke checks match | Workflow fails; use fixed rollback only if production mutated |
-| Vercel Production | `vercel-production-release.yml` dispatched by infra after VPS apply | The local prebuilt build rewrites shell-sensitive pulled env names to runner-safe control values; Vercel production is deployed with `--skip-domain`; the staged URL passes safe smoke; the Vercel deployment ID is promoted through Vercel; `www.nutsnews.com` and `nutsnews.com` report the same source commit and `vercel-production` target | Coupled release fails after VPS apply; a missing workflow run fails promotion without rollback; a located completed non-success run may trigger protected rollback after rechecking the run-name/event belongs to the same source commit |
+| Vercel Production | `vercel-production-release.yml` dispatched by infra after VPS apply | The local prebuilt build rewrites shell-sensitive pulled env names to runner-safe control values; Vercel production is deployed with `--skip-domain`; the staged URL passes safe smoke; the Vercel deployment ID is promoted through Vercel; the generated deployment URL or `NUTSNEWS_VERCEL_SECONDARY_PRODUCTION_URLS` reports the same source commit and `vercel-production` target. `www.nutsnews.com` and `nutsnews.com` are Vercel checks only when `NUTSNEWS_VERIFY_VERCEL_FAILOVER_ALIASES=true` during a controlled failover test. | Coupled release fails after VPS apply; a missing workflow run fails promotion without rollback; a located completed non-success run may trigger protected rollback after rechecking the run-name/event belongs to the same source commit |
 | Fixed rollback | `protected-nutsnews-rollback.yml` | Only the recorded last-known-good digest is selected from reviewed manifest history | Arbitrary digest, tag, SSH, or DB down migration is rejected |
 
 ## Article Translation Release Gate

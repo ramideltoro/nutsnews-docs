@@ -2,7 +2,7 @@
 
 Issue #91 adds a dedicated cache observability layer for NutsNews public routes.
 
-Caching protects Supabase, Vercel, and the reader experience. The goal is to catch accidental cache regressions such as `no-store` headers, missing CDN headers, unexpected policy markers, or `/api/articles` falling out of the cacheable path.
+Caching protects Supabase, the VPS primary origin, the Vercel fallback target, and the reader experience. The goal is to catch accidental cache regressions such as `no-store` headers, missing CDN headers, unexpected policy markers, or `/api/articles` falling out of the cacheable path.
 
 ---
 
@@ -70,7 +70,7 @@ curl -I "https://nutsnews.com/api/articles?limit=5"
 curl -I "https://nutsnews.com/articles/<article-id>"
 ```
 
-Look for `cache-control: public, max-age=0, must-revalidate` and at least one visible CDN cache-control header with `s-maxage=3600` and `stale-while-revalidate=86400`. Cloudflare and Vercel may consume their targeted CDN headers before the final browser response, so the cache observability report is the stronger end-to-end check.
+Look for `cache-control: public, max-age=0, must-revalidate` and at least one visible CDN cache-control header with `s-maxage=3600` and `stale-while-revalidate=86400`. Cloudflare, VPS-primary origin handling, and Vercel fallback handling may consume targeted CDN headers before the final browser response, so the cache observability report is the stronger end-to-end check.
 
 Run a live check against a Vercel preview URL:
 
@@ -108,7 +108,7 @@ It has two jobs:
 | Job | When it runs | What it does |
 | --- | --- | --- |
 | `Cache config regression check` | Pull requests and pushes to `main` | Validates the cache route policy config and uploads a report artifact. |
-| `Live cache policy and alert check` | Scheduled and manual workflow dispatch | Checks live Cloudflare/Vercel response headers and fails when cache policy regresses. |
+| `Live cache policy and alert check` | Scheduled and manual workflow dispatch | Checks live Cloudflare/VPS-primary response headers and fails when cache policy regresses. |
 
 The live job runs every 6 hours by default.
 
@@ -139,10 +139,11 @@ Optional environment overrides:
 
 ```text
 NUTSNEWS_CACHE_OBSERVABILITY_URL=https://www.nutsnews.com
+NUTSNEWS_PRIMARY_PRODUCTION_URL=https://www.nutsnews.com
 NUTSNEWS_CACHE_ARTICLE_PATH=/articles/<article-id>
 ```
 
-Use the override when testing a preview deployment or when article discovery needs a known article URL.
+Use the URL override when testing a preview deployment, a Vercel fallback drill, or when article discovery needs a known article URL. If `NUTSNEWS_CACHE_OBSERVABILITY_URL` is unset, the scheduled workflow falls back to `NUTSNEWS_PRIMARY_PRODUCTION_URL` and then `https://www.nutsnews.com`.
 
 ---
 
@@ -205,7 +206,7 @@ Look for:
 
 On production behind Cloudflare, also look for `cf-cache-status` samples. A first request can be `MISS`; repeated requests should eventually show `HIT` for cacheable routes.
 
-Production deploys keep the longer cache fresh through the **Purge Cloudflare Cache After Production Deploy** workflow. After Vercel reports a successful production deployment, the workflow purges the Cloudflare zone cache so changed pages, article data, and header policy changes are not left behind for the full edge TTL. For cache/header changes, confirm that purge workflow completed, then rerun the curl checks and cache observability audit.
+Production deploys keep the longer cache fresh through the **Purge Cloudflare Cache After Production Deploy** workflow. After the protected production path reports a successful release, the workflow purges the Cloudflare zone cache so changed pages, article data, and header policy changes are not left behind for the full edge TTL. For cache/header changes, confirm that purge workflow completed, then rerun the curl checks and cache observability audit against the VPS-primary entrypoint.
 
 ---
 
