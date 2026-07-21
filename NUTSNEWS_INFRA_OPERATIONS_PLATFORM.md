@@ -100,6 +100,8 @@ The workflows are scaffold-safe. If Terraform, Ansible, Compose, Dockerfile, or 
 
 The PR and push workflows also use path-aware cost controls. Infrastructure, runtime, portal, and supply-chain workflows start with a changed-path classifier that writes a summary into the Actions run. Docs-only and runbook-only changes keep the workflow visible but skip unrelated heavyweight jobs. Workflow Safety, Gitleaks, and nightly audits remain conservative and ungated.
 
+Workflow Safety also validates remote GitHub Actions `uses:` references with a generic pinning check. Local actions such as `./...` remain allowed, but third-party and official actions must use full commit SHAs unless a narrow central allowlist documents the exception and reason.
+
 Dependabot checks the infra repo on a weekly Monday cadence. GitHub Actions updates are grouped into a single `github-actions` Dependabot PR so routine action refreshes do not fan out into several duplicate CI runs. Terraform updates are scoped to the real module directories, and Docker updates are scoped to the Caddy Dockerfile directory. The static Ops Portal has no npm manifest, so it relies on portal CI rather than a Dependabot npm entry until a package manifest exists.
 
 ```mermaid
