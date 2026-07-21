@@ -41,6 +41,16 @@ workflow_dispatch
 
 That means no automatic apply on PR, push, or merge. A human starts it from GitHub Actions. GitHub then applies the `production-vps` Environment rules before the job receives Environment secrets.
 
+The baseline job restores dependency-only GitHub Actions caches before it
+validates production Environment secrets or prepares SSH material. The pip cache
+is keyed from `.github/requirements/production-ansible.txt`, the virtual
+environment cache is scoped to `.venv/production-ansible`, and the Galaxy
+collection cache is scoped to `.ansible/collections` with a key derived from
+`ansible/requirements.yml`. These caches may speed up warm check/apply runs, but
+they must never include SSH files, Vercel sync outputs, rendered extra-vars
+files, release evidence, smoke artifacts, or anything derived from production
+secrets.
+
 Add the required secrets in GitHub under `ramideltoro/nutsnews-infra` -> Settings -> Environments -> `production-vps` -> Environment secrets. Keep the Environment protection rules enabled; the whole point is that production changes pass through a door with a lock, not a bead curtain.
 
 Required Environment secrets:
