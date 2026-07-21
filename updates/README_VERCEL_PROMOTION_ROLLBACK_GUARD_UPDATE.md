@@ -25,13 +25,28 @@ The follow-up infra fix:
 - restores the reviewed production manifest to app commit
   `d1ec4f790f2e8e4691fc57337b86188148674ef0`;
 - finds the Vercel production workflow by workflow file, repository dispatch
-  event, branch, dispatch timestamp, and `headSha`;
+  event, branch, dispatch timestamp, and either the current
+  `Dispatch-only Vercel production <source_commit>` run-name or the legacy
+  `Deploy Vercel production <source_commit>` run-name;
+- avoids using repository-dispatch `headSha` as the release identity because
+  GitHub can report that field as the app repository's current default-branch
+  commit rather than the dispatched release commit;
 - allows automated VPS rollback only when a Vercel run id exists;
 - rechecks the located Vercel run before rollback and refuses rollback if the
-  run belongs to another commit, is still running, succeeded, or changed
-  conclusion;
+  run-name does not match the release commit, the event is not
+  `repository_dispatch`, the run is still running, the run succeeded, or the
+  conclusion changed;
 - fails promotion when the Vercel run is missing and no protected rollback
   completed.
+
+Live follow-up evidence: promotion rerun `29834135526` dispatched Vercel run
+`29834733790`. That Vercel run's display title was
+`Dispatch-only Vercel production d1ec4f790f2e8e4691fc57337b86188148674ef0`,
+but GitHub reported `headSha` as app commit
+`4d2055ea083d523454dad96393dcc935f503ccf6`, the current app default-branch
+commit at dispatch time. The Vercel workflow still checked out and deployed the
+payload source commit, so the promotion wait must key off the run-name and
+dispatch metadata.
 
 ## Operational Impact
 
