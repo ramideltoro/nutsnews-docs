@@ -38,6 +38,13 @@ When a reader selects a non-English language:
 
 This policy keeps new articles visible immediately while the Worker or a backfill catches up.
 
+When the web app runs in `backend_postgres_primary`, `/api/articles` reads article
+cards through `https://backend.nutsnews.com/api/app/db/*` instead of direct
+Supabase PostgREST. The backend app operations `load-public-feed-snapshot` and
+`load-home-feed-snapshot` must apply the same `public.article_summaries` lookup
+for `requestedLanguageCode`; otherwise repaired Supabase rows can exist while
+the live backend-primary feed still falls back to English.
+
 ## Regression coverage
 
 Issue #279 pins the fallback policy in the public reader checks:
