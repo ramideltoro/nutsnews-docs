@@ -118,6 +118,26 @@ flowchart TD
   C -->|No| I[Security scan passes]
 ```
 
+### 2026-07-20 OSV Dev Dependency Lockfile Refresh
+
+Simple Summary: The safety checker found three old helper packages in the web app lockfile. The lockfile now points to the fixed versions.
+
+Intermediate Summary: The `OSV Scanner` push run failed on `ramideltoro/nutsnews` after PR #291 merged because `web/package-lock.json` still resolved vulnerable dev-only versions of `body-parser`, `brace-expansion`, and `js-yaml`. The app fix refreshes only the lockfile to versions already allowed by the parent dependency ranges, so there is no product behavior, runtime configuration, database, or deployment-flow change.
+
+Expert Summary: Run `29788781874` failed in `Scan repository dependencies / osv-scan` during `Run osv-scanner-reporter`. OSV reported `body-parser@1.20.5`, `brace-expansion@1.1.15`, and `js-yaml@4.2.0` from `web/package-lock.json`; the fixed versions are `1.20.6`, `1.1.16`, and `4.3.0`. `npm update body-parser brace-expansion js-yaml --package-lock-only` moved the lockfile to the fixed versions without changing `web/package.json`. Risk is limited to dev/test tooling dependency resolution. Mitigation is to rerun npm audit, route tests, CPU/cache guardrails, lint, build, and the GitHub OSV workflow. Roll back by reverting the dependency PR if CI exposes tooling regressions.
+
+```mermaid
+flowchart TD
+  A[Push to main] --> B[OSV Scanner scans web/package-lock.json]
+  B --> C{Vulnerable dev packages?}
+  C -->|Yes| D[Fail main OSV run]
+  D --> E[Refresh lockfile within existing semver ranges]
+  E --> F[npm audit and web checks]
+  F --> G[PR merge reruns OSV]
+  G --> H[Main release pipeline can stay green]
+  C -->|No| I[Security scan passes]
+```
+
 ## PR Security Scan Flow
 
 ```mermaid
