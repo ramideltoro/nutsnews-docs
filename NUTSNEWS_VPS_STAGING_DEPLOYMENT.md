@@ -97,11 +97,13 @@ pre-merge production, and fixed rollback protected applies therefore dispatch
 with `enable_staging_access=true` so the bundle marker stays aligned with the
 reviewed infra commit.
 
-If staging deployment fails with `unreviewed_infra_commit`, treat it as a stale
-bundle marker or stale workflow path. Fix the reviewed infra guard, rerun
-Protected Ansible Apply with staging access enabled, and then rerun the staging
-candidate. Do not edit `/opt/nutsnews/staging-deploy-bundle/infra-commit`
-manually.
+If staging check mode reports `unreviewed_infra_commit`, the deploy workflow
+briefly retries while the reviewed bundle marker propagates to the staging
+gateway. The retry summary records only the sanitized code and attempt count.
+If the bounded retry window expires, treat it as a stale bundle marker or stale
+workflow path. Fix the reviewed infra guard, rerun Protected Ansible Apply with
+staging access enabled, and then rerun the staging candidate. Do not edit
+`/opt/nutsnews/staging-deploy-bundle/infra-commit` manually.
 
 ## Sanitized Apply Failure Diagnostics
 
