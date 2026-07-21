@@ -418,6 +418,16 @@ Success is evidence that schema validation, source-main trust, and OCI
 provenance checks agree. It is not deployment evidence and it changes no VPS
 state.
 
+The live `repository_dispatch` deploy job caches only secret-free Ansible setup
+paths before it validates or writes staging secrets. Python packages come from
+`.github/requirements/staging-ansible.txt` into `.venv/staging-ansible`, keyed
+by runner OS, resolved Python version, and the requirements hash. Galaxy
+collections install into `.ansible/collections`, keyed by runner OS and
+`ansible/requirements.yml`; that file pins collection versions so warm-cache
+runs can reuse the collection directory without freezing mutable inputs. The
+cache paths must never include `$RUNNER_TEMP`, `~/.ssh`, candidate JSON,
+rendered gateway requests, env files, or staging secrets.
+
 ## Separate Live-Apply Approval and Evidence
 
 This documentation and its infrastructure PR do not authorize or perform a
