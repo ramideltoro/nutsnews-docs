@@ -130,7 +130,7 @@ The production path deliberately separates evidence from mutation:
 - Protected Ansible Apply rechecks the same release identity before secrets and
   SSH are available.
 - Post-apply verification fails the run if Docker image identity or public
-  `/healthz` source/build/production-target identity does not match. Runtime
+  `/healthz` source/build/shared-VPS image identity does not match. Runtime
   readiness and smoke checks also verify the reviewed `production-vps` target.
 - Vercel Production deploys only after the protected VPS apply passes, and the
   release remains failed unless the staged deployment URL passes smoke, the

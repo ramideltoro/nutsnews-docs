@@ -132,7 +132,7 @@ Every target must expose a secret-free identity that operators can compare:
 | Source commit | Exact commit checked out by the post-VPS Vercel workflow | Full Git commit recorded at image build and promotion |
 | Build ID | Portable application build identifier | Same identifier in `/healthz`, image labels, and portal status |
 | Image digest | Not applicable | Registry-resolved `sha256` digest and actual running digest |
-| Health deployment target | `vercel-production` | Reviewed runtime target `production-vps` on `/healthz` |
+| Health deployment target | `vercel-production` | Shared VPS image build target `vps` on `/healthz` |
 | Runtime deployment target | `vercel-production` | Reviewed runtime target `production-vps` on `/readyz` and production smoke |
 | Last-known-good digest | Not applicable; use Vercel deployment rollback | Reviewed prior VPS digest |
 
@@ -618,8 +618,8 @@ path is:
    secrets.
 6. The apply checks the exact container digest over read-only SSH, requires
    public `https://vps.nutsnews.com/healthz` to match source/build and the
-   reviewed target `production-vps`, and requires safe production smoke
-   evidence to match the same runtime target.
+   shared VPS image target `vps`, and requires safe production smoke evidence
+   to match the reviewed runtime target `production-vps`.
 
 A failed Vercel deployment, staging dispatch, staging deployment,
 qualification, attestation check, production apply, SSH check, health check, or

@@ -119,8 +119,9 @@ rendered through the root-only Ansible path with `no_log`. The workflow and
 portal must never print values. Mutable image references are rejected whenever
 the application is enabled.
 
-For VPS app releases, `/healthz`, `/readyz`, and `/api/runtime-config` must all
-report the reviewed production VPS deployment target, `production-vps`.
+For VPS app releases, `/healthz` reports the shared VPS image build target,
+`vps`. Runtime readiness and `/api/runtime-config` must report the reviewed
+production VPS deployment target, `production-vps`.
 
 The protected workflow selects only the production app runtime. Staging has a
 separate runtime identity but remains disabled pending the measured capacity

@@ -1,44 +1,45 @@
 # VPS Release Smoke Health Target Fix
 
+> Superseded note: the current shared VPS image build contract uses `/healthz`
+> as build identity (`vps`) and `/readyz` plus `/api/runtime-config` as runtime
+> identity (`production-vps` in production). See
+> `README_VPS_HEALTH_BUILD_TARGET_CONTRACT_UPDATE.md`.
+
 ## Simple Summary
 
-The production VPS checker was looking for the wrong name on the health page. It
-now checks for the name the live VPS app actually reports.
+This historical note recorded PR #268. It is no longer current operator
+guidance for the shared VPS image.
 
 ## Intermediate Summary
 
 The protected VPS apply for the app writer-pause release deployed the reviewed
 image and passed Docker/public identity checks, but the final safe app smoke
-failed because the infra workflow expected `/healthz` to report `vps`. The live
-app route reports the production VPS deployment target, `production-vps`, for
-both the JSON payload and `X-NutsNews-Deployment-Target` header.
+failed on the public app health target. That observation was later superseded
+after the shared VPS image contract was clarified: `/healthz` is build identity,
+while runtime target checks belong to `/readyz` and `/api/runtime-config`.
 
-This update documents the correction in `ramideltoro/nutsnews-infra` PR #268:
-the protected apply verifier, smoke invocation, regression test, and short local
-runbook now use `production-vps` as the expected public app `/healthz` identity.
+This update documents the older correction in `ramideltoro/nutsnews-infra` PR
+#268. For current guidance, use
+`README_VPS_HEALTH_BUILD_TARGET_CONTRACT_UPDATE.md`.
 
 ## Expert Summary
 
-`web/app/healthz/route.ts` derives `deploymentTarget` from
-`NUTSNEWS_DEPLOYMENT_TARGET`. The production VPS app container is deployed with
-`NUTSNEWS_DEPLOYMENT_TARGET=production-vps`, so the release smoke script
-correctly failed when `protected-ansible-apply.yml` passed
-`--expected-health-deployment-target vps`.
+Current app images are shared across VPS runtime targets. The release smoke
+script therefore accepts a separate health target for `/healthz` and runtime
+target for `/readyz`.
 
 The infra fix:
 
-- sets `RELEASE_HEALTH_DEPLOYMENT_TARGET=production-vps`;
+- set the historical `RELEASE_HEALTH_DEPLOYMENT_TARGET` value;
 - keeps validating `/healthz` body and header identity against the expected
   health target;
-- passes `--expected-health-deployment-target production-vps` to
+- passed an explicit `--expected-health-deployment-target` to
   `scripts/dual_target_web_smoke.mjs`;
 - updates `ansible/tests/validate_release_promotion.py`;
 - corrects the short operator note in `runbooks/PROTECTED_ANSIBLE_APPLY.md`.
 
-This is validation-only. It does not change the app image, Vercel, Cloudflare,
-Supabase, worker behavior, or production secrets. Rollback is to revert
-`ramideltoro/nutsnews-infra` PR #268, but the old `vps` expectation is known to
-fail the current production VPS app smoke.
+This was validation-only. It did not change the app image, Vercel, Cloudflare,
+Supabase, worker behavior, or production secrets.
 
 ## Mermaid Flow
 
@@ -49,7 +50,7 @@ flowchart LR
   C --> D[Check public /healthz body and headers]
   D --> E[Run safe app smoke]
   E --> F[Dispatch Vercel production release]
-  D -. expected target .-> G[production-vps]
+  D -. historical expected target .-> G[explicit health target]
 ```
 
 ## Validation Evidence

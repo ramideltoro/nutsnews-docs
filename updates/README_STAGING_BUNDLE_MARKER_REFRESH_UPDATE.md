@@ -15,9 +15,10 @@ staging refused the next app candidate with `unreviewed_infra_commit`.
 
 The targeted infra fix updates automated production release, pre-merge
 production, and fixed rollback dispatches to call Protected Ansible Apply with
-`enable_staging_access=true`. The same fix keeps the protected app health guard
-aligned with the live VPS app identity by expecting `/healthz` to report
-`production-vps`.
+`enable_staging_access=true`. A follow-up guard correction keeps `/healthz`
+aligned with the shared VPS image build identity, `vps`, while runtime
+readiness and public config continue to report the production VPS runtime
+identity, `production-vps`.
 
 ## Expert Summary
 
@@ -29,8 +30,8 @@ an older commit. Staging deploys should continue to fail closed if the marker
 does not match the workflow commit; the recovery path is to rerun reviewed
 Protected Ansible Apply, not to edit the marker manually.
 
-This update also documents that VPS public app identity checks use
-`production-vps` for `/healthz`, `/readyz`, and `/api/runtime-config`.
+This update also documents that VPS public app identity checks use `vps` for
+`/healthz` and `production-vps` for `/readyz` and `/api/runtime-config`.
 
 ## Validation Evidence
 
