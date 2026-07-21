@@ -111,13 +111,35 @@ Expected infra validation:
 - `python3 ansible/tests/validate_ci_cost_controls.py`
 - `git diff --check`
 
-After the infra PR merges, run the controlled promotion path and compare the
-`Phase timing` table against recent production promotion runs. Exercise or
-simulate the Vercel dispatch-not-found path through the offline guardrail when a
-live missing-dispatch run is not safe to create intentionally.
+Live post-merge verification for infra PR
+[#349](https://github.com/ramideltoro/nutsnews-infra/pull/349):
+
+- Controlled promotion run
+  [`29865957345`](https://github.com/ramideltoro/nutsnews-infra/actions/runs/29865957345)
+  completed successfully on merge commit
+  `a4fbaa903ad52000ef56c67fda762599cc12d0c6`.
+- Protected apply child run
+  [`29865990999`](https://github.com/ramideltoro/nutsnews-infra/actions/runs/29865990999)
+  completed successfully.
+- Vercel production child run
+  [`29866488209`](https://github.com/ramideltoro/nutsnews/actions/runs/29866488209)
+  completed successfully.
+- No protected rollback run was dispatched because Vercel succeeded.
+- The controlled promotion job took 9m30s. Because the manifest already matched
+  the release, the GitOps PR check-and-merge phase was skipped.
+- Comparable prior full promotion run
+  [`29862610589`](https://github.com/ramideltoro/nutsnews-infra/actions/runs/29862610589)
+  took about 12m20s including GitOps PR check-and-merge.
+- In the controlled run, protected apply ran from `20:29:43Z` to `20:36:34Z`
+  and Vercel dispatch/deploy ran from `20:36:34Z` to `20:38:48Z`.
+
+The Vercel dispatch-not-found path is covered by the offline guardrail because
+creating an intentional live missing-dispatch production run would exercise the
+failure path against production release automation.
 
 ## Related Work
 
 - `ramideltoro/nutsnews-infra` issue `#335`
+- `ramideltoro/nutsnews-infra` PR `#349`
 - `ramideltoro/nutsnews-infra` workflow
   `.github/workflows/nutsnews-release-promotion.yml`
