@@ -41,6 +41,13 @@ Before the production VPS can change, infra verifies:
    promotes, and verifies the same source commit only after the VPS apply
    succeeds.
 
+Infra promotion locates the Vercel production workflow by workflow file,
+repository dispatch event, branch, dispatch timestamp, and the app source
+commit. A missing Vercel run is an orchestration failure, not proof that the
+deployed artifact is bad. Automated VPS rollback may start only after the
+located Vercel run is rechecked and confirmed completed with a non-success
+conclusion for that same source commit.
+
 If the production Supabase schema is behind, promotion fails and points the
 operator to `ramideltoro/nutsnews/.github/workflows/production-supabase-migration.yml`.
 The production promotion workflow does not auto-migrate production.
@@ -99,6 +106,10 @@ production deployment with no custom-domain assignment, resolves the Vercel
 deployment ID, runs the safe web smoke suite against the staged URL, promotes
 that deployment through Vercel only after the staged smoke passes, and then
 verifies the public aliases.
+
+The infra promotion wait is keyed to the Vercel workflow run's source commit
+instead of a mutable run title. This avoids treating a successful Vercel
+deployment as "not found" when the app workflow run-name changes.
 
 The Vercel production workflow still pulls the Vercel Production environment
 for the build, but it rewrites only runner-control names that can make `vercel
@@ -223,7 +234,7 @@ sequenceDiagram
 | GitOps promotion PR | `nutsnews-release-promotion.yml` | Manifest PR checks pass and PR merges to infra `main` | Protected apply is not dispatched |
 | Protected eligibility | `protected-ansible-apply.yml` | No-secret verifier accepts the merged manifest and complete release bundle before `production-vps` secrets | Production secrets and SSH remain unavailable |
 | Production apply | `protected-ansible-apply.yml` | Ansible applies the reviewed digest and post-apply Docker/health/smoke checks match | Workflow fails; use fixed rollback only if production mutated |
-| Vercel Production | `vercel-production-release.yml` dispatched by infra after VPS apply | The local prebuilt build rewrites shell-sensitive pulled env names to runner-safe control values; Vercel production is deployed with `--skip-domain`; the staged URL passes safe smoke; the Vercel deployment ID is promoted through Vercel; `www.nutsnews.com` and `nutsnews.com` report the same source commit and `vercel-production` target | Coupled release fails after VPS apply; Vercel failure is reported separately from VPS failure; fix the Vercel blocker or use protected rollback if needed |
+| Vercel Production | `vercel-production-release.yml` dispatched by infra after VPS apply | The local prebuilt build rewrites shell-sensitive pulled env names to runner-safe control values; Vercel production is deployed with `--skip-domain`; the staged URL passes safe smoke; the Vercel deployment ID is promoted through Vercel; `www.nutsnews.com` and `nutsnews.com` report the same source commit and `vercel-production` target | Coupled release fails after VPS apply; a missing workflow run fails promotion without rollback; a located completed non-success run may trigger protected rollback after rechecking the run belongs to the same source commit |
 | Fixed rollback | `protected-nutsnews-rollback.yml` | Only the recorded last-known-good digest is selected from reviewed manifest history | Arbitrary digest, tag, SSH, or DB down migration is rejected |
 
 ## Article Translation Release Gate
