@@ -114,6 +114,21 @@ The live job runs every 6 hours by default.
 
 A failed scheduled run is the alert. GitHub will surface the failing workflow, annotations, and the uploaded report artifact.
 
+After the VPS-primary cutover, the repository variables should keep the live
+job pointed at the public production URL:
+
+```text
+NUTSNEWS_CACHE_OBSERVABILITY_URL=https://www.nutsnews.com
+NUTSNEWS_PRIMARY_PRODUCTION_URL=https://www.nutsnews.com/
+NUTSNEWS_VPS_PRODUCTION_DIRECT_URL=https://vps.nutsnews.com/
+NUTSNEWS_VERCEL_SECONDARY_PRODUCTION_URLS=https://nutsnews.vercel.app/
+```
+
+Do not point the scheduled cache observability job at the direct VPS hostname
+or the Vercel secondary hostname during normal operations. Those targets are
+useful for diagnosis, but the alert should represent the reader-visible
+Cloudflare production entrypoint.
+
 ---
 
 ## Admin dashboard
@@ -204,9 +219,29 @@ Look for:
 * Static icon policy: `public-static-asset-cache-immutable`.
 * No public route with `Cache-Control: no-store`.
 
-On production behind Cloudflare, also look for `cf-cache-status` samples. A first request can be `MISS`; repeated requests should eventually show `HIT` for cacheable routes.
+On production behind Cloudflare, also look for `cf-cache-status` samples. A first request can be `MISS`; repeated requests should eventually show `HIT` for cacheable routes that Cloudflare can cache. Dynamic routes may legitimately report `DYNAMIC`; treat the workflow report and route policy markers as the source of truth.
 
-Production deploys keep the longer cache fresh through the **Purge Cloudflare Cache After Production Deploy** workflow. After the protected production path reports a successful release, the workflow purges the Cloudflare zone cache so changed pages, article data, and header policy changes are not left behind for the full edge TTL. For cache/header changes, confirm that purge workflow completed, then rerun the curl checks and cache observability audit against the VPS-primary entrypoint.
+Production deploys do not automatically purge the Cloudflare zone. The manual
+operator recovery path is **Manual Cloudflare Production Cache Purge**:
+
+```text
+.github/workflows/cloudflare-production-cache-purge.yml
+confirmation=purge-production-cache
+dry_run=false
+```
+
+Use it after a production release only when stale edge content or a cache/header
+policy change needs immediate correction. Then rerun the curl checks and the
+cache observability audit against `https://www.nutsnews.com`.
+
+Post-cutover evidence from issue #398:
+
+| Check | Result |
+| --- | --- |
+| Manual purge | `ramideltoro/nutsnews` run `29887566515` passed |
+| Live cache observability | `ramideltoro/nutsnews` run `29887610632` passed |
+| Previously stale sitemap shard | `https://www.nutsnews.com/articles/sitemap/0.xml` returned HTTP `200` after purge |
+| Source/build under test | `521fcababfbaff54785c6b5cf5995dc7f9cf62a1`, build `29885890520-1` |
 
 ---
 
