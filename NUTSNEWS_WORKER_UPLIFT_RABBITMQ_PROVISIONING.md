@@ -1,7 +1,7 @@
 # NutsNews Worker-Uplift RabbitMQ Provisioning
 
-Status: implementation target for `ramideltoro/nutsnews-worker#80` and
-`ramideltoro/nutsnews-worker#81`.
+Status: implementation target for `ramideltoro/nutsnews-worker#80`,
+`ramideltoro/nutsnews-worker#81`, and `ramideltoro/nutsnews-worker#82`.
 
 Canonical backend runbook:
 
@@ -9,10 +9,11 @@ Canonical backend runbook:
 ramideltoro/nutsnews-backend/runbooks/WORKER_UPLIFT_RABBITMQ_PROVISIONING.md
 ```
 
-Backend validator:
+Backend validators:
 
 ```bash
 python3 scripts/validate_worker_uplift_rabbitmq_provisioning.py
+python3 scripts/validate_worker_uplift_rabbitmq_network_security.py
 ```
 
 ## Scope
@@ -21,9 +22,11 @@ python3 scripts/validate_worker_uplift_rabbitmq_provisioning.py
 broker used by the worker-uplift pipeline. The implementation is an Ansible role
 included by the protected backend bootstrap playbook. It installs Docker and
 Docker Compose packages, writes a pinned RabbitMQ Compose service, keeps broker
-listeners on loopback, stores broker data under backend-owned persistent host
-paths, and bootstraps the worker-uplift vhost, exchanges, queues, retry tiers,
-DLQs, users, permissions, and policies from source control.
+listeners on loopback, keeps AMQP `5672`, management `15672`, and Prometheus
+`15692` closed to the public Internet, stores broker data under backend-owned
+persistent host paths, and bootstraps the worker-uplift vhost, exchanges,
+queues, retry tiers, DLQs, users, permissions, and policies from source
+control.
 
 The legacy Cloudflare Worker remains unchanged. This broker is only the
 transport layer for the backend-owned worker-uplift runtime.
@@ -55,6 +58,9 @@ Service user credentials are written to `/etc/nutsnews-rabbitmq/topology.env`;
 that file is root-only and is not mounted into the RabbitMQ container. Secrets
 must not appear in workflow output, command-line arguments, committed files, or
 uploaded artifacts.
+The default `guest` user is deleted, anonymous management API access is denied,
+and service identity credentials are distinct from one another and from the
+break-glass admin credential.
 
 ## Topology Bootstrap
 
@@ -82,6 +88,29 @@ The broker runs from a pinned `rabbitmq@sha256:...` image, uses host-backed
 persistent data, and exposes AMQP, management, and Prometheus ports only on
 `127.0.0.1`.
 
+The backend role installs and runs:
+
+```text
+/usr/local/sbin/nutsnews-rabbitmq-network-check
+```
+
+The read-only network check verifies loopback host listeners, loopback Docker
+published ports, private Docker network attachment for colocated service
+containers, UFW default-deny posture with no RabbitMQ public allow rules,
+loopback AMQP/management/Prometheus reachability, RabbitMQ Prometheus metrics
+for local Grafana Alloy scraping, anonymous management denial, `guest` user
+absence, credential separation by env key name, and TLS boundary posture.
+
+TLS is not required while all broker traffic stays inside the host or
+Docker-private trust boundary. Any future RabbitMQ path crossing a host trust
+boundary must add TLS listeners, certificate rotation, and a read-only
+certificate-expiry check before that path is approved.
+
+External RabbitMQ scan attempts against `65.75.201.18` ports `5672`, `15672`,
+and `15692` must be refused or time out. The protected backend deployment safety
+postcheck performs this scan from the GitHub runner and fails if any of those
+ports is open.
+
 The broker data mount is `/var/lib/nutsnews/rabbitmq`. The backend role repairs
 that tree recursively to the RabbitMQ container UID/GID before runtime probes,
 which protects queue writes after restores, partial applies, or ownership drift.
@@ -106,6 +135,30 @@ After any approved host restart, operators should also verify:
 - `nutsnews-rabbitmq.service` is active.
 - RabbitMQ health is green in the protected workflow postcheck or maintenance
   report.
+- RabbitMQ network security and public exposure checks are green in the
+  protected workflow postcheck.
+
+## Management Access
+
+The RabbitMQ management UI is tunnel-only. Approved operators use:
+
+```bash
+ssh -N -L 15672:127.0.0.1:15672 -i ~/.ssh/servercheap_65_75_201_18 rami@65.75.201.18
+```
+
+Then open `http://127.0.0.1:15672` and authenticate with the protected
+break-glass admin values from the `production-backend` environment.
+
+Emergency revocation is a privileged host operation:
+
+```bash
+sudo -n docker exec nutsnews-rabbitmq rabbitmqctl clear_permissions -p nutsnews-worker-uplift <username>
+sudo -n docker exec nutsnews-rabbitmq rabbitmqctl delete_user <username>
+```
+
+After revocation, rotate the affected protected secret, run the backend
+protected apply, and confirm topology permission and network security checks are
+green.
 
 ## Rollback
 
