@@ -9,7 +9,7 @@ The backend repo now owns a repeatable way to create and verify the GitHub Envir
 Use this flow for:
 
 - Cloudflare DNS/API access;
-- Grafana Cloud metrics, Loki, dashboards, and alert provisioning;
+- Grafana Cloud metrics and Loki telemetry writes;
 - Supabase production project metadata and credentials;
 - restic backup provider credentials;
 - email/reporting provider credentials;
@@ -82,14 +82,14 @@ Cloudflare:
 
 Grafana Cloud:
 
-- `GRAFANA_URL`
-- `GRAFANA_SERVICE_ACCOUNT_TOKEN`
 - `GRAFANA_CLOUD_PROMETHEUS_URL`
 - `GRAFANA_CLOUD_PROMETHEUS_USERNAME`
 - `GRAFANA_CLOUD_PROMETHEUS_PASSWORD`
 - `GRAFANA_CLOUD_LOKI_URL`
 - `GRAFANA_CLOUD_LOKI_USERNAME`
 - `GRAFANA_CLOUD_LOKI_PASSWORD`
+
+These backend Grafana values are telemetry write credentials only. Grafana folders, dashboards, alert rules, contact points, quota guardrails, Synthetic Monitoring, OpenTofu state, and Grafana service-account credentials are owned by `ramideltoro/nutsnews-infra`, not this backend environment.
 
 Supabase:
 
@@ -158,7 +158,8 @@ GitHub requires `production-backend` Environment approval before the workflow ca
 The repo can manage names, placement, and readiness checks. Provider dashboards or account-level token values are still manual:
 
 - create the scoped Cloudflare token for the `nutsnews.com` zone;
-- create Grafana Cloud service account or access-policy tokens;
+- create Grafana Cloud metrics/logs access-policy tokens for backend telemetry writes only;
+- manage Grafana Cloud service-account/resource-management credentials from `ramideltoro/nutsnews-infra`;
 - create or retrieve Supabase production project metadata, API keys, and database URL;
 - create the restic repository and object-storage credentials;
 - create SMTP/reporting credentials;

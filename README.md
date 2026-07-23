@@ -42,7 +42,7 @@ This folder is organized by what you are trying to do: understand the product, c
 | Configure the protected staging hostname and credential boundary | [VPS Staging Access and Credential Boundary](NUTSNEWS_VPS_STAGING_ACCESS_BOUNDARY.md) |
 | Understand the VPS operations portal | [Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md) |
 | Set up or restore encrypted VPS backups | [VPS Backups](NUTSNEWS_VPS_BACKUPS.md); [VPS Restore](NUTSNEWS_VPS_RESTORE.md); [VPS Disaster Recovery](NUTSNEWS_VPS_DISASTER_RECOVERY.md) |
-| Set up VPS Grafana Cloud observability | [Grafana Cloud Observability](NUTSNEWS_GRAFANA_CLOUD_OBSERVABILITY.md) |
+| Set up Grafana Cloud observability | [Grafana Cloud Observability](NUTSNEWS_GRAFANA_CLOUD_OBSERVABILITY.md) |
 | Ship a change | [Deployment Checklist](DEPLOYMENT_CHECKLIST.md) |
 | Understand the current end-to-end release pipeline | [Release Pipeline](NUTSNEWS_RELEASE_PIPELINE.md) |
 | Write or review production release notes | [Release Notes Workflow](RELEASE_NOTES_WORKFLOW.md) |
@@ -100,7 +100,7 @@ These docs explain the product and the system at a high level.
 | [VPS Maintenance](NUTSNEWS_VPS_MAINTENANCE.md) | Protected package maintenance, reboot approval, post-reboot validation, and failure handling |
 | [VPS Restore](NUTSNEWS_VPS_RESTORE.md) | Restoring encrypted VPS snapshots to staging, copying selected data/config, and restore testing |
 | [VPS Disaster Recovery](NUTSNEWS_VPS_DISASTER_RECOVERY.md) | Rebuilding on another VPS provider, restoring data, verifying, cutting over DNS, and rollback |
-| [Grafana Cloud Observability](NUTSNEWS_GRAFANA_CLOUD_OBSERVABILITY.md) | Grafana Alloy on the VPS, OpenTofu-managed dashboards/alerts, Synthetic Monitoring, and free-tier guardrails |
+| [Grafana Cloud Observability](NUTSNEWS_GRAFANA_CLOUD_OBSERVABILITY.md) | Grafana Alloy telemetry, centralized OpenTofu-managed dashboards/alerts, Synthetic Monitoring, backend imports, and free-tier guardrails |
 | [Troubleshooting](TROUBLESHOOTING.md) | Common failures, checks, and recovery steps |
 
 ### 2. Product and Reader Experience

@@ -1,17 +1,19 @@
 # NutsNews Grafana Cloud Observability
 
-This explains the Grafana Cloud observability layer for the NutsNews VPS: Alloy on the host, Grafana-managed dashboards and alerts, low-frequency Synthetic Monitoring, and free-tier guardrails.
+This explains the Grafana Cloud observability layer for NutsNews hosts: Alloy on hosts, Grafana-managed dashboards and alerts, low-frequency Synthetic Monitoring, and free-tier guardrails.
 
 ## Easy Summary
 
-The VPS now has a planned Grafana Cloud observability path that stays GitOps-managed.
+NutsNews has a planned Grafana Cloud observability path that stays GitOps-managed.
 
 There are two halves:
 
 1. `ramideltoro/nutsnews-infra` installs and configures Grafana Alloy on the VPS through the protected Ansible workflow.
-2. The same infra repo manages Grafana Cloud folders, dashboards, quota alerts, and optional Synthetic Monitoring checks through OpenTofu.
+2. The same infra repo manages Grafana Cloud folders, dashboards, alert rules, quota alerts, backend imports, and optional Synthetic Monitoring checks through OpenTofu.
 
 The VPS side is read-only. Alloy collects host metrics, systemd state, selected service logs, auth/security logs with redaction, Caddy JSON access/error logs, Docker/Compose logs for NutsNews runtime containers, backup/reporting logs, Ops Portal logs, and a small set of NutsNews status metrics derived from the existing read-only Ops Portal JSON. Docker/cAdvisor container metrics stay disabled by default because the previous container metrics path tried to reach `containerd.sock` and produced permission errors.
+
+The backend host is also a telemetry producer. `ramideltoro/nutsnews-backend` keeps only backend Prometheus remote_write and Loki push credentials for its host collector. Its existing `NutsNews Backend Ops` dashboards and `NutsNews Backend Guardrails` alert group are imported and managed from `ramideltoro/nutsnews-infra`; backend direct Grafana provisioning is retired after import plus live query/alert verification passes.
 
 This does not add a shell button, restart button, package installer, portal mutation path, or broad workflow command runner. Production changes still go through commits, PRs, checks, merge, and protected apply.
 
@@ -21,10 +23,10 @@ The rollout has separate credentials for separate jobs:
 
 | Credential type | Used by | Purpose |
 | --- | --- | --- |
-| Grafana Cloud Access Policy token | Ansible-managed Alloy on the VPS | Write telemetry to Grafana Cloud metrics and logs |
+| Grafana Cloud Access Policy token | Ansible-managed Alloy on each producing host | Write telemetry to Grafana Cloud metrics and logs |
 | Grafana service account token | OpenTofu in GitHub Actions | Manage folders, dashboards, alert rules, and Synthetic Monitoring checks |
 
-Do not reuse the service account token for telemetry writes. Do not commit Grafana URLs, usernames, tokens, tenant IDs, backend config, Synthetic Monitoring targets, or tfvars.
+Grafana management/service-account credentials stay only in `ramideltoro/nutsnews-infra`. Do not reuse the service account token for telemetry writes. Do not commit Grafana URLs, usernames, tokens, tenant IDs, backend config, Synthetic Monitoring targets, or tfvars.
 
 The high-level flow:
 
@@ -33,9 +35,11 @@ flowchart LR
   pr["Infra PR"] --> ci["CI validation"]
   ci --> merge["Merge to main"]
   merge --> tofu["Protected Grafana Cloud OpenTofu apply"]
-  tofu --> grafana["Folders, dashboards,\nquota alerts, synthetics"]
+  tofu --> grafana["Folders, dashboards,\nalerts, quota guardrails,\nbackend imports, synthetics"]
   merge --> ansible["Protected Ansible apply"]
   ansible --> alloy["Grafana Alloy on VPS"]
+  backend["Backend host Alloy"] --> metrics
+  backend --> logs
   alloy --> metrics["Grafana Cloud Metrics"]
   alloy --> logs["Grafana Cloud Logs"]
   metrics --> dashboards["NutsNews Observability dashboards"]
@@ -146,7 +150,14 @@ This is a practical observability feed, not a copy of every byte the server has 
 
 ## Grafana Assets Managed As Code
 
-OpenTofu manages a `NutsNews Observability` folder and these dashboards:
+OpenTofu manages these Grafana folders and resource addresses:
+
+| Scope | Host | Folder UID | OpenTofu address | Owner |
+| --- | --- | --- | --- | --- |
+| VPS observability | `vps.nutsnews.com` | `nutsnews-observability` | `grafana_folder.observability` | `ramideltoro/nutsnews-infra` |
+| Backend observability | `backend.nutsnews.com` | `nutsnews-backend-ops` | `grafana_folder.backend_observability` | `ramideltoro/nutsnews-infra` |
+
+The `NutsNews Observability` VPS folder contains:
 
 - NutsNews VPS Overview
 - NutsNews Logs Overview
@@ -163,7 +174,24 @@ OpenTofu manages a `NutsNews Observability` folder and these dashboards:
 - NutsNews Synthetic Uptime API Checks
 - NutsNews Grafana Cloud Usage Quota
 
+The imported `NutsNews Backend Ops` folder contains:
+
+- NutsNews Backend Host Overview
+- NutsNews Backend Docker and Runtime
+- NutsNews Backend Caddy and Edge
+- NutsNews Backend Service Health
+- NutsNews Backend Backups
+- NutsNews Backend PostgreSQL Failover
+- NutsNews Backend OS Updates
+- NutsNews Backend Metrics Quota
+- NutsNews Backend Alert and Synthetic Health
+- NutsNews Backend Logs
+
+Backend dashboards use `grafana_dashboard.backend_observability["<dashboard_uid>"]`, and backend alert rules are owned as a single Grafana rule group at `grafana_rule_group.backend_guardrails`. The import IDs are the existing backend UIDs, not new names, so OpenTofu can adopt live resources without duplicate UIDs.
+
 OpenTofu also manages quota alert rules at roughly 70%, 85%, and 95% for configured Grafana Cloud usage guardrails, including log ingest and active-stream pressure. A separate log-pipeline rule group alerts on Alloy Loki dropped entries, Alloy Loki write retries, and high error log volume. Loki-backed alert queries declare the range query type explicitly so repeated plans stay convergent after apply. Contact points are not created in code because they often contain secrets. Instead, alert labels can route into existing Grafana notification policies.
+
+Do not remove existing backend Grafana resources until import and query/alert verification pass. The protected apply workflow uploads a `grafana-cloud-post-apply-verification` report after checking folders, dashboards, backend alert rules, Prometheus query data, and Loki query data.
 
 ## Synthetic Monitoring
 
@@ -215,14 +243,17 @@ Grafana states that the free tier and trial are limited to 500 VUh per month. Ke
 
 1. Add Grafana Cloud OpenTofu state backend config to the protected `production-vps` Environment.
 2. Add the Grafana service account token and datasource UIDs to the same protected Environment.
-3. Run `Grafana Cloud Plan`.
+3. Run `Grafana Cloud Plan` and review both the normal plan and refresh-only drift check.
 4. Merge the infra PR after checks pass.
 5. Run `Grafana Cloud Apply` from `main` with `confirm_apply=grafana-cloud`.
-6. Add Alloy telemetry write secrets to `production-vps`.
-7. Run `Protected Ansible Apply` in check mode with `enable_grafana_alloy=true`.
-8. Review the package, config, systemd, and Alloy validation diff.
-9. Run apply mode with `confirm_apply=vps.nutsnews.com` and `enable_grafana_alloy=true`.
-10. Verify metrics, logs, dashboards, alerts, and usage/quota panels in Grafana Cloud.
+6. Review the `grafana-cloud-post-apply-verification` artifact.
+7. Add Alloy telemetry write secrets to `production-vps`.
+8. Keep backend telemetry write secrets in `ramideltoro/nutsnews-backend`; do not store backend Grafana service-account credentials there after the handoff.
+9. Retire backend direct provisioning only after backend import and query/alert verification pass.
+10. Run `Protected Ansible Apply` in check mode with `enable_grafana_alloy=true`.
+11. Review the package, config, systemd, and Alloy validation diff.
+12. Run apply mode with `confirm_apply=vps.nutsnews.com` and `enable_grafana_alloy=true`.
+13. Verify metrics, logs, dashboards, alerts, and usage/quota panels in Grafana Cloud.
 
 After apply, also verify the host-side Alloy state:
 
@@ -275,7 +306,7 @@ Use Loki Explore after apply:
 
 ## Required Environment Secrets
 
-All of these live in `ramideltoro/nutsnews-infra` under Settings -> Environments -> `production-vps`.
+Infra-owned Grafana management secrets live in `ramideltoro/nutsnews-infra` under Settings -> Environments -> `production-vps`.
 
 Telemetry write secrets:
 
@@ -286,6 +317,8 @@ Telemetry write secrets:
 | `NUTSNEWS_GRAFANA_CLOUD_LOGS_URL` | Grafana Cloud logs push endpoint |
 | `NUTSNEWS_GRAFANA_CLOUD_LOGS_USERNAME` | Grafana Cloud logs username |
 | `NUTSNEWS_GRAFANA_CLOUD_ACCESS_POLICY_TOKEN` | Access Policy token for telemetry writes |
+
+These VPS telemetry write values are infra-scoped because `nutsnews-infra` manages the VPS Alloy deployment. Backend telemetry write values remain in `ramideltoro/nutsnews-backend` under `production-backend` with the backend names `GRAFANA_CLOUD_PROMETHEUS_URL`, `GRAFANA_CLOUD_PROMETHEUS_USERNAME`, `GRAFANA_CLOUD_PROMETHEUS_PASSWORD`, `GRAFANA_CLOUD_LOKI_URL`, `GRAFANA_CLOUD_LOKI_USERNAME`, and `GRAFANA_CLOUD_LOKI_PASSWORD`.
 
 OpenTofu automation secrets:
 
