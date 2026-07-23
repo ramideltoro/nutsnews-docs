@@ -356,8 +356,14 @@ Grafana provisioning path:
 - The managed folder is `NutsNews Backend Ops` with UID `nutsnews-backend-ops`.
 - Managed dashboards cover host resources, Docker/runtime state, Caddy/edge health, service health, backups, OS updates, metrics quota guardrails, and alert/synthetic health.
 - Worker-uplift RabbitMQ dashboards from `ramideltoro/nutsnews-worker#89` are
-  `NutsNews Worker-Uplift RabbitMQ Overview`, `NutsNews Worker-Uplift Queue
-  Drilldown`, and `NutsNews Worker-Uplift RabbitMQ Resources`.
+  `NutsNews Worker-Uplift RabbitMQ Overview`
+  (`nutsnews-worker-uplift-rabbitmq-overview`),
+  `NutsNews Worker-Uplift Queue Drilldown`
+  (`nutsnews-worker-uplift-rabbitmq-queues`), and
+  `NutsNews Worker-Uplift RabbitMQ Resources`
+  (`nutsnews-worker-uplift-rmq-resources`). Protected Grafana Cloud apply run
+  `30042593274` verified the dashboards, RabbitMQ Prometheus queries, and
+  RabbitMQ Loki log query.
 
 Operator verification:
 

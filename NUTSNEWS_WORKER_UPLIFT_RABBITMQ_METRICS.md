@@ -71,8 +71,11 @@ Issue `ramideltoro/nutsnews-worker#89` provisions the RabbitMQ dashboards from
 module. The dashboards are source-created in the `NutsNews Backend Ops` folder:
 
 - `NutsNews Worker-Uplift RabbitMQ Overview`
+  (`nutsnews-worker-uplift-rabbitmq-overview`)
 - `NutsNews Worker-Uplift Queue Drilldown`
+  (`nutsnews-worker-uplift-rabbitmq-queues`)
 - `NutsNews Worker-Uplift RabbitMQ Resources`
+  (`nutsnews-worker-uplift-rmq-resources`)
 
 The dashboards use bounded `environment`, `host`, `vhost`, `stage`, `queue`,
 and `service` variables. The `queue` variable lists every declared main queue,
@@ -80,6 +83,13 @@ retry queue, and DLQ, so operators can select any of the 35 worker-uplift queues
 without editing PromQL. Queue and service panels link to filtered Loki Explore
 views for the approved worker-uplift container log labels. Trace links are
 absent because traces remain deferred by the #144 telemetry policy.
+
+Protected Grafana Cloud apply run `30042593274` completed the #89 dashboard
+provisioning after infra PR #390 shortened the resources dashboard UID to meet
+Grafana's 40-character dashboard UID limit. The post-apply verification report
+returned `status=pass`, `dashboard_count=27`, `backend_alert_count=11`,
+RabbitMQ Prometheus query `result_count=35` for queue metrics, and RabbitMQ
+Loki log query `result_count=1`.
 
 ## Proof Workflow
 
