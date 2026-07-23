@@ -65,8 +65,9 @@ For host-restart proof, use `ramideltoro/nutsnews-backend` workflow
 `Backend Controlled Maintenance` with `action=reboot` and
 `confirm_target=backend.nutsnews.com`. When RabbitMQ is healthy before reboot,
 the protected workflow publishes a durable probe message, reboots the backend
-host, then verifies and deletes that message after SSH returns. The result is
-recorded in the `backend-controlled-maintenance-report` artifact.
+host, waits for SSH to return with a changed boot ID, then verifies and deletes
+that message. The result is recorded in the
+`backend-controlled-maintenance-report` artifact.
 
 After any approved host restart, operators should also verify:
 

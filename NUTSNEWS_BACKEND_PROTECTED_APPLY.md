@@ -88,7 +88,7 @@ Allowed controlled-maintenance actions:
 - `precheck`: read-only collection of maintenance state.
 - `security-upgrade`: runs only the unattended security-upgrade path.
 - `reboot`: runs only the controlled reboot path, then verifies reconnect and
-  post-boot state.
+  changed boot ID before post-boot state.
 
 The workflow has no arbitrary command input. Mutating actions require
 `confirm_target=backend.nutsnews.com` and the protected `production-backend`
