@@ -59,8 +59,13 @@ Worker database compatibility API inputs:
 | --- | --- | --- |
 | `NUTSNEWS_BACKEND_WORKER_API_ENABLED` | Environment variable | Enables the Caddy `/api/worker/db/*` route and loopback worker API service. Keep `false` until the route is intentionally provisioned. |
 | `NUTSNEWS_BACKEND_WORKER_API_WRITES_ENABLED` | Environment variable | Allows backend-primary worker writes. Keep `false` for shadow validation and rollback readiness. |
+| `NUTSNEWS_BACKEND_WORKER_UPLIFT_SCOPED_TOKENS_ENABLED` | Environment variable | Enables distinct persistence and publication bearer tokens for worker-uplift scoped commands. |
+| `NUTSNEWS_WORKER_UPLIFT_CUTOVER_STATE` | Environment variable | Worker-uplift write cutover state. Valid values are `shadow` and `cutover-approved`; protected apply defaults to `shadow`. |
+| `NUTSNEWS_WORKER_UPLIFT_PRODUCTION_WRITES_ENABLED` | Environment variable | Enables worker-uplift production writes only when the cutover state is `cutover-approved` and the Worker API write guard is also enabled. |
 | `NUTSNEWS_BACKEND_API_TOKEN` | Environment secret | Bearer token used by the worker compatibility API. Store only in the protected `production-backend` Environment and rotate if exposed. |
 | `NUTSNEWS_BACKEND_POSTGRES_WORKER_API_PASSWORD` | Environment secret | Password for the dedicated `nutsnews_worker_api` Postgres role used by shadow reads. Rotate separately from app, migration, and generic readonly credentials. |
+| `NUTSNEWS_BACKEND_WORKER_UPLIFT_PERSISTENCE_TOKEN` | Environment secret | Optional scoped token for worker-uplift persistence commands; required only when scoped tokens are enabled. |
+| `NUTSNEWS_BACKEND_WORKER_UPLIFT_PUBLICATION_TOKEN` | Environment secret | Optional scoped token for worker-uplift publication commands; required only when scoped tokens are enabled. |
 
 Prefer a dedicated automation user with key-based SSH and reviewed sudo behavior. If a sudo password is temporarily used, rotate it after the automation user exists.
 

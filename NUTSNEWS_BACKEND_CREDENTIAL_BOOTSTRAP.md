@@ -57,6 +57,9 @@ The bootstrap helper sets these GitHub Environment variables:
 | `NUTSNEWS_BACKEND_DOMAIN` | `backend.nutsnews.com` |
 | `NUTSNEWS_BACKEND_ENVIRONMENT` | `production` |
 | `NUTSNEWS_BACKEND_RESTIC_PROVIDER` | `s3` |
+| `NUTSNEWS_BACKEND_WORKER_UPLIFT_SCOPED_TOKENS_ENABLED` | `false` |
+| `NUTSNEWS_WORKER_UPLIFT_CUTOVER_STATE` | `shadow` |
+| `NUTSNEWS_WORKER_UPLIFT_PRODUCTION_WRITES_ENABLED` | `false` |
 | `NUTSNEWS_REPORT_SMTP_PORT` | `587` |
 | `NUTSNEWS_REPORT_SMTP_STARTTLS` | `true` |
 
@@ -112,6 +115,8 @@ Backend Worker database compatibility API:
 
 - `NUTSNEWS_BACKEND_API_TOKEN`
 - `NUTSNEWS_BACKEND_POSTGRES_WORKER_API_PASSWORD`
+- optional until scoped rollout: `NUTSNEWS_BACKEND_WORKER_UPLIFT_PERSISTENCE_TOKEN`
+- optional until scoped rollout: `NUTSNEWS_BACKEND_WORKER_UPLIFT_PUBLICATION_TOKEN`
 
 Restic:
 

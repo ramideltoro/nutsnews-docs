@@ -34,6 +34,46 @@ The runtime is shadow-first:
 - service manifests start empty until later service issues provide approved
   digest images and service-specific definitions.
 
+## Scoped Worker API Commands
+
+The backend Worker DB API remains the write boundary for uplift services.
+Scoped commands are available only on `/api/worker/db/*`; scoped tokens are not
+accepted on `/api/app/db/*` and cannot call unrelated legacy Worker commands.
+
+Protected apply keeps scoped credentials disabled until rollout:
+
+- `NUTSNEWS_BACKEND_WORKER_UPLIFT_SCOPED_TOKENS_ENABLED=false` keeps
+  persistence/publication tokens optional.
+- `NUTSNEWS_BACKEND_WORKER_UPLIFT_PERSISTENCE_TOKEN` can call persistence
+  commands such as accepted articles, summaries, reviews, feed health, AI usage,
+  worker run, and `uplift-record-shadow-aggregate`.
+- `NUTSNEWS_BACKEND_WORKER_UPLIFT_PUBLICATION_TOKEN` can call publication
+  commands such as `uplift-publish-articles-batch`,
+  `uplift-refresh-public-feed-snapshot`, and `uplift-save-worker-run`.
+- Scoped token values must be distinct from each other and from
+  `NUTSNEWS_BACKEND_API_TOKEN`.
+
+Every mutating scoped command must include an idempotency key, message ID,
+correlation ID, pipeline run ID, stage execution ID, source message ID, actor
+service, schema version, operation version, and expected article version.
+Shadow mode records command receipts in
+`worker_uplift_final.api_command_receipts`; `uplift-record-shadow-aggregate`
+may also upsert `worker_uplift_final.article_shadow_aggregates`. Shadow scoped
+commands must not update `public.articles` visibility or refresh the live public
+feed snapshot.
+
+Production scoped commands require all cutover gates:
+
+- `providerMode=backend_postgres_primary`;
+- `NUTSNEWS_WORKER_UPLIFT_CUTOVER_STATE=cutover-approved`;
+- `NUTSNEWS_WORKER_UPLIFT_PRODUCTION_WRITES_ENABLED=true`;
+- the existing Worker API write guard enabled.
+
+Duplicate requests with the same idempotency key and payload digest return the
+recorded response. Reusing an idempotency key with a different payload returns a
+conflict. Do not enable production-write scope while legacy ingestion is still
+the production owner.
+
 ## Runtime Guardrails
 
 The backend runtime manager validates service manifests before operations. It
