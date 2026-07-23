@@ -1,6 +1,7 @@
 # NutsNews Worker-Uplift RabbitMQ Provisioning
 
-Status: implementation target for `ramideltoro/nutsnews-worker#80`.
+Status: implementation target for `ramideltoro/nutsnews-worker#80` and
+`ramideltoro/nutsnews-worker#81`.
 
 Canonical backend runbook:
 
@@ -20,8 +21,9 @@ python3 scripts/validate_worker_uplift_rabbitmq_provisioning.py
 broker used by the worker-uplift pipeline. The implementation is an Ansible role
 included by the protected backend bootstrap playbook. It installs Docker and
 Docker Compose packages, writes a pinned RabbitMQ Compose service, keeps broker
-listeners on loopback, and stores broker data under backend-owned persistent
-host paths.
+listeners on loopback, stores broker data under backend-owned persistent host
+paths, and bootstraps the worker-uplift vhost, exchanges, queues, retry tiers,
+DLQs, users, permissions, and policies from source control.
 
 The legacy Cloudflare Worker remains unchanged. This broker is only the
 transport layer for the backend-owned worker-uplift runtime.
@@ -41,9 +43,38 @@ Required protected values:
 | `RABBITMQ_BREAK_GLASS_ADMIN_USERNAME` | variable | Break-glass admin identity name |
 | `RABBITMQ_ERLANG_COOKIE` | secret | RabbitMQ node cookie |
 | `RABBITMQ_BREAK_GLASS_ADMIN_PASSWORD` | secret | Break-glass admin password |
+| `RABBITMQ_MONITORING_USERNAME` | variable | Monitoring/canary identity name |
+| `RABBITMQ_MONITORING_PASSWORD` | secret | Monitoring/canary password |
+| `RABBITMQ_*_CONSUMER_USERNAME` / `RABBITMQ_*_PUBLISHER_USERNAME` | variables | Route-scoped service identity names |
+| `RABBITMQ_*_CONSUMER_PASSWORD` / `RABBITMQ_*_PUBLISHER_PASSWORD` | secrets | Route-scoped service passwords |
 
-Secrets must not appear in workflow output, command-line arguments, committed
-files, or uploaded artifacts.
+The exact route identity names are tracked in
+`ramideltoro/nutsnews-backend/docs/worker-uplift-runtime-identities.json`.
+Break-glass admin credentials are written to the root-owned Compose env file.
+Service user credentials are written to `/etc/nutsnews-rabbitmq/topology.env`;
+that file is root-only and is not mounted into the RabbitMQ container. Secrets
+must not appear in workflow output, command-line arguments, committed files, or
+uploaded artifacts.
+
+## Topology Bootstrap
+
+The backend role renders the reviewed non-secret topology definition from:
+
+```text
+ansible/roles/backend_rabbitmq/templates/worker-uplift-topology.json.j2
+```
+
+It installs `/usr/local/sbin/nutsnews-rabbitmq-topology` and runs:
+
+- `bootstrap` to create missing vhost resources, users, permissions, bindings,
+  policies, and to delete the default `guest` user.
+- `check` as a read-only topology and policy drift detector.
+- `permissions` to prove route-scoped users can only access declared resources.
+- `probe-transfers` to verify retry/DLQ routing for every route while queues are
+  empty; it refuses to run on non-empty stage queues.
+
+The bootstrap is non-destructive. Immutable queue argument drift is reported for
+operator review instead of deleting queues.
 
 ## Persistence And Verification
 
@@ -80,9 +111,9 @@ After any approved host restart, operators should also verify:
 
 Rollback is controlled by the backend runbook. Disable the RabbitMQ role for a
 protected apply to stop the managed service, then restore the previous known-good
-backend configuration or data snapshot if a broker config or persistence change
-caused the incident. Do not remove RabbitMQ data until stage outbox and
-reconciliation state have been reviewed.
+backend configuration or data snapshot if a broker config, topology, permission,
+or persistence change caused the incident. Do not remove RabbitMQ data until
+stage outbox and reconciliation state have been reviewed.
 
 ## Related Docs
 
