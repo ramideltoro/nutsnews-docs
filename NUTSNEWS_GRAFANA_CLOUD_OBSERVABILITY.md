@@ -211,7 +211,7 @@ Backend dashboards use `grafana_dashboard.backend_observability["<dashboard_uid>
 
 OpenTofu also manages quota alert rules at roughly 70%, 85%, and 95% for live Grafana Cloud usage/limit ratios, including metrics active series, log active streams, log ingestion rate, and trace ingestion rate. A separate log-pipeline rule group alerts on Alloy Loki dropped entries, Alloy Loki write retries, and high error log volume. Loki-backed alert queries declare the range query type explicitly so repeated plans stay convergent after apply. Contact points are not created in code because they often contain secrets. Instead, alert labels can route into existing Grafana notification policies.
 
-Do not remove existing backend Grafana resources until import and query/alert verification pass. The protected apply workflow uploads a `grafana-cloud-post-apply-verification` report after checking folders, dashboards, backend alert rules, Prometheus query data, and Loki query data.
+Do not remove existing backend Grafana resources until import and query/alert verification pass. The protected apply workflow uploads a `grafana-cloud-post-apply-verification` report after checking folders, dashboards, backend alert rules, Prometheus query data, and backend host/source Loki query data. Grafana Cloud Apply run `29985024771` showed the source-managed backend journal selector had live Loki data while the older namespace-only VPS sample did not, so infra PR `#385` aligned the required post-apply Loki gate with `{host="backend.nutsnews.com"}` and `{host="backend.nutsnews.com",source="journal"}`.
 
 ## Synthetic Monitoring
 
