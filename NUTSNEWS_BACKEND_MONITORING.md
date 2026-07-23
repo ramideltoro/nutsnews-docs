@@ -348,10 +348,16 @@ Host deployment path:
 
 Grafana provisioning path:
 
-- Dashboard specs live in `grafana/backend-metrics/dashboards.json`.
-- `Backend Grafana Metrics` validates, applies, and verifies the Grafana folder and dashboards with `scripts/provision_grafana_metrics.py`.
+- Grafana folders, dashboards, alert rules, Synthetic Monitoring checks, and
+  quota guardrails are managed by `ramideltoro/nutsnews-infra` through the
+  `terraform/grafana-cloud` OpenTofu module.
+- `nutsnews-backend` remains the telemetry producer and keeps only
+  Prometheus/Loki write credentials for backend Alloy.
 - The managed folder is `NutsNews Backend Ops` with UID `nutsnews-backend-ops`.
 - Managed dashboards cover host resources, Docker/runtime state, Caddy/edge health, service health, backups, OS updates, metrics quota guardrails, and alert/synthetic health.
+- Worker-uplift RabbitMQ dashboards from `ramideltoro/nutsnews-worker#89` are
+  `NutsNews Worker-Uplift RabbitMQ Overview`, `NutsNews Worker-Uplift Queue
+  Drilldown`, and `NutsNews Worker-Uplift RabbitMQ Resources`.
 
 Operator verification:
 

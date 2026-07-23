@@ -1,8 +1,8 @@
 # NutsNews Worker-Uplift RabbitMQ Metrics
 
-Status: backend collection path implemented for `ramideltoro/nutsnews-worker#87`
-on 2026-07-23; Grafana Cloud freshness proof remains blocked because the
-available telemetry credentials return HTTP 401 for Prometheus queries.
+Status: backend collection path completed for `ramideltoro/nutsnews-worker#87`
+on 2026-07-23. Grafana Cloud Prometheus freshness proof passed after the
+metrics token received `metrics:read`.
 
 Canonical backend runbook:
 
@@ -64,6 +64,23 @@ RabbitMQ metric names, keeps only declared queue names, and does not create or
 change Grafana dashboards, folders, alerts, contact points, synthetics, or
 quota guardrails.
 
+## Grafana Dashboards
+
+Issue `ramideltoro/nutsnews-worker#89` provisions the RabbitMQ dashboards from
+`ramideltoro/nutsnews-infra` through the centralized Grafana Cloud OpenTofu
+module. The dashboards are source-created in the `NutsNews Backend Ops` folder:
+
+- `NutsNews Worker-Uplift RabbitMQ Overview`
+- `NutsNews Worker-Uplift Queue Drilldown`
+- `NutsNews Worker-Uplift RabbitMQ Resources`
+
+The dashboards use bounded `environment`, `host`, `vhost`, `stage`, `queue`,
+and `service` variables. The `queue` variable lists every declared main queue,
+retry queue, and DLQ, so operators can select any of the 35 worker-uplift queues
+without editing PromQL. Queue and service panels link to filtered Loki Explore
+views for the approved worker-uplift container log labels. Trace links are
+absent because traces remain deferred by the #144 telemetry policy.
+
 ## Proof Workflow
 
 Use the backend `Backend RabbitMQ Metrics Check` workflow after protected apply:
@@ -106,7 +123,7 @@ Production proof:
 | --- | --- |
 | Protected apply with RabbitMQ Alloy metrics | <https://github.com/ramideltoro/nutsnews-backend/actions/runs/30016460292> |
 | Backend RabbitMQ Metrics Check without Grafana freshness requirement | <https://github.com/ramideltoro/nutsnews-backend/actions/runs/30017736851> |
-| Backend RabbitMQ Metrics Check with Grafana freshness requirement | Blocked: telemetry credentials return HTTP 401 for Prometheus query |
+| Backend RabbitMQ Metrics Check with Grafana freshness requirement | <https://github.com/ramideltoro/nutsnews-backend/actions/runs/30038565700> |
 | Backend drift check after metrics apply | <https://github.com/ramideltoro/nutsnews-backend/actions/runs/30017885344> |
 | Backend health report after metrics apply | <https://github.com/ramideltoro/nutsnews-backend/actions/runs/30017885364> |
 
@@ -118,13 +135,13 @@ rabbitmq_detailed_endpoint=healthy
 rabbitmq_prometheus_listener=healthy
 alloy_service=healthy
 alloy_config=healthy
-grafana_rabbitmq_query=not_configured
+grafana_rabbitmq_query=healthy
 ```
 
-The optional Grafana query result was:
+The Grafana Cloud Prometheus query result was:
 
 ```text
-optional Grafana query did not pass: Grafana query failed: HTTP 401
+result_count=1
 ```
 
 The first protected apply for the metrics change failed before issue closeout:
