@@ -56,6 +56,66 @@ The future-primary shadow database used for production-shadow migration gates is
 nutsnews_primary_shadow
 ```
 
+## Supabase Hot Standby Target Readiness
+
+Related issue: https://github.com/ramideltoro/nutsnews/issues/496
+Related app PR: https://github.com/ramideltoro/nutsnews/pull/507
+
+### Simple Summary
+
+NutsNews is adding a second Supabase project as a locked backup place. The live app and worker do not use it yet. A protected GitHub button checks that the backup project's private keys and database doorway exist without showing the keys.
+
+### Intermediate Summary
+
+Issue #496 introduces the app-repo `Supabase Standby Credential Readiness` workflow. It is manual-only, requires the typed confirmation `verify-supabase-standby-readiness`, and enters the protected `supabase-standby` GitHub Environment before reading any standby values. The default policy is a fresh Supabase project, not the existing production project. The readiness check validates the standby project URL, project ref, direct Postgres URL, service-role key, and anon key, then uses `psql` in a read-only transaction to prove direct database connectivity. Normal production app and worker workflows still cannot read the standby service-role key or DB URL, so standby writes remain unavailable until a later approved relay or failover path exists.
+
+### Expert Summary
+
+The standby credential inventory is stored as `supabase-standby` Environment secrets in `ramideltoro/nutsnews`: `NUTSNEWS_STANDBY_SUPABASE_PROJECT_REF`, `NUTSNEWS_STANDBY_SUPABASE_URL`, `NUTSNEWS_STANDBY_SUPABASE_DB_URL`, `NUTSNEWS_STANDBY_SUPABASE_SERVICE_ROLE_KEY`, and `NUTSNEWS_STANDBY_SUPABASE_ANON_KEY`. The local validator rejects non-`fresh-project` policy, malformed project refs, a standby ref that equals `NUTSNEWS_PRODUCTION_SUPABASE_PROJECT_REF`, non-HTTPS project URLs, pooler DB URLs, DB URLs missing `sslmode=require`, missing DB credentials, and identical service-role/anon values. The workflow prints only shape metadata and boolean direct-DB connectivity output; raw URLs, database users, passwords, API keys, and row data are not printed. App-repo regression coverage also scans workflows so no workflow other than `supabase-standby-readiness.yml` reads standby write credentials before a protected failover path is implemented.
+
+```mermaid
+flowchart TD
+    A[Operator starts Supabase Standby Credential Readiness] --> B[Typed confirmation preflight]
+    B --> C[Enter protected supabase-standby Environment]
+    C --> D[Validate standby project policy and protected inventory]
+    D --> E[Open direct Postgres URL with psql]
+    E --> F[Run read-only boolean metadata query]
+    F --> G[Step summary with safe metadata only]
+    H[Normal app and worker workflows] -. cannot read standby secrets .-> C
+```
+
+Required setup:
+
+| Protected value | Scope | Purpose |
+| --- | --- | --- |
+| `NUTSNEWS_STANDBY_SUPABASE_PROJECT_REF` | `supabase-standby` Environment secret | Fresh standby Supabase project ref. Must be different from production. |
+| `NUTSNEWS_STANDBY_SUPABASE_URL` | `supabase-standby` Environment secret | Standby HTTPS API URL for future failover and parity checks. |
+| `NUTSNEWS_STANDBY_SUPABASE_DB_URL` | `supabase-standby` Environment secret | Direct Postgres URL for protected `psql` checks and future controlled sync/bootstrap work. |
+| `NUTSNEWS_STANDBY_SUPABASE_SERVICE_ROLE_KEY` | `supabase-standby` Environment secret | Elevated standby API credential for later protected relay/failover work only. |
+| `NUTSNEWS_STANDBY_SUPABASE_ANON_KEY` | `supabase-standby` Environment secret | Low-privilege standby API credential retained in the protected environment until failover approval. |
+
+Operational notes:
+
+- The standby project should be newly created for the hot-standby path. Reusing production or staging is rejected by policy.
+- Direct database readiness uses the `db.<project-ref>.supabase.co:5432/postgres?sslmode=require` form, not Supavisor pooler URLs.
+- The workflow is a readiness gate only. It does not migrate schema, copy data, install a sync relay, promote Supabase, or expose standby credentials to the production app or worker.
+- If the workflow fails on missing secrets, populate the protected `supabase-standby` Environment and rerun it. Do not paste values into issues, PRs, docs, or chat.
+
+Risks and mitigations:
+
+| Risk | Mitigation |
+| --- | --- |
+| Standby credentials accidentally become app or worker runtime inputs before failover | The app-repo regression scans workflow secret usage and allows standby secret reads only in `supabase-standby-readiness.yml` for this phase. |
+| A pooler URL passes as direct database readiness | The validator requires the direct `db.<project-ref>.supabase.co` host and TLS. |
+| The standby project is actually the production project | The validator compares the standby ref against `NUTSNEWS_PRODUCTION_SUPABASE_PROJECT_REF` and rejects equality. |
+| Readiness output leaks credentials | The workflow summary records only safe metadata and boolean DB connectivity results. |
+
+Rollback:
+
+- Revert the app PR that added `supabase-standby-readiness.yml` and its regression guard if the readiness path is incorrect.
+- Leave the `supabase-standby` Environment and secrets in place unless the owner explicitly approves removal; issue #223 says Supabase standby credentials and sync resources must not be removed by cleanup work without a separate decision.
+- If a standby credential is wrong or over-scoped, rotate it in Supabase, update the protected GitHub Environment secret, and rerun the readiness workflow.
+
 ## Worker Compatibility API
 
 Backend issue `ramideltoro/nutsnews-backend#242` owns the backend worker
