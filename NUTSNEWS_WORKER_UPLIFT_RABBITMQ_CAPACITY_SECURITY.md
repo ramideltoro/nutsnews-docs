@@ -49,7 +49,9 @@ Read-only measurement of `backend.nutsnews.com` on 2026-07-23 showed:
 | Backups | backup, verify, and restore-drill timers observed |
 | Firewall/listeners | public TCP limited to `22`, `80`, and `443`; RabbitMQ is not exposed |
 
-This approval does not provision Docker or RabbitMQ on the backend host.
+This approval does not by itself provision Docker or RabbitMQ on the backend
+host. The later protected provisioning path is tracked separately in
+[Worker-Uplift RabbitMQ Provisioning](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_PROVISIONING.md).
 
 ## Queue Envelope
 
@@ -118,8 +120,8 @@ RabbitMQ image in GitHub Actions and compares durable classic queues with
 single-replica quorum queues across the expected 35-queue shape.
 
 The production backend host is intentionally not benchmarked for this issue
-because no broker is provisioned there. The benchmark must pass before a later
-RabbitMQ bootstrap apply.
+because no broker was provisioned there for issue #79. The benchmark must pass
+before a later RabbitMQ bootstrap apply.
 
 ## Migration Trigger
 
