@@ -36,6 +36,8 @@ The generated report includes:
 - reboot-required and package-update state;
 - SSH, UFW, fail2ban, Docker, Caddy, PostgreSQL, Alloy, and sysstat service states;
 - backup tool presence such as restic/rclone;
+- RabbitMQ broker health, drift status, and last smoke status when probe
+  evidence exists;
 - RabbitMQ recovery evidence when
   `/var/lib/nutsnews/rabbitmq-recovery/last-*.json` files exist;
 - cleanup last-run status when `/var/lib/nutsnews/cleanup/last-cleanup.json`
@@ -51,9 +53,11 @@ Backend services that are intentionally absent, such as Docker or PostgreSQL in
 the current phase, appear as `not_configured` rather than failed production
 services.
 
-For the worker-uplift broker, RabbitMQ recovery checks report definition export,
-clean rebuild drill, and stopped-volume restore drill freshness without exposing
-raw definitions, password hashes, broker data, or credential files.
+For the worker-uplift broker, RabbitMQ checks report broker health, drift
+status, last smoke status, definition export, clean rebuild drill, and
+stopped-volume restore drill freshness without exposing raw definitions,
+password hashes, broker data, or credential files. The health report reads
+existing RabbitMQ evidence; it does not run smoke probes or restart the broker.
 
 ## Required Secrets
 

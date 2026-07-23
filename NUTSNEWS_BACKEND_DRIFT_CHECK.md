@@ -33,6 +33,9 @@ The workflow runs only fixed read-only SSH probes. It checks:
 - passwordless sudo readiness for protected apply;
 - effective SSH authentication policy where readable;
 - Docker, Caddy, backend service, PostgreSQL, and Redis/Valkey presence;
+- RabbitMQ broker health, image identity, managed config checksums, topology,
+  permissions metadata, listeners, backup freshness, and last smoke status when
+  RabbitMQ is enabled;
 - swap and reboot-required state;
 - UFW status when readable;
 - managed baseline file presence.
@@ -78,3 +81,6 @@ The missing entries were the known protected-apply blocker and not-yet-applied b
 The drift workflow is read-only, so it has no server rollback step.
 
 If it finds drift, reconcile through a backend PR and the protected backend apply workflow. Do not patch live drift manually over SSH except for documented break-glass recovery.
+
+RabbitMQ-specific drift, smoke, and protected operation details are tracked in
+[Worker-Uplift RabbitMQ Operations](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_OPERATIONS.md).

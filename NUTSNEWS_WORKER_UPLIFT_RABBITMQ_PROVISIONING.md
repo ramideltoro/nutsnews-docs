@@ -2,7 +2,9 @@
 
 Status: implementation target for `ramideltoro/nutsnews-worker#80`,
 `ramideltoro/nutsnews-worker#81`, `ramideltoro/nutsnews-worker#82`, and
-`ramideltoro/nutsnews-worker#83`.
+`ramideltoro/nutsnews-worker#83`. Protected RabbitMQ operations, drift, smoke,
+and health-report integration are tracked in
+[Worker-Uplift RabbitMQ Operations](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_OPERATIONS.md).
 
 Canonical backend runbook:
 
@@ -186,6 +188,7 @@ stage outbox and reconciliation state have been reviewed.
 ## Related Docs
 
 - [Worker-Uplift RabbitMQ Capacity And Security](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_CAPACITY_SECURITY.md)
+- [Worker-Uplift RabbitMQ Operations](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_OPERATIONS.md)
 - [Worker-Uplift RabbitMQ Recovery](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_RECOVERY.md)
 - [Worker-Uplift Operation Map](NUTSNEWS_WORKER_UPLIFT_OPERATION_MAP.md)
 - [Backend Protected Apply](NUTSNEWS_BACKEND_PROTECTED_APPLY.md)
