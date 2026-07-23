@@ -51,6 +51,12 @@ The broker runs from a pinned `rabbitmq@sha256:...` image, uses host-backed
 persistent data, and exposes AMQP, management, and Prometheus ports only on
 `127.0.0.1`.
 
+The broker data mount is `/var/lib/nutsnews/rabbitmq`. The backend role repairs
+that tree recursively to the RabbitMQ container UID/GID before runtime probes,
+which protects queue writes after restores, partial applies, or ownership drift.
+Root-run probe state is stored outside the broker mount under
+`/var/lib/nutsnews/rabbitmq-probes`.
+
 The backend role includes a root-only durable probe. During apply it publishes a
 persistent test message, restarts the Compose-managed RabbitMQ service, verifies
 the message survives, acknowledges it, and removes the probe queue.
