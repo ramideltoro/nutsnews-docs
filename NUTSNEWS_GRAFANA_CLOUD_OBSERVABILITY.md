@@ -207,7 +207,7 @@ The imported `NutsNews Backend Ops` folder contains:
 - NutsNews Backend Alert and Synthetic Health
 - NutsNews Backend Logs
 
-Backend dashboards use `grafana_dashboard.backend_observability["<dashboard_uid>"]`, and backend alert rules are owned as a single Grafana rule group at `grafana_rule_group.backend_guardrails`. The import IDs are the existing backend UIDs, not new names, so OpenTofu can adopt live resources without duplicate UIDs.
+Backend dashboards use `grafana_dashboard.backend_observability["<dashboard_uid>"]`, and backend alert rules are owned as a single Grafana rule group at `grafana_rule_group.backend_guardrails`. The import IDs are the existing backend UIDs, not new names, so OpenTofu can adopt live resources without duplicate UIDs. If a protected apply proves a catalog dashboard UID is missing remotely, the infra catalog may set `importExisting` to `false` with the apply-run evidence so OpenTofu creates that missing dashboard from source. This is currently used for `nutsnews-backend-postgres-failover` after Grafana Cloud Apply run `29984664724`.
 
 OpenTofu also manages quota alert rules at roughly 70%, 85%, and 95% for live Grafana Cloud usage/limit ratios, including metrics active series, log active streams, log ingestion rate, and trace ingestion rate. A separate log-pipeline rule group alerts on Alloy Loki dropped entries, Alloy Loki write retries, and high error log volume. Loki-backed alert queries declare the range query type explicitly so repeated plans stay convergent after apply. Contact points are not created in code because they often contain secrets. Instead, alert labels can route into existing Grafana notification policies.
 
