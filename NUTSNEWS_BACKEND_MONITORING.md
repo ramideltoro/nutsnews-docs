@@ -200,20 +200,24 @@ Collected sources:
   NutsNews timers, SSH, UFW, fail2ban, unattended-upgrades, and apt timers;
 - `/var/log/auth.log` and `/var/log/fail2ban.log` through the host `adm` group;
 - `/var/log/caddy/access.log`, `/var/log/caddy/error.log`, and
-  `/var/log/nutsnews/*.log` when those files exist.
+  `/var/log/nutsnews/*.log` when those files exist;
+- worker-uplift RabbitMQ and worker service stdout/stderr only when emitted by
+  explicitly allow-listed Docker journald tags.
 
 Alloy remains least-privilege: it runs as the package-managed `alloy` user and
-is added only to `systemd-journal` and `adm` for log reads. Docker/Compose
-container logs are intentionally excluded until backend app containers exist and
-a reviewed socket-free or otherwise least-privilege collection path is added.
+is added only to `systemd-journal` and `adm` for log reads. Generic
+Docker/Compose container logs remain excluded. The worker-uplift exception does
+not use the Docker socket; Alloy reads bounded journald matches for
+`nutsnews-worker-uplift-rabbitmq` and one `nutsnews-worker-uplift-*` tag per
+worker service.
 
 Before logs are shipped, Alloy drops private-key markers and oversized lines,
 redacts authorization headers, cookies, token/password/API-key style values,
-query strings, and email addresses, truncates long lines, and keeps only stable
-labels:
+query strings, and email addresses, drops JSON debug/trace lines, truncates long
+lines, and keeps only stable labels:
 
 ```text
-environment, host, source, service, unit, severity, filename, job
+environment, host, source, service, unit, severity, filename, job, version, queue, outcome
 ```
 
 Grafana objects:

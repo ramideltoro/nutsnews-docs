@@ -113,6 +113,20 @@ Mutating actions require `confirm_target=backend.nutsnews.com` and the
 protected `production-backend` approval gate. Status and check actions are
 expected to pass when no services are configured.
 
+## Runtime Logs
+
+Backend issue `ramideltoro/nutsnews-worker#88` routes worker-uplift runtime
+stdout/stderr through Docker's `journald` logging driver and Grafana Alloy.
+Only the approved RabbitMQ tag and the eight stable worker service tags are
+collected; generic Docker/Compose logs stay out of scope. Loki stream labels
+are limited to the telemetry policy's low-cardinality set, while correlation,
+causation, idempotency, message, and W3C trace context fields remain structured
+log metadata only.
+
+Trace export remains deferred. The backend must not configure Tempo, OTLP
+receivers/exporters, or traces credentials for the worker-uplift runtime until
+a later reviewed approval changes the telemetry scope.
+
 ## Evidence
 
 Backend implementation PRs:

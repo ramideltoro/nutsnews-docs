@@ -153,6 +153,19 @@ Logs:
 - `loki.write` sends to Grafana Cloud Logs;
 - credentials are `NUTSNEWS_GRAFANA_CLOUD_LOGS_URL`, `NUTSNEWS_GRAFANA_CLOUD_LOGS_USERNAME`, and `NUTSNEWS_GRAFANA_CLOUD_ACCESS_POLICY_TOKEN`.
 
+Backend issue `ramideltoro/nutsnews-worker#88` implements the approved log
+scope by collecting only explicitly tagged Docker journald streams on
+`backend.nutsnews.com`. RabbitMQ uses the `nutsnews-worker-uplift-rabbitmq`
+tag. Worker services use one stable tag per service:
+`nutsnews-worker-uplift-scheduler`, `nutsnews-worker-uplift-fetcher`,
+`nutsnews-worker-uplift-canonicalizer`, `nutsnews-worker-uplift-enrichment`,
+`nutsnews-worker-uplift-approval`, `nutsnews-worker-uplift-translation`,
+`nutsnews-worker-uplift-persistence`, and
+`nutsnews-worker-uplift-publication`. Backend verification is through the
+protected `Backend Worker-Uplift Logs Check` workflow, which reports only safe
+metadata: Alloy health, bounded source count, trace export absence, and Loki
+query result counts.
+
 Traces and exemplars:
 
 - no Tempo, OTLP, traces, or exemplar write credentials are approved now;
