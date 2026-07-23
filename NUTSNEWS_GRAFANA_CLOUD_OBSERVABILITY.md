@@ -1,5 +1,11 @@
 # NutsNews Grafana Cloud Observability
 
+Architecture status: Grafana Cloud resources are centralized in
+`ramideltoro/nutsnews-infra`. Backend and VPS hosts are telemetry producers;
+they do not own Grafana resource provisioning. The same boundary is reflected
+in [Architecture](ARCHITECTURE.md) and
+[Worker-Uplift Operation Map](NUTSNEWS_WORKER_UPLIFT_OPERATION_MAP.md).
+
 This explains the Grafana Cloud observability layer for NutsNews hosts: Alloy on hosts, Grafana-managed dashboards and alerts, low-frequency Synthetic Monitoring, and free-tier guardrails.
 
 ## Easy Summary

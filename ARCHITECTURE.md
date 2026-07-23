@@ -1,403 +1,226 @@
 # Architecture
 
-NutsNews uses a modular serverless architecture. Each part of the system has a focused responsibility.
+This is the current NutsNews architecture and the approved worker-uplift target
+as of 2026-07-23. The uplift is approved for implementation, not production
+cutover.
 
----
+## Source Of Truth
 
-## High-Level Flow
+| Area | Source |
+| --- | --- |
+| Worker-uplift ADR | `ramideltoro/nutsnews-backend/docs/worker-uplift-architecture-adr.json` |
+| Operation owner map | [Worker-Uplift Operation Map](NUTSNEWS_WORKER_UPLIFT_OPERATION_MAP.md) |
+| Backend database and cutover gates | [Backend PostgreSQL Failover](NUTSNEWS_BACKEND_POSTGRES_FAILOVER.md) |
+| Public feed and edge fallback | [Public Feed Snapshot](PUBLIC_FEED_SNAPSHOT.md) |
+| Grafana Cloud ownership | [Grafana Cloud Observability](NUTSNEWS_GRAFANA_CLOUD_OBSERVABILITY.md) |
+| Legacy controller/shard operation | [Controller and Shards](CONTROLLER_AND_SHARDS.md) |
 
-```text
-RSS Sources
-  ↓
-Cloudflare Worker Shards
-  ↓
-Local Filtering
-  ↓
-AI Review Provider
-  ├── OpenAI
-  └── Oracle Local AI Service → Ollama/qwen
-  ↓
-Supabase Postgres
-  ↓
-Public Feed Snapshot
-  ↓
-Next.js Website on Vercel
-  ↓
-Cloudflare CDN
-  ↓
-Reader
+Do not copy secret values, production payloads, provider IDs, database URLs, or
+token fragments into architecture docs. Link to the owning repo, workflow,
+runbook, or value-free evidence file instead.
+
+## Current Production Flow
+
+Supabase remains the production write source until a separate protected cutover
+is approved and executed. The backend PostgreSQL primary path, Worker DB API,
+and app DB API exist for shadow validation and future primary cutover, but the
+uplift pipeline is not production yet.
+
+```mermaid
+flowchart TD
+  rss["RSS sources"] --> controller["Cloudflare controller Worker\nlegacy ingestion scheduler"]
+  controller --> shards["Cloudflare Worker shards\nlegacy refresh path"]
+  shards --> filters["Local filters, backpressure,\nRedis/lock controls"]
+  filters --> qwen["Oracle local AI service\nOllama/Qwen path"]
+  filters --> openai["OpenAI fallback path\nwhen enabled"]
+  qwen --> reviews["AI review decisions"]
+  openai --> reviews
+  reviews --> supabase["Supabase Postgres\ncurrent production writer"]
+  supabase --> snapshot["public_feed_snapshot\nmaterialized public projection"]
+  snapshot --> web["Next.js web and admin app\nVercel primary"]
+  web --> reader["Readers"]
+  web --> admin["Admin projections\narticles, shards, feed health,\nAI usage, feeds"]
+  shards --> edge["Cloudflare KV public snapshot\nlast-known-good fallback"]
+  edge --> web
 ```
 
-The public production site remains on Vercel. Issue
-[nutsnews-infra #67](https://github.com/ramideltoro/nutsnews-infra/issues/67)
-also prepares a second artifact from the same application commit: GitHub
-Actions builds an OCI image in `ramideltoro/nutsnews`, and
-`ramideltoro/nutsnews-infra` promotes its immutable digest to the VPS. This is
-one codebase with two platform-native artifacts, not two application forks.
+Current responsibilities:
+
+- Cloudflare Worker shards and the controller still run the legacy ingestion
+  path until cutover retirement.
+- The local AI/Qwen path is still part of the legacy Worker review flow and is
+  copied into the approved target as the approval-stage local model path.
+- Supabase stores current public articles, review history, feed health, Worker
+  runs, AI usage, runtime flags, public snapshot rows, and admin projections.
+- Cloudflare KV stores only bounded public-feed fallback payloads.
+- `backend.nutsnews.com` hosts the protected backend platform, PostgreSQL
+  shadow/primary target, Worker DB API, app DB API, backups, host telemetry, and
+  future worker-uplift runtime controls.
+- Public apex/www DNS failover is separate from ingestion and belongs to
+  `ramideltoro/nutsnews-infra`.
+
+## Approved Target Flow
+
+The target breaks the monolithic Worker refresh into source-controlled stages
+connected by RabbitMQ and backend PostgreSQL stage state.
 
 ```mermaid
 flowchart LR
-  commit["One nutsnews commit"] --> vercel["Vercel native build\nprimary nutsnews.com"]
-  commit --> image["GitHub Actions\nproduction OCI image"]
-  image --> ghcr["GHCR immutable digest"]
-  ghcr --> infra["nutsnews-infra\nreviewed promotion"]
-  infra --> vps["VPS Compose behind Caddy\nprepared, disabled"]
+  scheduler["scheduler\nfeed cadence and shard leases"] --> q1["RabbitMQ\nscheduler_to_fetcher"]
+  q1 --> fetcher["fetcher\nRSS/Atom fetch and feed health"]
+  fetcher --> q2["fetcher_to_canonicalizer"]
+  q2 --> canonicalizer["canonicalizer\nURL normalization and dedupe"]
+  canonicalizer --> q3["canonicalizer_to_enrichment"]
+  q3 --> enrichment["enrichment\narticle metadata and images"]
+  enrichment --> q4["enrichment_to_approval"]
+  q4 --> approval["approval\nlocal filters and Qwen review"]
+  approval --> q5["approval_to_translation"]
+  q5 --> translation["translation\nsummary coverage and quality"]
+  translation --> q6["translation_to_persistence"]
+  q6 --> persistence["persistence\nidempotent backend API writes"]
+  persistence --> q7["persistence_to_publication"]
+  q7 --> publication["publication\ntranslation gate and snapshot refresh"]
+  publication --> api["Backend Worker DB API\n/api/worker/db/*"]
+  api --> pg["Backend PostgreSQL\nfuture primary after cutover"]
+  pg --> publicSnapshot["public_feed_snapshot"]
+  publicSnapshot --> web["Next.js web/admin"]
 ```
 
-See [Dual-Target Web Deployment](NUTSNEWS_DUAL_TARGET_WEB_DEPLOYMENT.md) for
-the environment boundary, build identity, staged gate, public opt-in, and
-rollback rules.
+Stage source repositories are listed in
+`ramideltoro/nutsnews-backend/docs/worker-uplift-architecture-adr.json`. The
+backend repo owns the host runtime, credentials, protected workflows, database
+schemas, broker topology, queue/DLQ operations, smoke, health, reconciliation,
+and cutover gates.
 
----
+## Message And Data Ownership
 
-## Operations Flow
+RabbitMQ is durable transport and backpressure, not the only copy of work.
+Backend PostgreSQL stage schemas are authoritative for inbox, outbox, attempts,
+watermarks, reconciliation, and cutover proof.
 
-```text
-Supabase Review Data
-Worker Activity
-Worker Run Records
-AI Usage Metrics
-Shard Health Metrics
-Feed Health Metrics
-Operational Signals
-  ↓
-Private Admin Portal
-  ↓
-Admin Dashboards
-  ↓
-Operator Visibility
+```mermaid
+flowchart TD
+  message["Bounded RabbitMQ message\nid-only payload"] --> inbox["Stage inbox row"]
+  inbox --> work["Stage work reads source state\nand writes stage state"]
+  work --> outbox["Stage outbox row"]
+  outbox --> confirm["RabbitMQ publisher confirm"]
+  confirm --> ack["Manual ack after state commit\nand downstream publish confirm"]
+  work --> error{"Retryable error?"}
+  error -->|yes| retry["Retry exchange\nbounded attempts"]
+  error -->|no or attempts exhausted| dlq["Route DLQ\nsanitized failure metadata"]
+  dlq --> operator["Fixed backend replay/repair operation"]
+  operator --> replay["Replay from stage outbox\nwith idempotency keys"]
+  replay --> message
 ```
 
----
+The target model is at-least-once. Every stage must be idempotent by
+`message_id` plus natural domain keys. Poison messages go to route DLQs after a
+bounded number of attempts. Replay is explicit, source-controlled, and recorded
+through backend-owned operations.
 
-## Observability Flow
+Messages must stay bounded. They carry identifiers, route metadata, attempt
+counts, schema versions, and hashes. They must not carry article bodies, full
+prompts, provider responses, secrets, credentials, bearer tokens, or raw
+production payloads.
 
-```text
-Next.js App
-Cloudflare Worker Shards
-Controller Worker
-  ↓
-Structured Logs
-  ↓
-Better Stack Telemetry
-  ↓
-Search by service, level, event, shard, duration, status
+## Shadow Mode And Cutover
+
+Shadow mode compares the backend path while keeping production writes on
+Supabase. Final backend-primary writes are allowed only after protected cutover
+gates pass.
+
+```mermaid
+flowchart TD
+  legacy["Legacy Cloudflare Worker ingestion"] --> supabase["Supabase primary\ncurrent writer"]
+  uplift["Worker-uplift stages"] --> shadow["backend_postgres_shadow\nread/compare only"]
+  shadow --> api["Backend Worker DB API"]
+  api --> backendShadow["backend PostgreSQL shadow"]
+  supabase --> readers["Readers and admin projections"]
+  backendShadow --> proof["Parity, smoke, backup,\nwatermark, and rollback proof"]
+  proof --> gate{"Protected cutover approved?"}
+  gate -->|no| keep["Keep Supabase primary\nlegacy rollback path intact"]
+  gate -->|yes| pause["Pause app and worker writers"]
+  pause --> verify["Verify no-new-write watermarks"]
+  verify --> primary["backend_postgres_primary\nfinal backend API writes"]
+  primary --> backendPg["Backend PostgreSQL primary"]
+  backendPg --> readers
+  failover["DNS failover controller\ninfra-owned"] -. separate .-> readers
 ```
 
-Application errors are monitored through:
+Rollback before cutover is explicit: keep or return the app and Worker provider
+mode to `supabase_primary`. After backend PostgreSQL accepts authoritative
+writes beyond a verified Supabase sync point, rollback is limited to the
+documented rollback window; otherwise recovery is forward from backend
+PostgreSQL backups, stage outbox, and reconciliation evidence.
 
-```text
-Frontend Errors
-Server Errors
-Worker Errors
-  ↓
-Sentry
+DNS failover is not ingestion. It is a separate infra-owned Cloudflare DNS
+controller for public apex/www routing and must remain visible in cutover
+diagrams as separate from Worker or backend data processing.
+
+## Observability And Operations
+
+```mermaid
+flowchart LR
+  backend["backend.nutsnews.com\nhost and uplift runtime"] --> alloy["Backend Alloy\ntelemetry producer"]
+  vps["NutsNews VPS"] --> infraAlloy["VPS Alloy\ntelemetry producer"]
+  alloy --> metrics["Grafana Cloud Metrics"]
+  alloy --> logs["Grafana Cloud Logs"]
+  infraAlloy --> metrics
+  infraAlloy --> logs
+  infra["nutsnews-infra\nOpenTofu"] --> grafana["Grafana folders,\ndashboards, alerts,\nsynthetics, quotas"]
+  metrics --> grafana
+  logs --> grafana
+  backend --> health["Backend Health Report\nDrift Check\nOps Dashboard"]
+  health --> operator["Operator runbooks"]
 ```
 
----
-
-## Core Components
-
-### `web`
-
-The public website and admin portal.
-
-Its source remains in `ramideltoro/nutsnews/web`. Vercel builds that directory
-directly, while the application repository also owns the production
-Dockerfile and GHCR publishing workflow. The infrastructure repository never
-copies the web source.
-
-It includes:
-
-* Mobile-first public feed
-* Article pages
-* SEO metadata
-* Dynamic Open Graph images
-* CDN-friendly public routes
-* Google-protected admin portal
-* Admin dashboards
-* Sentry integration
-* Better Stack web logging
-
-Important routes:
-
-```text
-/
-/api/articles
-/articles/[id]
-/admin
-/admin/articles
-/admin/ai-usage
-/admin/local-ai
-/admin/shards
-/admin/feed-health
-/admin/feeds
-/admin/login
-```
-
-### `worker`
-
-The automated ingestion engine.
-
-It fetches RSS feeds, parses articles, applies local filters, calls the configured AI review provider, stores accepted articles, stores rejected review history, saves Worker run records, saves AI usage, saves feed health, and logs structured activity. The configured provider can be OpenAI or the Oracle-hosted local AI service.
-
-### `local-ai-service`
-
-The optional Oracle-hosted AI endpoint.
-
-It exposes:
-
-```text
-GET /health
-POST /review
-```
-
-The service runs on Node, calls Ollama on localhost, and returns the same JSON review shape as the OpenAI path. The Worker protects the endpoint with `x-nutsnews-ai-key` and records the provider/model for each reviewed article.
-
-### `controller`
-
-The orchestration layer.
-
-It triggers Worker shards in a controlled way so every shard does not need to run at once.
-
-### `supabase`
-
-The data layer.
-
-It stores articles, RSS feeds, AI review history, AI usage runs, Worker run records, feed health, admin dashboard data, and the materialized public feed snapshot. Cloudflare KV can also hold a bounded last-known-good public feed snapshot for outage fallback.
-
-### `docs`
-
-The GitHub documentation layer.
-
-The root README stays short. Detailed documentation lives in `docs/`. Operational routines such as deployment, dependency updates, source quality scoring, restore, and troubleshooting are documented here.
-
----
-
-## Repository Structure
-
-```text
-nutsnews/
-├── web/
-│   ├── app/
-│   ├── lib/
-│   ├── public/
-│   ├── next.config.ts
-│   └── package.json
-│
-├── worker/
-│   ├── src/
-│   ├── scripts/
-│   ├── generated-wrangler/
-│   └── package.json
-│
-├── controller/
-│   ├── src/
-│   ├── wrangler.jsonc
-│   └── package.json
-│
-├── local-ai-service/
-│   ├── server.mjs
-│   ├── package.json
-│   └── .env.example
-│
-├── supabase/
-│   └── migrations/
-│
-├── .github/
-│   └── dependabot.yml
-│
-├── docs/
-│   ├── README.md
-│   ├── PROJECT.md
-│   ├── ARCHITECTURE.md
-│   ├── OPERATIONS.md
-│   ├── ADMIN_ARTICLE_REVIEWS.md
-│   ├── PUBLIC_FEED_SNAPSHOT.md
-│   ├── DEPENDENCY_UPDATES.md
-│   ├── PERFORMANCE_AND_RESILIENCY.md
-│   ├── OBSERVABILITY.md
-│   └── TROUBLESHOOTING.md
-│
-├── scripts/
-│   ├── dependency_update_routine.sh
-│   ├── post_deploy_verify.sh
-│   └── validate_cloudflare_cache_hit_rate.sh
-├── README.md
-└── LICENSE
-```
-
-
----
-
-## Dependency Maintenance
-
-NutsNews has a repeatable dependency update routine for the web app, Worker shards, and controller Worker.
-
-The routine is implemented in:
-
-```text
-scripts/dependency_update_routine.sh
-```
-
-The runbook is documented in:
-
-```text
-docs/DEPENDENCY_UPDATES.md
-```
-
-The process covers:
-
-* `npm outdated --long`
-* `npm audit --audit-level=moderate`
-* Safe patch/minor updates with `npm update --save`
-* Web lint and build validation
-* Worker Wrangler config generation
-* Worker TypeScript validation
-* Dependabot weekly npm checks for `web/`, `worker/`, and `controller/`
-
-Major upgrades are intentionally kept out of the normal routine and should be handled as separate issues.
-
----
-
-## Data Model Summary
-
-### Admin article review dashboard
-
-Route:
-
-```text
-/admin/articles
-```
-
-The dashboard reads `public.article_ai_reviews`, joins matching published records from `public.articles` by `original_url`, and sorts reviews by `reviewed_at`. Operators can filter by decision, source, category, and positivity score to investigate accepted and rejected story decisions.
-
-
-
-### `public_feed_snapshot`
-
-Materialized Supabase view used by the homepage and `/api/articles` as the first-read optimized public feed source.
-
-It contains only published, image-backed article card fields and a precomputed `snapshot_rank`.
-
-The Worker refreshes it by calling:
-
-```text
-public.refresh_public_feed_snapshot()
-```
-
-The web app falls back to `public.articles` if the Supabase snapshot is unavailable. If both Supabase read paths fail, `/api/articles` can serve the Cloudflare KV edge snapshot through the Worker fallback endpoint.
-
-### `articles`
-
-Stores the stories shown on the public website.
-
-Important fields:
-
-* `id`
-* `source`
-* `title`
-* `original_url`
-* `image_url`
-* `published_at`
-* `published_on_site_at`
-* `ai_summary`
-* `category`
-* `positivity_score`
-* `status`
-
-### `article_ai_reviews`
-
-Stores AI or local-filter decisions for each reviewed article.
-
-This prevents the same story from being reviewed repeatedly.
-
-Important fields:
-
-* `original_url`
-* `decision`
-* `category`
-* `positivity_score`
-* `summary`
-* `reason`
-* `reviewed_at`
-
-### `rss_feeds`
-
-Stores RSS feed configuration.
-
-This allows feeds to be added, disabled, or prioritized without changing core Worker code.
-
-Important fields:
-
-* `source`
-* `url`
-* `is_positive_source`
-* `is_active`
-
-### `ai_usage_runs`
-
-Stores run-level OpenAI usage metrics.
-
-Powers `/admin/ai-usage`.
-
-### `worker_runs`
-
-Stores successful and failed Worker executions.
-
-Powers `/admin/shards`.
-
-### `feed_health`
-
-Stores source-level health and operational metrics such as fetch success, failures, image coverage, accepted output, and rejected output.
-
-Powers `/admin/feed-health` and contributes to `/admin/feeds`.
-
-### `feed_quality_scores`
-
-Computed Supabase view that ranks RSS feeds from 0 to 100 using success rate, thumbnail rate, accepted rate, failure rate, and duplicate/already-seen rate.
-
-Powers source quality badges and rankings in `/admin/feeds`.
-
----
-
-## Tech Stack
-
-### Frontend
-
-| Technology | Purpose |
+Grafana Cloud resources belong to `ramideltoro/nutsnews-infra`. The backend
+repo is a telemetry producer and may validate its historical Grafana catalog,
+but it must not manage Grafana folders, dashboards, datasources, alert rules,
+contact points, Synthetic Monitoring checks, or quota resources.
+
+Backend operations are centralized in `ramideltoro/nutsnews-backend`:
+
+- deploy and runtime bootstrap: `Protected Backend Ansible Apply`;
+- restart and fixed recovery: `Backend Recovery`;
+- status and health: `Backend Health Report`, `Backend Drift Check`, and the
+  read-only Ops Dashboard;
+- logs and metrics: backend Alloy with Prometheus/Loki write credentials only;
+- queue/DLQ/replay/drain/broker/reconciliation: backend-owned fixed workflows
+  as the stage services are implemented;
+- backup/restore/cutover: backend PostgreSQL proof, failover, smoke, and
+  production cutover workflows.
+
+## Repository Ownership
+
+| Repository | Owns |
 | --- | --- |
-| Next.js | Public website, article pages, admin portal, server-rendered dashboards |
-| React | UI rendering |
-| TypeScript | Safer application code |
-| Tailwind CSS | Mobile-first styling |
-| Vercel | Primary frontend/admin hosting and native Git deployment |
-| GHCR | Immutable OCI images built from the same reviewed web commit |
-| VPS + Caddy | Prepared secondary runtime; promotion and routing remain GitOps-controlled and disabled until approved |
+| `ramideltoro/nutsnews` | Next.js public reader/admin app, Vercel deployment, app DB API client, app provider-mode safety |
+| `ramideltoro/nutsnews-backend` | `backend.nutsnews.com`, backend PostgreSQL, Worker/App DB API, RabbitMQ and stage runtime operations, queue/DLQ/replay/drain/broker/reconciliation runbooks, backend credentials, backend telemetry production |
+| Stage service repos | Deployable worker-uplift stage code for scheduler, fetcher, canonicalizer, enrichment, approval, translation, persistence, and publication |
+| `ramideltoro/nutsnews-infra` | VPS platform, public app promotion to VPS, Grafana Cloud resources, DNS failover controller, protected infrastructure workflows |
+| `ramideltoro/nutsnews-worker` | Tracking issues and legacy Cloudflare Worker rollback surface until retirement |
+| `ramideltoro/nutsnews-docs` | Explanatory architecture, operations, release, recovery, and cross-repo documentation |
 
-### Automation
+## Current Data Surfaces
 
-| Technology | Purpose |
-| --- | --- |
-| Cloudflare Workers | RSS ingestion and automation |
-| Worker shards | Split RSS processing across many workers |
-| Controller Worker | Coordinates shard execution |
-| Wrangler | Worker deployment and configuration |
-| Cloudflare Secrets Store | Shared Worker secrets |
+| Surface | Current owner | Target owner |
+| --- | --- | --- |
+| `public.articles` | Supabase primary | Backend PostgreSQL after cutover |
+| `public.article_ai_reviews` | Supabase primary | Backend PostgreSQL after cutover |
+| `public.article_summaries` | Supabase primary | Backend PostgreSQL after cutover |
+| `public.rss_feeds` | Supabase primary | Backend PostgreSQL after cutover |
+| `public.worker_runs` | Supabase primary | Backend PostgreSQL after cutover |
+| `public.feed_health` | Supabase primary | Backend PostgreSQL after cutover |
+| `public.public_feed_snapshot` | Supabase materialized projection | Backend PostgreSQL projection after cutover |
+| Cloudflare KV edge snapshot | Legacy Worker fallback surface | Publication-stage output to Worker/public edge contract after cutover |
+| Worker-uplift stage schemas | Not production | Backend PostgreSQL stage schemas |
+| RabbitMQ queues and DLQs | Not production | Backend host runtime controlled by backend workflows |
 
-### Data
+## Superseded Language
 
-| Technology | Purpose |
-| --- | --- |
-| Supabase | Hosted Postgres database |
-| Postgres | Article, feed, review, and operational data |
-| Supabase REST API | Worker-to-database communication |
-
-### Observability
-
-| Technology | Purpose |
-| --- | --- |
-| Better Stack Uptime | External uptime monitoring |
-| Better Stack Logs | Centralized structured logs |
-| Sentry | Application error monitoring |
-| Admin dashboards | Internal platform health visibility |
+Older docs that say NutsNews is only a modular serverless/Supabase system are
+superseded by this architecture for worker-uplift planning. The legacy
+controller, shard, Worker backpressure, Supabase backup, and public snapshot
+docs remain valid for current production operation and rollback until cutover
+retirement. They are not the target owner map for new worker-uplift deployments.

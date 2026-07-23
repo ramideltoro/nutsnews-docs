@@ -1,5 +1,12 @@
 # Worker Backpressure and Lock Safety
 
+Architecture status: this document describes legacy Cloudflare Worker
+backpressure and lock controls. It remains useful for current production
+operation and rollback, but worker-uplift replaces the monolithic Worker lock
+model with backend-owned RabbitMQ backpressure, stage leases, outbox/watermark
+state, DLQs, and replay operations. See [Architecture](ARCHITECTURE.md) and
+[Worker-Uplift Operation Map](NUTSNEWS_WORKER_UPLIFT_OPERATION_MAP.md).
+
 Issue #93 adds ingestion pressure controls to `ramideltoro/nutsnews-worker` so RSS spikes do not immediately turn into expensive AI calls, translation work, image hydration, or write-heavy Supabase traffic.
 
 ## Simple Summary

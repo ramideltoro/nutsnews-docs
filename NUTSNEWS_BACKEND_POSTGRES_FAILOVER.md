@@ -1,5 +1,11 @@
 # NutsNews Backend PostgreSQL Failover Target
 
+Architecture status: this backend PostgreSQL path is the approved shadow and
+future-primary target, but Supabase remains the production writer until the
+protected cutover workflow is explicitly approved and executed. Worker-uplift
+target ownership and coexistence are summarized in
+[Architecture](ARCHITECTURE.md).
+
 ## Simple Summary
 
 NutsNews now has a private backup database place on the backend server. It is not used by the live app yet. It lets us practice restoring safe staging data before anyone tries a real production database move.

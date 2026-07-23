@@ -1,5 +1,14 @@
 # Controller and Shard Operations
 
+Architecture status: this document describes the current legacy Cloudflare
+controller and shard ingestion path. It remains valid for production operation
+and rollback until worker-uplift cutover retirement, but it is not the target
+owner map for new worker-uplift deployments. The target pipeline and ownership
+boundaries are in [Architecture](ARCHITECTURE.md) and
+[Worker-Uplift Operation Map](NUTSNEWS_WORKER_UPLIFT_OPERATION_MAP.md). DNS
+failover remains a separate `ramideltoro/nutsnews-infra` operation, not an
+ingestion shard responsibility.
+
 This document explains how to operate and test the NutsNews controller Worker and individual Worker shards.
 
 Created for GitHub issue #37.

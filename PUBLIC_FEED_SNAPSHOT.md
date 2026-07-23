@@ -1,5 +1,13 @@
 # Public Feed Snapshot and Edge Fallback
 
+Architecture status: Supabase `public_feed_snapshot` remains the current
+production public-feed projection until protected backend PostgreSQL cutover.
+The approved worker-uplift target moves final publication through backend-owned
+stage state and the Backend Worker DB API, then refreshes the backend
+PostgreSQL public snapshot after cutover. Cloudflare KV remains a bounded
+public fallback surface, not the authoritative write store. See
+[Architecture](ARCHITECTURE.md).
+
 NutsNews uses two snapshot layers for the public feed:
 
 1. **Supabase materialized snapshot**: the normal fast read path for the homepage and `/api/articles`.
