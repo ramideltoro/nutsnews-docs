@@ -98,8 +98,10 @@ Environment approval gate. Reports are uploaded as
 Prechecks cover backup freshness, failed systemd units, running/latest kernel,
 Docker/Caddy/backend health, root disk and inode pressure, active-alert state,
 reboot-required state, package-update count, and unattended-upgrade
-availability. A reboot remains blocked while backup freshness or active-alert
-state is not healthy.
+availability. A reboot remains blocked while backup freshness is not healthy or
+active alerts are present. If active-alert state is not yet configured, the
+workflow reports that gap without blocking an otherwise healthy controlled
+reboot.
 
 ## Deployment Safety Gates
 
