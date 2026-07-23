@@ -219,6 +219,8 @@ event:api.log_test.completed
 
 Grafana Cloud is used for Prometheus-style metrics, Loki logs, dashboards, alert rules, and low-frequency Synthetic Monitoring where time-series visibility is more useful than raw logs.
 
+Worker-uplift telemetry is governed by [NutsNews Worker-Uplift Telemetry Scope](NUTSNEWS_WORKER_UPLIFT_TELEMETRY_SCOPE.md). RabbitMQ metrics, worker service metrics, and structured logs are required; full traces and exemplars are deferred; article/model payload telemetry is forbidden.
+
 The `ramideltoro/nutsnews-infra` Grafana Cloud dashboards are managed by OpenTofu. Dashboard variables that feed regex label matchers must keep their **All** value as `.*`; otherwise PromQL such as `deployment_environment=~"$environment"` and `instance=~"$instance"` can render as `=~""` and hide every real non-empty label value. Node-exporter panels must match the labels Grafana Cloud actually receives from the integration, currently `job=~"integrations/node_exporter"` and `instance=~"$instance"`, not `service_namespace="nutsnews"`. The `NutsNews CPU Load Processes` dashboard also uses Grafana's `$__rate_interval` for CPU rate windows and distinct 1m, 5m, and 15m load-average targets so legends stay clear.
 
 Dashboard fixes should go through the infra repository PR flow first, then the protected Grafana Cloud apply workflow after merge.

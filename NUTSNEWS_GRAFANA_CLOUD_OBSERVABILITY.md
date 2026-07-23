@@ -28,6 +28,12 @@ only telemetry producer duties, preserves the existing dashboard and alert UIDs,
 and does not regain a workflow path that can create, update, or delete Grafana
 Cloud resources.
 
+The worker-uplift telemetry scope is approved separately in
+[NutsNews Worker-Uplift Telemetry Scope](NUTSNEWS_WORKER_UPLIFT_TELEMETRY_SCOPE.md).
+RabbitMQ metrics, worker service metrics, and structured logs are required.
+Full trace export and exemplars are deferred, and article/model payloads are
+forbidden in telemetry.
+
 This does not add a shell button, restart button, package installer, portal mutation path, or broad workflow command runner. Production changes still go through commits, PRs, checks, merge, and protected apply.
 
 ## Intermediate Summary
@@ -77,6 +83,7 @@ The infra implementation keeps observability useful without making Grafana Cloud
 - Synthetic checks must run every 15 minutes or slower.
 - OpenTofu blocks apply if configured API checks exceed 70% of the current free API execution assumption.
 - Browser Synthetic Monitoring and Grafana Cloud k6 execution are not enabled by default.
+- Worker-uplift telemetry uses the approved scope in `ramideltoro/nutsnews-infra/terraform/grafana-cloud/catalog/worker-uplift-telemetry-scope.json`.
 
 Grafana's current public free-tier assumptions used by the docs and module are:
 
@@ -202,7 +209,7 @@ The imported `NutsNews Backend Ops` folder contains:
 
 Backend dashboards use `grafana_dashboard.backend_observability["<dashboard_uid>"]`, and backend alert rules are owned as a single Grafana rule group at `grafana_rule_group.backend_guardrails`. The import IDs are the existing backend UIDs, not new names, so OpenTofu can adopt live resources without duplicate UIDs.
 
-OpenTofu also manages quota alert rules at roughly 70%, 85%, and 95% for configured Grafana Cloud usage guardrails, including log ingest and active-stream pressure. A separate log-pipeline rule group alerts on Alloy Loki dropped entries, Alloy Loki write retries, and high error log volume. Loki-backed alert queries declare the range query type explicitly so repeated plans stay convergent after apply. Contact points are not created in code because they often contain secrets. Instead, alert labels can route into existing Grafana notification policies.
+OpenTofu also manages quota alert rules at roughly 70%, 85%, and 95% for live Grafana Cloud usage/limit ratios, including metrics active series, log active streams, log ingestion rate, and trace ingestion rate. A separate log-pipeline rule group alerts on Alloy Loki dropped entries, Alloy Loki write retries, and high error log volume. Loki-backed alert queries declare the range query type explicitly so repeated plans stay convergent after apply. Contact points are not created in code because they often contain secrets. Instead, alert labels can route into existing Grafana notification policies.
 
 Do not remove existing backend Grafana resources until import and query/alert verification pass. The protected apply workflow uploads a `grafana-cloud-post-apply-verification` report after checking folders, dashboards, backend alert rules, Prometheus query data, and Loki query data.
 
@@ -406,7 +413,7 @@ Add low-cardinality application metrics and structured health telemetry for the 
 Follow-up prompt for `ramideltoro/nutsnews-worker`:
 
 ```text
-Add low-cardinality Worker metrics for ingestion freshness, queue pressure, AI review counts, translation work, failures, and cost guardrails. Keep labels bounded and avoid raw feed URLs or article IDs.
+Implement worker-uplift metrics and structured logs against NUTSNEWS_WORKER_UPLIFT_TELEMETRY_SCOPE.md. Keep traces and exemplars disabled until a later reviewed infra PR approves sampling and credentials.
 ```
 
 ## What This Does Not Do
@@ -427,6 +434,7 @@ This layer does not:
 
 - [Observability](OBSERVABILITY.md)
 - [Free-Tier Guardrails](FREE_TIER_GUARDRAILS.md)
+- [NutsNews Worker-Uplift Telemetry Scope](NUTSNEWS_WORKER_UPLIFT_TELEMETRY_SCOPE.md)
 - [NutsNews Infra Operations Platform](NUTSNEWS_INFRA_OPERATIONS_PLATFORM.md)
 - [NutsNews Protected Ansible Apply Workflow](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md)
 - [NutsNews Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md)

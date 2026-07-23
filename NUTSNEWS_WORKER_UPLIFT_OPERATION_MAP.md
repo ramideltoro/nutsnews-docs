@@ -40,6 +40,7 @@ legacy Worker scripts.
 | Backend host deploy, restart, status, logs, smoke, health, queue/DLQ, drain, broker, reconciliation, backup, restore, and cutover operations | `ramideltoro/nutsnews-backend` | backend workflows, runbooks, and operation map |
 | Worker-uplift stage code | Stage service repos listed in `ramideltoro/nutsnews-backend/docs/worker-uplift-architecture-adr.json` | individual service repositories |
 | Grafana folders, dashboards, alert rules, synthetics, quotas, and resource drift | `ramideltoro/nutsnews-infra` | `terraform/grafana-cloud` and Grafana Cloud workflows |
+| Worker-uplift telemetry scope, budget, labels, and trace/exemplar decision | `ramideltoro/nutsnews-infra` plus `ramideltoro/nutsnews-docs` | `terraform/grafana-cloud/catalog/worker-uplift-telemetry-scope.json` and [Worker-Uplift Telemetry Scope](NUTSNEWS_WORKER_UPLIFT_TELEMETRY_SCOPE.md) |
 | DNS failover controller operations | `ramideltoro/nutsnews-infra` | Cloudflare DNS failover controller workflows and runbooks |
 | Tracking issue order | `ramideltoro/nutsnews-worker` | tracking issues only |
 

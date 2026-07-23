@@ -75,6 +75,8 @@ Important defaults:
 
 Related doc: [Grafana Cloud Observability](NUTSNEWS_GRAFANA_CLOUD_OBSERVABILITY.md).
 
+Worker-uplift telemetry has an approved $0 incremental paid telemetry budget. Its Grafana guardrails use live `grafanacloud_*_usage` and `grafanacloud_*_limits` metrics at 70%, 85%, and 95%, not committed metrics/logs free-plan constants. See [NutsNews Worker-Uplift Telemetry Scope](NUTSNEWS_WORKER_UPLIFT_TELEMETRY_SCOPE.md).
+
 ## Worker ingestion backpressure guardrails
 
 Issue #93 adds Worker-side pressure controls before AI/API/database-heavy work begins.
