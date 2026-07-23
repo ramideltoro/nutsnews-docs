@@ -136,6 +136,8 @@ Two proof failures were found and fixed before issue closeout:
 - [Worker-Uplift RabbitMQ Capacity And Security](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_CAPACITY_SECURITY.md)
 - [Worker-Uplift RabbitMQ Provisioning](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_PROVISIONING.md)
 - [Worker-Uplift RabbitMQ Recovery](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_RECOVERY.md)
+- [Worker-Uplift RabbitMQ Metrics](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_METRICS.md)
+- [Worker-Uplift Service Runtime](NUTSNEWS_WORKER_UPLIFT_SERVICE_RUNTIME.md)
 - [Backend Protected Apply](NUTSNEWS_BACKEND_PROTECTED_APPLY.md)
 - [Backend Drift Check](NUTSNEWS_BACKEND_DRIFT_CHECK.md)
 - [Backend Health Report](NUTSNEWS_BACKEND_HEALTH_REPORT.md)

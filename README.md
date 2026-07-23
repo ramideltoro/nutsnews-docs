@@ -35,6 +35,8 @@ This folder is organized by what you are trying to do: understand the product, c
 | Provision worker-uplift RabbitMQ | [Worker-Uplift RabbitMQ Provisioning](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_PROVISIONING.md) |
 | Operate worker-uplift RabbitMQ drift and smoke workflows | [Worker-Uplift RabbitMQ Operations](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_OPERATIONS.md) |
 | Rebuild, restore, or upgrade worker-uplift RabbitMQ | [Worker-Uplift RabbitMQ Recovery](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_RECOVERY.md) |
+| Operate worker-uplift services on the backend host | [Worker-Uplift Service Runtime](NUTSNEWS_WORKER_UPLIFT_SERVICE_RUNTIME.md) |
+| Verify worker-uplift RabbitMQ metrics collection | [Worker-Uplift RabbitMQ Metrics](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_METRICS.md) |
 | Run the protected VPS baseline workflow or trigger an on-demand report | [Protected Ansible Apply](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md); [Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md) |
 | Run protected VPS package maintenance or reboot | [VPS Maintenance](NUTSNEWS_VPS_MAINTENANCE.md) |
 | Synchronize reviewed Vercel Production variables to the VPS | [Vercel-to-VPS environment synchronization](NUTSNEWS_VERCEL_VPS_ENV_SYNC.md) |
@@ -96,6 +98,8 @@ These docs explain the product and the system at a high level.
 | [Worker-Uplift RabbitMQ Provisioning](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_PROVISIONING.md) | Protected Ansible/Compose provisioning path, topology bootstrap, credential boundary, durable probe, host-restart verification, and rollback model for the backend-owned worker-uplift broker |
 | [Worker-Uplift RabbitMQ Operations](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_OPERATIONS.md) | Protected RabbitMQ apply guardrails, read-only drift coverage, smoke checks, health-report integration, artifacts, and issue #84 proof runs |
 | [Worker-Uplift RabbitMQ Recovery](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_RECOVERY.md) | Sanitized definition exports, clean rebuild drills, stopped-volume restore drills, upgrade procedure, and health signals for the backend-owned worker-uplift broker |
+| [Worker-Uplift Service Runtime](NUTSNEWS_WORKER_UPLIFT_SERVICE_RUNTIME.md) | Shadow-first backend worker service runtime framework, fixed protected operations, service manifest validation, and issue #85 proof plan |
+| [Worker-Uplift RabbitMQ Metrics](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_METRICS.md) | Backend Alloy RabbitMQ scrape path, bounded queue metrics, Grafana Cloud remote-write boundary, and issue #87 proof plan |
 | [Backend PostgreSQL Failover](NUTSNEWS_BACKEND_POSTGRES_FAILOVER.md) | Backend PostgreSQL shadow target, worker/app compatibility boundaries, parity gates, and rollback boundary |
 | [Protected Ansible Apply](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md) | Manual protected GitHub Actions workflow for check/apply runs against the VPS baseline, plus the separate on-demand health report workflow |
 | [VPS Service Foundation](NUTSNEWS_VPS_SERVICE_FOUNDATION.md) | Docker, Compose, `/opt/nutsnews`, Caddy, and public infrastructure health routing |
@@ -179,6 +183,7 @@ These docs explain the product and the system at a high level.
 | [VPS Disaster Recovery](NUTSNEWS_VPS_DISASTER_RECOVERY.md) | Provider-agnostic VPS rebuild and cutover runbook |
 | [Worker-Uplift RabbitMQ Operations](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_OPERATIONS.md) | RabbitMQ protected apply, drift, smoke, and health-report operating evidence |
 | [Worker-Uplift RabbitMQ Recovery](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_RECOVERY.md) | RabbitMQ topology rebuild, stopped-volume restore, and upgrade procedure |
+| [Worker-Uplift RabbitMQ Metrics](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_METRICS.md) | RabbitMQ metrics collection, cardinality guardrails, and Grafana ownership boundary |
 | [Supabase Restore Procedure](SUPABASE_RESTORE.md) | Restore order, SQL import, and validation queries |
 | [Migration Release Gate](MIGRATION_RELEASE_GATE.md) | Ordered migrations, schema-drift readiness, deterministic staging fixtures, compatibility windows, and protected rollout |
 | [Free-Tier Guardrails](FREE_TIER_GUARDRAILS.md) | Quota, cost, and usage warning dashboard |

@@ -17,6 +17,7 @@ Backend validators:
 ```bash
 python3 scripts/validate_worker_uplift_rabbitmq_provisioning.py
 python3 scripts/validate_worker_uplift_rabbitmq_network_security.py
+python3 scripts/validate_worker_uplift_rabbitmq_metrics.py
 ```
 
 ## Scope
@@ -190,5 +191,7 @@ stage outbox and reconciliation state have been reviewed.
 - [Worker-Uplift RabbitMQ Capacity And Security](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_CAPACITY_SECURITY.md)
 - [Worker-Uplift RabbitMQ Operations](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_OPERATIONS.md)
 - [Worker-Uplift RabbitMQ Recovery](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_RECOVERY.md)
+- [Worker-Uplift RabbitMQ Metrics](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_METRICS.md)
+- [Worker-Uplift Service Runtime](NUTSNEWS_WORKER_UPLIFT_SERVICE_RUNTIME.md)
 - [Worker-Uplift Operation Map](NUTSNEWS_WORKER_UPLIFT_OPERATION_MAP.md)
 - [Backend Protected Apply](NUTSNEWS_BACKEND_PROTECTED_APPLY.md)
