@@ -38,6 +38,7 @@ legacy Worker scripts.
 | Surface | Owner | Source of truth |
 | --- | --- | --- |
 | Backend host deploy, restart, status, logs, smoke, health, queue/DLQ, drain, broker, reconciliation, backup, restore, and cutover operations | `ramideltoro/nutsnews-backend` | backend workflows, runbooks, and operation map |
+| Worker-uplift RabbitMQ release, queue type, capacity, and security envelope | `ramideltoro/nutsnews-backend` plus shared docs | [Worker-Uplift RabbitMQ Capacity And Security](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_CAPACITY_SECURITY.md) |
 | Worker-uplift stage code | Stage service repos listed in `ramideltoro/nutsnews-backend/docs/worker-uplift-architecture-adr.json` | individual service repositories |
 | Grafana folders, dashboards, alert rules, synthetics, quotas, and resource drift | `ramideltoro/nutsnews-infra` | `terraform/grafana-cloud` and Grafana Cloud workflows |
 | Worker-uplift telemetry scope, budget, labels, and trace/exemplar decision | `ramideltoro/nutsnews-infra` plus `ramideltoro/nutsnews-docs` | `terraform/grafana-cloud/catalog/worker-uplift-telemetry-scope.json` and [Worker-Uplift Telemetry Scope](NUTSNEWS_WORKER_UPLIFT_TELEMETRY_SCOPE.md) |
