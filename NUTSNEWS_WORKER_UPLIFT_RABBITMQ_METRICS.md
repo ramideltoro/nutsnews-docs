@@ -192,6 +192,66 @@ The canary writes the latest redacted JSON evidence to:
 /var/lib/nutsnews/rabbitmq-probes/last-canary-drill.json
 ```
 
+## Grafana Alerts And SLOs
+
+Issue `ramideltoro/nutsnews-worker#90` tracks worker-uplift RabbitMQ alert and
+SLO resources in `ramideltoro/nutsnews-infra`. The source of truth is
+`terraform/grafana-cloud/catalog/worker-uplift-rabbitmq-alerts.json`, managed
+through the Grafana Cloud OpenTofu module.
+
+Grafana objects:
+
+- `NutsNews Worker-Uplift Pipeline SLOs`
+  (`nutsnews-worker-uplift-slos`)
+- `NutsNews Worker-Uplift RabbitMQ Guardrails`
+  (`NutsNews Backend Ops` folder)
+
+The alert group covers broker down, private canary failure, Alloy scrape/write
+loss, no consumers while work exists, sustained backlog or oldest-age pressure,
+publish/ack imbalance, unacked growth, DLQs, retry/redelivery pressure,
+connection churn, broker memory/disk alarms, low disk, descriptor pressure,
+stale recovery proof, repeated restarts, and multi-window SLO burn-rate
+alerts.
+
+Every rule carries `deployment_environment`, `service`, `queue`, `severity`,
+`owner`, `route`, `threshold`, `runbook_url`, and recovery-window metadata.
+The contact route remains a label consumed by existing Grafana notification
+policies; the infra module does not commit contact-point secrets.
+
+SLOs covered by the dashboard and alert catalog:
+
+| SLO | Target |
+| --- | --- |
+| Broker availability | 99.5% monthly availability |
+| Stage success and latency | 99% successful stage events and p95 under 30 seconds |
+| End-to-end feed freshness | freshness age under 30 minutes |
+| Retry/DLQ rate | retry and DLQ budget ratio below 1% |
+| Final publication success | 99% successful final publication events |
+
+Stage, feed freshness, and final publication queries are intentionally
+`NoData=OK` until later worker service issues emit those metrics. Broker and
+retry/DLQ SLO alerts use 5-minute and 1-hour burn-rate windows where current
+RabbitMQ telemetry supports them.
+
+Use the backend `Backend RabbitMQ Canary` workflow from #91 to exercise
+deliberate firing and recovery without exposing private AMQP:
+
+| Drill | Alert classes exercised |
+| --- | --- |
+| `network-interruption` | broker down and broker availability burn |
+| `invalid-credentials` | private canary failure |
+| `consumer-loss` | work with no consumers |
+| `disk-watermark` | memory/disk alarm and low disk |
+| `full-queue` | sustained backlog/oldest age |
+| `poison-message` | DLQ and retry/DLQ burn |
+| `grafana-connectivity-loss` | Alloy metrics write loss |
+| `restart` | repeated restart and recovery-proof checks |
+
+After each fixture drill, run a normal canary and wait through the Grafana
+recovery window. Alert tests must not publish production articles, expose AMQP
+or management ports, disable legacy ingestion/failover, mutate contact points,
+or disable Alloy remote write.
+
 The first protected apply for the metrics change failed before issue closeout:
 
 - Run `30014696216` rendered the queue regex into Alloy River strings with

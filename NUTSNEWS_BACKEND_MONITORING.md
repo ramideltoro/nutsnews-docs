@@ -364,6 +364,13 @@ Grafana provisioning path:
   (`nutsnews-worker-uplift-rmq-resources`). Protected Grafana Cloud apply run
   `30042593274` verified the dashboards, RabbitMQ Prometheus queries, and
   RabbitMQ Loki log query.
+- Worker-uplift RabbitMQ alert and SLO resources from
+  `ramideltoro/nutsnews-worker#90` are source-controlled in
+  `ramideltoro/nutsnews-infra`: `NutsNews Worker-Uplift Pipeline SLOs`
+  (`nutsnews-worker-uplift-slos`) and `NutsNews Worker-Uplift RabbitMQ
+  Guardrails`. Use the backend `Backend RabbitMQ Canary` workflow drills from
+  #91 to exercise firing and recovery without exposing AMQP or publishing
+  production articles.
 
 Operator verification:
 
