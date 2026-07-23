@@ -15,6 +15,13 @@ The VPS side is read-only. Alloy collects host metrics, systemd state, selected 
 
 The backend host is also a telemetry producer. `ramideltoro/nutsnews-backend` keeps only backend Prometheus remote_write and Loki push credentials for its host collector. Its existing `NutsNews Backend Ops` dashboards and `NutsNews Backend Guardrails` alert group are imported and managed from `ramideltoro/nutsnews-infra`; backend direct Grafana provisioning is retired after import plus live query/alert verification passes.
 
+The backend retirement record is
+`ramideltoro/nutsnews-backend/docs/backend-grafana-handoff.json`. Backend CI
+runs `scripts/validate_backend_grafana_handoff.py` to confirm the backend keeps
+only telemetry producer duties, preserves the existing dashboard and alert UIDs,
+and does not regain a workflow path that can create, update, or delete Grafana
+Cloud resources.
+
 This does not add a shell button, restart button, package installer, portal mutation path, or broad workflow command runner. Production changes still go through commits, PRs, checks, merge, and protected apply.
 
 ## Intermediate Summary
@@ -249,11 +256,12 @@ Grafana states that the free tier and trial are limited to 500 VUh per month. Ke
 6. Review the `grafana-cloud-post-apply-verification` artifact.
 7. Add Alloy telemetry write secrets to `production-vps`.
 8. Keep backend telemetry write secrets in `ramideltoro/nutsnews-backend`; do not store backend Grafana service-account credentials there after the handoff.
-9. Retire backend direct provisioning only after backend import and query/alert verification pass.
-10. Run `Protected Ansible Apply` in check mode with `enable_grafana_alloy=true`.
-11. Review the package, config, systemd, and Alloy validation diff.
-12. Run apply mode with `confirm_apply=vps.nutsnews.com` and `enable_grafana_alloy=true`.
-13. Verify metrics, logs, dashboards, alerts, and usage/quota panels in Grafana Cloud.
+9. Confirm `ramideltoro/nutsnews-backend/docs/backend-grafana-handoff.json` maps every retained backend folder, dashboard, alert UID, and datasource dependency to the infra OpenTofu owner.
+10. Retire backend direct provisioning only after backend import and query/alert verification pass.
+11. Run `Protected Ansible Apply` in check mode with `enable_grafana_alloy=true`.
+12. Review the package, config, systemd, and Alloy validation diff.
+13. Run apply mode with `confirm_apply=vps.nutsnews.com` and `enable_grafana_alloy=true`.
+14. Verify metrics, logs, dashboards, alerts, and usage/quota panels in Grafana Cloud.
 
 After apply, also verify the host-side Alloy state:
 

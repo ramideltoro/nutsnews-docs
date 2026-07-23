@@ -91,6 +91,14 @@ Grafana Cloud:
 
 These backend Grafana values are telemetry write credentials only. Grafana folders, dashboards, alert rules, contact points, quota guardrails, Synthetic Monitoring, OpenTofu state, and Grafana service-account credentials are owned by `ramideltoro/nutsnews-infra`, not this backend environment.
 
+As of the worker-uplift Grafana handoff on 2026-07-23, `GRAFANA_URL` and
+`GRAFANA_SERVICE_ACCOUNT_TOKEN` are not backend `production-backend`
+Environment secrets. They were removed after the backend workflows stopped
+consuming them. The backend handoff record is
+`ramideltoro/nutsnews-backend/docs/backend-grafana-handoff.json`, and backend
+CI validates that no backend workflow can reintroduce direct Grafana resource
+apply/verify behavior.
+
 Supabase:
 
 - `SUPABASE_ACCESS_TOKEN`
@@ -160,6 +168,7 @@ The repo can manage names, placement, and readiness checks. Provider dashboards 
 - create the scoped Cloudflare token for the `nutsnews.com` zone;
 - create Grafana Cloud metrics/logs access-policy tokens for backend telemetry writes only;
 - manage Grafana Cloud service-account/resource-management credentials from `ramideltoro/nutsnews-infra`;
+- verify backend Grafana folder/dashboard/alert imports through the protected infra Grafana Cloud plan/apply workflow and its post-apply query-data report;
 - create or retrieve Supabase production project metadata, API keys, and database URL;
 - create the restic repository and object-storage credentials;
 - create SMTP/reporting credentials;
