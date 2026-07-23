@@ -36,6 +36,8 @@ The generated report includes:
 - reboot-required and package-update state;
 - SSH, UFW, fail2ban, Docker, Caddy, PostgreSQL, Alloy, and sysstat service states;
 - backup tool presence such as restic/rclone;
+- RabbitMQ recovery evidence when
+  `/var/lib/nutsnews/rabbitmq-recovery/last-*.json` files exist;
 - cleanup last-run status when `/var/lib/nutsnews/cleanup/last-cleanup.json`
   exists;
 - recovery last-run status when `/var/lib/nutsnews/recovery/last-recovery.json`
@@ -48,6 +50,10 @@ The generated report includes:
 Backend services that are intentionally absent, such as Docker or PostgreSQL in
 the current phase, appear as `not_configured` rather than failed production
 services.
+
+For the worker-uplift broker, RabbitMQ recovery checks report definition export,
+clean rebuild drill, and stopped-volume restore drill freshness without exposing
+raw definitions, password hashes, broker data, or credential files.
 
 ## Required Secrets
 

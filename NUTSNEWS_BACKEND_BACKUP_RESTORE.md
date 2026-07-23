@@ -7,7 +7,10 @@ This documents the backup and restore policy for `ramideltoro/nutsnews-backend` 
 The backend host has no deployed app runtime, upload storage, or production
 backend app state yet. It does have host baseline, Caddy, dashboard,
 backup-status state, and a private PostgreSQL restore/failover target covered
-by the service-aware backup matrix.
+by the service-aware backup matrix. The worker-uplift RabbitMQ broker is now
+provisioned as durable transport; its live message store is intentionally
+excluded from normal Restic snapshots, while non-secret topology/config and
+RabbitMQ recovery evidence are included.
 
 The backend repo source of truth is:
 
@@ -29,6 +32,7 @@ Backups must survive VPS loss. Provider snapshots are supplemental only and must
 | Ops dashboard/status metadata | Backend host collectors | Backed up for incident evidence and exposed in dashboard/reporting |
 | Application uploads/local state | Future backend issue | Off-server backups required before production use |
 | PostgreSQL data | Backend issue #13 | Host state is covered by service-aware restic paths; staging Supabase restore drills prove database restore readiness before production use |
+| RabbitMQ broker | Backend worker-uplift runtime | Non-secret config, topology, Compose, and recovery evidence are backed up; live `/var/lib/nutsnews/rabbitmq` message-store snapshots require a stopped or quiesced broker and are excluded from normal Restic jobs |
 | Logs | Host retention plus future off-server policy | Retain enough for troubleshooting without unbounded raw logs |
 
 ## Initial Retention Baseline
@@ -101,6 +105,9 @@ The runner writes:
 | `/var/lib/nutsnews/backups/last-verification.json` | latest restic check result |
 | `/var/lib/nutsnews/backups/last-restore-verification.json` | lightweight restore-drill result |
 | `/var/lib/nutsnews/postgres/status.json` | PostgreSQL restore/failover readiness and latest staging restore drill result |
+| `/var/lib/nutsnews/rabbitmq-recovery/last-definition-export.json` | latest sanitized RabbitMQ definition export result |
+| `/var/lib/nutsnews/rabbitmq-recovery/last-clean-rebuild-drill.json` | latest disposable empty-broker rebuild drill result |
+| `/var/lib/nutsnews/rabbitmq-recovery/last-stopped-volume-restore-drill.json` | latest disposable stopped-volume restore drill result |
 
 The health report and loopback-only ops dashboard expose backup failure, stale
 backup, unverified latest snapshot, and storage/quota warning as separate
@@ -108,6 +115,9 @@ signals.
 
 PostgreSQL-specific restore flow is documented in
 [NutsNews Backend PostgreSQL Failover Target](NUTSNEWS_BACKEND_POSTGRES_FAILOVER.md).
+RabbitMQ-specific rebuild, stopped-volume restore, and upgrade procedures are
+documented in
+[Worker-Uplift RabbitMQ Recovery](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_RECOVERY.md).
 
 ## Recovery Order
 
@@ -115,6 +125,11 @@ PostgreSQL-specific restore flow is documented in
 2. Apply baseline configuration through the protected backend workflow.
 3. Restore secrets through the documented secret store.
 4. Restore stateful data from encrypted off-server backups.
-5. Run workload-specific integrity checks.
-6. Verify health endpoints, dashboard status, and logs.
-7. Route traffic only after verification passes.
+5. For RabbitMQ, rebuild from the pinned image, config, topology, and protected
+   credentials unless a stopped/quiesced broker snapshot was deliberately
+   captured for message-store restore.
+6. Run workload-specific integrity checks.
+7. Reconcile RabbitMQ queue gaps from backend PostgreSQL outbox and
+   reconciliation state.
+8. Verify health endpoints, dashboard status, and logs.
+9. Route traffic only after verification passes.

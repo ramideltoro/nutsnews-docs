@@ -1,7 +1,8 @@
 # NutsNews Worker-Uplift RabbitMQ Provisioning
 
 Status: implementation target for `ramideltoro/nutsnews-worker#80`,
-`ramideltoro/nutsnews-worker#81`, and `ramideltoro/nutsnews-worker#82`.
+`ramideltoro/nutsnews-worker#81`, `ramideltoro/nutsnews-worker#82`, and
+`ramideltoro/nutsnews-worker#83`.
 
 Canonical backend runbook:
 
@@ -121,6 +122,20 @@ The backend role includes a root-only durable probe. During apply it publishes a
 persistent test message, restarts the Compose-managed RabbitMQ service, verifies
 the message survives, acknowledges it, and removes the probe queue.
 
+The backend role also installs the RabbitMQ recovery helper:
+
+```text
+/usr/local/sbin/nutsnews-rabbitmq-recovery
+```
+
+The helper exports sanitized definitions, runs a disposable clean rebuild drill,
+runs a disposable stopped-volume restore drill, and writes non-secret recovery
+evidence under `/var/lib/nutsnews/rabbitmq-recovery`. Normal Restic backups
+exclude the live `/var/lib/nutsnews/rabbitmq` message store and include only
+reviewed config/topology plus recovery evidence. Broker rebuilds use the pinned
+image, source-controlled topology, protected credentials, and PostgreSQL
+outbox/reconciliation state as the authoritative replay source.
+
 For host-restart proof, use `ramideltoro/nutsnews-backend` workflow
 `Backend Controlled Maintenance` with `action=reboot` and
 `confirm_target=backend.nutsnews.com`. When RabbitMQ is healthy before reboot,
@@ -171,5 +186,6 @@ stage outbox and reconciliation state have been reviewed.
 ## Related Docs
 
 - [Worker-Uplift RabbitMQ Capacity And Security](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_CAPACITY_SECURITY.md)
+- [Worker-Uplift RabbitMQ Recovery](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_RECOVERY.md)
 - [Worker-Uplift Operation Map](NUTSNEWS_WORKER_UPLIFT_OPERATION_MAP.md)
 - [Backend Protected Apply](NUTSNEWS_BACKEND_PROTECTED_APPLY.md)

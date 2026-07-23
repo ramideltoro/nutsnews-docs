@@ -33,6 +33,7 @@ This folder is organized by what you are trying to do: understand the product, c
 | Find the worker-uplift operation owner map | [Worker-Uplift Operation Map](NUTSNEWS_WORKER_UPLIFT_OPERATION_MAP.md) |
 | Review worker-uplift RabbitMQ capacity and security | [Worker-Uplift RabbitMQ Capacity And Security](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_CAPACITY_SECURITY.md) |
 | Provision worker-uplift RabbitMQ | [Worker-Uplift RabbitMQ Provisioning](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_PROVISIONING.md) |
+| Rebuild, restore, or upgrade worker-uplift RabbitMQ | [Worker-Uplift RabbitMQ Recovery](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_RECOVERY.md) |
 | Run the protected VPS baseline workflow or trigger an on-demand report | [Protected Ansible Apply](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md); [Operations Portal v1](NUTSNEWS_OPERATIONS_PORTAL_V1.md) |
 | Run protected VPS package maintenance or reboot | [VPS Maintenance](NUTSNEWS_VPS_MAINTENANCE.md) |
 | Synchronize reviewed Vercel Production variables to the VPS | [Vercel-to-VPS environment synchronization](NUTSNEWS_VERCEL_VPS_ENV_SYNC.md) |
@@ -92,6 +93,7 @@ These docs explain the product and the system at a high level.
 | [Worker-Uplift Operation Map](NUTSNEWS_WORKER_UPLIFT_OPERATION_MAP.md) | Backend-owned old-to-new operation map for legacy Worker scripts, backend host operations, Grafana ownership, DNS failover separation, and worker-uplift runtime controls |
 | [Worker-Uplift RabbitMQ Capacity And Security](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_CAPACITY_SECURITY.md) | RabbitMQ release pin, queue-type decision, hard limits, access boundary, benchmark path, and recovery model for the backend-owned worker-uplift broker |
 | [Worker-Uplift RabbitMQ Provisioning](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_PROVISIONING.md) | Protected Ansible/Compose provisioning path, topology bootstrap, credential boundary, durable probe, host-restart verification, and rollback model for the backend-owned worker-uplift broker |
+| [Worker-Uplift RabbitMQ Recovery](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_RECOVERY.md) | Sanitized definition exports, clean rebuild drills, stopped-volume restore drills, upgrade procedure, and health signals for the backend-owned worker-uplift broker |
 | [Backend PostgreSQL Failover](NUTSNEWS_BACKEND_POSTGRES_FAILOVER.md) | Backend PostgreSQL shadow target, worker/app compatibility boundaries, parity gates, and rollback boundary |
 | [Protected Ansible Apply](NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md) | Manual protected GitHub Actions workflow for check/apply runs against the VPS baseline, plus the separate on-demand health report workflow |
 | [VPS Service Foundation](NUTSNEWS_VPS_SERVICE_FOUNDATION.md) | Docker, Compose, `/opt/nutsnews`, Caddy, and public infrastructure health routing |
@@ -173,6 +175,7 @@ These docs explain the product and the system at a high level.
 | [VPS Backups](NUTSNEWS_VPS_BACKUPS.md) | VPS restic backups to encrypted OneDrive storage through rclone |
 | [VPS Restore](NUTSNEWS_VPS_RESTORE.md) | VPS restic restore and restore-test procedure |
 | [VPS Disaster Recovery](NUTSNEWS_VPS_DISASTER_RECOVERY.md) | Provider-agnostic VPS rebuild and cutover runbook |
+| [Worker-Uplift RabbitMQ Recovery](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_RECOVERY.md) | RabbitMQ topology rebuild, stopped-volume restore, and upgrade procedure |
 | [Supabase Restore Procedure](SUPABASE_RESTORE.md) | Restore order, SQL import, and validation queries |
 | [Migration Release Gate](MIGRATION_RELEASE_GATE.md) | Ordered migrations, schema-drift readiness, deterministic staging fixtures, compatibility windows, and protected rollout |
 | [Free-Tier Guardrails](FREE_TIER_GUARDRAILS.md) | Quota, cost, and usage warning dashboard |
