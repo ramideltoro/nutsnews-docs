@@ -86,6 +86,13 @@ It installs `/usr/local/sbin/nutsnews-rabbitmq-topology` and runs:
 The bootstrap is non-destructive. Immutable queue argument drift is reported for
 operator review instead of deleting queues.
 
+Issue `ramideltoro/nutsnews-worker#91` adds a dedicated private canary topology
+entry. The role creates the isolated `worker.uplift.canary.v1` direct exchange
+and queue, binds them with the same route key, and grants the monitoring/canary
+identity only write/read access to that route. The canary queue is intentionally
+bounded with `x-max-length=10`, `x-max-length-bytes=1048576`, and
+`x-overflow=reject-publish`.
+
 ## Persistence And Verification
 
 The broker runs from a pinned `rabbitmq@sha256:...` image, uses host-backed
@@ -124,6 +131,18 @@ Root-run probe state is stored outside the broker mount under
 The backend role includes a root-only durable probe. During apply it publishes a
 persistent test message, restarts the Compose-managed RabbitMQ service, verifies
 the message survives, acknowledges it, and removes the probe queue.
+
+The backend role also installs the private canary service and timer:
+
+```text
+/etc/systemd/system/nutsnews-rabbitmq-canary.service
+/etc/systemd/system/nutsnews-rabbitmq-canary.timer
+```
+
+The apply path runs the canary once after topology bootstrap and then enables
+the timer. Canary JSON reports live under
+`/var/lib/nutsnews/rabbitmq-probes`, and canary Prometheus textfile metrics live
+at `/var/lib/nutsnews/metrics/rabbitmq-canary.prom`.
 
 The backend role also installs the RabbitMQ recovery helper:
 

@@ -154,6 +154,44 @@ The Grafana Cloud Prometheus query result was:
 result_count=1
 ```
 
+## Private Canary Metrics
+
+Issue `ramideltoro/nutsnews-worker#91` adds a host-local AMQP canary that writes
+Prometheus textfile metrics for Grafana Cloud alerting. The canary metrics are
+emitted by the backend host at:
+
+```text
+/var/lib/nutsnews/metrics/rabbitmq-canary.prom
+```
+
+The metrics are collected by the existing backend Alloy textfile scrape and
+remote-written to Grafana Cloud Prometheus. They do not require a public AMQP
+listener and do not use Grafana Synthetic Monitoring.
+
+Primary metric names:
+
+```text
+nutsnews_backend_rabbitmq_canary_success
+nutsnews_backend_rabbitmq_canary_status
+nutsnews_backend_rabbitmq_canary_failure_fixture
+nutsnews_backend_rabbitmq_canary_cleanup_success
+nutsnews_backend_rabbitmq_canary_last_run_timestamp_seconds
+nutsnews_backend_rabbitmq_canary_latency_seconds
+nutsnews_backend_rabbitmq_canary_message_age_seconds
+```
+
+Allowed labels are bounded to deterministic canary fields such as `environment`,
+`host`, `vhost`, `route`, `mode`, `failure_mode`, and `drill`. Message ids,
+payloads, credentials, usernames, URLs, IP addresses, and RabbitMQ connection or
+channel identifiers must not become metric labels.
+
+The canary writes the latest redacted JSON evidence to:
+
+```text
+/var/lib/nutsnews/rabbitmq-probes/last-canary.json
+/var/lib/nutsnews/rabbitmq-probes/last-canary-drill.json
+```
+
 The first protected apply for the metrics change failed before issue closeout:
 
 - Run `30014696216` rendered the queue regex into Alloy River strings with

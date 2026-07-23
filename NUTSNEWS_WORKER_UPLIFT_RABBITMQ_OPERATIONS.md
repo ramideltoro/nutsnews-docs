@@ -1,6 +1,8 @@
 # NutsNews Worker-Uplift RabbitMQ Operations
 
 Status: implemented for `ramideltoro/nutsnews-worker#84` on 2026-07-23.
+Private canary and failure runbooks are tracked in
+`ramideltoro/nutsnews-worker#91`.
 
 Canonical backend runbooks:
 
@@ -9,6 +11,7 @@ ramideltoro/nutsnews-backend/runbooks/WORKER_UPLIFT_RABBITMQ_PROVISIONING.md
 ramideltoro/nutsnews-backend/runbooks/DEPLOYMENT_SAFETY_GATES.md
 ramideltoro/nutsnews-backend/runbooks/DRIFT_CHECK.md
 ramideltoro/nutsnews-backend/runbooks/BACKEND_HEALTH_REPORT.md
+ramideltoro/nutsnews-backend/runbooks/WORKER_UPLIFT_RABBITMQ_CANARY.md
 ```
 
 Final backend implementation commit:
@@ -92,13 +95,79 @@ redacted JSON report to the backend probe state directory. The workflow uploads
 the redacted report artifact. It does not upload credential files, message
 payload secrets, raw RabbitMQ definitions, or broker data.
 
+## Private Canary
+
+Issue `ramideltoro/nutsnews-worker#91` adds a private AMQP canary for the
+worker-uplift broker. The canary is host-local only and does not use Grafana
+Cloud Synthetic Monitoring because AMQP is intentionally not publicly
+reachable.
+
+The backend RabbitMQ role installs:
+
+```text
+/usr/local/sbin/nutsnews-rabbitmq-probe canary
+/etc/systemd/system/nutsnews-rabbitmq-canary.service
+/etc/systemd/system/nutsnews-rabbitmq-canary.timer
+```
+
+The timer publishes one small uniquely identified message to the isolated
+`worker.uplift.canary.v1` direct exchange, requires publisher confirm, consumes
+the same message from the isolated `worker.uplift.canary.v1` queue, validates
+the payload, manually acknowledges it, drains bounded leftovers, and writes
+redacted machine-readable evidence.
+
+The canary uses the existing monitoring identity from
+`RABBITMQ_MONITORING_USERNAME` and `RABBITMQ_MONITORING_PASSWORD`. That identity
+is least-privilege: it can write to and read from only the isolated canary route
+and cannot configure RabbitMQ resources or access worker-uplift production
+route queues.
+
+The backend role creates the canary queue with bounded backlog controls:
+
+```text
+x-max-length=10
+x-max-length-bytes=1048576
+x-overflow=reject-publish
+```
+
+Canary evidence is stored on the backend host:
+
+```text
+/var/lib/nutsnews/rabbitmq-probes/last-canary.json
+/var/lib/nutsnews/rabbitmq-probes/last-canary-drill.json
+/var/lib/nutsnews/metrics/rabbitmq-canary.prom
+```
+
+The protected `Backend RabbitMQ Canary` workflow supports fixed actions only:
+`status`, `canary`, and `drill`. The mutating `canary` and `drill` actions
+require `confirm_target=backend.nutsnews.com` and the protected
+`production-backend` approval gate.
+
+Approved drill names are:
+
+```text
+restart
+consumer-loss
+network-interruption
+disk-watermark
+invalid-credentials
+unroutable
+full-queue
+poison-message
+grafana-connectivity-loss
+```
+
+`disk-watermark` and `grafana-connectivity-loss` are bounded fixtures. They
+write deterministic evidence for alert and runbook proof without filling host
+disks or disrupting Alloy/Grafana connectivity.
+
 ## Health Report
 
 The recurring backend health report includes RabbitMQ status from read-only
-evidence: drift status, broker health, recovery evidence, and last smoke status
-when those reports exist. The health report does not run the smoke test, restart
-RabbitMQ, apply Ansible, install packages, edit files, or otherwise mutate the
-backend host.
+evidence: drift status, broker health, recovery evidence, last smoke status,
+and last canary status when those reports exist. The health report does not run
+the smoke test, run the canary, restart RabbitMQ, apply Ansible, install
+packages, edit files, or otherwise mutate the backend host.
 
 ## Evidence
 
