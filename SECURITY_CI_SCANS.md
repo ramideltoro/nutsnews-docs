@@ -138,6 +138,30 @@ flowchart TD
   C -->|No| I[Security scan passes]
 ```
 
+### 2026-07-23 OSV NextAuth Security Bump
+
+Related issue: https://github.com/ramideltoro/nutsnews/issues/496
+Related app PR: https://github.com/ramideltoro/nutsnews/pull/508
+Related main run: https://github.com/ramideltoro/nutsnews/actions/runs/30046855929
+
+Simple Summary: After the standby workflow merged, the main safety checker found an unsafe login helper package. The web app now uses the fixed login helper version.
+
+Intermediate Summary: The `OSV Scanner` main-push run failed after app PR #507 merged because `web/package-lock.json` resolved `next-auth@5.0.0-beta.31` and `@auth/core@0.41.2`. The app fix updates the direct dependency to `next-auth@^5.0.0-beta.32`, which resolves `@auth/core@0.41.3`, removing the OSV findings without changing standby workflow behavior or runtime configuration.
+
+Expert Summary: Run `30046855929` reported seven OSV findings across `next-auth` and `@auth/core`, including `GHSA-7rqj-j65f-68wh`, `GHSA-8fpg-xm3f-6cx3`, `GHSA-x445-f3h2-j279`, and `GHSA-xmf8-cvqr-rfgj`. `npm view next-auth@5.0.0-beta.32` confirmed the fixed package resolves `@auth/core@0.41.3`. The fix is limited to `web/package.json` and `web/package-lock.json`; expected validation is `npm audit`, OSV, authentication/runtime regressions, lint, and build with the same CI runtime env used by `Merge Gate`. Roll back by reverting the dependency PR if auth regression tests or production smoke checks expose a compatibility issue, then reopen the OSV blocker with a narrower Auth.js mitigation plan.
+
+```mermaid
+flowchart TD
+  A[Main push after PR #507] --> B[OSV Scanner scans web/package-lock.json]
+  B --> C{next-auth or @auth/core vulnerable?}
+  C -->|Yes| D[Main post-merge stage fails]
+  D --> E[Bump next-auth to beta.32]
+  E --> F[Lock @auth/core to 0.41.3 through dependency resolution]
+  F --> G[Run audit, regressions, lint, build, and OSV]
+  G --> H[Main post-merge stage returns green]
+  C -->|No| I[Security scan passes]
+```
+
 ## PR Security Scan Flow
 
 ```mermaid
