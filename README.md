@@ -30,6 +30,7 @@ This folder is organized by what you are trying to do: understand the product, c
 | Run fixed backend recovery checks or actions | [Backend Recovery](NUTSNEWS_BACKEND_RECOVERY.md) |
 | Review backend OpenAI maintenance robot | [Backend OpenAI Maintenance Robot](NUTSNEWS_BACKEND_OPENAI_MAINTENANCE_ROBOT.md) |
 | Review backend service baseline attestation | [Backend Service Baseline](NUTSNEWS_BACKEND_SERVICE_BASELINE.md) |
+| Operate the Supabase standby IPv6 one-job runner | [Supabase Standby IPv6 One-Job Runner](NUTSNEWS_SUPABASE_STANDBY_IPV6_RUNNER.md) |
 | Find the worker-uplift operation owner map | [Worker-Uplift Operation Map](NUTSNEWS_WORKER_UPLIFT_OPERATION_MAP.md) |
 | Review worker-uplift RabbitMQ capacity and security | [Worker-Uplift RabbitMQ Capacity And Security](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_CAPACITY_SECURITY.md) |
 | Provision worker-uplift RabbitMQ | [Worker-Uplift RabbitMQ Provisioning](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_PROVISIONING.md) |
@@ -93,6 +94,7 @@ These docs explain the product and the system at a high level.
 | [Backend Recovery](NUTSNEWS_BACKEND_RECOVERY.md) | Fixed-purpose backend recovery checks, protected service actions, pre/postchecks, and last-run evidence |
 | [Backend OpenAI Maintenance Robot](NUTSNEWS_BACKEND_OPENAI_MAINTENANCE_ROBOT.md) | Daily OpenAI-assisted maintenance scan, scan labels, issue routing, artifacts, and safety boundaries |
 | [Backend Service Baseline](NUTSNEWS_BACKEND_SERVICE_BASELINE.md) | Read-only live service inventory, public exposure policy, and re-attestation trigger |
+| [Supabase Standby IPv6 One-Job Runner](NUTSNEWS_SUPABASE_STANDBY_IPV6_RUNNER.md) | Disposable public-repo runner boundary, activation checks, incident response, safe evidence, and VM destruction path for the protected standby readiness workflow |
 | [Worker-Uplift Operation Map](NUTSNEWS_WORKER_UPLIFT_OPERATION_MAP.md) | Backend-owned old-to-new operation map for legacy Worker scripts, backend host operations, Grafana ownership, DNS failover separation, and worker-uplift runtime controls |
 | [Worker-Uplift RabbitMQ Capacity And Security](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_CAPACITY_SECURITY.md) | RabbitMQ release pin, queue-type decision, hard limits, access boundary, benchmark path, and recovery model for the backend-owned worker-uplift broker |
 | [Worker-Uplift RabbitMQ Provisioning](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_PROVISIONING.md) | Protected Ansible/Compose provisioning path, topology bootstrap, credential boundary, durable probe, host-restart verification, and rollback model for the backend-owned worker-uplift broker |

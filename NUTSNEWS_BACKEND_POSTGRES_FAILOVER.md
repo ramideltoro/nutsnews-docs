@@ -61,6 +61,7 @@ nutsnews_primary_shadow
 Related issue: https://github.com/ramideltoro/nutsnews/issues/496
 Related original app PR: https://github.com/ramideltoro/nutsnews/pull/507
 Related correction app PR: https://github.com/ramideltoro/nutsnews/pull/509
+Related runner runbook: [NutsNews Supabase Standby IPv6 One-Job Runner](NUTSNEWS_SUPABASE_STANDBY_IPV6_RUNNER.md)
 
 ### Simple Summary
 
@@ -74,6 +75,8 @@ Issue #496 now adopts the existing production Supabase project/database as the h
 
 The standby credential inventory is stored as `supabase-standby` Environment secrets in `ramideltoro/nutsnews`: `NUTSNEWS_STANDBY_SUPABASE_PROJECT_REF`, `NUTSNEWS_STANDBY_SUPABASE_URL`, `NUTSNEWS_STANDBY_SUPABASE_DB_URL`, `NUTSNEWS_STANDBY_SUPABASE_SERVICE_ROLE_KEY`, and `NUTSNEWS_STANDBY_SUPABASE_ANON_KEY`. These are protected aliases for the existing production Supabase project values, not credentials for a new project. The local validator enforces `existing-production-supabase`, requires `NUTSNEWS_PRODUCTION_SUPABASE_PROJECT_REF`, rejects malformed project refs, rejects a standby ref that does not match the production Supabase ref, rejects non-HTTPS project URLs, rejects pooler DB URLs, rejects DB URLs missing `sslmode=require`, rejects missing DB credentials, and rejects identical service-role/anon values. The workflow prints only shape metadata and boolean direct-DB connectivity output; raw URLs, database users, passwords, API keys, and row data are not printed. App-repo regression coverage also scans workflows so no workflow other than `supabase-standby-readiness.yml` reads standby write credentials before a protected failover path is implemented. The readiness workflow is not a failover approval; lag <= 30 seconds, parity, schema, sequence, writer-pause, and split-brain gates remain required before any Supabase promotion.
 
+The direct DB connectivity step runs on a disposable repository-scoped one-job runner with the single label `supabase-standby-ipv6`. The preflight job remains on GitHub-hosted `ubuntu-latest`; only the protected readiness job can request the IPv6 label. The runner is a separate Ubuntu VM, never `65.75.201.18`, and is destroyed/wiped after the one allowed run. Runner labels are routing selectors, not a security boundary; the boundary is enforced by manual dispatch, `main` guards, the protected `supabase-standby` environment, repository Actions controls, app regression tests, and cleanup.
+
 ```mermaid
 flowchart TD
     A[Operator starts Supabase Standby Credential Readiness] --> B[Typed confirmation preflight]
@@ -82,6 +85,7 @@ flowchart TD
     D --> E[Open direct Postgres URL with psql]
     E --> F[Run read-only boolean metadata query]
     F --> G[Step summary with safe metadata only]
+    R[Disposable IPv6 one-job runner] --> E
     H[Normal app and worker workflows] -. cannot read standby secrets .-> C
     I[Backend PostgreSQL primary] --> J[Normal app and worker reads/writes]
     K[Failover gate] -. requires lag parity schema sequence writer-pause split-brain checks .-> D
