@@ -62,6 +62,7 @@ This folder is organized by what you are trying to do: understand the product, c
 | Plan a formal external public API | [Public API Plan](PUBLIC_API_PLAN.md) |
 | Work on translations | [Multi-language Summaries](MULTI_LANGUAGE_SUMMARIES.md); [Multilingual Quality and Fallbacks](MULTILINGUAL_QUALITY_AND_FALLBACKS.md) |
 | Work on local AI | [Worker Local AI Lock](NUTSNEWS_WORKER_LOCAL_AI_LOCK.md); see ramideltoro/nutsnews-worker |
+| Operate the worker-uplift shadow runtime | [Worker-Uplift Shadow Runtime](NUTSNEWS_WORKER_UPLIFT_SHADOW_RUNTIME.md) |
 | Investigate worker queue pressure | [Worker Backpressure and Lock Safety](WORKER_BACKPRESSURE_AND_LOCK_SAFETY.md) |
 | Run regression tests | [Web Offline E2E](WEB_OFFLINE_E2E_REGRESSION_TEST.md); [Vercel Preview Smoke Test](VERCEL_PREVIEW_SMOKE_TEST.md); Worker tests live in ramideltoro/nutsnews-worker |
 | Review iOS notes | [iOS documentation and update notes](ios/README.md) |
