@@ -61,7 +61,7 @@ nutsnews_primary_shadow
 Related issue: https://github.com/ramideltoro/nutsnews/issues/496
 Related original app PR: https://github.com/ramideltoro/nutsnews/pull/507
 Related correction app PR: https://github.com/ramideltoro/nutsnews/pull/509
-Related runner runbook: [NutsNews Supabase Standby IPv6 One-Job Runner](NUTSNEWS_SUPABASE_STANDBY_IPV6_RUNNER.md)
+Related probe runbook: [NutsNews Supabase Standby Restricted Probe](NUTSNEWS_SUPABASE_STANDBY_PROBE.md)
 
 ### Simple Summary
 
@@ -69,23 +69,21 @@ NutsNews is using the production Supabase database it already has as the locked 
 
 ### Intermediate Summary
 
-Issue #496 now adopts the existing production Supabase project/database as the hot-standby target for backend PostgreSQL primary. The app-repo `Supabase Standby Credential Readiness` workflow remains manual-only, requires the typed confirmation `verify-supabase-standby-readiness`, and enters the protected `supabase-standby` GitHub Environment before reading any standby values. The readiness check validates that the standby project ref matches `NUTSNEWS_PRODUCTION_SUPABASE_PROJECT_REF`, validates the production Supabase URL, direct Postgres URL, service-role key, and anon key aliases, then uses `psql` in a read-only transaction to prove direct database connectivity. Normal production app and worker workflows still cannot read the standby service-role key or DB URL through these protected aliases, so Supabase writes remain unavailable until a later approved relay or failover path exists.
+Issue #496 now adopts the existing production Supabase project/database as the hot-standby target for backend PostgreSQL primary. The app-repo `Supabase Standby Credential Readiness` workflow remains manual-only, requires the typed confirmation `verify-supabase-standby-readiness`, and enters the protected `supabase-standby` GitHub Environment before reading any standby values. The readiness check validates that the standby project ref matches `NUTSNEWS_PRODUCTION_SUPABASE_PROJECT_REF`, validates the production Supabase URL, direct Postgres URL, service-role key, and anon key aliases, then pipes the protected direct database URL to the restricted backend forced-command SSH probe. The backend owns the fixed read-only `psql` query and returns only `READY` on success. Normal production app and worker workflows still cannot read the standby service-role key or DB URL through these protected aliases, so Supabase writes remain unavailable until a later approved relay or failover path exists.
 
 ### Expert Summary
 
-The standby credential inventory is stored as `supabase-standby` Environment secrets in `ramideltoro/nutsnews`: `NUTSNEWS_STANDBY_SUPABASE_PROJECT_REF`, `NUTSNEWS_STANDBY_SUPABASE_URL`, `NUTSNEWS_STANDBY_SUPABASE_DB_URL`, `NUTSNEWS_STANDBY_SUPABASE_SERVICE_ROLE_KEY`, and `NUTSNEWS_STANDBY_SUPABASE_ANON_KEY`. These are protected aliases for the existing production Supabase project values, not credentials for a new project. The local validator enforces `existing-production-supabase`, requires `NUTSNEWS_PRODUCTION_SUPABASE_PROJECT_REF`, rejects malformed project refs, rejects a standby ref that does not match the production Supabase ref, rejects non-HTTPS project URLs, rejects pooler DB URLs, rejects DB URLs missing `sslmode=require`, rejects missing DB credentials, and rejects identical service-role/anon values. The workflow prints only shape metadata and boolean direct-DB connectivity output; raw URLs, database users, passwords, API keys, and row data are not printed. App-repo regression coverage also scans workflows so no workflow other than `supabase-standby-readiness.yml` reads standby write credentials before a protected failover path is implemented. The readiness workflow is not a failover approval; lag <= 30 seconds, parity, schema, sequence, writer-pause, and split-brain gates remain required before any Supabase promotion.
-
-The direct DB connectivity step runs on a disposable repository-scoped one-job runner with the single label `supabase-standby-ipv6`. The preflight job remains on GitHub-hosted `ubuntu-latest`; only the protected readiness job can request the IPv6 label. The runner is a separate Ubuntu VM, never `65.75.201.18`, and is destroyed/wiped after the one allowed run. Runner labels are routing selectors, not a security boundary; the boundary is enforced by manual dispatch, `main` guards, the protected `supabase-standby` environment, repository Actions controls, app regression tests, and cleanup.
+The standby credential inventory is stored as `supabase-standby` Environment secrets in `ramideltoro/nutsnews`: `NUTSNEWS_STANDBY_SUPABASE_PROJECT_REF`, `NUTSNEWS_STANDBY_SUPABASE_URL`, `NUTSNEWS_STANDBY_SUPABASE_DB_URL`, `NUTSNEWS_STANDBY_SUPABASE_SERVICE_ROLE_KEY`, and `NUTSNEWS_STANDBY_SUPABASE_ANON_KEY`. These are protected aliases for the existing production Supabase project values, not credentials for a new project. The local validator enforces `existing-production-supabase`, requires `NUTSNEWS_PRODUCTION_SUPABASE_PROJECT_REF`, rejects malformed project refs, rejects a standby ref that does not match the production Supabase ref, rejects non-HTTPS project URLs, rejects pooler DB URLs, rejects DB URLs missing `sslmode=require`, rejects missing DB credentials, and rejects identical service-role/anon values. The direct-connectivity step runs on GitHub-hosted `ubuntu-latest`, prepares the dedicated probe SSH key with `0600` permissions, requires strict known-host checking, clears forwarding, requests no TTY, and pipes the protected direct DB URL to the existing backend. GitHub does not execute SQL or invoke `psql`; the backend restricted forced command owns the fixed read-only query. The workflow prints only safe metadata and the success/failure outcome; raw URLs, database users, passwords, API keys, PostgreSQL errors, and row data are not printed. App-repo regression coverage also scans workflows so no workflow other than `supabase-standby-readiness.yml` reads standby write credentials before a protected failover path is implemented. The readiness workflow is not a failover approval; lag <= 30 seconds, parity, schema, sequence, writer-pause, and split-brain gates remain required before any Supabase promotion.
 
 ```mermaid
 flowchart TD
     A[Operator starts Supabase Standby Credential Readiness] --> B[Typed confirmation preflight]
     B --> C[Enter protected supabase-standby Environment]
     C --> D[Validate existing production Supabase aliases]
-    D --> E[Open direct Postgres URL with psql]
-    E --> F[Run read-only boolean metadata query]
+    D --> E[Pipe direct Postgres URL to restricted backend probe]
+    E --> F[Backend runs fixed read-only query]
     F --> G[Step summary with safe metadata only]
-    R[Disposable IPv6 one-job runner] --> E
+    R[Existing backend forced-command SSH probe] --> E
     H[Normal app and worker workflows] -. cannot read standby secrets .-> C
     I[Backend PostgreSQL primary] --> J[Normal app and worker reads/writes]
     K[Failover gate] -. requires lag parity schema sequence writer-pause split-brain checks .-> D
@@ -97,9 +95,13 @@ Required setup:
 | --- | --- | --- |
 | `NUTSNEWS_STANDBY_SUPABASE_PROJECT_REF` | `supabase-standby` Environment secret | Existing production Supabase project ref. Must match `NUTSNEWS_PRODUCTION_SUPABASE_PROJECT_REF`. |
 | `NUTSNEWS_STANDBY_SUPABASE_URL` | `supabase-standby` Environment secret | Existing production Supabase HTTPS API URL used as the standby target. |
-| `NUTSNEWS_STANDBY_SUPABASE_DB_URL` | `supabase-standby` Environment secret | Existing production Supabase direct Postgres URL for protected `psql` checks and future controlled sync/bootstrap work. |
+| `NUTSNEWS_STANDBY_SUPABASE_DB_URL` | `supabase-standby` Environment secret | Existing production Supabase direct Postgres URL. The app workflow pipes it to the restricted backend probe over SSH stdin; GitHub does not run `psql`. |
 | `NUTSNEWS_STANDBY_SUPABASE_SERVICE_ROLE_KEY` | `supabase-standby` Environment secret | Existing production Supabase elevated API credential for later protected relay/failover work only. |
 | `NUTSNEWS_STANDBY_SUPABASE_ANON_KEY` | `supabase-standby` Environment secret | Existing production Supabase low-privilege API credential retained in the protected environment until failover approval. |
+| `NUTSNEWS_STANDBY_PROBE_SSH_PRIVATE_KEY` | `supabase-standby` Environment secret | Dedicated private key for the restricted backend probe identity. |
+| `NUTSNEWS_STANDBY_PROBE_KNOWN_HOSTS` | `supabase-standby` Environment secret | Independently verified backend host key for strict SSH host checking. |
+| `NUTSNEWS_STANDBY_PROBE_HOST` | Repository/environment variable | Fixed backend probe address. |
+| `NUTSNEWS_STANDBY_PROBE_USER` | Repository/environment variable | Fixed restricted probe username. |
 
 Operational notes:
 
@@ -118,7 +120,7 @@ Risks and mitigations:
 | A pooler URL passes as direct database readiness | The validator requires the direct `db.<project-ref>.supabase.co` host and TLS. |
 | A new standby project is accidentally introduced | The validator requires the standby ref to match `NUTSNEWS_PRODUCTION_SUPABASE_PROJECT_REF` and rejects mismatches. |
 | Readiness is mistaken for failover approval | Workflow and docs state that lag, parity, schema, sequence, writer-pause, and split-brain gates still have to pass before failover. |
-| Readiness output leaks credentials | The workflow summary records only safe metadata and boolean DB connectivity results. |
+| Readiness output leaks credentials | The workflow summary records only safe metadata and the restricted probe success result. |
 
 Rollback:
 
