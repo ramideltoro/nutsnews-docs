@@ -891,6 +891,8 @@ Check the Sentry project for:
 Check that:
 
 * shard freshness looks normal
+* worker-uplift pipeline owner/stage health is expected for the release state
+* worker-uplift DLQ counts and queue age are not growing unexpectedly
 * latest Worker runs are saving
 * AI usage is within expectations
 * feed health is not getting worse

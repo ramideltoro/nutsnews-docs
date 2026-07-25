@@ -91,6 +91,83 @@ returned `status=pass`, `dashboard_count=27`, `backend_alert_count=11`,
 RabbitMQ Prometheus query `result_count=35` for queue metrics, and RabbitMQ
 Loki log query `result_count=1`.
 
+## Admin Portal Projection
+
+Issue `ramideltoro/nutsnews-worker#147` adds the worker-uplift pipeline health
+projection to the private NutsNews admin portal. The final operator route is:
+
+```text
+/admin/shards
+```
+
+The route keeps the legacy shard health cards, tables, and recent runs visible,
+then adds a RabbitMQ pipeline health section from the backend durable
+projection. The admin portal does not call RabbitMQ management, AMQP, Grafana
+Cloud, or any broker endpoint from browser code.
+
+Backend admin operations:
+
+| Operation | Use |
+| --- | --- |
+| `load-admin-worker-shards` | Primary portal read. Returns legacy `workerRunRows` plus embedded `workerUpliftHealth`. |
+| `load-admin-worker-uplift-health` | Dedicated bounded smoke/API-contract read for the same projection. |
+
+Top-level `workerUpliftHealth` fields shown or normalized by the portal:
+
+| Field | Meaning |
+| --- | --- |
+| `isAvailable` | Whether the backend response included a usable projection. Missing old-backend payloads render as unavailable while preserving shard health. |
+| `schemaVersion` | Versioned admin projection schema. |
+| `source` | Durable backend source classification, normally `backend_postgres_durable_projection`. |
+| `grafanaDependency` | Must be `false`; the portal uses backend PostgreSQL projection data, not live Grafana queries. |
+| `activeIngestionOwner` | Current ingestion owner: `legacy_shards`, `coexistence`, `worker_uplift`, `rollback`, or `unknown`. |
+| `cutoverState` | Human-readable migration/cutover state from the backend. |
+| `productionWritesEnabled` | Whether worker-uplift production writes are active. |
+| `overallStatus` | `healthy`, `degraded`, `stale`, `unknown`, `legacy_only`, `rollback`, `partial`, or `unavailable`. |
+| `stageRows` | Per-stage pipeline health rows. |
+| `partialErrors` | Redacted source/error-class pairs for partial telemetry; no raw broker URL or credential detail. |
+| `links.dashboardPath` | Source-controlled Grafana dashboard path, for example `grafana/backend-metrics/dashboards.json`. |
+| `links.runbookPath` | Source-controlled runbook path, for example `runbooks/WORKER_UPLIFT_RABBITMQ_METRICS.md`. |
+
+Per-stage `stageRows[]` fields:
+
+| Field | Meaning |
+| --- | --- |
+| `stage` | One of `scheduler`, `fetcher`, `canonicalizer`, `enrichment`, `approval`, `translation`, `persistence`, or `publication`. |
+| `activeIngestionOwner` | Owner at stage row level, falling back to the projection owner if missing. |
+| `stageStatus` | `healthy`, `degraded`, `failed`, `stale`, `unknown`, `legacy_only`, `rollback`, or `unavailable`. |
+| `staleStatus` | `current`, `stale`, or `unknown`. |
+| `lastAttemptAt`, `lastSuccessAt`, `lastFailureAt` | Last observed stage timestamps. |
+| `consecutiveFailureCount` | Consecutive failures for the stage. |
+| `throughputPerMinute` | Durable projected stage throughput. |
+| `latencyP50Ms`, `latencyP95Ms` | Stage latency percentiles in milliseconds. |
+| `retryCount`, `dlqCount` | Retry and DLQ counts; a non-zero `dlqCount` is operator-actionable without RabbitMQ management access. |
+| `queueAgeSeconds` | Oldest queued work age. |
+| `activeConsumers` | Active consumer count for the stage. |
+| `deploymentVersion` | Worker-uplift service version or image marker. |
+| `telemetryVersion`, `projectionVersion` | Producer/projection version markers. |
+| `updatedAt` | Projection row update timestamp. |
+| `errorClass` | Redacted error class for the stage. |
+
+Operator state mapping:
+
+| State | How to read it in `/admin/shards` |
+| --- | --- |
+| Legacy-only | `activeIngestionOwner=legacy_shards`, `productionWritesEnabled=false`, and `overallStatus=legacy_only` or unavailable projection on old backends. |
+| Shadow | `productionWritesEnabled=false` with `activeIngestionOwner=coexistence` or `worker_uplift`; legacy shards remain the source of production truth. |
+| Uplift-primary | `activeIngestionOwner=worker_uplift` and `productionWritesEnabled=true`; investigate any degraded stage before cutover retirement. |
+| Rollback | `activeIngestionOwner=rollback` or `overallStatus=rollback`; use legacy shard health and rollback runbooks as the primary evidence. |
+| Stale | `overallStatus=stale`, a stage `stageStatus=stale`, or `staleStatus=stale`; compare `lastSuccessAt` and `queueAgeSeconds`. |
+| Partial data | `overallStatus=partial` or non-empty `partialErrors`; source/error-class is safe to display, but missing metrics should not be treated as healthy. |
+| Unavailable | `isAvailable=false` or stage `stageStatus=unavailable`; old-backend payloads still keep legacy shard diagnostics usable. |
+
+Safety rules:
+
+- `/admin/shards` is read-only and must not mutate ingestion, queue, broker, or cutover state.
+- Browser-rendered code must not contain AMQP URLs, broker hostnames, management UI links, credentials, message payloads, or private queue endpoints.
+- Dashboard and runbook links are repository paths converted to GitHub source links by the web app, not live infrastructure endpoints.
+- A non-empty DLQ or oldest queue age should be enough to identify the blocked stage before opening Grafana or backend runbooks.
+
 ## Proof Workflow
 
 Use the backend `Backend RabbitMQ Metrics Check` workflow after protected apply:
