@@ -372,4 +372,4 @@ public.ai_decision_version_report
 | `/admin/ai-usage` | See OpenAI usage and accepted/rejected counts by Worker run |
 | `/admin/feed-health` | See source health and feed reliability |
 | `/admin/feeds` | Enable/disable feeds and inspect source quality |
-| `/admin/shards` | Check Worker shard execution health |
+| `/admin/shards` | Check legacy Worker shard execution health plus worker-uplift pipeline owner, stage, queue-age, retry, and DLQ health |
