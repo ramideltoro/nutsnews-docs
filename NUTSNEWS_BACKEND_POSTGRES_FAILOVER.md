@@ -1,22 +1,29 @@
-# NutsNews Backend PostgreSQL Failover Target
+# NutsNews Backend PostgreSQL Primary And Supabase Hot Standby
 
-Architecture status: this backend PostgreSQL path is the approved shadow and
-future-primary target, but Supabase remains the production writer until the
-protected cutover workflow is explicitly approved and executed. Worker-uplift
-target ownership and coexistence are summarized in
-[Architecture](ARCHITECTURE.md).
+Architecture status: backend PostgreSQL is the production read/write primary.
+The existing production Supabase project remains the protected hot-standby
+target. Do not create a new Supabase project or `nutsnews-standby` database for
+this standby plan. Worker-uplift target ownership and coexistence are
+summarized in [Architecture](ARCHITECTURE.md).
 
 ## Simple Summary
 
-NutsNews now has a private backup database place on the backend server. It is not used by the live app yet. It lets us practice restoring safe staging data before anyone tries a real production database move.
+NutsNews reads and writes through the private backend PostgreSQL database. The
+existing production Supabase database is kept as the locked backup target and
+must not receive app or worker writes before an approved failover.
 
 ## Intermediate Summary
 
-`ramideltoro/nutsnews-backend` provisions PostgreSQL on `backend.nutsnews.com` through the protected Ansible pipeline. PostgreSQL and Adminer are bound to `127.0.0.1` only, so operators must use an SSH tunnel. Supabase remains the production writer. Protected GitHub Actions drills restore staging and production-shadow data into backend PostgreSQL targets, attach one-way logical replication for the primary shadow, and publish readiness to the ops dashboard, metrics, and health report. Feature-flagged worker and app compatibility APIs expose bounded database operations for shadow validation before any primary cutover.
+`ramideltoro/nutsnews-backend` provisions PostgreSQL on `backend.nutsnews.com` through the protected Ansible pipeline. PostgreSQL and Adminer are bound to `127.0.0.1` only, so operators must use an SSH tunnel. Backend PostgreSQL remains the production primary for app and worker reads/writes. The existing production Supabase project is the standby target for protected backend-primary recovery work. App, worker, and normal release workflows must not write to Supabase through standby credentials before an approved failover path passes lag, parity, schema, sequence, writer-pause, and split-brain gates.
 
 ## Expert Summary
 
-Backend issue #13 establishes a single-writer, restore-verified failover target, not active-active replication. The backend repo adds PostgreSQL 18-compatible Ubuntu package provisioning, SCRAM auth for local roles, loopback-only Adminer through Caddy/PHP-FPM, staging and production-shadow logical restore drills, one-way production logical replication into `nutsnews_primary_shadow`, PostgreSQL readiness metrics, worker and app compatibility routes, and an ADR that forbids production cutover until parity evidence and cutover approval exist. Sync-back to Supabase is not supported; failback remains a controlled forward-recovery procedure to avoid split-brain.
+Backend issue #13 established the single-writer PostgreSQL path; later cutover
+work moved production reads/writes to backend PostgreSQL. Issue
+`ramideltoro/nutsnews#223` keeps Supabase as a standby/recovery target, not an
+active writer. Sync-back and active-active writes are not supported; any
+Supabase promotion remains a controlled forward-recovery procedure to avoid
+split-brain.
 
 ## Control Flow
 
@@ -25,18 +32,19 @@ flowchart TD
     A[Protected Backend Apply] --> B[Install PostgreSQL on backend]
     B --> C[Bind PostgreSQL to 127.0.0.1:5432]
     B --> D[Bind Adminer to 127.0.0.1:8082]
-    E[Backend PostgreSQL Failover Drill] --> F[Link staging Supabase with protected token]
-    F --> G[Dump public schema and data]
-    G --> H[Restore into nutsnews_restore_rehearsal]
-    H --> I[Validate tables, views, and row counts]
-    I --> J[Write /var/lib/nutsnews/postgres/status.json]
-    J --> K[Ops dashboard, metrics, health report]
-    L[Production Supabase] -. remains writer .-> M[NutsNews app and worker]
+    E[NutsNews app and worker] --> F[Backend compatibility APIs]
+    F --> G[Backend PostgreSQL primary]
+    H[Existing production Supabase] -. protected hot standby target .-> G
+    I[Standby manifest validator] --> H
+    J[Failover gates] -. lag parity schema sequence writer-pause split-brain .-> H
 ```
 
 ## Operating Model
 
-Supabase remains the only production writer. The backend PostgreSQL database is a private target for restore rehearsal and future controlled failover. It is not a public database endpoint and it does not receive production app traffic.
+Backend PostgreSQL is the only production read/write primary. The existing
+production Supabase project is retained as the hot-standby target and must stay
+isolated from normal app/worker write paths until an approved failover changes
+that policy.
 
 The first restore path is logical dump/restore from the staging Supabase project into:
 
@@ -44,13 +52,14 @@ The first restore path is logical dump/restore from the staging Supabase project
 nutsnews_restore_rehearsal
 ```
 
-The production database name reserved by the backend baseline is:
+The backend production database name reserved by the backend baseline is:
 
 ```text
 nutsnews_failover
 ```
 
-The future-primary shadow database used for production-shadow migration gates is:
+The earlier primary-shadow database used for production-shadow migration gates
+is:
 
 ```text
 nutsnews_primary_shadow
@@ -59,6 +68,7 @@ nutsnews_primary_shadow
 ## Supabase Hot Standby Target Readiness
 
 Related issue: https://github.com/ramideltoro/nutsnews/issues/496
+Related manifest issue: https://github.com/ramideltoro/nutsnews/issues/497
 Related original app PR: https://github.com/ramideltoro/nutsnews/pull/507
 Related correction app PR: https://github.com/ramideltoro/nutsnews/pull/509
 Related probe runbook: [NutsNews Supabase Standby Restricted Probe](NUTSNEWS_SUPABASE_STANDBY_PROBE.md)
@@ -74,6 +84,42 @@ Issue #496 now adopts the existing production Supabase project/database as the h
 ### Expert Summary
 
 The standby credential inventory is stored as `supabase-standby` Environment secrets in `ramideltoro/nutsnews`: `NUTSNEWS_STANDBY_SUPABASE_PROJECT_REF`, `NUTSNEWS_STANDBY_SUPABASE_URL`, `NUTSNEWS_STANDBY_SUPABASE_DB_URL`, `NUTSNEWS_STANDBY_SUPABASE_SERVICE_ROLE_KEY`, and `NUTSNEWS_STANDBY_SUPABASE_ANON_KEY`. These are protected aliases for the existing production Supabase project values, not credentials for a new project. The local validator enforces `existing-production-supabase`, requires `NUTSNEWS_PRODUCTION_SUPABASE_PROJECT_REF`, rejects malformed project refs, rejects a standby ref that does not match the production Supabase ref, rejects non-HTTPS project URLs, rejects pooler DB URLs, rejects DB URLs missing `sslmode=require`, rejects missing DB credentials, and rejects identical service-role/anon values. The direct-connectivity step runs on GitHub-hosted `ubuntu-latest`, prepares the dedicated probe SSH key with `0600` permissions, requires strict known-host checking, clears forwarding, requests no TTY, and pipes the protected direct DB URL to the existing backend. GitHub does not execute SQL or invoke `psql`; the backend restricted forced command owns the fixed read-only query. The workflow prints only safe metadata and the success/failure outcome; raw URLs, database users, passwords, API keys, PostgreSQL errors, and row data are not printed. App-repo regression coverage also scans workflows so no workflow other than `supabase-standby-readiness.yml` reads standby write credentials before a protected failover path is implemented. The readiness workflow is not a failover approval; lag <= 30 seconds, parity, schema, sequence, writer-pause, and split-brain gates remain required before any Supabase promotion.
+
+### Standby Schema And Replication Manifest
+
+Issue `ramideltoro/nutsnews#497` adds the app-repo standby manifest at
+`supabase/standby_manifest.json`, with validator
+`scripts/supabase_standby_manifest.mjs`, tests in
+`tests/supabase-standby-manifest.test.mjs`, and CI coverage through
+`supabase-standby-manifest-regression.yml` plus `database-migration-gate.yml`.
+The manifest is source-controlled metadata only; it does not connect to
+Supabase and does not grant write access.
+
+Current manifest contract:
+
+| Field | Value |
+| --- | --- |
+| Migration head | `20260717113000` |
+| Replicated base tables | 15 |
+| Excluded views/materialized views | 7 |
+| Sequence-backed tables | 6 |
+| Schema fingerprint | `0b6026d22f8d8138733d139ecb497049c13a8e69ac01939cbd84932c8011cc2c` |
+
+Replicated tables are the current `public` base tables from the Supabase
+migration contract. Views and materialized views are excluded from row
+replication and must be checked through schema and derived-query parity instead
+of copied as rows. Every replicated table must have a primary key or explicit
+replica identity; a missing identity fails the validator before merge. Sequence
+safety is explicit: before a Supabase promotion, each target sequence must be
+advanced beyond both the source `last_value` and the target table `max(id)`, and
+promotion fails closed if any sequence is missing, stale, or unvalidated.
+
+Destructive Supabase retirement work is blocked until this manifest exists and
+passes. A schema fingerprint mismatch blocks standby promotion. The manifest
+also restates the standing safety policy: backend PostgreSQL remains primary,
+the target is the existing production Supabase project, no new Supabase project
+or `nutsnews-standby` database is created, and app/worker Supabase writes remain
+withheld until approved failover.
 
 ```mermaid
 flowchart TD
@@ -109,6 +155,7 @@ Operational notes:
 - Direct database readiness uses the `db.<project-ref>.supabase.co:5432/postgres?sslmode=require` form, not Supavisor pooler URLs.
 - Backend PostgreSQL remains the primary read/write database. This workflow does not change provider mode and does not expose Supabase write credentials to production app or worker jobs.
 - The workflow is a credential readiness gate only. It does not migrate schema, copy data, install a sync relay, reconcile existing Supabase state, promote Supabase, or approve failover.
+- The standby manifest is a schema and safety gate. It defines the intended replication surface but still does not approve failover.
 - Before failover, operators still need lag <= 30 seconds, parity checks, schema fingerprint checks, sequence safety checks, writer-pause evidence, and split-brain checks.
 - If the workflow fails on missing secrets, populate the protected `supabase-standby` Environment with aliases for the existing production Supabase values and rerun it. Do not paste values into issues, PRs, docs, or chat.
 
@@ -182,11 +229,11 @@ refresh `public_feed_snapshot`. A write-enabled smoke that only checks empty
 batch writes is insufficient; include at least one Worker read probe before
 declaring the backend-primary Worker path healthy.
 
-Keep `NUTSNEWS_BACKEND_WORKER_API_WRITES_ENABLED=false` during shadow
-validation. Rollback before production cutover is explicit: set the worker back
-to `supabase_primary`, or disable `NUTSNEWS_BACKEND_WORKER_API_ENABLED` and
-rerun protected backend apply. Supabase remains the production primary until a
-separate cutover approval says otherwise.
+Historical shadow-validation note: before backend-primary cutover,
+`NUTSNEWS_BACKEND_WORKER_API_WRITES_ENABLED=false` kept the Worker compatibility
+API read-only. Current production keeps backend PostgreSQL primary; any rollback
+from backend-primary mode or any Supabase standby write enablement still needs a
+separate protected approval.
 
 ## App Compatibility Boundary
 
@@ -348,10 +395,11 @@ Rollback remains explicit: set the app provider mode back to
 `supabase_primary`, remove or ignore backend API credentials, and keep Supabase
 as the production primary.
 
-## 2026-07-19 Live Pause Execution Evidence
+## Historical 2026-07-19 Live Pause Execution Evidence
 
-The production app and worker pause controls have now been executed, but the
-database provider has not been switched. Supabase remains the production writer.
+This section records the 2026-07-19 state before the later backend-primary
+policy. At that time, the production app and worker pause controls had been
+executed but the database provider had not been switched.
 
 | Gate | Evidence | Result |
 | --- | --- | --- |
