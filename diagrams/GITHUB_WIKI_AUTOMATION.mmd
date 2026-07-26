@@ -1,0 +1,19 @@
+---
+title: Wiki publishing pipeline
+---
+
+flowchart LR
+  A["Repository markdown update"] --> B["Push commit to main"]
+  B --> C["Workflow validate-doc-paths"]
+  B --> D["Secret safety scan"]
+  B --> E["Jekyll build"]
+  B --> F["Budget validation"]
+  C --> G["Gate decision"]
+  D --> G
+  E --> G
+  F --> G
+  G -->|All pass| H["Upload Pages artifact"]
+  H --> I["Deploy to GitHub Pages"]
+  I --> J["Resolve DNS + HTTPS on wiki.nutsnews.com"]
+  G -->|Failure| K["Fix cause and re-run workflow"]
+

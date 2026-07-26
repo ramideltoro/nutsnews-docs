@@ -1,3 +1,18 @@
+---
+title: GitHub Pages Publishing for the NutsNews Wiki
+wiki:
+  source_route: /technical/github-wiki-automation/
+  simple_route: /simple/github-wiki-automation/
+  primary_diagram: diagrams/GITHUB_WIKI_AUTOMATION.mmd
+  status: active
+  collection: start-here
+  section: contributing
+  approval:
+    reviewed_by: pending
+    reviewed_on: pending
+    technical_source_hash: bc950f7e714c7b648a71ee5c66f791638b1d6dd167eaa7be34061b88753b6326
+---
+
 # GitHub Pages publishing for the NutsNews wiki
 
 NutsNews documentation is published as the static site at `https://wiki.nutsnews.com`.
