@@ -31,6 +31,7 @@ This folder is organized by what you are trying to do: understand the product, c
 | Review backend OpenAI maintenance robot | [Backend OpenAI Maintenance Robot](NUTSNEWS_BACKEND_OPENAI_MAINTENANCE_ROBOT.md) |
 | Review backend service baseline attestation | [Backend Service Baseline](NUTSNEWS_BACKEND_SERVICE_BASELINE.md) |
 | Operate the Supabase standby restricted probe | [Supabase Standby Restricted Probe](NUTSNEWS_SUPABASE_STANDBY_PROBE.md) |
+| Reconcile the existing Supabase standby bootstrap | [Backend Postgres Failover](NUTSNEWS_BACKEND_POSTGRES_FAILOVER.md#standby-reconciliation-and-bootstrap) |
 | Find the worker-uplift operation owner map | [Worker-Uplift Operation Map](NUTSNEWS_WORKER_UPLIFT_OPERATION_MAP.md) |
 | Review worker-uplift RabbitMQ capacity and security | [Worker-Uplift RabbitMQ Capacity And Security](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_CAPACITY_SECURITY.md) |
 | Provision worker-uplift RabbitMQ | [Worker-Uplift RabbitMQ Provisioning](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_PROVISIONING.md) |
@@ -96,6 +97,7 @@ These docs explain the product and the system at a high level.
 | [Backend OpenAI Maintenance Robot](NUTSNEWS_BACKEND_OPENAI_MAINTENANCE_ROBOT.md) | Daily OpenAI-assisted maintenance scan, scan labels, issue routing, artifacts, and safety boundaries |
 | [Backend Service Baseline](NUTSNEWS_BACKEND_SERVICE_BASELINE.md) | Read-only live service inventory, public exposure policy, and re-attestation trigger |
 | [Supabase Standby Restricted Probe](NUTSNEWS_SUPABASE_STANDBY_PROBE.md) | Zero-cost forced-command backend probe boundary, activation checks, incident response, and safe evidence for the protected standby readiness workflow |
+| [Backend Postgres Failover](NUTSNEWS_BACKEND_POSTGRES_FAILOVER.md#standby-reconciliation-and-bootstrap) | Existing production Supabase standby reconciliation workflow, safe metadata report contract, protected backfill mode, and failover boundary |
 | [Worker-Uplift Operation Map](NUTSNEWS_WORKER_UPLIFT_OPERATION_MAP.md) | Backend-owned old-to-new operation map for legacy Worker scripts, backend host operations, Grafana ownership, DNS failover separation, and worker-uplift runtime controls |
 | [Worker-Uplift RabbitMQ Capacity And Security](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_CAPACITY_SECURITY.md) | RabbitMQ release pin, queue-type decision, hard limits, access boundary, benchmark path, and recovery model for the backend-owned worker-uplift broker |
 | [Worker-Uplift RabbitMQ Provisioning](NUTSNEWS_WORKER_UPLIFT_RABBITMQ_PROVISIONING.md) | Protected Ansible/Compose provisioning path, topology bootstrap, credential boundary, durable probe, host-restart verification, and rollback model for the backend-owned worker-uplift broker |

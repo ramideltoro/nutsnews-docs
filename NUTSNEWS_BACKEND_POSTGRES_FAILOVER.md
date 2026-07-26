@@ -69,6 +69,7 @@ nutsnews_primary_shadow
 
 Related issue: https://github.com/ramideltoro/nutsnews/issues/496
 Related manifest issue: https://github.com/ramideltoro/nutsnews/issues/497
+Related reconciliation issue: https://github.com/ramideltoro/nutsnews/issues/498
 Related original app PR: https://github.com/ramideltoro/nutsnews/pull/507
 Related correction app PR: https://github.com/ramideltoro/nutsnews/pull/509
 Related probe runbook: [NutsNews Supabase Standby Restricted Probe](NUTSNEWS_SUPABASE_STANDBY_PROBE.md)
@@ -103,7 +104,7 @@ Current manifest contract:
 | Replicated base tables | 15 |
 | Excluded views/materialized views | 7 |
 | Sequence-backed tables | 6 |
-| Schema fingerprint | `0b6026d22f8d8138733d139ecb497049c13a8e69ac01939cbd84932c8011cc2c` |
+| Schema fingerprint | `9f8cffa694100f438abaddbf6e00db13ff969572e8c16fd4b8ee4afa5087088f` |
 
 Replicated tables are the current `public` base tables from the Supabase
 migration contract. Views and materialized views are excluded from row
@@ -120,6 +121,36 @@ also restates the standing safety policy: backend PostgreSQL remains primary,
 the target is the existing production Supabase project, no new Supabase project
 or `nutsnews-standby` database is created, and app/worker Supabase writes remain
 withheld until approved failover.
+
+### Standby Reconciliation And Bootstrap
+
+Issue `ramideltoro/nutsnews#498` is backend-owned in
+`ramideltoro/nutsnews-backend` through
+`.github/workflows/backend-supabase-standby-reconciliation.yml`. The workflow
+uses the backend `production-backend` Environment, runs on GitHub-hosted
+`ubuntu-latest`, SSHes to the existing backend host, and performs the
+backend-primary-to-existing-production-Supabase comparison from that host. This
+keeps backend PostgreSQL credentials out of the app repo while still letting the
+backend reach the Supabase direct database endpoint.
+
+Workflow modes:
+
+| Mode | Confirmation | Behavior |
+| --- | --- | --- |
+| `report` | `report-existing-production-supabase-standby` | Compares schema fingerprint, migration contract fingerprint, table row counts, table row checksums, and sequence safety with safe metadata only. |
+| `apply-backfill` | `backfill-existing-production-supabase-from-backend-primary` | Copies backend-primary rows into the existing production Supabase standby target with upsert semantics, advances target sequences above source and target max ids, then reruns the same report checks. |
+
+The report artifact is `backend-supabase-standby-reconciliation`. It may include
+workflow run URL, status, table counts, checksum digests, schema/catalog
+digests, sequence last/next values, and backfill row counts. It must not include
+database URLs, passwords, tokens, service-role keys, PostgreSQL error text, or
+raw row data.
+
+This reconciliation workflow does not create a new Supabase project, create a
+`nutsnews-standby` database, expose Supabase as the production app/worker
+provider, install the continuous sync relay, or approve failover. Continuous
+backend-to-Supabase sync is tracked separately by `ramideltoro/nutsnews#499`;
+lag monitoring and failover approval remain later #223 child gates.
 
 ```mermaid
 flowchart TD
@@ -156,6 +187,7 @@ Operational notes:
 - Backend PostgreSQL remains the primary read/write database. This workflow does not change provider mode and does not expose Supabase write credentials to production app or worker jobs.
 - The workflow is a credential readiness gate only. It does not migrate schema, copy data, install a sync relay, reconcile existing Supabase state, promote Supabase, or approve failover.
 - The standby manifest is a schema and safety gate. It defines the intended replication surface but still does not approve failover.
+- The backend reconciliation workflow is the #498 bootstrap gate. It can copy backend-primary rows to the existing production Supabase standby target only through the protected `production-backend` Environment and typed confirmation.
 - Before failover, operators still need lag <= 30 seconds, parity checks, schema fingerprint checks, sequence safety checks, writer-pause evidence, and split-brain checks.
 - If the workflow fails on missing secrets, populate the protected `supabase-standby` Environment with aliases for the existing production Supabase values and rerun it. Do not paste values into issues, PRs, docs, or chat.
 
