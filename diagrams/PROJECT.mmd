@@ -1,0 +1,17 @@
+flowchart TD
+  rss["RSS sources"] --> controller["Controller Worker\n(orchestration)"]
+  controller --> shards["Cloudflare Worker shards\nrefresh loop"]
+  shards --> ai["AI curation and filtering"]
+  ai --> storage["Supabase + PostgreSQL\nstorage"]
+  storage --> api["Worker DB API / App DB API"]
+  api --> web["Next.js web + admin"]
+  web --> readers["Readers\npublic + feed cards"]
+
+  ops["Ops stack"] --> repo["docs/repo workflows"]
+  ops --> observability["Monitoring, logs, uptime"]
+  observability --> web
+  web --> ops
+
+  storage --> graph["public_feed_snapshot\npublic projection"]
+  graph --> readers
+  web --> preview["/opengraph-image previews"]
