@@ -13,7 +13,7 @@ wiki:
     technical_source_hash: 9fc705661a5badd0dbc48e5c072b7f1586cb486178067df96b4edaf694ad20a5
 ---
 
-# Architecture
+# Architecture (Simple)
 
 This is the current NutsNews architecture and the approved worker-uplift target
 as of 2026-07-23. The uplift is approved for implementation, not production
