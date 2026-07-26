@@ -1,0 +1,20 @@
+flowchart LR
+  edit["Operator updates markdown docs"] --> commit["Push commit to main"]
+  commit --> ci["GitHub Actions wiki pipeline"]
+  ci --> checks["Inventory and secret safety checks"]
+  checks --> build["Jekyll build + budgets"]
+  build --> publish["Pages artifact deployment"]
+  publish --> dns["DNS CNAME + HTTPS check"]
+  dns --> ok["Wiki route serving"]
+  ok --> users["Readers and operators"]
+
+  subgraph "Ops runtime"
+    direction TB
+    web["web app and admin routes"]
+    api["/admin dashboards"]
+    workers["Cloudflare Worker shards"]
+    infra["VPS + backend rails"]
+    web --> api
+    api --> workers
+    workers --> infra
+  end
