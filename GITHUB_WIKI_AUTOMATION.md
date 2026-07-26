@@ -18,6 +18,7 @@ Published content includes every repository markdown document that is not in an 
 - `.github` and script directories
 - generated artifacts (`_site`)
 - editor/system files (`node_modules`, `.DS_Store`, etc.)
+- repo-level ignores such as `.env`, build caches, and temporary draft/AI files via `.gitignore`
 
 ## What to edit
 
@@ -33,6 +34,8 @@ Publishing is controlled by
 
 - `.github/workflows/wiki-pages.yml`
 - `scripts/wiki/validate-doc-paths.mjs`
+- `scripts/wiki/validate-wiki-budgets.mjs`
+- `scripts/wiki/validate-wiki-secrets.mjs`
 - `_config.yml`
 - `index.md`
 
@@ -41,7 +44,9 @@ Publishing is controlled by
 1. Push docs to `main` with a successful commit.
 2. CI gate checks:
    - Documentation path inventory validation
+   - Secret-safety validation (tracked/staged repository scan)
    - Jekyll build pass
+   - Build artifact size, build duration, and pagefind budget checks
    - Pages artifact generation
 3. Manual/manual-override deployment gate (if `wiki-pages` environment is protected in GitHub):
    - reviewer approval in GitHub Environments
@@ -66,6 +71,11 @@ Use these commands from the repository root.
 
 ```bash
 node scripts/wiki/validate-doc-paths.mjs
+```
+
+```bash
+node scripts/wiki/validate-wiki-budgets.mjs
+node scripts/wiki/validate-wiki-secrets.mjs --smoke-test
 ```
 
 ### Preview build locally

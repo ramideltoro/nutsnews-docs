@@ -22,6 +22,12 @@ This update adds the missing GitHub Actions around build safety, operations, bac
 
 The branch already had Dependabot, CodeQL, Snyk, Lighthouse CI, accessibility CI, PageSpeed Insights, SEO structured data audit, and GitHub Pages wiki publish automation.
 
+The `wiki-pages` workflow now also includes:
+
+- document inventory validation
+- wiki secret-safety checks on tracked/staged repository files
+- artifact budget checks for size, build duration, pagefind output, and external asset references
+
 ## Recommended repository secrets
 
 Add these in GitHub under **Settings → Secrets and variables → Actions**:
