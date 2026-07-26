@@ -28,8 +28,8 @@ flowchart LR
     actions -->|"protected Ansible apply"| relay["Backend-local sync relay"]
     reconcile -->|"local loopback connection"| primary
     reconcile -->|"outbound TLS connection"| standby[("Existing production Supabase<br/>STANDBY TARGET")]
-    primary -->|"private trigger ledger"| relay
-    relay -->|"outbound TLS direct DB connection"| standby
+    primary -->|"snapshot reads over loopback"| relay
+    relay -->|"outbound TLS direct DB writes"| standby
     primary -->|"manual report or full backfill"| standby
 
     standby -.->|"provider switch is not implemented"| web
@@ -108,7 +108,7 @@ Views and materialized views are not copied as rows. They are validated through 
 Synchronization has two backend-owned layers:
 
 1. A protected reconciliation workflow for reports and controlled backfills.
-2. A backend-local one-way relay that captures source changes in a private ledger and writes outbound to Supabase.
+2. A backend-local one-way relay that repeatedly mirrors the source snapshot and writes outbound to Supabase.
 
 ```mermaid
 sequenceDiagram
@@ -157,14 +157,16 @@ Issue [`ramideltoro/nutsnews#499`](https://github.com/ramideltoro/nutsnews/issue
 The relay keeps backend PostgreSQL private:
 
 - backend PostgreSQL stays bound to loopback and remains the source of truth;
-- source triggers append inserts, updates, and deletes to a private backend-side ledger;
-- a locked `nutsnews-standby-relay` systemd timer drains that ledger;
+- a locked `nutsnews-standby-relay` systemd timer runs a snapshot-apply relay;
+- each relay run reads the backend source tables, upserts changed rows, deletes target-only rows, and advances sequences;
 - the target is the existing production Supabase direct PostgreSQL endpoint on `db.<project-ref>.supabase.co:5432` with TLS;
 - the Supabase pooler, a new Supabase project, and public inbound database access are not used.
 
-The relay fails closed before applying changes when the source or target table identity is unsafe, required schema metadata differs, the target direct DB URL is not the expected direct Supabase form, or a target apply fails. Source events are acknowledged only after the corresponding Supabase apply succeeds. Sequence readiness is handled by advancing target sequences above source and target observed values.
+The relay fails closed before applying changes when schema fingerprints, migration-contract fingerprints, manifest table identity, or live source/target table identity are unsafe. Sequence readiness is handled by advancing target sequences above source and target observed values.
 
 The relay status and workflow artifacts must remain safe metadata only. They may record pass/fail state, event counts, sequence counts, and generic blockers. They must not print database URLs, passwords, host/project metadata, PostgreSQL error text, raw row values, service-role keys, or tokens.
+
+A protected smoke workflow proves live catch-up with synthetic rows in `public.staging_fixture_runs` and `public.staging_fixture_users`: insert, update, and delete must all appear in Supabase through the backend relay before #499 is closed.
 
 This relay narrows the data-age gap, but it still does not approve Supabase promotion. Failover continues to require lag, parity, schema, sequence, writer-pause, and split-brain evidence.
 
@@ -293,5 +295,6 @@ Automatic promotion should be considered only after the manual workflow, alerts,
 - [Backend monitoring](https://github.com/ramideltoro/nutsnews-docs/blob/main/NUTSNEWS_BACKEND_MONITORING.md)
 - [Supabase standby manifest](https://github.com/ramideltoro/nutsnews/blob/main/supabase/standby_manifest.json)
 - [Protected reconciliation workflow](https://github.com/ramideltoro/nutsnews-backend/blob/main/.github/workflows/backend-supabase-standby-reconciliation.yml)
-- [Protected relay workflow](https://github.com/ramideltoro/nutsnews-backend/blob/main/.github/workflows/backend-supabase-standby-relay.yml)
+- [Protected backend apply workflow](https://github.com/ramideltoro/nutsnews-backend/blob/main/.github/workflows/protected-backend-ansible-apply.yml)
+- [Protected relay smoke workflow](https://github.com/ramideltoro/nutsnews-backend/blob/main/.github/workflows/backend-supabase-sync-relay-smoke.yml)
 - [Database standby and failover tracking](https://github.com/ramideltoro/nutsnews/issues/223)
