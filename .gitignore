@@ -1,0 +1,41 @@
+# GitHub Pages and wiki authoring artifacts
+_site/
+_site/**
+.jekyll-cache/
+.bundle/
+.sass-cache/
+
+# Node and tooling caches
+node_modules/
+coverage/
+.npm/
+.yarn/
+.pnpm-store/
+.cache/
+tmp/
+temp/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Editor and OS artifacts
+.DS_Store
+Thumbs.db
+
+# Temporary and generated authoring files
+**/*.tmp
+**/*.tmp.md
+**/*.ai.md
+**/*.draft.md
+**/tmp/*
+**/tmp/**
+*.local.md
+
+# Local runtime and debug artifacts
+*.log
+*.pid
+*.seed
+*.swp
+*.swo

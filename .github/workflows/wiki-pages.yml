@@ -8,6 +8,8 @@ on:
       - "**/*.md"
       - "GITHUB_WIKI_AUTOMATION.md"
       - ".github/workflows/wiki-pages.yml"
+      - "scripts/wiki/validate-wiki-secrets.mjs"
+      - "scripts/wiki/validate-wiki-budgets.mjs"
       - "scripts/wiki/validate-doc-paths.mjs"
       - "_config.yml"
       - "index.md"
@@ -33,6 +35,9 @@ jobs:
       - name: Validate markdown inventory
         run: node scripts/wiki/validate-doc-paths.mjs
 
+      - name: Validate secret safety
+        run: node scripts/wiki/validate-wiki-secrets.mjs
+
   build:
     name: Build wiki pages
     needs: [validate]
@@ -44,11 +49,23 @@ jobs:
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
+      - name: Start build timer
+        run: echo "WIKI_BUILD_START_SECONDS=$(date +%s)" >> $GITHUB_ENV
+
       - name: Build with Jekyll
         uses: actions/jekyll-build-pages@v1
         with:
           source: .
           destination: _site
+
+      - name: Capture build duration
+        run: |
+          echo "WIKI_BUILD_DURATION_SECONDS=$(( $(date +%s) - $WIKI_BUILD_START_SECONDS ))" >> $GITHUB_ENV
+
+      - name: Enforce wiki build budgets
+        env:
+          WIKI_BUILD_DURATION_SECONDS: ${{ env.WIKI_BUILD_DURATION_SECONDS }}
+        run: node scripts/wiki/validate-wiki-budgets.mjs
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
