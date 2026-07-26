@@ -1,0 +1,13 @@
+---
+title: AGENTS migration governance flow
+---
+
+flowchart TD
+  A["Contribution request enters repository"] --> B{"Type of change?"}
+  B -->|Docs only| C["Apply documentation-safe edits"]
+  B -->|Tooling or workflow| D["Apply normal review workflow"]
+  C --> E["Run inventory + secret + budget + build checks"]
+  E --> F["Review and approve"]
+  F --> G["Publish docs and deploy"]
+  D --> E
+  E --> H["Track required manual review evidence"]
