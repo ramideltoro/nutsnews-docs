@@ -1,3 +1,18 @@
+---
+title: Documentation Style Guide
+wiki:
+  source_route: /technical/documentation-style-guide/
+  simple_route: /simple/documentation-style-guide/
+  primary_diagram: diagrams/DOCUMENTATION_STYLE_GUIDE.mmd
+  status: active
+  collection: start-here
+  section: contributing
+  approval:
+    reviewed_by: pending
+    reviewed_on: pending
+    technical_source_hash: dcdf07eb939f08f4c513f2cc5df5776208e84a67d3bafd8fa1e3feb2c3ef7db3
+---
+
 # Documentation Style Guide
 
 Use this guide when adding or updating NutsNews documentation.

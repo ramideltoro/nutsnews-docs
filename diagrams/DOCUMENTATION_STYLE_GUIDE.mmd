@@ -1,0 +1,16 @@
+---
+title: Documentation style guide content workflow
+---
+
+flowchart TB
+  A["Start with technical source: DOCUMENTATION_STYLE_GUIDE.md"] --> B["Normalize required frontmatter and section order"]
+  B --> C["Create/refresh technical audience route copy"]
+  B --> D["Create/refresh simple audience route copy"]
+  C --> E["Draft primary Mermaid overview"]
+  D --> E
+  E --> F["Run link checks and validation commands"]
+  F --> G{"Content equivalence"}
+  G -->|Mismatch| B
+  G -->|Verified| H["Request human review + approval metadata update"]
+  H --> I["Publish to /technical/documentation-style-guide and /simple/documentation-style-guide"]
+
