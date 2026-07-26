@@ -26,6 +26,7 @@ This folder is organized by what you are trying to do: understand the product, c
 | Review backend backup and restore baseline | [Backend Backup and Restore](NUTSNEWS_BACKEND_BACKUP_RESTORE.md) |
 | Review backend monitoring baseline | [Backend Monitoring](NUTSNEWS_BACKEND_MONITORING.md) |
 | Review backend health report automation | [Backend Health Report](NUTSNEWS_BACKEND_HEALTH_REPORT.md) |
+| Understand database resiliency and failover readiness | [Database Resiliency](DATABASE_RESILIENCY.md) |
 | Run backend cleanup report or dry-run | [Backend Cleanup Maintenance](NUTSNEWS_BACKEND_CLEANUP_MAINTENANCE.md) |
 | Run fixed backend recovery checks or actions | [Backend Recovery](NUTSNEWS_BACKEND_RECOVERY.md) |
 | Review backend OpenAI maintenance robot | [Backend OpenAI Maintenance Robot](NUTSNEWS_BACKEND_OPENAI_MAINTENANCE_ROBOT.md) |
@@ -182,6 +183,7 @@ These docs explain the product and the system at a high level.
 
 | Doc | Use it for |
 | --- | --- |
+| [Database Resiliency](DATABASE_RESILIENCY.md) | Current primary/standby topology, data synchronization, failover gates, backup layers, and improvement opportunities |
 | [Supabase Backup Automation](NUTSNEWS_DB_BACKUPS.md) | Home-server backups to encrypted OneDrive |
 | [VPS Backups](NUTSNEWS_VPS_BACKUPS.md) | VPS restic backups to encrypted OneDrive storage through rclone |
 | [VPS Restore](NUTSNEWS_VPS_RESTORE.md) | VPS restic restore and restore-test procedure |
