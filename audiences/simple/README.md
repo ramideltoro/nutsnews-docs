@@ -1,5 +1,5 @@
 ---
-title: NutsNews Documentation
+title: NutsNews Documentation (Simple)
 wiki:
   source_route: /technical/
   simple_route: /simple/
