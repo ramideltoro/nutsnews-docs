@@ -1,0 +1,68 @@
+name: wiki-pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "**/*.md"
+      - "GITHUB_WIKI_AUTOMATION.md"
+      - ".github/workflows/wiki-pages.yml"
+      - "scripts/wiki/validate-doc-paths.mjs"
+      - "_config.yml"
+      - "index.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: wiki-pages-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate wiki source
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate markdown inventory
+        run: node scripts/wiki/validate-doc-paths.mjs
+
+  build:
+    name: Build wiki pages
+    needs: [validate]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Build with Jekyll
+        uses: actions/jekyll-build-pages@v1
+        with:
+          source: .
+          destination: _site
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    name: Deploy wiki pages
+    needs: [build]
+    runs-on: ubuntu-latest
+    environment:
+      name: wiki-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -20,7 +20,7 @@ This update adds the missing GitHub Actions around build safety, operations, bac
 - `cloudflare-production-cache-purge.yml` — Purges the full Cloudflare zone cache after a successful production deployment status, plus manual dry-run support.
 - `cloudflare-production-cache-purge-regression.yml` — Locks the production-only purge trigger, Cloudflare secret usage, and purge-everything behavior.
 
-The branch already had Dependabot, CodeQL, Snyk, Lighthouse CI, accessibility CI, PageSpeed Insights, SEO structured data audit, and GitHub Wiki sync.
+The branch already had Dependabot, CodeQL, Snyk, Lighthouse CI, accessibility CI, PageSpeed Insights, SEO structured data audit, and GitHub Pages wiki publish automation.
 
 ## Recommended repository secrets
 

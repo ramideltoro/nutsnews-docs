@@ -1,0 +1,8 @@
+name: NutsNews Wiki
+title: NutsNews Wiki
+description: Public documentation for the NutsNews platform.
+url: "https://wiki.nutsnews.com"
+baseurl: ""
+markdown: kramdown
+permalink: /:path/
+plugins: []

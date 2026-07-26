@@ -213,7 +213,7 @@ These docs explain the product and the system at a high level.
 | --- | --- |
 | [Cloudflare Turnstile Contact Form](CLOUDFLARE_TURNSTILE_CONTACT_FORM.md) | Contact form bot protection |
 | [GitHub Actions Automation](GITHUB_ACTIONS_AUTOMATION.md) | CI and automation workflow overview |
-| [GitHub Wiki Automation](GITHUB_WIKI_AUTOMATION.md) | Publishing docs to the GitHub Wiki |
+| [GitHub Pages Wiki Publishing](GITHUB_WIKI_AUTOMATION.md) | Publishing docs to `wiki.nutsnews.com` |
 
 ### 5. Operations and Release Management
 
