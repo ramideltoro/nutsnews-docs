@@ -9,8 +9,8 @@ NutsNews uses a single-writer database design:
 - **Primary:** PostgreSQL on `backend.nutsnews.com` is the production read/write database.
 - **Standby target:** the existing production Supabase PostgreSQL database is retained as the protected backup database.
 - **Application path:** the web app and Worker use backend compatibility APIs; PostgreSQL remains private on the backend host.
-- **Current synchronization:** a protected, operator-triggered reconciliation workflow can compare and mirror backend PostgreSQL into Supabase.
-- **Current failover status:** **not yet operational**. Continuous synchronization, lag alerting, protected promotion, staging drills, failback, and the production acceptance soak are still open work.
+- **Current synchronization:** protected backend-owned workflows can reconcile backend PostgreSQL into Supabase and install the one-way backend-local sync relay.
+- **Current failover status:** **not yet operational**. Lag alerting, protected promotion, staging drills, failback, and the production acceptance soak are still open work.
 
 The architecture deliberately avoids active-active writes. Only one database may be authoritative at a time.
 
@@ -24,9 +24,12 @@ flowchart LR
     appApi --> primary[("Backend PostgreSQL<br/>PRIMARY<br/>single writer")]
     workerApi --> primary
 
-    actions["Protected GitHub Actions workflow"] -->|"SSH to backend host"| reconcile["Reconciliation process"]
+    actions["Protected GitHub Actions workflows"] -->|"SSH to backend host"| reconcile["Reconciliation process"]
+    actions -->|"protected Ansible apply"| relay["Backend-local sync relay"]
     reconcile -->|"local loopback connection"| primary
     reconcile -->|"outbound TLS connection"| standby[("Existing production Supabase<br/>STANDBY TARGET")]
+    primary -->|"private trigger ledger"| relay
+    relay -->|"outbound TLS direct DB connection"| standby
     primary -->|"manual report or full backfill"| standby
 
     standby -.->|"provider switch is not implemented"| web
@@ -50,7 +53,7 @@ Production currently reports `databaseProviderMode=backend_postgres_primary`, an
 flowchart TD
     A["1. Existing Supabase adopted as standby target<br/>Implemented"] --> B["2. Replication manifest<br/>Implemented"]
     B --> C["3. Bootstrap and reconciliation<br/>Implemented and last run passed"]
-    C --> D["4. Continuous sync relay<br/>Not implemented"]
+    C --> D["4. Continuous sync relay<br/>Backend-owned protected install path"]
     D --> E["5. Lag monitoring and alerting<br/>Not implemented"]
     E --> F["6. Scheduled parity workflow<br/>Not implemented"]
     F --> G["7. Protected failover workflow<br/>Not implemented"]
@@ -60,11 +63,11 @@ flowchart TD
 
     classDef done fill:#d1fae5,stroke:#047857,color:#064e3b;
     classDef pending fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d;
-    class A,B,C done;
-    class D,E,F,G,H,I,J pending;
+    class A,B,C,D done;
+    class E,F,G,H,I,J pending;
 ```
 
-This means Supabase has been prepared and reconciled, but it is not yet a continuously current, monitored, promotable hot standby.
+This means Supabase has been prepared and the continuous relay path is backend-owned, but the standby is not yet a monitored, promotable hot standby.
 
 ## Primary Database
 
@@ -102,7 +105,10 @@ Views and materialized views are not copied as rows. They are validated through 
 
 ## How Data Synchronization Works Today
 
-Synchronization is currently a **manual protected reconciliation**, not a continuous replication stream.
+Synchronization has two backend-owned layers:
+
+1. A protected reconciliation workflow for reports and controlled backfills.
+2. A backend-local one-way relay that captures source changes in a private ledger and writes outbound to Supabase.
 
 ```mermaid
 sequenceDiagram
@@ -143,6 +149,24 @@ The workflow supports two modes:
 The final protected reconciliation for the bootstrap step passed on 2026-07-26 with no required failures. That proves parity at the time of that run; it does not provide an ongoing lag guarantee.
 
 Reports contain safe metadata only. Database URLs, passwords, tokens, service-role keys, PostgreSQL error text, and raw rows are excluded.
+
+## Continuous Backend-To-Supabase Relay
+
+Issue [`ramideltoro/nutsnews#499`](https://github.com/ramideltoro/nutsnews/issues/499) owns the no-inbound relay path. The implementation lives in `ramideltoro/nutsnews-backend` and is installed only through the protected `production-backend` Ansible workflow.
+
+The relay keeps backend PostgreSQL private:
+
+- backend PostgreSQL stays bound to loopback and remains the source of truth;
+- source triggers append inserts, updates, and deletes to a private backend-side ledger;
+- a locked `nutsnews-standby-relay` systemd timer drains that ledger;
+- the target is the existing production Supabase direct PostgreSQL endpoint on `db.<project-ref>.supabase.co:5432` with TLS;
+- the Supabase pooler, a new Supabase project, and public inbound database access are not used.
+
+The relay fails closed before applying changes when the source or target table identity is unsafe, required schema metadata differs, the target direct DB URL is not the expected direct Supabase form, or a target apply fails. Source events are acknowledged only after the corresponding Supabase apply succeeds. Sequence readiness is handled by advancing target sequences above source and target observed values.
+
+The relay status and workflow artifacts must remain safe metadata only. They may record pass/fail state, event counts, sequence counts, and generic blockers. They must not print database URLs, passwords, host/project metadata, PostgreSQL error text, raw row values, service-role keys, or tokens.
+
+This relay narrows the data-age gap, but it still does not approve Supabase promotion. Failover continues to require lag, parity, schema, sequence, writer-pause, and split-brain evidence.
 
 ## Failover Safety Model
 
@@ -218,7 +242,7 @@ Backups do not make the standby current, and a synchronized standby does not rep
 
 | Objective | Current position |
 | --- | --- |
-| Standby RPO | Not guaranteed while synchronization is manual. Data age is bounded only by the last successful reconciliation or usable backup. |
+| Standby RPO | Improved only after the backend relay is installed and healthy. Until lag monitoring exists, data age must be verified from relay status and parity evidence before failover. |
 | Standby promotion RTO | Not established because the end-to-end failover workflow and drill are not complete. |
 | Controlled restore RTO | Existing runbooks use a 4-hour target after restore drills pass. |
 | Target sync lag | 30 seconds or less before failover may be approved. |
@@ -234,7 +258,7 @@ Existing backend PostgreSQL visibility includes:
 - Grafana metrics for PostgreSQL restore and replication readiness;
 - backup freshness, verification, and restore-proof status.
 
-The Supabase standby still needs dedicated relay signals for:
+The Supabase standby still needs promotion-grade relay signals for:
 
 - relay service state;
 - last successfully applied change;
@@ -249,7 +273,7 @@ Missing relay health or lag above 30 seconds must block promotion and raise a cr
 
 | Priority | Opportunity | Why it matters |
 | --- | --- | --- |
-| P0 | Implement the private one-way backend-to-Supabase sync relay | Removes the current manual data-age gap and supports inserts, updates, and deletes without exposing backend PostgreSQL publicly. |
+| P0 | Keep the private one-way backend-to-Supabase sync relay installed and verified | Removes the manual data-age gap and supports inserts, updates, and deletes without exposing backend PostgreSQL publicly. |
 | P0 | Add relay health, 30-second lag enforcement, and alerting | Makes standby freshness measurable and prevents promotion of a stale database. |
 | P0 | Add scheduled parity and reconciliation | Detects silent drift in rows, schema, migration contracts, and sequences before an incident. |
 | P0 | Build the protected manual failover workflow | Turns the documented gates into a repeatable, audited, fail-closed operation. |
@@ -269,4 +293,5 @@ Automatic promotion should be considered only after the manual workflow, alerts,
 - [Backend monitoring](https://github.com/ramideltoro/nutsnews-docs/blob/main/NUTSNEWS_BACKEND_MONITORING.md)
 - [Supabase standby manifest](https://github.com/ramideltoro/nutsnews/blob/main/supabase/standby_manifest.json)
 - [Protected reconciliation workflow](https://github.com/ramideltoro/nutsnews-backend/blob/main/.github/workflows/backend-supabase-standby-reconciliation.yml)
+- [Protected relay workflow](https://github.com/ramideltoro/nutsnews-backend/blob/main/.github/workflows/backend-supabase-standby-relay.yml)
 - [Database standby and failover tracking](https://github.com/ramideltoro/nutsnews/issues/223)

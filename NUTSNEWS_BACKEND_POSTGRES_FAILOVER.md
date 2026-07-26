@@ -70,6 +70,7 @@ nutsnews_primary_shadow
 Related issue: https://github.com/ramideltoro/nutsnews/issues/496
 Related manifest issue: https://github.com/ramideltoro/nutsnews/issues/497
 Related reconciliation issue: https://github.com/ramideltoro/nutsnews/issues/498
+Related relay issue: https://github.com/ramideltoro/nutsnews/issues/499
 Related original app PR: https://github.com/ramideltoro/nutsnews/pull/507
 Related correction app PR: https://github.com/ramideltoro/nutsnews/pull/509
 Related probe runbook: [NutsNews Supabase Standby Restricted Probe](NUTSNEWS_SUPABASE_STANDBY_PROBE.md)
@@ -148,9 +149,61 @@ raw row data.
 
 This reconciliation workflow does not create a new Supabase project, create a
 `nutsnews-standby` database, expose Supabase as the production app/worker
-provider, install the continuous sync relay, or approve failover. Continuous
-backend-to-Supabase sync is tracked separately by `ramideltoro/nutsnews#499`;
-lag monitoring and failover approval remain later #223 child gates.
+provider, or approve failover. Continuous backend-to-Supabase sync is owned by
+`ramideltoro/nutsnews#499`; lag monitoring and failover approval remain later
+#223 child gates.
+
+### Standby Continuous Sync Relay
+
+Issue `ramideltoro/nutsnews#499` adds the backend-owned continuous sync path in
+`ramideltoro/nutsnews-backend` through
+`.github/workflows/backend-supabase-standby-relay.yml`, the
+`backend_supabase_standby_relay` Ansible role, and the
+`nutsnews-supabase-standby-relay.timer` systemd unit.
+
+The relay is deliberately backend-local:
+
+- backend PostgreSQL remains private on loopback and remains the source of truth;
+- source triggers capture inserts, updates, and deletes into
+  `nutsnews_standby_relay.events` on the backend database;
+- the locked `nutsnews-standby-relay` OS user drains the private ledger outbound
+  to the existing production Supabase direct PostgreSQL endpoint;
+- no Supabase-initiated inbound connection to backend PostgreSQL is required;
+- the Supabase pooler, a new Supabase project, and a new `nutsnews-standby`
+  database are not used.
+
+The protected workflow supports:
+
+| Mode | State | Behavior |
+| --- | --- | --- |
+| `check` | `present` or `absent` | Runs Ansible check mode against the backend host and reports planned relay install or rollback changes. |
+| `apply` | `present` | Installs the relay script, root-owned credential file, source trigger ledger, hardened service, and timer. |
+| `apply` | `absent` | Stops/disables the timer and service, removes the relay files, and removes the source trigger ledger and grants. |
+
+Required protected backend values:
+
+| Protected value | Scope | Purpose |
+| --- | --- | --- |
+| `NUTSNEWS_BACKEND_SSH_PRIVATE_KEY` | `production-backend` Environment secret | SSH key used by the protected backend Ansible workflow. |
+| `NUTSNEWS_BACKEND_KNOWN_HOSTS` | `production-backend` Environment secret | Trusted backend host key used for strict SSH verification. |
+| `NUTSNEWS_BACKEND_POSTGRES_MIGRATION_REPLICATION_PASSWORD` | `production-backend` Environment secret | Password for the least-privilege PostgreSQL role that can install and drain relay functions. |
+| `NUTSNEWS_PRODUCTION_SUPABASE_DB_URL` | `production-backend` Environment secret | Existing production Supabase direct DB URL used as the standby target. |
+| `NUTSNEWS_BACKEND_HOST` | `production-backend` Environment variable | Fixed backend address. |
+
+Fail-closed rules:
+
+- table identity must be safe on both source and target;
+- source and target schema column metadata must match before apply;
+- target URL must be the direct Supabase PostgreSQL host on port 5432 with TLS,
+  not the Supavisor pooler;
+- source events are acknowledged only after the matching target apply succeeds;
+- target sequences are advanced above source and target observed values;
+- reports and summaries contain safe metadata only, never connection strings,
+  passwords, tokens, PostgreSQL errors, or raw row values.
+
+Rollback is the same workflow with `run_mode=apply`, `relay_state=absent`, and
+the typed backend confirmation. Operators must run and review `check` before
+`apply`.
 
 ```mermaid
 flowchart TD
@@ -188,6 +241,7 @@ Operational notes:
 - The workflow is a credential readiness gate only. It does not migrate schema, copy data, install a sync relay, reconcile existing Supabase state, promote Supabase, or approve failover.
 - The standby manifest is a schema and safety gate. It defines the intended replication surface but still does not approve failover.
 - The backend reconciliation workflow is the #498 bootstrap gate. It can copy backend-primary rows to the existing production Supabase standby target only through the protected `production-backend` Environment and typed confirmation.
+- The backend relay workflow is the #499 continuous sync gate. It can install or roll back the backend-local trigger-ledger relay only through the protected `production-backend` Environment and typed confirmation.
 - Before failover, operators still need lag <= 30 seconds, parity checks, schema fingerprint checks, sequence safety checks, writer-pause evidence, and split-brain checks.
 - If the workflow fails on missing secrets, populate the protected `supabase-standby` Environment with aliases for the existing production Supabase values and rerun it. Do not paste values into issues, PRs, docs, or chat.
 
