@@ -784,4 +784,3 @@ NutsNews refresh complete
 ```
 
 The `failedFeeds[].errorMessage` values should be capped at roughly 500 characters and should not contain full HTML documents.
-#

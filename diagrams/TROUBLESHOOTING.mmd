@@ -1,0 +1,25 @@
+flowchart TD
+  issue["Issue reported"] --> check["Quick triage"]
+  check --> public["Public site/API checks"]
+  public -->|"down/err"| route1["Vercel, cache, worker, supabase, logs"]
+  public -->|"mostly healthy"| deeper["Domain-specific checks"]
+
+  route1 --> vercel["Vercel build checks"]
+  route1 --> cache["Cloudflare cache validation"]
+  route1 --> worker["Worker/shard/controller checks"]
+  route1 --> db["Supabase save/error validation"]
+  route1 --> logs["Sentry / Better Stack checks"]
+
+  vercel --> fixed1["Env vars, build fix, redeploy"]
+  cache --> fixed2["Headers/rules/purge"]
+  worker --> fixed3["Wrangler config/seed/deploy"]
+  db --> fixed4["Migration/service role/duplicate-key checks"]
+  logs --> fixed5["Token/source/project verification"]
+
+  fixed1 --> verify["Production health checklist"]
+  fixed2 --> verify
+  fixed3 --> verify
+  fixed4 --> verify
+  fixed5 --> verify
+  deeper --> verify
+  verify --> done["Incident resolved and monitored"]

@@ -1,5 +1,5 @@
 ---
-title: Troubleshooting Guide
+title: Troubleshooting Guide (Simple)
 wiki:
   source_route: /technical/troubleshooting/
   simple_route: /simple/troubleshooting/
@@ -784,4 +784,3 @@ NutsNews refresh complete
 ```
 
 The `failedFeeds[].errorMessage` values should be capped at roughly 500 characters and should not contain full HTML documents.
-#
