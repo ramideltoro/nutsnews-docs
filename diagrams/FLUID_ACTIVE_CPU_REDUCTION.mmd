@@ -1,0 +1,13 @@
+flowchart TD
+  R[Public homepage request] --> S[Read precomputed public_feed_snapshot]
+  S --> H[Extract latest 250 rows]
+  H --> B[Derive top stories and sections]
+  B --> A[/api/articles?home=1&lang=<language>/]
+  A --> L[Batch load localized summaries from ids]
+  R --> C[Homepage SSR returns initial 5 stories]
+  C --> I[Infinite scroll cursor requests up to 15 rows]
+  C --> M[homepage and article APIs set revalidate 900]
+  M --> X[CDN cache: s-maxage=900, stale-while-revalidate=3600]
+  R --> P[Middleware for public reader paths no longer runs]
+  P --> N[Middleware still runs for /admin, /monitoring, /api/auth, /api/contact]
+  N --> E[Errors still logged with full visibility]
