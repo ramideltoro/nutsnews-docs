@@ -1,0 +1,30 @@
+flowchart LR
+  A[Protected Backend Apply] -->|provisions PostgreSQL| B[Backend PostgreSQL primary]
+  B --> C["Adminer and db bound to 127.0.0.1:5432"]
+  A --> D[Backend app DB compatibility API]
+  A --> E[Backend worker DB compatibility API]
+  D --> F["NutsNews app"]
+  E --> G["NutsNews worker"]
+  B --> F
+  B --> G
+
+  H[Existing production Supabase] -->|standby target| I[Standby manifest + contract]
+  A --> H
+  H --> J[Supabase standby alias / env readiness workflow]
+  B -->|backend-primary rows| K[Reconciliation workflow]
+  K --> I
+  K -->|apply-backfill| H
+  L[Continuous backend-local relay]
+  B --> L
+  L --> H
+  M[Provider switch gate] --> N[writer-pause + lag + parity + schema + sequence + split-brain checks]
+  J --> N
+  N -->|pass| O[Protected production cutover approval]
+  N -->|block| P[Failover blocked; no promoted writes]
+  O --> Q[Backend/Worker/App compatibility smoke and rollback planning]
+  Q --> R[Production provider switch to standby]
+
+  P --> S[Stay on backend primary]
+  O -->|if evidence fails| S
+  B -->|loopback only| T[Protected backend SSH probe / fixed query]
+  T --> H
