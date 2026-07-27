@@ -1,5 +1,5 @@
 ---
-title: Admin Access-Denied Error Flow
+title: Admin Access-Denied Error Flow (Simple)
 wiki:
   source_route: /technical/admin-access-denied-error-flow/
   simple_route: /simple/admin-access-denied-error-flow/
@@ -15,6 +15,7 @@ wiki:
     reviewed_on: pending
     technical_source_hash: 6d022384de8492fc320d114895b164a5b1433a41d88993c4c560275479cf4f17
 ---
+
 # Admin Access-Denied Error Flow
 
 This guide records the application-owned denied/error-flow parity fix for
