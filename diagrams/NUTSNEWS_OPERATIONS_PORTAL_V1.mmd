@@ -1,0 +1,11 @@
+flowchart TD
+  A[Protected infra apply] --> B[Collector timer and status service refresh]
+  B --> C[Publish status.json from local reads]
+  C --> D{Google OAuth configured?}
+  D -->|Yes| E[Serve Ops Portal routes and dashboard data]
+  D -->|No| F[Restrict to maintenance posture / auth failures]
+  C --> G[Manual report and backup workflows]
+  G --> H[Emit daily/incident reports and report JSON evidence]
+  F --> H
+  E --> H
+  H --> I[Operator reads dashboard, alerts, and runbooks]
