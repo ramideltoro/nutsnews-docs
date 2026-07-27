@@ -1,0 +1,31 @@
+flowchart TD
+  A["Worker-uplift service runtime request"] --> B["Backend protected apply sets runtime enabled flag"]
+  B --> C["Install runtime manager framework"]
+
+  C --> D["Read/validate service manifests"]
+  D --> E["Check immutable digest and repo allowlist"]
+  D --> F["Reject unsafe manifests and inline secrets"]
+
+  B --> G["Queue scoped worker API commands
+  through /api/worker/db/*"]
+  G --> H["Persist command receipts"
+  in worker_uplift_final.api_command_receipts]
+  G --> I["Shadow-first mode writes to staging tables only"]
+  H --> J["Require idempotency + correlation metadata"]
+
+  B --> K["Protected workflow actions"]
+  K --> L["check / status / logs / queue-inspect"]
+  K --> M["deploy / promote / restart / scale"]
+  K --> N["reconciliation / smoke / rollback"]
+
+  C --> O["Journald + Alloy logging
+  on approved worker tags"]
+  C --> P["Telemetry scope holds traces and exemplars deferred"]
+
+  N --> Q["Health and drift report evidence
+  confirms operational readiness"]
+
+  B --> R["Production writes remain disabled
+  until cutover-approved"]
+  R --> S["Production proof: status=pass
+  shadow mode default"]
