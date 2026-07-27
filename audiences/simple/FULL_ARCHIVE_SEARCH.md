@@ -29,7 +29,7 @@ The migration adds:
 - `articles_search_published_idx`, an index for published story ordering
 - `public.search_articles(search_query, page_size, page_offset)`, an RPC function used by the web API
 
-Search weights:
+## Search weights
 
 - Title: A
 - AI summary: B
