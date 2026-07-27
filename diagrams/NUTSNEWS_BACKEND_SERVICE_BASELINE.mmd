@@ -1,0 +1,10 @@
+flowchart TD
+  A[Run SSH attestation on backend host] --> B[Capture public listeners and failed systemd units]
+  B --> C[Load docs/backend-service-baseline.json]
+  C --> D[Validate no public services outside approved policy]
+  D --> E{Violations found?}
+  E -->|yes| F[Fail baseline and report blockers]
+  E -->|no| G[Publish baseline and decision status]
+  F --> H[Block protected drift actions until reviewed]
+  G --> I[Expose baseline for re-attestation review]
+  I --> J[Re-run attestation after protected changes or drift]
