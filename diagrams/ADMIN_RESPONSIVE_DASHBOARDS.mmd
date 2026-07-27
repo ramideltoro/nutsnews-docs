@@ -1,0 +1,14 @@
+flowchart TD
+  A[Admin user opens protected dashboard] --> B[Route within /admin/...]
+  B --> C{admin/(protected) layout}
+  C --> D[Wrap page content in <div class="admin-responsive-shell">]
+  D --> E[Apply scoped responsive CSS in web/app/globals.css]
+  E --> F{Layout decision}
+  F --> G[Compact page paddings and card radii]
+  F --> H[Clamp heading sizes]
+  F --> I[Enable contained horizontal table scrolling]
+  G --> J[More room for mobile cards/panels]
+  H --> J
+  I --> K[Tables stay usable without page overflow]
+  J --> L[Readable spacing and touch controls on mobile]
+  K --> L
