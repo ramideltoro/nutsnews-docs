@@ -1,0 +1,10 @@
+flowchart LR
+  A[Define public API contracts] --> B[Version and validate schema expectations]
+  B --> C[Roll out endpoint safety and auth controls]
+  C --> D[Document migration and rollout strategy]
+  D --> E{Regression checks pass?}
+  E -->|No| F[Block rollout and update plan]
+  E -->|Yes| G[Enable staged public release]
+  G --> H[Monitor usage and compatibility]
+  H --> I[Publish rollout results and update docs]
+  F --> I
