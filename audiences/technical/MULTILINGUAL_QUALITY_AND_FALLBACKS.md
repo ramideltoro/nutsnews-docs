@@ -17,7 +17,6 @@ wiki:
 ---
 
 # Multilingual quality checks and fallback policy
-
 Issue #99 adds production checks for translated NutsNews article cards. The goal is to keep multilingual cards useful without letting a missing or questionable translation break the reader feed.
 
 ## What is checked
