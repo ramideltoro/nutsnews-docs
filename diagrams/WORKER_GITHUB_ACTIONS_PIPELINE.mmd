@@ -1,0 +1,23 @@
+flowchart TD
+  A["Pull request"] --> B["Worker Pipeline PR job"]
+  B --> C["Install deps and immutable test guard"]
+  C --> D["Type checks and regression tests"]
+  D --> E["Local AI Wrangler config generation"]
+  E --> F["Merge guard conditions verified"]
+
+  F --> G{All checks pass?}
+  G -->|No| H["PR blocked"]
+  G -->|Yes| I["Worker Pipeline passes"]
+
+  I --> J["Push to main"]
+  J --> K["Deploy jobs run"]
+  K --> L["Validate required secrets / variables"]
+  L --> M["Generate configs with local AI first"]
+  M --> N["Deploy shards + controller to Cloudflare"]
+
+  N --> O["Manual workflow_dispatch allowed"]
+  O --> P["CI re-run before manual deploy"]
+
+  K --> Q["Workflow manifest blocks
+  unauthorized edits without override"]
+  Q --> R["Branch protection requires required checks"]
