@@ -34,7 +34,7 @@ Add these to `web/.env.local` for local testing and to Vercel for Production:
 
 ```env
 NEXT_PUBLIC_TURNSTILE_SITE_KEY=your_cloudflare_turnstile_site_key
-TURNSTILE_SECRET_KEY=your_cloudflare_turnstile_secret_key
+TURNSTILE_SECRET_KEY=your_cloudflare_secret_key
 ```
 
 The public site key is safe to expose to the browser. The secret key must stay server-side only.
