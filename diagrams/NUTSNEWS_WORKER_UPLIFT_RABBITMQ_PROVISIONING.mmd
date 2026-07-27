@@ -1,0 +1,50 @@
+flowchart TD
+  A["RabbitMQ provisioning request
+  `ramideltoro/nutsnews-worker` issue"] --> B["Backend protected Ansible check mode"]
+  B --> C["Protected apply
+  NUTSNEWS_BACKEND_RABBITMQ_ENABLED"]
+  C --> D["Install/update pinned RabbitMQ role
+  and compose artifact"]
+
+  D --> E["Render `worker-uplift-topology.json.j2"]
+  E --> F["Run bootstrap helper"]
+  F --> G["Create vhost, users, permissions, exchanges, queues"]
+
+  G --> H["Attach route-scoped credentials file
+  `/etc/nutsnews-rabbitmq/topology.env`"]
+  G --> I["Run check mode topology
+  and permission validations"]
+  F --> J["Create canary topology entry
+  `worker.uplift.canary.v1`"]
+
+  C --> K["Run network security check
+  and exposed-port probe"]
+  K --> L["Verify 5672, 15672, 15692 only
+  on 127.0.0.1"]
+
+  C --> M["Install `nutsnews-rabbitmq-network-check`"]
+  M --> N["Collect TLS posture, loopback
+  routing, and management hardening status"]
+
+  C --> O["Run durable broker probe
+  publish-restart-consume"]
+  O --> P["Store probe state in
+  `/var/lib/nutsnews/rabbitmq-probes`"]
+
+  C --> Q["Install canary service + timer"]
+  Q --> R["Record canary runbook outputs
+  into probe artifacts"]
+
+  C --> S["Install `nutsnews-rabbitmq-recovery`
+  helper"]
+  S --> T["Write recovery evidence path
+  `/var/lib/nutsnews/rabbitmq-recovery`"]
+
+  P --> U["Optional host restart evidence
+  `backend-controlled-maintenance-report`"]
+  N --> U
+  R --> U
+  T --> U
+
+  U --> V["Green health and topology checks
+  in protected workflow postcheck"]
