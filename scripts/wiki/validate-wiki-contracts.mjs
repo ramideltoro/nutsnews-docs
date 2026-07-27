@@ -9,7 +9,7 @@ import {
 import { parseMarkdownFrontmatter } from './parse-markdown.mjs';
 
 const repoRoot = process.cwd();
-const expectedSourceCount = 225;
+const expectedSourceCount = 227;
 
 async function walkMarkdownFiles(rootDir, relativeRoot = '') {
   const absolute = path.join(rootDir, relativeRoot);
@@ -115,7 +115,7 @@ async function run() {
   }
 
   if (sourcePaths.length !== expectedSourceCount) {
-    warnings.push(`expected ${expectedSourceCount} sources, found ${sourcePaths.length}`);
+    errors.push(`expected ${expectedSourceCount} sources, found ${sourcePaths.length}`);
   }
 
   if (warnings.length > 0) {
