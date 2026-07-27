@@ -1,0 +1,8 @@
+flowchart TD
+  A[Reader opens article feed] --> B[Render image URLs via Next.js image component]
+  B --> C[Next.js optimizer requests original image]
+  C --> D[Resize and serve at requested width/quality]
+  D --> E[CDN cache stores optimized variants]
+  E --> F[Reader receives responsive srcset]
+  E --> G[Fallback warm placeholder shown while loading]
+  F --> H[Image loaded in reader viewport]
