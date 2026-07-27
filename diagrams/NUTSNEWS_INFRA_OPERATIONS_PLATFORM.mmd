@@ -1,0 +1,10 @@
+flowchart TD
+  A[Infrastructure repo changes] --> B[Change review and scan gates]
+  B --> C{Safety gates pass?}
+  C -->|no| D[Fix issues and repeat review]
+  C -->|yes| E[Merge change to main]
+  E --> F[Protected apply workflow]
+  F --> G[Production VPS applies config]
+  G --> H[Portal and email reports update]
+  H --> I[Ops Portal and docs reflect state]
+  D --> B
