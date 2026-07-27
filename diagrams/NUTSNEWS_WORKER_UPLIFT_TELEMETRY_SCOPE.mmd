@@ -1,0 +1,34 @@
+flowchart TD
+  A["Decision: Worker-uplift telemetry scope"] --> B["Required metrics"]
+  A --> C["Required structured logs"]
+  A --> D["Traces disabled"]
+  A --> E["Exemplars deferred"]
+  A --> F["Profiles forbidden"]
+
+  B --> G["RabbitMQ + service metrics only"]
+  G --> H["Private Alloy scrape / metrics remote_write"]
+  C --> I["Docker journald + worker logs"]
+  I --> J["Loki process label allowlist and redaction"]
+
+  H --> K["Credentials: metrics URL/user/policy token"]
+  J --> L["Credentials: logs URL/user/policy token"]
+
+  K --> M["Apply usage and quota guardrails from grafanacloud-usage"]
+  L --> M
+
+  M --> N["70% freeze optional telemetry"]
+  M --> O["85% reduce debug / verbosity"]
+  M --> P["95% disable offending signal"]
+  M --> Q["Over budget hold production uplift"]
+
+  B --> R["Allowed labels only: environment, host, service, version, queue, outcome"]
+  C --> S["Forbidden payload fields excluded"]
+
+  T["Rollback switches"] --> U["Disable metrics", "Disable logs", "Disable traces", "Disable exemplars"]
+  R --> T
+  S --> T
+
+  N --> V["Backend Worker-Uplift Logs Check workflow"]
+  O --> V
+  P --> V
+  Q --> V
