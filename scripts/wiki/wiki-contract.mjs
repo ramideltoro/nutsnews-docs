@@ -26,7 +26,6 @@ export const wikiContract = {
       '_sitemaps',
       '.well-known',
       '.husky',
-      'reports',
       'bin',
       'dist',
       'public',

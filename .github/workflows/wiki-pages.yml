@@ -48,8 +48,14 @@ jobs:
       - name: Validate markdown inventory
         run: node scripts/wiki/validate-doc-paths.mjs
 
+      - name: Validate internal links
+        run: npm run validate:links
+
       - name: Validate secret safety
         run: node scripts/wiki/validate-wiki-secrets.mjs
+
+      - name: Validate mermaid diagrams
+        run: npm run validate:mermaid
 
   build:
     name: Build wiki pages
@@ -96,7 +102,7 @@ jobs:
     needs: [build]
     runs-on: ubuntu-latest
     environment:
-      name: wiki-pages
+      name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages
