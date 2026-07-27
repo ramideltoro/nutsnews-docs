@@ -1,0 +1,11 @@
+flowchart TD
+  A[User opens app] --> B[Tap sparkle button next to Settings/Search]
+  B --> C[Open Good Mood screen]
+  C --> D[User selects Calm, Hopeful, Inspired, or Curious]
+  D --> E[Rank currently loaded feed for selected mood]
+  E --> F{Best match found?}
+  F -->|Yes| G[Show recommended story with thumbnail]
+  G --> H[User opens recommended story]
+  H --> I[Open native Article Detail]
+  I --> J[Save mood-picked story]
+  F -->|No| K[Show empty recommendation state]
