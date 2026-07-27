@@ -1,5 +1,5 @@
 ---
-title: Admin Article Reviews
+title: Admin Article Reviews (Simple)
 wiki:
   source_route: /technical/admin-article-reviews/
   simple_route: /simple/admin-article-reviews/
