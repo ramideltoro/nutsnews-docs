@@ -1,0 +1,14 @@
+flowchart TD
+  A[workflow_dispatch triggered] --> B{Run mode}
+  B -->|check| C[Dry-run Ansible against VPS]
+  B -->|apply| D[Require confirmation text and Environment approval]
+  C --> E[Summarize planned changes]
+  D --> F[Verify secret presence and no-secret checks]
+  F --> G{Eligibility checks pass?}
+  E --> H[Exit without remote mutations]
+  G -->|No| I[Stop workflow with blockers]
+  G -->|Yes| J[Run apply path with baseline safety gates]
+  J --> K[Collect report artifact and evidence]
+  K --> L[Refresh status and report to portal]
+  H --> L
+  I --> L
