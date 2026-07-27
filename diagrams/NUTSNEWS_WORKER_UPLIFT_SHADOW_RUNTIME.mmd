@@ -1,0 +1,30 @@
+flowchart TD
+  A["Backend protected apply
+  worker runtime enabled"] --> B["Deploy shadow service manifests"]
+
+  B --> C["Scheduler service"]
+  C --> D["Fetcher service"]
+  D --> E["Canonicalizer service"]
+  E --> F["Enrichment service"]
+  F --> G["Approval service"]
+  G --> H["Translation service"]
+
+  H --> I["Production writes intentionally disabled"]
+  G --> J["Fixture advances through approval/translation in shadow"]
+
+  B --> K["Runtime manager validates
+  GHCR digests + secret policy"]
+  K --> L["Journald + Alloy telemetry from approved tags"]
+
+  B --> M["Protected verify commands"]
+  M --> N["status"]
+  M --> O["queue-inspect per service"]
+  M --> P["drain and rollback operations"]
+
+  Q["LOCAL_AI_API_KEY present"] --> R["approval + translation services
+  can be enabled"]
+  Q --> S["If missing: do not deploy AI shadow services"]
+
+  P --> T["Rollback to previous service manifest
+  via protected check/apply"]
+  T --> U["Legacy Cloudflare ingestion remains active"]
