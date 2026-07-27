@@ -1,0 +1,136 @@
+---
+title: NutsNews GitHub Actions Automation
+wiki:
+  source_route: /technical/github-actions-automation/
+  simple_route: /simple/github-actions-automation/
+  primary_diagram:
+    file: diagrams/GITHUB_ACTIONS_AUTOMATION.mmd
+    accTitle: "GitHub Actions automation and guardrail coverage"
+    accDescr: "Shows primary CI workflows, required secrets, path-aware infra workflow controls, and report-only immutable test guard behavior."
+  status: active
+  collection: ai-and-automation
+  section: Automation & Workers
+  approval:
+    reviewed_by: pending
+    reviewed_on: pending
+    technical_source_hash: 12544912492c2c1613e64022f17c7e02d608acb50864adb96529be6620afaa0b
+---
+
+# NutsNews GitHub Actions Automation
+
+This update adds the missing GitHub Actions around build safety, operations, backups, feed quality, translations, image coverage, links, sitemap/robots, and release notes.
+
+## Added workflows
+
+- `web-ci.yml` — TypeScript, lint, and Next.js build for the web app.
+- `worker-controller-ci.yml` — TypeScript checks for Cloudflare Worker and controller packages.
+- `link-check.yml` — Markdown local-link validation.
+- `sitemap-robots-check.yml` — Production `/robots.txt` and `/sitemap.xml` validation.
+- `worker-smoke-test.yml` — Production API and optional Worker/shard endpoint smoke test.
+- `supabase-backup.yml` — Scheduled Supabase REST backup artifact.
+- `db-size-warning.yml` — Scheduled table-growth warning report.
+- `translation-coverage.yml` — Scheduled article summary translation coverage report.
+- `feed-health-report.yml` — Scheduled RSS feed and worker run health report.
+- `image-coverage-report.yml` — Scheduled image coverage report for published articles.
+- `app-store-docs-check.yml` — Checks that App Store support/privacy/contact docs still exist.
+- `release-notes.yml` — Generates GitHub release notes when a `v*` tag is pushed.
+
+- `cloudflare-production-cache-purge.yml` — Purges the full Cloudflare zone cache after a successful production deployment status, plus manual dry-run support.
+- `cloudflare-production-cache-purge-regression.yml` — Locks the production-only purge trigger, Cloudflare secret usage, and purge-everything behavior.
+
+The branch already had Dependabot, CodeQL, Snyk, Lighthouse CI, accessibility CI, PageSpeed Insights, SEO structured data audit, and GitHub Pages wiki publish automation.
+
+The `wiki-pages` workflow now also includes:
+
+- document inventory validation
+- wiki secret-safety checks on tracked/staged repository files
+- artifact budget checks for size, build duration, pagefind output, and external asset references
+
+## Recommended repository secrets
+
+Add these in GitHub under **Settings → Secrets and variables → Actions**:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `AUTH_SECRET`
+- `NEXT_PUBLIC_TURNSTILE_SITE_KEY`
+- `TURNSTILE_SECRET_KEY`
+- `NUTSNEWS_WORKER_URL` — optional controller or health endpoint.
+- `NUTSNEWS_SHARD_URL` — optional shard endpoint, for example a shard 0 URL without `?limit=1`.
+- `PAGESPEED_INSIGHTS_API_KEY` — optional for PageSpeed API quota.
+- `SNYK_TOKEN` — only needed if using the existing Snyk workflow.
+- `CLOUDFLARE_API_TOKEN` — Cloudflare token scoped to the NutsNews zone with cache purge permission.
+- `CLOUDFLARE_ZONE_ID` — Cloudflare zone id for the NutsNews production zone.
+
+Most operational workflows skip cleanly if their required Supabase secrets are missing. Web CI needs the normal build-time environment variables for a complete production-like build.
+
+## Notes
+
+- Backup artifacts are retained for 14 days by default.
+- Reports are retained for 30 days by default.
+- The Supabase backup workflow uses REST exports. It is useful for diagnostics and lightweight recovery, but it is not a full `pg_dump` replacement.
+- The Worker smoke test always checks `https://www.nutsnews.com/api/articles?limit=1`. Worker and shard checks run only when their URLs are configured.
+
+## Infra CI Cost Controls
+
+### Simple Summary
+
+Infra CI now skips unrelated heavy jobs on docs-only or runbook-only pull requests, while secret scans and workflow safety checks still run.
+
+### Intermediate Summary
+
+`ramideltoro/nutsnews-infra` classifies changed paths at the start of the infrastructure, runtime, portal, and supply-chain workflows for pull requests targeting `main`. Docs-only and runbook-only changes keep the visible workflow record but skip expensive checks such as OpenTofu validation, TFLint, Checkov, Trivy, Compose validation, and portal app checks when those areas were not touched. The workflow summary shows the changed-file sample and active categories so a skipped job is explainable from the Actions run.
+
+### Expert Summary
+
+The infra repo uses a repository-owned classifier instead of workflow-level `paths-ignore`, so required PR checks can complete with clear skip context rather than disappearing. Strict branch protection requires the named PR contexts before merge, so the required validation workflows do not also run automatically on the resulting `main` push. `workflow_dispatch` remains available for diagnostics, Gitleaks keeps scheduled coverage, and scheduled nightly audits remain separate ungated deep scans. Python tooling for `yamllint` and `ansible-lint` is installed from pinned requirements files through a pinned `actions/setup-python` step with pip caching. The guardrail validator in workflow-safety fails if future edits remove the classifier, restore duplicate main-push validation runs, bypass the cache, gate the always-on security workflows, or stop validating the cost controls.
+
+```mermaid
+flowchart TD
+  A[Pull request to main] --> B[Classify changed paths]
+  B --> C{Docs or runbooks only?}
+  C -->|Yes| D[Keep workflow record and summary]
+  D --> E[Skip unrelated heavy jobs]
+  C -->|No| F[Run matching infra/runtime/portal/supply-chain jobs]
+  B --> G[Always run Workflow Safety]
+  B --> H[Always run Secrets Scan]
+  I[Manual dispatch] --> K[Run selected diagnostic workflow]
+  L[Nightly schedule] --> J[Run deeper audits without PR path gates]
+```
+
+Operational rule: if a workflow, secret boundary, deployment path, runtime config, Terraform/OpenTofu file, Ansible role, Compose file, Dockerfile, portal file, dependency manifest, or scanner config changes, the matching safety checks should run. A docs-only skip is expected only when the changed files are documentation or runbooks.
+
+## Test Change Guard Reporting
+
+Related app PR: `ramideltoro/nutsnews#238`
+
+### Simple Summary
+
+NutsNews no longer asks Rami to type `APPROVED` before every pull request that changes tests or GitHub Actions files. The checks still point out those changes so they can be reviewed.
+
+### Intermediate Summary
+
+The app repository keeps the immutable test guard workflows, but they now behave as reporting checks instead of hard approval gates. When a PR edits existing tests, regression scripts, smoke checks, or protected workflow files, CI lists the guarded files and exits successfully. This removes the repeated manual approval loop while preserving visibility into risky test or workflow edits.
+
+### Expert Summary
+
+`scripts/immutable_all_tests_guard.mjs` and `scripts/immutable_preview_smoke_guard.mjs` no longer parse PR title/body approval tokens and no longer fail solely because guarded files changed. Their workflows are renamed to report-only language and stop passing `PR_TITLE`/`PR_BODY` into the scripts. Regression coverage now asserts that the old manual tokens are not required. Branch protection, PR review, and the normal CI suite remain the control points for deciding whether these changes should merge.
+
+```mermaid
+flowchart TD
+  A[Pull request changes tests or workflows] --> B[Guard workflow runs]
+  B --> C{Guarded files changed?}
+  C -->|No| D[Pass quietly]
+  C -->|Yes| E[List guarded files in CI logs]
+  E --> F[Exit successfully]
+  F --> G[Reviewer inspects PR diff and normal checks]
+```
+
+Operational impact:
+
+- PRs no longer need a standalone `APPROVED` line for the broad established-test guard.
+- PRs no longer need `IMMUTABLE TEST CHANGE APPROVED BY RAMI` for the older locked-regression guard.
+- Guard logs remain useful review signals, not merge blockers.
+- If the old hard gate is needed again, revert `ramideltoro/nutsnews#238`.
