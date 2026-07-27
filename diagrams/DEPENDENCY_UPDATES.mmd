@@ -1,0 +1,15 @@
+flowchart TD
+  A["Run dependency_update_routine.sh check/update"] --> B["npm ci across web/ worker/ controller/"]
+  B --> C["Capture npm outdated and npm audit"]
+  C --> D["Run validation checks"]
+  D --> E["Generate report in dependency-update-reports/<timestamp>/"]
+  A --> F["Generate:wrangler"]
+  A --> G["npx tsc --noEmit (worker)"]
+  A --> H["Build verification for web if web deps changed"]
+  F --> I{"Web/worker/controller pass"}
+  G --> I
+  H --> I
+  I -->|fail| J["Do not commit; review report and revert if needed"]
+  I -->|pass| K["Review report artifacts and commit decisions"]
+  K --> L["Run post_deploy_verify after deploy"]
+  L --> M["Runtime smoke checks and log health review"]
