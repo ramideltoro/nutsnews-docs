@@ -1,0 +1,21 @@
+{
+  "private": true,
+  "name": "nutsnews-docs-wiki",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "npm run wiki:prepare && astro build",
+    "preview": "astro preview",
+    "wiki:prepare": "node scripts/wiki/generate-wiki-content.mjs",
+    "wiki:prepare:strict": "node scripts/wiki/generate-wiki-content.mjs --strict",
+    "validate:contracts": "node scripts/wiki/validate-wiki-contracts.mjs"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.41.4",
+    "astro": "^7.1.3",
+    "gray-matter": "^4.0.3"
+  }
+}
