@@ -1,0 +1,10 @@
+flowchart TD
+  A[Run improvement scanner] --> B[Compare current issues with known recommendations]
+  B --> C[Generate candidate improvements]
+  C --> D{Any duplicate titles?}
+  D -->|yes| E[Skip existing issues]
+  D -->|no| F[Create backlog issue via gh CLI]
+  E --> G[Write preview summary]
+  F --> H[Label and publish issues to repo]
+  G --> I[Persist backlog artifact]
+  H --> I
