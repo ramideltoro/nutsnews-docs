@@ -48,6 +48,9 @@ jobs:
       - name: Validate markdown inventory
         run: node scripts/wiki/validate-doc-paths.mjs
 
+      - name: Generate wiki markdown for route validation
+        run: npm run wiki:prepare
+
       - name: Validate internal links
         run: npm run validate:links
 
