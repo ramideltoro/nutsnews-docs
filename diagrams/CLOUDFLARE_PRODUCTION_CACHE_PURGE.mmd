@@ -1,0 +1,14 @@
+flowchart TD
+  D[GitHub deployment_status event] --> P{env is Production / production?}
+  P -->|no| N[No action]
+  P -->|yes| W[cloudflare-production-cache-purge workflow]
+  W --> F[Read CLOUDFLARE_API_TOKEN & CLOUDFLARE_ZONE_ID]
+  W --> R{CLOUDFLARE_PURGE_DRY_RUN is true?}
+  F --> R
+  R -->|true| V[Validate secrets + zone format only]
+  R -->|false| C[POST Cloudflare /purge_cache]
+  C --> A[{"purge_everything": true}]
+  C --> T[Run with no token logging]
+  V --> H[No API call made]
+  T --> H
+  W --> L[Regression workflow can verify lock and guard behavior]
