@@ -1,0 +1,8 @@
+flowchart TD
+  D[DNS request for backend.nutsnews.com] --> R[Cloudflare DNS-only A record]
+  R --> F[Cloudflare routing policy to backend infrastructure]
+  F --> V[Vercel route handling and environment boundaries]
+  V -->|api route| A[backend API services]
+  V -->|other routes| S[VPS/secondary routing services]
+  S --> T[Cloudflare Tunnel when required]
+  F --> M[Failure or maintenance fallback paths]
