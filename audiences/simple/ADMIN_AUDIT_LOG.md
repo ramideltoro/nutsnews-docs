@@ -1,5 +1,5 @@
 ---
-title: NutsNews Admin Audit Log
+title: NutsNews Admin Audit Log (Simple)
 wiki:
   source_route: /technical/admin-audit-log/
   simple_route: /simple/admin-audit-log/
