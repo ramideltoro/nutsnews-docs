@@ -1,0 +1,10 @@
+flowchart TD
+  A[Article accepted in worker] --> B[Persist base English article row]
+  B --> C[Create translation tasks per enabled language]
+  C --> D[Try local AI /translate]
+  D -->|Success| E[Store summary row in article_summaries]
+  D -->|Retry or fail| F[Attempt OpenAI fallback]
+  F -->|Success| E
+  F -->|Failure or retry exhausted| G[Mark translation pending/skip publish]
+  E --> H[Publish only when required language rows exist]
+  H --> I[API serves /api/articles with lang parameter]

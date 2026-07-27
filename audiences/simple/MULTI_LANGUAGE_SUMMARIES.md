@@ -160,7 +160,6 @@ ENABLED_SUMMARY_LANGUAGES=fr,es
 
 No new column is required in `public.articles`.
 
-
 ## Japanese support (`ja`)
 
 Japanese is supported as an additional summary language using the same `public.article_summaries` table.
