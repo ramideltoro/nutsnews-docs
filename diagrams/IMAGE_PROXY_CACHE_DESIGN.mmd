@@ -1,0 +1,15 @@
+flowchart TD
+  A[Reader requests article image URL] --> B{Is URL allowed host?}
+  B -->|yes| C[Next.js image optimizer serves variant]
+  B -->|no| D[Reject optimization request]
+  C --> E[Next.js remotePatterns validation + redirect/source-size guards]
+  E --> F[Optional worker proxy gate]
+  F -->|disabled| G[Serve via existing pipeline]
+  F -->|enabled| H[Cloudflare proxy checks allowlist]
+  H --> I{Cached in R2/Images?}
+  I -->|miss| J[Fetch original, write to optional cache]
+  I -->|hit| K[Serve cached variant]
+  J --> L[Apply optional transforms]
+  L --> K
+  G --> M[Fallback to original img if needed]
+  D --> M
