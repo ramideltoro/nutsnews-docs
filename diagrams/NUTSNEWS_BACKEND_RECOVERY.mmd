@@ -1,0 +1,15 @@
+flowchart TD
+  A[Recovery workflow triggered] --> B{Action selected}
+  B -->|diagnostics| C[Collect host, service, and backup diagnostics]
+  B -->|backup-status| D[Read service-aware backup status]
+  B -->|Mutating action| E[Run in check mode]
+  C --> F[Upload `backend-recovery-report`]
+  D --> F
+  E --> G{Mode + confirm target valid?}
+  G -->|no| H[Block and return remediation instructions]
+  G -->|yes| I[Run protected apply]
+  I --> J[Write `/var/lib/nutsnews/recovery/last-recovery.json`]
+  J --> K[Expose state as `recovery_last_run` in backend health report]
+  F --> L[Operator reviews evidence]
+  H --> L
+  K --> L
