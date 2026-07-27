@@ -1,0 +1,35 @@
+flowchart LR
+    web["NutsNews web app"] -->|"reads and writes"| appApi["Backend app DB API"]
+    worker["NutsNews Worker"] -->|"reads and writes"| workerApi["Backend Worker DB API"]
+
+    appApi --> primary[("Backend PostgreSQL<br/>PRIMARY<br/>single writer")]
+    workerApi --> primary
+
+    actions["Protected GitHub Actions workflows"] -->|"SSH to backend host"| reconcile["Reconciliation workflow"]
+    actions -->|"protected Ansible apply"| relay["Backend-local sync relay"]
+    reconcile -->|"loopback|read-only safety checks"| primary
+    reconcile -->|"outbound TLS"| standby["Existing production Supabase<br/>STANDBY TARGET"]
+    primary -->|"snapshot reads over loopback"| relay
+    relay -->|"outbound TLS direct DB writes"| standby
+
+    primary -->|"manual report or full backfill"| standby
+    relay -->|"continuous mirror batches"| standby
+
+    standby -.->|"provider switch is not implemented"| web
+    standby -.->|"provider switch is not implemented"| worker
+
+    lag["Relay status and lag signal"] --> readiness["Promotion-readiness checks"]
+    parity["Schema, checksums, and sequence checks"] --> readiness
+    readiness -->|pass| promote["Switch provider mode to Supabase"]
+    readiness -->|fail| blocked["Protected failover blocked"]
+    blocked -->|manual recovery runbook| ready["Continue protected recovery"]
+    promote -->|smoke tests| standby
+
+    classDef primary fill:#d1fae5,stroke:#047857,stroke-width:2px,color:#064e3b;
+    classDef standby fill:#fef3c7,stroke:#b45309,stroke-width:2px,color:#78350f;
+    classDef control fill:#dbeafe,stroke:#1d4ed8,color:#1e3a8a;
+    classDef decision fill:#ede9fe,stroke:#6d28d9,color:#312e81;
+    class primary primary;
+    class standby standby;
+    class actions,relay,reconcile control;
+    class lag,parity,readiness,promote,blocked,ready decision;
