@@ -1,0 +1,49 @@
+flowchart TD
+  subgraph "Target Ownership Boundaries"
+    subgraph "Backend-host operations"
+      B1["Backend deploy + restart + status"]
+      B2["Smoke, health, queue, and DLQ checks"]
+      B3["Broker drain, reconcile, backup/restore, and cutover"]
+      B4["Owner: ramideltoro/nutsnews-backend"]
+    end
+
+    subgraph "Worker-uplift data plane"
+      WQ["RabbitMQ capacity, queue type, security envelope"]
+      W1["Provisioning, topology, probe, restart verification"]
+      W2["Rollback and broker recovery workflow"]
+      W3["Telemetry scope & budgets"]
+      W4["Owner: ramideltoro/nutsnews-backend"]
+    end
+
+    subgraph "Stage runtime services"
+      S1["Scheduler service"]
+      S2["Fetcher service"]
+      S3["Canonicalizer service"]
+      S4["Enrichment service"]
+      S5["Approval service"]
+      S6["Translation service"]
+      S7["Persistence service"]
+      S8["Publication service"]
+      S9["Owner: stage repos in backend ADR"]
+    end
+
+    subgraph "Infra"
+      I1["Grafana folders, dashboards, alerts, synthetics"]
+      I2["Cloudflare DNS failover controller"]
+      I3["Owner: ramideltoro/nutsnews-infra"]
+    end
+
+    L1["Legacy Worker script set (rollback posture)"]
+    T1["Tracking issue execution order"]
+    T2["Owner: ramideltoro/nutsnews-worker"]
+  end
+
+  B4 --> B1 --> B2 --> B3 --> W3
+  W4 --> WQ --> W1 --> W2 --> W3
+  W3 --> S1
+  S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7 --> S8 --> L1
+  I3 --> I1 --> I2
+  I1 --> W4
+  I2 --> B2
+  L1 -.->|legacy runbooks only; no new calls from worker-uplift runtime| S1
+  T2 --> T1

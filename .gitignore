@@ -12,6 +12,7 @@ coverage/
 .yarn/
 .pnpm-store/
 .cache/
+.astro/
 tmp/
 temp/
 
@@ -29,6 +30,8 @@ Thumbs.db
 **/*.tmp.md
 **/*.ai.md
 **/*.draft.md
+src/content/docs/
+src/content/docs/**
 **/tmp/*
 **/tmp/**
 *.local.md

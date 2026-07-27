@@ -1,0 +1,16 @@
+flowchart TD
+  A["Cloudflare Worker Shard"] -->|x-nutsnews-ai-key + request| B["Cloudflare Worker AI gateway"]
+  B -->|AI_PROVIDER=local| C["Cloudflare Tunnel `ai.nutsnews.com`"]
+  C -->|localhost:8788| D["Home server local-ai service"]
+  D -->|Local inference| E["Ollama `qwen2.5:3b`"]
+  E -->|summary/reason/model result| D
+  D -->|metrics| F["Supabase `article_ai_reviews` / `ai_usage_runs` / `worker_runs`"]
+  B -->|AI_PROVIDER fallback| G["OpenAI API"]
+  G -->|fallback result| F
+  B -->|admin and stats| H["Admin pages `/admin/local-ai` and `/admin/ai-usage`"]
+  D --> H
+  I["Cloudflare Secrets Store `LOCAL_AI_API_KEY`"] --> B
+  I --> D
+  J["Cloudflare Zero Trust Tunnel service"] --> C
+  C -->|service health| K["https://ai.nutsnews.com/health"]
+  K --> L["Public status: 127.0.0.1 bind + auth + keep-alive"]

@@ -1,3 +1,21 @@
+---
+title: Cloudflare Turnstile Contact Form Protection
+wiki:
+  source_route: /technical/cloudflare-turnstile-contact-form/
+  simple_route: /simple/cloudflare-turnstile-contact-form/
+  primary_diagram:
+    file: diagrams/CLOUDFLARE_TURNSTILE_CONTACT_FORM.mmd
+    accTitle: "Cloudflare Turnstile contact form flow"
+    accDescr: "Contact form requests get a browser Turnstile token that is verified server-side before email submission."
+  status: active
+  collection: platform-and-data
+  section: core-platform
+  approval:
+    reviewed_by: pending
+    reviewed_on: pending
+    technical_source_hash: 2097670d0666815e15274a380371787cc677a005195d662042e45abc49f9195a
+---
+
 # Cloudflare Turnstile Contact Form Protection
 
 This update protects the public NutsNews contact form with Cloudflare Turnstile.

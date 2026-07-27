@@ -1,0 +1,10 @@
+flowchart TD
+  U[Visitor opens /contact] --> W[Turnstile widget renders]
+  W -->|token generated| C[Client submits contact form + turnstileToken]
+  C --> A[POST /api/contact]
+  A --> V[Server validates token with Cloudflare /siteverify]
+  V -->|success| S[Send email via Resend]
+  V -->|failure| E[Reject send and show anti-spam error]
+  S --> R[Form success UI + widget reset]
+  C --> H[website honeypot remains checked]
+  E --> H

@@ -1,0 +1,10 @@
+flowchart TD
+  A[Source added/imported] --> B{Is URL news.google.com?}
+  B -->|Yes| C[Allowed only when is_active=false]
+  B -->|No| D[Evaluate quality score and trust tier]
+  C --> E[Discovery-only behavior]
+  D --> F{Trust tier and allowlist state}
+  F -->|Disabled/blocked| G[Remain inactive]
+  F -->|Trusted/watchlist/experimental| H[Admin RPC controls can leave active/inactive]
+  H --> I[Worker shards select eligible active feeds]
+  I --> J[Published articles rely on selected feed set]

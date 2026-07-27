@@ -1,0 +1,10 @@
+flowchart TD
+  P[PR touches web code] --> B[CI runs npm run test:performance-budget]
+  B --> C{Bundle/lighthouse thresholds pass?}
+  C -->|no| D[Fail build and upload report]
+  C -->|yes| E[Build artifacts remain within budgets]
+  E --> F[Deployable PR ready]
+  F --> G[Runtime smoke/route checks verify performance posture]
+  D --> H[Adjust bundles/images/config and rerun]
+  C -->|report generated| I[Lighthouse + route bundle assertions]
+  I --> J[Homepage and article detail budgets reviewed]

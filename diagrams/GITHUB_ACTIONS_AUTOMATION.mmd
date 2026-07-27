@@ -1,0 +1,18 @@
+flowchart TD
+  A["PR / merge request to main"] --> B["Classify changed paths"]
+  B --> C{"Only docs/runbooks changed?"}
+  C -->|Yes| D["Keep workflow record"]
+  D --> E["Skip infra/runtime/portal heavy jobs"]
+  C -->|No| F["Run required area-specific CI jobs"]
+  B --> G["Always run workflow safety"]
+  B --> H["Always run secrets scan"]
+  F --> I["Generate links/sitemap/web/worker/controller artifacts"]
+  I --> J["Publish wiki validation outputs"]
+  K["Test/workflow file change"] --> L["Run immutable test guard"]
+  L --> M{"Guarded files changed?"}
+  M -->|Yes| N["List files; exit success with context"]
+  M -->|No| O["No report entries needed"]
+  N --> P["Reviewer approves through normal PR process"]
+  O --> P
+  Q["Scheduled jobs"] --> R["Backups, size warning, coverage, release notes"]
+  R --> S["Archive reports and notify"]

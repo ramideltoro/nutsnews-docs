@@ -1,0 +1,7 @@
+flowchart TD
+  A[RSS/page feed arrives] --> B[Worker review and summarize]
+  B --> C[Store source + original_url + short summary]
+  C --> D[Cards/search/social/detail render publisher attribution]
+  C --> E[CTA links to original_url]
+  E --> F[Readers return to original publisher]
+  D --> G[Contact/attribution issues route to /contact]

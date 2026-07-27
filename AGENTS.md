@@ -1,15 +1,19 @@
 ---
 title: AGENTS.md (Technical)
+description: NutsNews repository-wide contribution contract for documentation.
 wiki:
   source_route: /technical/agents/
   simple_route: /simple/agents/
   primary_diagram: diagrams/AGENTS.mmd
-  status: active
   collection: start-here
+  section: start-here
+  status: active
+  order: 0
   approval:
     reviewed_by: pending
     reviewed_on: pending
-    technical_source_hash: 5f8e8d6ce9d9ebfef4f1bd6f4f9d9f3b8e4b5db3
+    technical_source_hash: pending
+  slug: agents
 ---
 
 # AGENTS.md (Technical)
@@ -34,20 +38,15 @@ This technical article is for engineers, platform operators, and maintainers who
 ## Collaboration contract
 
 - Changes must preserve prior work unless explicitly superseded.
-- PRs touching non-documentation assets in this repo still require a normal review workflow unless explicitly overridden.
+- PRs touching non-documentation assets in this repo still require standard review workflow unless explicitly overridden.
 - Reviewers should confirm that hidden operations and safety boundaries are still preserved after edits.
 
-## GitHub Pages workflow gates (current)
+## Wiki workflow gates
 
-- **Inventory validation** (`scripts/wiki/validate-doc-paths.mjs`)
-- **Secret safety checks** (`scripts/wiki/validate-wiki-secrets.mjs`)
-- **Jekyll build**
-- **Artifact budget checks** (`scripts/wiki/validate-wiki-budgets.mjs`)
-
-## Release behavior
-
-- When only docs change, prefer low-friction change paths and coordinate with downstream deployment expectations.
-- Keep branch history reviewable by grouping logically related documentation edits.
+- Validate markdown inventory (`node scripts/wiki/validate-doc-paths.mjs`).
+- Validate wiki contracts (`node scripts/wiki/validate-wiki-contracts.mjs`).
+- Validate secret safety (`node scripts/wiki/validate-wiki-secrets.mjs`).
+- Build and validate the static site (`npm run build`).
 
 ## Safety notes
 

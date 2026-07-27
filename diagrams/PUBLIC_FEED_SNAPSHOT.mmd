@@ -1,0 +1,11 @@
+flowchart TD
+  A[Run feed snapshot workflow] --> B[Collect canonical public feed items]
+  B --> C[Write compact snapshot artifact]
+  C --> D[Deploy snapshot to shared edge path]
+  D --> E[Update feed fallback and cache metadata]
+  E --> F{Fallback stale or invalid?}
+  F -->|No| G[Serve current snapshot to clients]
+  F -->|Yes| H[Expose alert and keep probing validation source]
+  H --> I[Route to next successful snapshot run]
+  G --> J[Return snapshot version and freshness state]
+  I --> J

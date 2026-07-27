@@ -1,0 +1,8 @@
+flowchart TD
+  A[Run backend bootstrap workflow/manual runbook] --> B[Provision VPS host dependencies]
+  B --> C[Install required packages and baseline tooling]
+  C --> D[Create user/group/app directories]
+  D --> E[Prepare app secret/config templates]
+  E --> F[Bootstrap services to standby/baseline state]
+  F --> G[Generate bootstrap health and drift artifacts]
+  G --> H[Document follow-up bootstrap and bootstrap credential onboarding]

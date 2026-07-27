@@ -1,0 +1,9 @@
+flowchart TD
+  A[User opens app] --> B[Tap search icon in header]
+  B --> C[Issue /api/search query]
+  C --> D[Load remote search results]
+  D --> E[Render thumbnails, source, category, summary, date]
+  E --> F[Cache results briefly on-device]
+  F --> G[User opens result]
+  G --> H[Open native article detail]
+  H --> I[Allow saving result to Saved Stories]

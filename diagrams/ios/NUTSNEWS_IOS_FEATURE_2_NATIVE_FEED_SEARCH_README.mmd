@@ -1,0 +1,10 @@
+flowchart TD
+  A[User opens home feed] --> B[Render search field under category chips]
+  B --> C[User types query]
+  C --> D[Filter loaded feed in memory]
+  D --> E{Any matches?}
+  E -->|Yes| F[Show matching cards and count]
+  E -->|No| G[Show native empty state]
+  F --> H[Tap card to open article detail]
+  H --> I[Keep saved stories and feature integrations intact]
+  J[Tap Clear search] --> K[Restore full feed list]

@@ -1,0 +1,25 @@
+flowchart TD
+  A["Backend PR / change request"] --> B["Backend checks"]
+  B --> C["Protected check + approval gate"]
+  C --> D["Ansible check mode"]
+  D --> E["Protected apply to backend.nutsnews.com"]
+  E --> F["Post-apply health + topology + permission checks"]
+  F --> G["Drift check workflow"]
+  G --> H["Health report updates"]
+
+  I["Operator reviews drift anomaly"] --> J["Open follow-up backend PR if needed"]
+  G --> I
+  J --> A
+
+  K["Backend RabbitMQ Smoke status"] --> L{"Action"}
+  L -->|smoke| M["fixed broker probes + confirmation + retries"]
+  L -->|status| N["read-only smoke status check"]
+  M --> O["redacted smoke artifact"]
+  N --> O
+
+  P["Private canary schedule"] --> Q["canary publish/consume + manual ack"]
+  Q --> R["write last-canary evidence"]
+  R --> S["optional protected canary drill"]
+  S --> T["deterministic drill evidence for runbooks"]
+
+  U["Health report"] --> V["Read-only projection: drift, broker health, recovery, smoke, canary status"]

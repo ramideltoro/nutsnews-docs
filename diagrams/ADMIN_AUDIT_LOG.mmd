@@ -1,0 +1,19 @@
+sequenceDiagram
+  participant Admin
+  participant FeedPage as /admin/feeds Server Action
+  participant RPC as set_rss_feed_active_with_audit
+  participant Feeds as public.rss_feeds
+  participant Audit as public.admin_audit_events
+  participant AuditPage as /admin/audit
+
+  Admin->>FeedPage: Submit enable/disable feed form
+  FeedPage->>FeedPage: Recheck auth() and admin allowlist
+  FeedPage->>RPC: actor email, feed URL, next active state
+  RPC->>Feeds: select target feed for update
+  RPC->>Feeds: update is_active
+  RPC->>Audit: insert actor/action/target/before/after
+  RPC-->>FeedPage: audit_event_id
+  FeedPage-->>Admin: Redirect with result
+  Admin->>AuditPage: Open audit log
+  AuditPage->>Audit: no-store service-role read
+  AuditPage-->>Admin: Recent audit events

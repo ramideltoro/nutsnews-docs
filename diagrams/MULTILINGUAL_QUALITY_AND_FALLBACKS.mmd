@@ -1,0 +1,18 @@
+flowchart TD
+  A[Worker accepts article] --> B[Save article as translation_pending]
+  B --> C[Build and run summary translations]
+  C --> D[Save article_summaries rows]
+  D --> E[Run translation quality checks]
+  E -->|Critical issue| F[Mark translation unavailable]
+  E -->|Pass or warning| G[Candidate row is publishable]
+  F --> H[API keeps English fallback and logs diagnostics]
+  G --> I[Publish guard validates all enabled languages]
+  I -->|Missing rows| J[Return ok=false and missingTranslations]
+  J --> K[Worker logs and retries recovery]
+  K --> L[public_feed_snapshot refresh deferred]
+  I -->|All rows present| M[Patch articles.status=published]
+  M --> N[Refresh public_feed_snapshot]
+  N --> O[Web /api/articles uses localized title/summary when valid]
+  O --> P{Localized row missing/invalid?}
+  P -->|Yes| H
+  P -->|No| Q[Render localized card]

@@ -1,3 +1,21 @@
+---
+title: Multi-language summaries
+wiki:
+  source_route: /technical/multi-language-summaries/
+  simple_route: /simple/multi-language-summaries/
+  primary_diagram:
+    file: diagrams/MULTI_LANGUAGE_SUMMARIES.mmd
+    accTitle: "Summary translation flow"
+    accDescr: "Accepted articles generate localized summary rows and are published only after required language rows are available."
+  status: active
+  collection: product-and-reader-experience
+  section: public-product
+  approval:
+    reviewed_by: pending
+    reviewed_on: pending
+    technical_source_hash: e21c001d0c8a8da975fdd920bd26df11e188b9d014686e80088fee08142ef5d0
+---
+
 # Multi-language summaries
 
 Issue #26 adds a future-ready language layer for NutsNews summaries.

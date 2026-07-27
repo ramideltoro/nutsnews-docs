@@ -1,0 +1,3 @@
+flowchart TD
+  A["Grafana Cloud Backup Monitoring"] --> B["Primary workflow or review path"]
+  B --> C["Observed in docs and runbooks"]

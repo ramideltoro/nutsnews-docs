@@ -1,0 +1,10 @@
+flowchart TD
+  A[User views story in feed] --> B[Tap heart on story card]
+  B --> C[Create or update SavedStory entry in UserDefaults]
+  C --> D[Persist full story payload]
+  A2[User opens Saved tab] --> E[Load saved stories from local storage]
+  E --> F[Search/filter by title, summary, source, category]
+  F --> G[Display saved items with date and count]
+  G --> H[Tap saved item to open article detail]
+  I[User removes saved story] --> J[Delete story from local store]
+  J --> K[Update saved list and count]

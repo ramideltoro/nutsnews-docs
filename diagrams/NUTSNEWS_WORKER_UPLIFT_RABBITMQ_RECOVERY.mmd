@@ -1,0 +1,32 @@
+flowchart TD
+  A["Health check or incident event" ] --> B["Run `export-definitions`"]
+  B --> C["Exported raw definitions scrubbed
+  to `definitions.sanitized.json`"]
+  C --> D["Retention artifacts written to
+  `/var/lib/nutsnews/rabbitmq-recovery`"]
+
+  E["Scheduled backend recovery workflow"] --> F["`scheduled-check` only"]
+  F --> B
+
+  G["Mutating recovery action"] --> H["`clean-rebuild-drill`
+  disposable bootstrap"]
+  H --> I["Topology and permission validation"]
+  I --> J["Retry/DLQ probe checks"]
+
+  G --> K["`stopped-volume-restore-drill`
+  disposable snapshot replay"]
+  K --> I
+
+  L["Upgrade window"] --> M["Pre-window `clean-rebuild-drill`
+  + `stopped-volume-restore-drill`"]
+  M --> N["Protect image, topology, and
+  PostgreSQL outbox replay assumptions"]
+  N --> O["Protected Ansible check + apply"]
+
+  H --> P["Recovery evidence
+  posted to recurring health report"]
+  K --> P
+  O --> P
+
+  P --> Q["Healthy recovery signal:
+  fresh definitions + passing rebuild drill"]

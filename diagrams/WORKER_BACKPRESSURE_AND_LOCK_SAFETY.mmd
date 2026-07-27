@@ -1,0 +1,24 @@
+flowchart TD
+  A["Worker refresh starts"] --> B["Acquire shard Redis lock"]
+  B --> C{Lock acquired?}
+
+  C -->|No| D["Return deferred/locked response"]
+  C -->|Yes| E["Fetch RSS candidates"]
+  E --> F["Processed URL + KV lookup"]
+  F --> G["Queue counts by source and shard"]
+  G --> H["Read Supabase article count"]
+
+  H --> I{Backpressure threshold exceeded?}
+  I -->|Yes| J["Persist lightweight report with deferred reasons"]
+  I -->|No| K["Extend shard lock lease with token"]
+
+  K --> L["Hydrate images"]
+  L --> M["Claim per-article AI lock"]
+  M --> N["AI review + translation"]
+  N --> O["Supabase writes + snapshot refresh"]
+  O --> P["Return detailed worker report"]
+
+  D --> Q["No expensive work executed"]
+  P --> Q
+  N --> R["Emit queued/deferred/retried/process counters"]
+  R --> Q

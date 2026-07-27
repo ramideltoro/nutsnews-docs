@@ -1,0 +1,10 @@
+flowchart TD
+  A[User enters search query] --> B[Frontend calls /api/search]
+  B --> C[Backend executes Postgres full-text search]
+  C --> D[Search weights apply by title, summary, source, category]
+  D --> E[Return ranked results + nextPage metadata]
+  E --> F[Web home feed renders search mode]
+  F --> G[User taps result]
+  G --> H[Open story detail]
+  G --> I[User taps Clear]
+  I --> J[Return to normal feed and infinite scroll]

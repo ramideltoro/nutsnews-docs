@@ -1,0 +1,18 @@
+flowchart TB
+  A["Production system state update"] --> B["Backend deploy + apply"]
+  B --> C["RabbitMQ Prometheus listener on 127.0.0.1:15692"]
+  C --> D["Grafana Alloy scrape /metrics and /metrics/detailed"]
+  D --> E["Label and metric allowlist in Alloy"]
+  E --> F["Remote write to Grafana Cloud Prometheus"]
+  F --> G["Backend RabbitMQ dashboard and alert catalog"]
+  G --> H["Portal reads durability projection in /admin/shards"]
+  H --> I["Operators read projection fields and DLQ/queue-age"]
+
+  J["Admin read-only controls"] --> K["load-admin-worker-uplift-health"]
+  K --> L["Backend durable projection"]
+  L --> H
+
+  M["Canary drill"] --> N["Backend collects textfile /var/lib/nutsnews/metrics/rabbitmq-canary.prom"]
+  N --> O["Alloy remote-write of canary metrics"]
+  O --> G
+  O --> P["Alert/SLO proof and evidence runs"]

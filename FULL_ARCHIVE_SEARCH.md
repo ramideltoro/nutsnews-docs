@@ -1,3 +1,21 @@
+---
+title: Full archive search
+wiki:
+  source_route: /technical/full-archive-search/
+  simple_route: /simple/full-archive-search/
+  primary_diagram:
+    file: diagrams/FULL_ARCHIVE_SEARCH.mmd
+    accTitle: "Archive search architecture"
+    accDescr: "A user search query hits /api/search, the API runs PostgreSQL full-text search, and the web feed renders results with pagination."
+  status: active
+  collection: product-and-reader-experience
+  section: public-product
+  approval:
+    reviewed_by: pending
+    reviewed_on: pending
+    technical_source_hash: 82c9e4b919d065dc116089267429ff58c5be9678e73148d5f59d34729180f517
+---
+
 # Full archive search
 
 NutsNews full archive search is backed by PostgreSQL full-text search in Supabase.

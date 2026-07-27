@@ -1,0 +1,13 @@
+flowchart TD
+  A[User opens hamburger menu] --> B[Select Reading Stats]
+  B --> C[Load local AppStorage counters]
+  C --> D[Show today's goal and streak]
+  C --> E[Show total unique stories and saved count]
+  C --> F[Show note count and originals today]
+  D --> G[User opens a story]
+  G --> H[Increment story-open counters]
+  G --> I[Open original story link]
+  I --> J[Increment originals-opened counter]
+  H --> K[Return to Reading Stats]
+  J --> K
+  K --> L[Optional clear/reset behavior managed by user action]

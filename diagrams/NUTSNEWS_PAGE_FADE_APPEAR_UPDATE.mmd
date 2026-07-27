@@ -1,0 +1,7 @@
+flowchart TD
+  A[Navigate to public page] --> B[Apply fade/slide/soft-blur entrance]
+  B --> C{prefers-reduced-motion is enabled?}
+  C -->|Yes| D[Skip animation and show page directly]
+  C -->|No| E[Animate in on entry]
+  D --> F[Stable page render]
+  E --> F

@@ -1,3 +1,21 @@
+---
+title: Multilingual quality checks and fallback policy
+wiki:
+  source_route: /technical/multilingual-quality-and-fallbacks/
+  simple_route: /simple/multilingual-quality-and-fallbacks/
+  primary_diagram:
+    file: diagrams/MULTILINGUAL_QUALITY_AND_FALLBACKS.mmd
+    accTitle: "Translation quality and publish guard"
+    accDescr: "Article summaries flow through Worker checks, quality auditing, publish guard, and English fallback when translations are missing or invalid."
+  status: active
+  collection: product-and-reader-experience
+  section: public-product
+  approval:
+    reviewed_by: pending
+    reviewed_on: pending
+    technical_source_hash: a83bdf6e5ce0327776f7319e530e677189aa1e3ed4155be1ae31d35e31d6bf66
+---
+
 # Multilingual quality checks and fallback policy
 
 Issue #99 adds production checks for translated NutsNews article cards. The goal is to keep multilingual cards useful without letting a missing or questionable translation break the reader feed.

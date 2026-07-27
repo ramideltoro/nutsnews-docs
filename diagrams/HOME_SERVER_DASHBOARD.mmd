@@ -1,0 +1,9 @@
+flowchart TD
+  A[Admin browser opens /admin/home-server] --> B[Protected Next.js route]
+  B --> C{Server-side fetch with HOME_SERVER_STATS_URL + API key}
+  C --> D[GET /stats at ai.nutsnews.com]
+  D --> E[local-ai-service validates x-nutsnews-ai-key]
+  E --> F[Collect hostname, CPU, memory, disk, services, localAi, ollama]
+  F --> G[Render dashboard server-side in admin page]
+  G --> H[Page stays read-only and shows only non-sensitive health metrics]
+  C -->|invalid key| I[Block fetch and show error state]

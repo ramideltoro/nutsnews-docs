@@ -1,0 +1,6 @@
+flowchart TD
+  A[User selects theme in ThemeSwitcher] --> B[Persist `nutsnews.web.theme` in localStorage]
+  B --> C[Global CSS variables update]
+  C --> D[Home hero/cards/controls consume new tokens]
+  D --> E[Rendered page follows selected theme]
+  C --> F[Reduced-motion and animation fallbacks apply]

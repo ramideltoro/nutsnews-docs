@@ -1,3 +1,21 @@
+---
+title: Fluid Active CPU Reduction
+wiki:
+  source_route: /technical/fluid-active-cpu-reduction/
+  simple_route: /simple/fluid-active-cpu-reduction/
+  primary_diagram:
+    file: diagrams/FLUID_ACTIVE_CPU_REDUCTION.mmd
+    accTitle: "Fluid active CPU reduction flow"
+    accDescr: "Homepage, feed, and middleware paths were reduced to fewer requests and longer cache windows to cut avoidable public-server CPU usage."
+  status: active
+  collection: platform-and-data
+  section: core-platform
+  approval:
+    reviewed_by: pending
+    reviewed_on: pending
+    technical_source_hash: 0f6abd7976c53553c242b918a76da22010c55e372ed2ca09f768cb76c26d423b
+---
+
 # Fluid Active CPU Reduction
 
 ## Purpose

@@ -1,0 +1,17 @@
+flowchart LR
+  A["Cron / scheduled controller run"] --> B["Controller selects shard index"]
+  B --> C["POST shard URL with limit and review bound"]
+  C --> D["Shard fetches RSS feeds"]
+  D --> E["Candidate filtering and dedupe checks"]
+  E --> F["AI review and review save"]
+  F --> G["Article + worker run + usage + snapshot persistence"]
+  G --> H["Controller receives shard response"]
+  H --> I{"Shard ok?"}
+  I -->|yes| J["controllerMode=automatic/manual result ok"]
+  I -->|no| K["controllerMode error path"]
+  J --> L["Controller returns shardUrl, status, response"]
+  L --> M["Inspect /kv-status and /public-feed-snapshot"]
+  N["Manual shard route"] --> O["Run /?shard=n or /?limit=n directly"]
+  O --> P["Direct shard response + debug fields"]
+  N --> Q["Optional logs via wrangler tail"]
+  K --> R["Debug controller events and shard errors"]
