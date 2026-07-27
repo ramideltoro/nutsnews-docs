@@ -1,0 +1,399 @@
+---
+title: NutsNews Release Pipeline
+wiki:
+  source_route: /technical/nutsnews-release-pipeline/
+  simple_route: /simple/nutsnews-release-pipeline/
+  primary_diagram:
+    file: diagrams/NUTSNEWS_RELEASE_PIPELINE.md
+    accTitle: "NutsNews Release Pipeline diagram"
+    accDescr: "Document flow and operational checkpoints for this topic."
+  status: active
+  collection: platform-and-data
+  section: core-platform
+  approval:
+    reviewed_by: pending
+    reviewed_on: pending
+    technical_source_hash: 61a96afe58b86a2e1bfdfa8a4a19bc4812f05b679948b8b40f25a28f177c0911
+---
+
+# NutsNews Release Pipeline
+
+Current as of July 18, 2026.
+
+This document maps the staging-qualified production release path across:
+
+- `ramideltoro/nutsnews` for app source, workflows, Vercel release, and
+  GitHub Actions pinning policy, including remote verification that pinned
+  action SHAs are commits in the referenced repositories;
+- `ramideltoro/nutsnews-infra` for VPS staging, qualification, promotion,
+  protected apply, and rollback dispatches;
+- `ramideltoro/nutsnews-docs` for cross-repo release documentation.
+
+It documents repository-owned behavior and workflow boundaries. It does not
+contain secret values and does not authorize manual production database changes,
+manual Docker changes, or direct VPS mutation outside protected workflows.
+
+## Simple Summary
+
+NutsNews production is staging-first. A release can reach the production VPS
+only after the exact app source and immutable GHCR image have passed staging
+deployment and independent staging qualification.
+
+Production promotion is not a direct app-to-production dispatch. The old
+`nutsnews-production-release` repository dispatch path is closed. The active
+infra promotion path starts from a successful `nutsnews-staging-qualification`
+workflow run, or from a manual dispatch that names that exact successful run and
+uses the required confirmation phrase.
+
+Before the production VPS can change, infra verifies:
+
+1. the signed staging qualification attestation for the exact image, source,
+   build, staging deployment, config generation, and test-suite revision;
+2. the candidate is still the current successful staging deployment;
+3. production Supabase already exposes the compatible migration/schema contract,
+   or the protected production migration workflow has already applied it;
+4. the reviewed GitOps production manifest PR passes checks and merges;
+5. `Protected Ansible Apply` accepts the complete release identity bundle before
+   it reaches `production-vps` secrets.
+6. the app repository's explicit Vercel production workflow stages, tests,
+   promotes, and verifies the same source commit only after the VPS apply
+   succeeds.
+
+Infra promotion locates the Vercel production workflow by workflow file,
+repository dispatch event, branch, dispatch timestamp, and the current or
+legacy Vercel production run-name for the app source commit. GitHub may record
+repository-dispatch `headSha` as the app repository's current default-branch
+commit instead of the dispatched release commit, so `headSha` is not the
+release identity. A missing Vercel run is an orchestration failure, not proof
+that the deployed artifact is bad. Automated VPS rollback may start only after
+the located Vercel run is rechecked and confirmed completed with a non-success
+conclusion for that same source commit run-name.
+
+If the production Supabase schema is behind, promotion fails and points the
+operator to `ramideltoro/nutsnews/.github/workflows/production-supabase-migration.yml`.
+The production promotion workflow does not auto-migrate production.
+
+The explicit Vercel production workflow also rewrites local build control names
+in the pulled Vercel Production env file before running the prebuilt build.
+It removes any Vercel-sourced `PATH`, `Path`, `SHELL`, or `HOME` entries and
+then appends runner-safe `PATH`, `SHELL`, and `HOME` values. This prevents the
+local GitHub runner build from losing the shell needed by `npm install` while
+keeping secret values inside Vercel and GitHub Actions.
+
+## Intermediate Summary
+
+The app repository owns source, web checks, migration checks, the container
+image, staging handoff metadata, and protected Supabase migration workflows.
+The infra repository owns VPS staging deployment, staging qualification,
+production promotion, GitOps production manifest changes, Protected Ansible
+Apply, and fixed rollback. The docs repository owns this cross-repo explanation.
+
+The release identity bundle is:
+
+- source repository: `ramideltoro/nutsnews`
+- source commit: full lowercase SHA on app `main`
+- source workflow run ID
+- image repository: `ghcr.io/ramideltoro/nutsnews`
+- image digest: immutable `sha256:<digest>`
+- build ID
+- staging deployment ID
+- staging qualification run ID
+- migration head
+- rollback-compatible schema version
+- production Supabase project reference
+- post-VPS Vercel Production deployment evidence and secondary target URL for
+  the same source commit
+
+The app `Container Image` workflow uploads `nutsnews-staging-release` metadata.
+`Request Verified Staging Release` dispatches only `nutsnews-staging-release`
+to infra. It does not request production.
+
+Infra deploys the candidate to the isolated staging VPS path and then runs
+`Qualify Verified NutsNews Staging Candidate`. Qualification writes sanitized
+evidence, creates a GitHub artifact attestation for the exact candidate, and
+verifies that attestation before retaining the evidence artifact.
+
+`Promote NutsNews Production Release` starts only after that qualification
+workflow succeeds, or by a tightly validated manual dispatch for the exact
+qualification run. It re-derives the release contract from the exact app source
+commit, verifies production Supabase through the public
+`nutsnews_migration_schema_contract` RPC, revalidates the staging attestation
+and current staging deployment, then creates or reuses the production GitOps
+PR. After the protected VPS apply succeeds, infra dispatches the app
+repository's explicit Vercel production workflow with the source commit, VPS
+OCI digest, VPS apply run, staging deployment ID, and staging qualification run
+ID. That workflow builds a production Vercel artifact, deploys it as a staged
+production deployment with no custom-domain assignment, resolves the Vercel
+deployment ID, runs the safe web smoke suite against the staged URL, promotes
+that deployment through Vercel only after the staged smoke passes, and then
+verifies the configured Vercel secondary target. Apex and `www` are Vercel
+checks only during a controlled DNS failover validation.
+
+The infra promotion wait accepts the current `Dispatch-only Vercel production
+<source_commit>` run-name and the legacy `Deploy Vercel production
+<source_commit>` run-name. This avoids treating a successful Vercel deployment
+as "not found" when the app workflow run-name has changed, without relying on
+the repository-dispatch `headSha`.
+
+The Vercel production workflow still pulls the Vercel Production environment
+for the build, but it rewrites only runner-control names that can make `vercel
+build --prod` fail locally. Application and secret configuration values remain
+available to the build; the workflow logs only the prepared control names and
+does not print or export their values.
+
+The promotion workflow does not attach the `production-vps` environment. It
+uses the existing infra release token only after the Supabase and
+staging-attestation gates pass, so the token is used for GitOps mechanics:
+branch push, PR creation, check waiting, merge, and protected workflow dispatch.
+The production mutation still happens only inside `Protected Ansible Apply`
+after the no-secret eligibility job and the protected `production-vps`
+environment.
+
+## Expert Summary
+
+The production path deliberately separates evidence from mutation:
+
+- The app `main` merge and image build create the immutable release artifact.
+- Staging deployment proves the digest can run on the VPS staging runtime.
+- Staging qualification proves the live staged candidate and writes signed,
+  short-lived eligibility evidence.
+- The production Supabase contract must already match the release migration
+  head, legacy schema marker, and catalog fingerprint before VPS promotion
+  proceeds.
+- The GitOps PR changes only
+  `ansible/inventories/production/host_vars/vps.nutsnews.com.yml`.
+- Protected Ansible Apply rechecks the same release identity before secrets and
+  SSH are available.
+- Post-apply verification fails the run if Docker image identity or public
+  `/healthz` source/build/shared-VPS image identity does not match. Runtime
+  readiness and smoke checks also verify the reviewed `production-vps` target.
+- Vercel Production deploys only after the protected VPS apply passes, and the
+  release remains failed unless the staged deployment URL passes smoke, the
+  Vercel deployment ID is promoted through Vercel, and the configured Vercel
+  secondary production target reports the same source commit. The apex and
+  `www` production hostnames are checked as Vercel targets only during a
+  controlled DNS failover test.
+- Vercel deployment URL, deployment ID, source SHA, staged smoke result, and
+  promotion result are recorded separately from the VPS OCI digest.
+- The Vercel local prebuilt build rewrites shell-sensitive env names after
+  `vercel pull`, so platform configuration cannot remove the GitHub runner's
+  shell path before `vercel build --prod`.
+
+The release is not transactionally atomic across Vercel, Supabase, GitHub, and
+the VPS. The safety property is narrower and testable: every production VPS app
+mutation must be traceable to a current staging qualification, compatible
+production Supabase schema, reviewed manifest PR, protected apply run, and
+same-commit post-VPS Vercel Production deployment.
+
+## Pipeline Diagram
+
+```mermaid
+flowchart TD
+  appMain["App main commit"] --> image["Container Image\nGHCR digest + staging metadata"]
+  image --> handoff["Request Verified Staging Release\nnutsnews-staging-release only"]
+  handoff --> staging["Infra staging deploy\nstaging-vps"]
+  staging --> qualification["Independent staging qualification\nstaging-tests attestation"]
+  qualification --> promotion["Production promotion workflow\nqualification run only"]
+  promotion --> supabase{"Production Supabase\ncontract compatible?"}
+  supabase -- "No" --> migrate["Run protected production-supabase-migration\nthen rerun promotion"]
+  supabase -- "Yes" --> attest{"Current staging attestation\nstill exact?"}
+  attest -- "No" --> stopAttest["Stop before GitOps PR"]
+  attest -- "Yes" --> pr["GitOps production manifest PR"]
+  pr --> checks{"PR checks pass?"}
+  checks -- "No" --> stopChecks["Stop before protected apply"]
+  checks -- "Yes" --> merge["Merge PR"]
+  merge --> apply["Protected Ansible Apply\ncomplete release bundle"]
+  apply --> verify["Docker + public health identity\nsafe production smoke"]
+  verify --> vercelStage["Dispatch explicit Vercel production workflow\nstage with --skip-domain"]
+  vercelStage --> vercelSmoke["Smoke staged Vercel URL\nrecord deployment ID"]
+  vercelSmoke --> vercelPromote["vercel promote deployment ID"]
+  vercelPromote --> vercelVerify["Vercel secondary target\nsame source commit"]
+  vercelVerify --> done["Coupled release complete"]
+```
+
+## Sequence Diagram
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant App as ramideltoro/nutsnews
+  participant GHCR as GHCR
+  participant Infra as ramideltoro/nutsnews-infra
+  participant Stage as Staging VPS
+  participant Vercel as Vercel
+  participant Supabase as Production Supabase
+  participant Prod as Production VPS
+
+  App->>GHCR: Build and publish immutable image for app main commit
+  App->>Infra: repository_dispatch nutsnews-staging-release
+  Infra->>Stage: Deploy exact digest through staging-vps path
+  Stage-->>Infra: Deployment evidence and live identity
+  Infra->>Stage: Run off-VPS staging qualification
+  Infra->>Infra: Attest exact staging qualification predicate
+  Infra->>Infra: Start production promotion from qualification run
+  Infra->>Supabase: Verify public schema contract RPC through Vercel runtime config
+  Infra->>Infra: Verify attestation and current staging deployment
+  Infra->>Infra: Create or reuse production manifest PR, wait for checks, merge
+  Infra->>Infra: Dispatch Protected Ansible Apply with release identity bundle
+  Infra->>Prod: Apply reviewed digest through production-vps
+  Prod-->>Infra: Docker image and public /healthz identity match
+  Infra->>App: repository_dispatch with VPS apply and staging qualification evidence
+  App->>Vercel: Deploy staged production build with --skip-domain
+  Vercel-->>App: Staged URL and Vercel deployment ID
+  App->>Vercel: Smoke staged URL, then promote deployment ID
+  Vercel-->>App: Secondary target reports same source commit
+  App-->>Infra: Vercel production workflow passed
+```
+
+## Gate Table
+
+| Gate | Owning repo/workflow | Pass condition | Failure behavior |
+| --- | --- | --- | --- |
+| App PR checks | `ramideltoro/nutsnews` CI | Required app checks and release-candidate checks pass before merge | App `main` merge is blocked |
+| Article translation release gate | `container-image.yml` release-candidate job | Public reader language smoke passes, local translation gate regression proves missing/critical/low-coverage cases fail, and strict `audit:translations` passes with `TRANSLATION_QUALITY_FAIL_ON_CRITICAL=true`, `TRANSLATION_QUALITY_FAIL_ON_MISSING=true`, and `TRANSLATION_QUALITY_MIN_COVERAGE=100` | PR release candidate fails before merge; scheduled translation report remains report-only |
+| Image publish | `container-image.yml` | GHCR full-SHA image and digest metadata match the app `main` run | No staging handoff artifact |
+| Staging handoff | `staging-release.yml` | Only the validated `nutsnews-staging-release` payload is dispatched to infra | Staging deploy is not requested |
+| Staging deploy | `nutsnews-staging-deploy.yml` | VPS staging runtime reports the expected source, build, digest, schema, and isolation | Qualification is not eligible |
+| Staging qualification | `nutsnews-staging-qualification.yml` | Live staging tests pass and the exact-candidate attestation verifies | Production promotion is not eligible |
+| Production Supabase contract | `nutsnews-release-promotion.yml` plus app migration workflow | Runtime config identifies production and the public schema contract RPC matches migration head, schema version, and fingerprint | Promotion fails and points to `production-supabase-migration.yml` |
+| Current staging attestation | `verify_production_eligibility.py` | Fresh trusted attestation matches release identity and the same deployment is still current successful staging | Promotion stops before GitOps PR or protected apply |
+| GitOps promotion PR | `nutsnews-release-promotion.yml` | Manifest PR checks pass and PR merges to infra `main` | Protected apply is not dispatched |
+| Protected eligibility | `protected-ansible-apply.yml` | No-secret verifier accepts the merged manifest and complete release bundle before `production-vps` secrets | Production secrets and SSH remain unavailable |
+| Production apply | `protected-ansible-apply.yml` | Ansible applies the reviewed digest and post-apply Docker/health/smoke checks match | Workflow fails; use fixed rollback only if production mutated |
+| Vercel Production | `vercel-production-release.yml` dispatched by infra after VPS apply | The local prebuilt build rewrites shell-sensitive pulled env names to runner-safe control values; Vercel production is deployed with `--skip-domain`; the staged URL passes safe smoke; the Vercel deployment ID is promoted through Vercel; the generated deployment URL or `NUTSNEWS_VERCEL_SECONDARY_PRODUCTION_URLS` reports the same source commit and `vercel-production` target. `www.nutsnews.com` and `nutsnews.com` are Vercel checks only when `NUTSNEWS_VERIFY_VERCEL_FAILOVER_ALIASES=true` during a controlled failover test. | Coupled release fails after VPS apply; a missing workflow run fails promotion without rollback; a located completed non-success run may trigger protected rollback after rechecking the run-name/event belongs to the same source commit |
+| Fixed rollback | `protected-nutsnews-rollback.yml` | Only the recorded last-known-good digest is selected from reviewed manifest history | Arbitrary digest, tag, SSH, or DB down migration is rejected |
+
+## Article Translation Release Gate
+
+Issue #280 makes article translation effectiveness release-blocking in the app
+repository release candidate path.
+
+Simple Summary: a release candidate now stops if the test article translations
+are missing, broken, or below the required coverage.
+
+Intermediate Summary: the app PR `Release candidate` job now runs the public
+reader smoke test, the translation release-gate regression, and a strict
+translation audit against a local Supabase-style fixture. Scheduled translation
+coverage still uploads operational reports and does not fail on production
+coverage drift by default.
+
+Expert Summary: `container-image.yml` seeds one visible release-gate article
+with `fr`, `ja`, `de-CH`, `de`, and `el` summary rows in the release-candidate
+fixture server. It runs `npm run test:translation-release-gate` to prove
+`scripts/audit_article_translations.mjs` exits nonzero for missing rows,
+critical quality issues, and coverage below the configured threshold. It then
+runs `npm run test:e2e:public-smoke` and a scoped strict
+`npm run audit:translations` invocation with:
+
+```text
+TRANSLATION_QUALITY_FAIL_ON_CRITICAL=true
+TRANSLATION_QUALITY_FAIL_ON_MISSING=true
+TRANSLATION_QUALITY_MIN_COVERAGE=100
+```
+
+The fixture `SUPABASE_SERVICE_ROLE_KEY` is scoped to the audit command, not the
+whole build step. `release_candidate_guard.mjs` and
+`production_release_workflow_regression.mjs` pin these checks so a future PR
+cannot quietly remove the release-blocking translation gate. The scheduled
+`translation-coverage.yml` workflow remains report-only with
+`TRANSLATION_QUALITY_FAIL_ON_CRITICAL=false`,
+`TRANSLATION_QUALITY_FAIL_ON_MISSING=false`, and
+`TRANSLATION_QUALITY_MIN_COVERAGE=0`.
+
+```mermaid
+flowchart TD
+  pr["Pull request to app main"] --> candidate["Release candidate job"]
+  candidate --> fixture["Start local Supabase-style translation fixture"]
+  fixture --> regression["test:translation-release-gate\nmissing + critical + low coverage must fail"]
+  regression --> smoke["test:e2e:public-smoke\nreader language flow"]
+  smoke --> audit["strict audit:translations\nmissing/critical/coverage fail"]
+  audit --> build["Typecheck, lint, security headers, build"]
+  build --> merge{"All release gates pass?"}
+  merge -- "Yes" --> main["Merge remains eligible"]
+  merge -- "No" --> blocked["PR/release candidate blocked"]
+  schedule["translation-coverage.yml schedule"] --> report["Report artifact only\nno release threshold"]
+```
+
+Rollback is to revert the app PR that added the release candidate translation
+checks and the matching docs commit. If the gate fails because real translations
+are missing, do not lower the release gate first; run the audit/backfill path
+and rerun the candidate.
+
+## Vercel Local Build Environment Guard
+
+The app workflow uses `vercel pull --environment=production` followed by a
+local `vercel build --prod` and `vercel deploy --prebuilt --prod
+--skip-domain`. That local build runs on a GitHub Actions runner, not on
+Vercel infrastructure. If a pulled Vercel Production variable has a
+process-control name such as `PATH`, `Path`, `SHELL`, or `HOME`, it can
+override the runner environment that the Vercel CLI uses to spawn the install
+command. The observed failure mode is a same-release Vercel deploy stopping at
+`Error: spawn sh ENOENT` after the VPS apply has already passed.
+
+The mitigation is intentionally narrow: after `vercel pull`, the workflow
+removes `.vercel/.env.production.local` entries whose names match that small
+shell-sensitive set, then appends safe local runner values for `HOME`, `PATH`,
+and `SHELL`. It does not remove application configuration, does not print
+values, and does not change the source-controlled Vercel project settings. The
+`production_release_workflow_regression.mjs` check asserts that this local
+build control guard remains present in the release workflow. The same
+regression now asserts that Vercel uses staged production deployment,
+same-artifact promotion with `vercel promote`, and retained sanitized release
+evidence.
+
+Rollback is to use the protected rollback path so the VPS and Vercel are
+repaired through reviewed automation. The Vercel production workflow now
+accepts only the infra repository dispatch path
+(`nutsnews-vercel-production-release`) and is not manually dispatchable in
+normal operations. Do not work around this by running a standalone Vercel
+production deploy, because that would bypass the coupled VPS and Vercel release
+contract.
+
+## Production Supabase Procedure
+
+When promotion reports that production Supabase is not compatible, do not edit
+the database manually and do not rerun promotion until the contract is fixed.
+
+Run the app repository workflow:
+
+```text
+ramideltoro/nutsnews/.github/workflows/production-supabase-migration.yml
+```
+
+The protected migration request must use the same source commit and migration
+head as the release candidate, a fresh successful manual backup run ID, and the
+exact confirmation phrase required by that workflow. After the migration passes,
+rerun `Promote NutsNews Production Release` with the same staging qualification
+run ID if the qualification is still fresh and current.
+
+## Operator Notes
+
+- Do not dispatch `Protected Ansible Apply` for a new app digest until the
+  promotion workflow has merged the reviewed production manifest.
+- Do not run a standalone Vercel Production deployment for a release. Vercel
+  production follows protected VPS apply through the coupled promotion chain.
+- Do not treat staging qualification as database migration approval. Production
+  Supabase migration remains a separate protected workflow.
+- Do not use mutable image tags, manual Docker edits, direct SSH deployment,
+  standalone production database edits, or arbitrary rollback digests.
+- Treat `unknown`, `expired`, `superseded`, `failed`, or mismatched eligibility
+  states as not production eligible.
+
+## Source Map
+
+| Repository | Source files or workflows |
+| --- | --- |
+| `ramideltoro/nutsnews` | `.github/workflows/container-image.yml`; `.github/workflows/staging-release.yml`; `.github/workflows/translation-coverage.yml`; `.github/workflows/vercel-production-release.yml`; `.github/workflows/actionlint.yml`; `.github/workflows/production-supabase-migration.yml`; `.github/workflows/staging-supabase-migration.yml`; `scripts/audit_article_translations.mjs`; `scripts/translation_release_gate_regression.mjs`; `scripts/migration_contract.mjs`; `scripts/production_release_workflow_regression.mjs`; `scripts/release_candidate_guard.mjs`; `scripts/verify_github_actions_pinned.mjs`; `web/app/healthz/route.ts`; `web/app/readyz/route.ts`; `web/runtimePublicConfig.mjs` |
+| `ramideltoro/nutsnews-infra` | `.github/workflows/nutsnews-staging-deploy.yml`; `.github/workflows/nutsnews-staging-qualification.yml`; `.github/workflows/nutsnews-release-promotion.yml`; `.github/workflows/protected-ansible-apply.yml`; `.github/workflows/protected-nutsnews-rollback.yml`; `ansible/scripts/staging_qualification.py`; `ansible/scripts/verify_production_eligibility.py`; `ansible/scripts/promote_nutsnews_release.py`; `ansible/inventories/production/host_vars/vps.nutsnews.com.yml` |
+| `ramideltoro/nutsnews-docs` | `NUTSNEWS_RELEASE_PIPELINE.md`; `NUTSNEWS_PROTECTED_ANSIBLE_APPLY.md`; `MIGRATION_RELEASE_GATE.md` |
+
+## Remaining Risks
+
+- `production-vps` Environment approval can still require a human reviewer. If
+  nobody approves, the apply run waits or fails by timeout; this is expected
+  protection, not a bypass.
+- Vercel, Supabase, GitHub, and the VPS are not atomic. If a late VPS apply
+  verification fails after mutation, use the protected recorded rollback path.
+- This document names secret identifiers but never secret values. Secret values
+  must remain only in GitHub Environments, Vercel, Supabase, or other approved
+  providers.

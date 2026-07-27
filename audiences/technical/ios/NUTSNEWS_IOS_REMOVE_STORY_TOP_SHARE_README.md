@@ -1,0 +1,40 @@
+---
+title: NutsNews iOS Remove Story Top Share Update
+wiki:
+  source_route: /technical/ios/nutsnews-ios-remove-story-top-share-readme/
+  simple_route: /simple/ios/nutsnews-ios-remove-story-top-share-readme/
+  primary_diagram:
+    file: diagrams/ios/NUTSNEWS_IOS_REMOVE_STORY_TOP_SHARE_README.md
+    accTitle: "NutsNews iOS Remove Story Top Share Update diagram"
+    accDescr: "Document flow and operational checkpoints for this topic."
+  status: active
+  collection: product-and-reader-experience
+  section: ios
+  approval:
+    reviewed_by: pending
+    reviewed_on: pending
+    technical_source_hash: 486df539fb96a515824ff554b6091294e0c27218c315f78f0841cff01c90f4fd
+---
+
+# NutsNews iOS Remove Story Top Share Update
+
+This bundle removes the top-right share icon from the article story page toolbar.
+
+Changed file:
+
+- `NutsNews/NutsNews/Features/Article/ArticleDetailView.swift`
+
+Behavior:
+
+- The story page top-right toolbar share button is removed.
+- The top-left Close button remains.
+- The lower in-page `Share story` button remains unchanged.
+
+Install from the repo root:
+
+```bash
+cd /Users/ramideltoro/WebstormProjects/nutsnews-ios
+unzip -o ~/Downloads/nutsnews-ios-remove-story-top-share.zip -d .
+cd NutsNews
+xcodebuild -project NutsNews.xcodeproj -scheme NutsNews -destination 'id=8AABA667-DE66-44E9-8A10-A3FB84BECB39' build
+```
