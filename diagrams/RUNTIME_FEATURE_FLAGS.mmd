@@ -1,0 +1,11 @@
+flowchart TD
+  A[Client / service starts] --> B[Evaluate runtime feature flags]
+  B --> C{Flag enabled?}
+  C -->|Yes| D[Execute flagged behavior]
+  C -->|No| E[Use default path]
+  D --> F[Emit telemetry for rollout tracking]
+  E --> F
+  F --> G{Alertable risk?}
+  G -->|Yes| H[Collect rollback and investigation cues]
+  G -->|No| I[Continue normal operation]
+  H --> I
