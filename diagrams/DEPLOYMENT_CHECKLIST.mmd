@@ -1,0 +1,9 @@
+flowchart LR
+  PR["Change in source repo"] --> RC["Review candidate and run tests"]
+  RC -->|Green| MERGE["Merge to main"]
+  MERGE --> BUILD["Release build + image publish"]
+  BUILD --> STAGING["VPS staging apply + qualification"]
+  STAGING --> PRODUCTION["Web/Worker production rollout"]
+  PRODUCTION --> PURGE["Targeted Cloudflare cache controls"]
+  PURGE --> VERIFY["Post-deploy smoke + observability checks"]
+  VERIFY --> END["Issue closed or rollback prepared"]
