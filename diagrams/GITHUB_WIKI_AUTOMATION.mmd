@@ -3,6 +3,10 @@ title: Wiki publishing pipeline
 ---
 
 flowchart LR
+  accTitle: GitHub Pages Publishing for the NutsNews Wiki
+  accDescr {
+    NutsNews documentation is published as the static site at https://wiki.nutsnews.com.
+  }
   A["Repository markdown update"] --> B["Push commit to main"]
   B --> C["Workflow validate-doc-paths"]
   B --> D["Secret safety scan"]
@@ -16,4 +20,3 @@ flowchart LR
   H --> I["Deploy to GitHub Pages"]
   I --> J["Resolve DNS + HTTPS on wiki.nutsnews.com"]
   G -->|Failure| K["Fix cause and re-run workflow"]
-

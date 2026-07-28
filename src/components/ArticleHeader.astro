@@ -1,6 +1,7 @@
 ---
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { extractMermaidAccessibility } from '../../scripts/wiki/mermaid-accessibility.mjs';
 import {
   historyGroupForSource,
   wikiContract,
@@ -38,6 +39,13 @@ if (
 }
 
 const diagramSource = isArticle ? await fs.readFile(resolvedDiagramPath, 'utf8') : '';
+const diagramAccessibility = extractMermaidAccessibility(diagramSource);
+if (
+  isArticle
+  && (!diagramAccessibility.title || !diagramAccessibility.description)
+) {
+  throw new Error(`Diagram accessibility text is missing: ${diagramPath}`);
+}
 const base = import.meta.env.BASE_URL || '/';
 const basePrefix = base === '/' ? '' : `/${base.replace(/^\/+|\/+$/g, '')}`;
 const withBase = (route) => `${basePrefix}${route.startsWith('/') ? route : `/${route}`}`;
@@ -78,8 +86,14 @@ const withBase = (route) => `${basePrefix}${route.startsWith('/') ? route : `/${
         </div>
         <span class="diagram-status">System map</span>
       </div>
-      <diagram-renderer data-diagram-title={`${title} system map`}>
-        <div class="diagram-stage" data-wiki-diagram-stage>
+      <p class="diagram-description">{diagramAccessibility.description}</p>
+      <diagram-renderer>
+        <div
+          class="diagram-stage"
+          data-wiki-diagram-stage
+          tabindex="0"
+          aria-label="Diagram viewport"
+        >
           <div class="diagram-placeholder" aria-hidden="true">
             <span></span>
             <i></i>
@@ -90,13 +104,63 @@ const withBase = (route) => `${basePrefix}${route.startsWith('/') ? route : `/${
           <p>Render the repository-owned system map when you need it.</p>
         </div>
         <div class="diagram-actions">
-          <button type="button" data-render-diagram>Render diagram</button>
+          <button type="button" data-render-diagram disabled>Render diagram</button>
           <p data-diagram-status aria-live="polite">Diagram is not rendered yet.</p>
         </div>
-        <details class="diagram-source" data-diagram-fallback data-pagefind-ignore>
-          <summary>View diagram text</summary>
-          <pre data-wiki-mermaid-source><code>{diagramSource}</code></pre>
+        <div
+          class="diagram-controls"
+          role="group"
+          aria-label="Diagram zoom and fullscreen controls"
+          data-diagram-controls
+          hidden
+        >
+          <button type="button" data-zoom-action="out" aria-label="Zoom diagram out">−</button>
+          <button type="button" data-zoom-action="reset">Reset zoom</button>
+          <button type="button" data-zoom-action="in" aria-label="Zoom diagram in">+</button>
+          <button type="button" data-open-diagram-dialog>View fullscreen</button>
+        </div>
+        <details class="diagram-source" data-diagram-fallback>
+          <summary>View as text</summary>
+          <div class="diagram-text-alternative">
+            <strong>{diagramAccessibility.title}</strong>
+            <p>{diagramAccessibility.description}</p>
+          </div>
+          <pre data-wiki-mermaid-source data-pagefind-ignore><code>{diagramSource}</code></pre>
         </details>
+        <noscript>
+          <p class="diagram-noscript">Interactive controls require JavaScript. Use View as text.</p>
+        </noscript>
+        <dialog
+          class="diagram-dialog"
+          data-diagram-dialog
+          aria-labelledby="diagram-dialog-title"
+        >
+          <div class="diagram-dialog-frame">
+            <header>
+              <h3 id="diagram-dialog-title">{diagramAccessibility.title}</h3>
+              <button type="button" data-close-diagram-dialog aria-label="Close fullscreen diagram">
+                <span aria-hidden="true">×</span>
+              </button>
+            </header>
+            <div
+              class="diagram-fullscreen-stage"
+              data-diagram-fullscreen-stage
+              tabindex="0"
+              aria-label="Fullscreen diagram viewport"
+            ></div>
+            <div
+              class="diagram-controls"
+              role="group"
+              aria-label="Fullscreen diagram zoom controls"
+              data-fullscreen-controls
+            >
+              <button type="button" data-zoom-action="out" aria-label="Zoom diagram out">−</button>
+              <button type="button" data-zoom-action="reset">Reset zoom</button>
+              <button type="button" data-zoom-action="in" aria-label="Zoom diagram in">+</button>
+            </div>
+            <p data-fullscreen-status aria-live="polite">Fullscreen diagram view.</p>
+          </div>
+        </dialog>
       </diagram-renderer>
     </section>
   )
@@ -111,8 +175,69 @@ const withBase = (route) => `${basePrefix}${route.startsWith('/') ? route : `/${
       const status = this.querySelector<HTMLElement>('[data-diagram-status]');
       const fallback = this.querySelector<HTMLDetailsElement>('[data-diagram-fallback]');
       const source = this.querySelector<HTMLElement>('[data-wiki-mermaid-source] code');
+      const controls = this.querySelector<HTMLElement>('[data-diagram-controls]');
+      const dialog = this.querySelector<HTMLDialogElement>('[data-diagram-dialog]');
+      const fullscreenStage = this.querySelector<HTMLElement>('[data-diagram-fullscreen-stage]');
+      const fullscreenButton = this.querySelector<HTMLButtonElement>('[data-open-diagram-dialog]');
+      const closeDialogButton = this.querySelector<HTMLButtonElement>('[data-close-diagram-dialog]');
+      const fullscreenStatus = this.querySelector<HTMLElement>('[data-fullscreen-status]');
 
-      if (!button || !stage || !status || !fallback || !source) return;
+      if (
+        !button
+        || !stage
+        || !status
+        || !fallback
+        || !source
+        || !controls
+        || !dialog
+        || !fullscreenStage
+        || !fullscreenButton
+        || !closeDialogButton
+      ) return;
+
+      let renderedSvg: SVGSVGElement | null = null;
+      let zoom = 1;
+      const zoomButtons = [...this.querySelectorAll<HTMLButtonElement>('[data-zoom-action]')];
+      button.disabled = false;
+
+      const announceZoom = () => {
+        const message = `Diagram zoom ${Math.round(zoom * 100)}%.`;
+        status.textContent = message;
+        if (fullscreenStatus) fullscreenStatus.textContent = message;
+      };
+      const applyZoom = (nextZoom: number) => {
+        if (!renderedSvg) return;
+        zoom = Math.max(0.5, Math.min(2, nextZoom));
+        renderedSvg.style.width = `${Math.round(zoom * 100)}%`;
+        renderedSvg.style.maxWidth = 'none';
+        for (const zoomButton of zoomButtons) {
+          zoomButton.disabled = (
+            (zoomButton.dataset.zoomAction === 'out' && zoom <= 0.5)
+            || (zoomButton.dataset.zoomAction === 'in' && zoom >= 2)
+          );
+        }
+        announceZoom();
+      };
+
+      for (const zoomButton of zoomButtons) {
+        zoomButton.addEventListener('click', () => {
+          if (zoomButton.dataset.zoomAction === 'in') applyZoom(zoom + 0.25);
+          if (zoomButton.dataset.zoomAction === 'out') applyZoom(zoom - 0.25);
+          if (zoomButton.dataset.zoomAction === 'reset') applyZoom(1);
+        });
+      }
+
+      fullscreenButton.addEventListener('click', () => {
+        if (!renderedSvg) return;
+        fullscreenStage.replaceChildren(renderedSvg);
+        dialog.showModal();
+        closeDialogButton.focus();
+      });
+      closeDialogButton.addEventListener('click', () => dialog.close());
+      dialog.addEventListener('close', () => {
+        if (renderedSvg) stage.replaceChildren(renderedSvg);
+        fullscreenButton.focus();
+      });
 
       button.addEventListener('click', async () => {
         button.disabled = true;
@@ -157,12 +282,20 @@ const withBase = (route) => `${basePrefix}${route.startsWith('/') ? route : `/${
           const diagramId = `nutsnews-diagram-${Date.now().toString(36)}`;
           const { svg } = await mermaid.render(diagramId, definition);
           stage.innerHTML = svg;
-          const renderedSvg = stage.querySelector('svg');
-          renderedSvg?.setAttribute('role', 'img');
-          renderedSvg?.setAttribute('aria-label', this.dataset.diagramTitle || 'System diagram');
+          renderedSvg = stage.querySelector('svg');
+          if (
+            !renderedSvg
+            || !renderedSvg.querySelector('title')
+            || !renderedSvg.querySelector('desc')
+          ) {
+            throw new Error('Rendered diagram is missing its accessible title or description');
+          }
+          renderedSvg.setAttribute('role', 'img');
           stage.toggleAttribute('data-rendered', true);
           button.textContent = 'Diagram rendered';
           status.textContent = 'Diagram rendered locally.';
+          controls.hidden = false;
+          applyZoom(1);
         } catch (error) {
           console.error('Unable to render repository Mermaid diagram.', error);
           fallback.open = true;
@@ -305,6 +438,14 @@ const withBase = (route) => `${basePrefix}${route.startsWith('/') ? route : `/${
       font-weight: 700;
     }
 
+    .diagram-description {
+      max-width: 68ch;
+      margin: 0;
+      color: var(--wiki-diagram-text);
+      font-size: var(--wiki-type-sm);
+      line-height: var(--wiki-leading-body);
+    }
+
     .diagram-stage {
       display: grid;
       place-items: center;
@@ -335,7 +476,8 @@ const withBase = (route) => `${basePrefix}${route.startsWith('/') ? route : `/${
       background: var(--wiki-diagram-background);
     }
 
-    .diagram-stage[data-rendered] :global(svg) {
+    .diagram-stage[data-rendered] :global(svg),
+    .diagram-fullscreen-stage :global(svg) {
       display: block;
       width: 100%;
       max-width: 100%;
@@ -369,6 +511,8 @@ const withBase = (route) => `${basePrefix}${route.startsWith('/') ? route : `/${
     }
 
     .diagram-actions button:focus-visible,
+    .diagram-controls button:focus-visible,
+    [data-close-diagram-dialog]:focus-visible,
     .diagram-source summary:focus-visible {
       outline: var(--wiki-focus-ring-width) solid var(--wiki-color-focus);
       outline-offset: var(--wiki-focus-ring-offset);
@@ -378,6 +522,36 @@ const withBase = (route) => `${basePrefix}${route.startsWith('/') ? route : `/${
       margin: 0;
       color: var(--wiki-diagram-text);
       font-size: var(--wiki-type-xs);
+    }
+
+    .diagram-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--wiki-space-2);
+    }
+
+    .diagram-controls[hidden] {
+      display: none;
+    }
+
+    .diagram-controls button,
+    [data-close-diagram-dialog] {
+      min-width: var(--wiki-touch-target);
+      min-height: var(--wiki-touch-target);
+      border: 1px solid var(--wiki-diagram-border);
+      border-radius: var(--wiki-radius-sm);
+      padding-inline: var(--wiki-space-3);
+      color: var(--wiki-diagram-text);
+      background: var(--wiki-diagram-surface);
+      font: inherit;
+      font-size: var(--wiki-type-sm);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .diagram-controls button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
     }
 
     .diagram-source {
@@ -395,6 +569,15 @@ const withBase = (route) => `${basePrefix}${route.startsWith('/') ? route : `/${
       cursor: pointer;
     }
 
+    .diagram-text-alternative {
+      padding: 0 var(--wiki-space-4) var(--wiki-space-4);
+      line-height: var(--wiki-leading-body);
+    }
+
+    .diagram-text-alternative p {
+      margin: var(--wiki-space-2) 0 0;
+    }
+
     .diagram-source pre {
       max-height: 20rem;
       margin: 0;
@@ -405,6 +588,74 @@ const withBase = (route) => `${basePrefix}${route.startsWith('/') ? route : `/${
       color: var(--wiki-diagram-text);
       background: var(--wiki-diagram-surface);
       white-space: pre;
+    }
+
+    .diagram-noscript {
+      margin: 0;
+      color: var(--wiki-diagram-text);
+      font-size: var(--wiki-type-sm);
+    }
+
+    .diagram-dialog {
+      width: min(92vw, 80rem);
+      height: min(90vh, 60rem);
+      max-width: none;
+      max-height: none;
+      margin: auto;
+      border: 1px solid var(--wiki-diagram-border);
+      border-radius: var(--wiki-radius-lg);
+      padding: 0;
+      color: var(--wiki-diagram-text);
+      background: var(--wiki-diagram-background);
+      box-shadow: var(--sl-shadow-lg);
+    }
+
+    .diagram-dialog::backdrop {
+      background: color-mix(in srgb, black 72%, transparent);
+      backdrop-filter: blur(0.2rem);
+    }
+
+    .diagram-dialog-frame {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto auto;
+      gap: var(--wiki-space-4);
+      height: 100%;
+      padding: var(--wiki-space-5);
+    }
+
+    .diagram-dialog-frame > header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--wiki-space-4);
+    }
+
+    .diagram-dialog h3 {
+      margin: 0;
+      color: var(--wiki-diagram-text);
+      font-size: var(--wiki-type-xl);
+    }
+
+    [data-close-diagram-dialog] {
+      flex: 0 0 auto;
+      padding: 0;
+      font-size: 1.75rem;
+      line-height: 1;
+    }
+
+    .diagram-fullscreen-stage {
+      min-width: 0;
+      min-height: 0;
+      border: 1px solid var(--wiki-diagram-edge);
+      border-radius: var(--wiki-radius-md);
+      padding: var(--wiki-space-4);
+      overflow: auto;
+      background: var(--wiki-diagram-surface);
+    }
+
+    [data-fullscreen-status] {
+      margin: 0;
+      font-size: var(--wiki-type-xs);
     }
 
     .diagram-placeholder {

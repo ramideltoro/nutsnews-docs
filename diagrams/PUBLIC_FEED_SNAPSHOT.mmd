@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: Public Feed Snapshot and Edge Fallback
+  accDescr {
+    Architecture status: Supabase public_feed_snapshot remains the current
+  }
   A[Run feed snapshot workflow] --> B[Collect canonical public feed items]
   B --> C[Write compact snapshot artifact]
   C --> D[Deploy snapshot to shared edge path]

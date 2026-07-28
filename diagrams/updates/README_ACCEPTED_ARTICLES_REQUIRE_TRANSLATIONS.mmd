@@ -1,3 +1,7 @@
 flowchart TB
+  accTitle: Accepted articles require translations before publishing
+  accDescr {
+    This update makes the Worker treat accepted articles as translation_pending until every enabled summary language has a saved row in article_summaries.
+  }
   A["Accepted articles require translations before publishing"] --> B["updates/README_ACCEPTED_ARTICLES_REQUIRE_TRANSLATIONS.md"]
   B --> C["Auto-generated placeholder diagram"]

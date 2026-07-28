@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: NutsNews Backend Cloudflare Routing
+  accDescr {
+    This documents the backend routing model for backend.nutsnews.com.
+  }
   D[DNS request for backend.nutsnews.com] --> R[Cloudflare DNS-only A record]
   R --> F[Cloudflare routing policy to backend infrastructure]
   F --> V[Vercel route handling and environment boundaries]

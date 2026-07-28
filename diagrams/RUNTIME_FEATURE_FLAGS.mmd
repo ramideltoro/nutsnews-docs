@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: Runtime Feature Flags
+  accDescr {
+    NutsNews uses a small Supabase-backed runtime flag table to pause two documented behaviors without redeploying the Next.js app or Cloudflare Worker.
+  }
   A[Client / service starts] --> B[Evaluate runtime feature flags]
   B --> C{Flag enabled?}
   C -->|Yes| D[Execute flagged behavior]

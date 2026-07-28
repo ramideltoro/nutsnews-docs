@@ -1,4 +1,8 @@
 flowchart TB
+  accTitle: NutsNews Worker-Uplift RabbitMQ Metrics
+  accDescr {
+    Status: backend collection path completed for ramideltoro/nutsnews-worker#87
+  }
   A["Production system state update"] --> B["Backend deploy + apply"]
   B --> C["RabbitMQ Prometheus listener on 127.0.0.1:15692"]
   C --> D["Grafana Alloy scrape /metrics and /metrics/detailed"]

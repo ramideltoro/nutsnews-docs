@@ -3,6 +3,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { JSDOM } from 'jsdom';
 
+import { extractMermaidAccessibility } from './mermaid-accessibility.mjs';
 import { parseMarkdownFrontmatter } from './parse-markdown.mjs';
 import { deriveSlugFromSource, wikiContract } from './wiki-contract.mjs';
 
@@ -29,7 +30,7 @@ const knownDiagramStarters = new Set([
   'C4Context',
 ]);
 
-const candidateDiagramExtensions = ['.md', '.mmd'];
+const candidateDiagramExtensions = ['.mmd', '.md'];
 
 function normalizeLine(line) {
   return line.trim().replace(/\s+/g, ' ');
@@ -182,6 +183,13 @@ async function validateDiagramSyntax(mermaid, diagramPath) {
     return shape;
   }
 
+  const accessibility = extractMermaidAccessibility(trimmed);
+  if (!accessibility.title) {
+    return { valid: false, reason: 'missing accTitle accessibility text' };
+  }
+  if (!accessibility.description) {
+    return { valid: false, reason: 'missing accDescr accessibility text' };
+  }
   try {
     await mermaid.parse(trimmed, { suppressErrors: false });
     return { valid: true };
@@ -211,6 +219,11 @@ async function validateDiagramSyntax(mermaid, diagramPath) {
     /(?:Lexical|Parse) error/i,
     'Mermaid parser must reject invalid syntax',
   );
+  assert.deepEqual(
+    extractMermaidAccessibility('flowchart TD\n  A --> B'),
+    { title: '', description: '' },
+    'missing Mermaid accessibility text must be detectable',
+  );
 
   const [rendererSource, packageSource] = await Promise.all([
     fs.readFile(path.join(repoRoot, 'src/components/ArticleHeader.astro'), 'utf8'),
@@ -223,6 +236,16 @@ async function validateDiagramSyntax(mermaid, diagramPath) {
   assert.match(rendererSource, /fallback\.open = true/, 'render failure must reveal the text fallback');
   assert.match(rendererSource, /data-wiki-mermaid-source/, 'diagram text fallback must stay in the page');
   assert.match(rendererSource, /data-pagefind-ignore/, 'diagram source must not pollute search results');
+  assert.match(rendererSource, /<summary>View as text<\/summary>/, 'diagram needs a text view');
+  assert.match(rendererSource, /data-render-diagram disabled/, 'no-JS render control must be disabled');
+  assert.match(rendererSource, /<noscript>/, 'no-JS guidance must remain in static HTML');
+  assert.match(rendererSource, /data-zoom-action="(?:in|out|reset)"/, 'diagram needs zoom controls');
+  assert.match(rendererSource, /data-diagram-dialog/, 'diagram needs a fullscreen dialog');
+  assert.match(
+    rendererSource,
+    /dialog\.addEventListener\('close',[\s\S]*fullscreenButton\.focus\(\)/,
+    'fullscreen close must restore trigger focus',
+  );
   assert.doesNotMatch(rendererSource, /https?:\/\//, 'diagram rendering must not use a CDN');
   assert.equal(JSON.parse(packageSource).dependencies.mermaid, '^11.16.0');
 
@@ -242,12 +265,16 @@ async function validateDiagramSyntax(mermaid, diagramPath) {
     }
 
     const resolvedPath = resolved.candidate;
+    if (path.extname(resolvedPath) !== wikiContract.markdown.diagramExtension) {
+      errors.push(`canonical diagram must use .mmd: ${resolvedPath}`);
+      continue;
+    }
     diagramPaths.push(resolvedPath);
     diagramCountByPath.set(resolvedPath, (diagramCountByPath.get(resolvedPath) || 0) + 1);
 
     const result = await validateDiagramSyntax(mermaid, resolvedPath);
     if (!result.valid) {
-      errors.push(`invalid mermaid syntax in ${resolvedPath}: ${result.reason}`);
+      errors.push(`invalid mermaid diagram in ${resolvedPath}: ${result.reason}`);
     }
   }
 

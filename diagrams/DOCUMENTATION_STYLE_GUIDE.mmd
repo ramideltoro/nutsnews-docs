@@ -3,6 +3,10 @@ title: Documentation style guide content workflow
 ---
 
 flowchart TB
+  accTitle: Documentation Style Guide
+  accDescr {
+    Use this guide when adding or updating NutsNews documentation.
+  }
   A["Start with technical source: DOCUMENTATION_STYLE_GUIDE.md"] --> B["Normalize required frontmatter and section order"]
   B --> C["Create/refresh technical audience route copy"]
   B --> D["Create/refresh simple audience route copy"]
@@ -13,4 +17,3 @@ flowchart TB
   G -->|Mismatch| B
   G -->|Verified| H["Request human review + approval metadata update"]
   H --> I["Publish to /technical/documentation-style-guide and /simple/documentation-style-guide"]
-

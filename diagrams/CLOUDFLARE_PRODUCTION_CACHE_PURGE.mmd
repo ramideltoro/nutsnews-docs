@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: Cloudflare Production Cache Purge
+  accDescr {
+    NutsNews now has a dedicated GitHub Action that purges the full Cloudflare cache after a successful production deployment.
+  }
   D[GitHub deployment_status event] --> P{env is Production / production?}
   P -->|no| N[No action]
   P -->|yes| W[cloudflare-production-cache-purge workflow]

@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: Home Server Admin Dashboard
+  accDescr {
+    NutsNews includes a protected admin dashboard for monitoring the home server that runs local AI.
+  }
   A[Admin browser opens /admin/home-server] --> B[Protected Next.js route]
   B --> C{Server-side fetch with HOME_SERVER_STATS_URL + API key}
   C --> D[GET /stats at ai.nutsnews.com]

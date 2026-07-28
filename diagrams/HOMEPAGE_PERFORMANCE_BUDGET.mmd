@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: Public Performance Budgets
+  accDescr {
+    NutsNews is mobile-first and image-heavy, so public page speed needs explicit limits. This page defines the current budgets, the CI checks, and the common fixes to use before rais…
+  }
   P[PR touches web code] --> B[CI runs npm run test:performance-budget]
   B --> C{Bundle/lighthouse thresholds pass?}
   C -->|no| D[Fail build and upload report]

@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: NutsNews Cache Safety Update
+  accDescr {
+    This update prevents stale browser-cached page shells from causing UI problems immediately after a deploy.
+  }
   A[Deploy new web build] --> B[Set short public page cache policy]
   B --> C[Browsers revalidate page shell on next navigation]
   C --> D["CDN serves short-lived edge copies (s-maxage=300)"]

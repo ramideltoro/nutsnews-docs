@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: NutsNews Worker-Uplift RabbitMQ Recovery
+  accDescr {
+    Status: implemented for ramideltoro/nutsnews-worker#83.
+  }
   A["Health check or incident event" ] --> B["Run export-definitions"]
   B --> C["Exported raw definitions scrubbed
   to definitions.sanitized.json"]

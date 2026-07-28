@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: NutsNews GitHub Actions Automation
+  accDescr {
+    This update adds the missing GitHub Actions around build safety, operations, backups, feed quality, translations, image coverage, links, sitemap/robots, and release notes.
+  }
   A["PR / merge request to main"] --> B["Classify changed paths"]
   B --> C{"Only docs/runbooks changed?"}
   C -->|Yes| D["Keep workflow record"]

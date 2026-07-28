@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: Secure Image Proxy/Cache Design
+  accDescr {
+    Issue: https://github.com/ramideltoro/nutsnews/issues/105
+  }
   A[Reader requests article image URL] --> B{Is URL allowed host?}
   B -->|yes| C[Next.js image optimizer serves variant]
   B -->|no| D[Reject optimization request]

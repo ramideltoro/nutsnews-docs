@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: Multilingual quality checks and fallback policy
+  accDescr {
+    Issue #99 adds production checks for translated NutsNews article cards. The goal is to keep multilingual cards useful without letting a missing or questionable translation break t…
+  }
   A[Worker accepts article] --> B[Save article as translation_pending]
   B --> C[Build and run summary translations]
   C --> D[Save article_summaries rows]

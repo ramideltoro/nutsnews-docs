@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: NutsNews Backend Recovery Workflows
+  accDescr {
+    This page documents the fixed-purpose recovery workflows for
+  }
   A[Recovery workflow triggered] --> B{Action selected}
   B -->|diagnostics| C[Collect host, service, and backup diagnostics]
   B -->|backup-status| D[Read service-aware backup status]

@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: VPS Admin Navigation Rate Limit
+  accDescr {
+    The VPS Caddy edge protects authentication-sensitive traffic without making
+  }
   A[Incoming request from remote host] --> B{Path classification}
   B -->|/api/auth/*, /login*, /ops*| C[Auth bucket: 20/min]
   B -->|/admin*| D[Admin navigation bucket: 120/min]

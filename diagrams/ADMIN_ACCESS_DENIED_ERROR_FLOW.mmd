@@ -1,4 +1,8 @@
 flowchart LR
+  accTitle: Admin Access-Denied Error Flow
+  accDescr {
+    This guide records the application-owned denied/error-flow parity fix for
+  }
   auth[Auth.js denied or error flow] --> page["/admin/access-denied"]
   page --> map[Allowlisted generic message]
   map --> login["/admin/login"]

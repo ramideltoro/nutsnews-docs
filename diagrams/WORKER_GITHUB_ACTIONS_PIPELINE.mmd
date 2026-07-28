@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: Worker GitHub Actions Pipeline
+  accDescr {
+    This repo now has one guarded Worker pipeline for pull requests and post-merge Cloudflare deploys.
+  }
   A["Pull request"] --> B["Worker Pipeline PR job"]
   B --> C["Install deps and immutable test guard"]
   C --> D["Type checks and regression tests"]
