@@ -13,8 +13,8 @@ wiki:
     state: approved
     publishing: allowed
     reviewed_by: "ramideltoro"
-    reviewed_on: "2026-07-28T20:10:06.000Z"
-    technical_source_hash: 27bc875fa80fa0dee4b2d09a3db0f8d90e528904723e025f645d4fc5a485a617
+    reviewed_on: "2026-07-28T22:39:38.524Z"
+    technical_source_hash: 12f023586ae81d7be116edbb0b1bb12a502add3efdd703038a035c22c0ed105b
   slug: agents
 ---
 
@@ -29,28 +29,56 @@ This technical article is for engineers, platform operators, and maintainers who
 - This repository is the canonical source for NutsNews product, operations, deployment, cache, automation, environment, architecture, runbook, and cross-repo documentation.
 - The repository is owned by the NutsNews wiki and operations program.
 
-## Core constraints
+## Path ownership
 
-- Keep documentation-only updates in this repository; avoid unrelated application/runtime changes.
-- Preserve existing repo structure and place updates in the best existing location.
-- Documented behaviors should be specific and actionable for implementation.
-- Do not include credentials, secrets, or temporary secrets in markdown files.
-- Use the ignore and validation patterns from `.gitignore` and wiki tooling when generating artifacts.
+- Canonical Technical sources live at the repository root or under `archive/`, `ios/`, `reports/`, and `updates/`.
+- Each canonical `<source>.md` owns exactly three tracked companions: `audiences/simple/<source>.md`, `audiences/technical/<source>.md`, and `diagrams/<source-without-md>.mmd`.
+- Site code and platform tooling live in `src/`, `scripts/wiki/`, `tests/wiki/`, `.github/workflows/`, `astro.config.mjs`, `playwright.config.mjs`, and the npm manifests.
+- `src/content/docs/`, `_site/`, test results, reports, caches, and the generated inventory are build outputs. Do not edit or commit them.
 
-## Collaboration contract
+## Change policy
 
-- Changes must preserve prior work unless explicitly superseded.
-- PRs touching non-documentation assets in this repo still require standard review workflow unless explicitly overridden.
-- Reviewers should confirm that hidden operations and safety boundaries are still preserved after edits.
+- A documentation-only change may be validated, committed, and pushed directly to `main` under repository policy.
+- A site-code, tooling, test, dependency, configuration, or workflow change requires a branch, a normal ready-to-merge pull request, passing checks, and explicit merge approval.
+- A mixed documentation and site-code change follows the pull-request policy.
+- Preserve existing work and operational boundaries unless the task explicitly supersedes them.
 
-## Wiki workflow gates
+## Required document bundle
 
-- Validate markdown inventory (`node scripts/wiki/validate-doc-paths.mjs`).
-- Validate wiki contracts (`node scripts/wiki/validate-wiki-contracts.mjs`).
-- Validate secret safety (`node scripts/wiki/validate-wiki-secrets.mjs`).
-- Build and validate the static site (`npm run build`).
+- The canonical source is authoritative, but its Simple mirror, Technical mirror, and accessible Mermaid diagram must all describe the current source.
+- A meaningful Technical source edit makes the prior approval stale. Publication requires a human-reviewed Simple mirror and a current approval hash; automation, bots, and model identities cannot approve.
+- Never remove or bypass approval, diagram, inventory, link, route, accessibility, secret, or build gates to publish a change.
+
+## Exact commands
+
+For a new canonical document:
+
+```bash
+npm run docs:new -- <canonical-source.md> --collection <collection> --section <section>
+npm run docs:prepare -- <canonical-source.md> --force
+```
+
+The `--force` form is the intentional next step for the blocked bundle just created by `docs:new`; do not use it to overwrite an unrelated existing bundle.
+
+After a human reviews the Technical source, Simple mirror, Technical mirror, and diagram:
+
+```bash
+npm run docs:approve -- <canonical-source.md> --reviewed-by "<human-reviewer>" --confirm-human-review
+```
+
+Before committing any documentation-only update:
+
+```bash
+npm run wiki:prepare
+npm run validate:content
+npm run validate:links
+npm run validate:mermaid
+npm run test:content-routes
+npm run build
+```
 
 ## Safety notes
 
-- Treat this file as a contribution contract only; runtime secrets stay in GitHub Actions variables/secrets or secure runner inputs.
-- If a required instruction changes, update this article first and run full validation.
+- Do not put credentials, secrets, temporary secrets, or local environment files in sources, mirrors, diagrams, logs, or artifacts.
+- Use `.gitignore` and the wiki tooling for generated files. Do not discard unrelated work or use destructive Git cleanup.
+- If this contract changes, update this canonical source, both audience mirrors, and its diagram together, then obtain current human approval.

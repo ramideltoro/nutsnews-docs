@@ -5,13 +5,16 @@ title: AGENTS migration governance flow
 flowchart TD
   accTitle: AGENTS.md (Technical)
   accDescr {
-    NutsNews repository-wide contribution contract for documentation.
+    A contribution is classified as documentation-only or site-code work. Documentation-only work updates the complete approved document bundle and may go directly to main after validation. Site-code or mixed work uses a checked and approved pull request.
   }
-  A["Contribution request enters repository"] --> B{"Type of change?"}
-  B -->|Docs only| C["Apply documentation-safe edits"]
-  B -->|Tooling or workflow| D["Apply normal review workflow"]
-  C --> E["Run inventory + secret + budget + build checks"]
-  E --> F["Review and approve"]
-  F --> G["Publish docs and deploy"]
-  D --> E
-  E --> H["Track required manual review evidence"]
+  request["Contribution request"] --> classify{"Documentation only?"}
+  classify -->|Yes| bundle["Update canonical source, Simple mirror, Technical mirror, and diagram"]
+  bundle --> review["Human reviews current Simple content and diagram"]
+  review --> approve["Record current approval"]
+  approve --> validate["Run exact wiki validation commands"]
+  validate --> direct["Commit and push directly to main"]
+  classify -->|No or mixed| branch["Create site-code branch"]
+  branch --> pr["Open normal ready pull request"]
+  pr --> checks["Require passing checks and explicit merge approval"]
+  checks --> publish["Merge and publish"]
+  direct --> publish

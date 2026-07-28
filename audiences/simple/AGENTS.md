@@ -10,31 +10,56 @@ wiki:
     state: approved
     publishing: allowed
     reviewed_by: "ramideltoro"
-    reviewed_on: "2026-07-28T20:10:06.000Z"
-    technical_source_hash: 27bc875fa80fa0dee4b2d09a3db0f8d90e528904723e025f645d4fc5a485a617
+    reviewed_on: "2026-07-28T22:39:38.524Z"
+    technical_source_hash: 12f023586ae81d7be116edbb0b1bb12a502add3efdd703038a035c22c0ed105b
 ---
 
 # AGENTS.md (Simple)
 
 ## What this repo is
 
-- This is the main place for NutsNews docs (product, operations, deployment, and platform documentation).
-- If you are updating docs, keep updates in this repo and avoid changing app code here.
+- This repository is the main home for NutsNews documentation.
+- The original Technical documents live at the root or in `archive/`, `ios/`, `reports/`, and `updates/`.
+- Every original document has a Simple copy, a Technical copy, and a Mermaid diagram in the matching `audiences/` and `diagrams/` paths.
 
-## What you should do
+## Which workflow to use
 
-- Keep your edits focused and specific.
-- Preserve links, code snippets, and safety instructions when you move or rewrite docs.
-- Use the right folders so readers can still find the same docs they expect.
-- Keep secrets and temporary credentials out of markdown.
+- Documentation-only changes may go directly to `main` after all wiki checks pass.
+- Changes to the site, tests, tools, dependencies, configuration, or GitHub Actions need a branch, a normal pull request, passing checks, and explicit approval before merge.
+- A change that mixes docs and site code uses the pull-request workflow.
 
-## How docs updates move through wiki publishing
+## Keep the complete document set current
 
-- The wiki checks markdown inventory and secret-safety.
-- It also checks build size, build time, Pagefind output, and external CDN references for Mermaid/Pagefind assets.
-- If checks fail, fix the file and rerun checks before opening/continuing changes.
+- Update the original document, its Simple copy, its Technical copy, and its accessible diagram together.
+- A real content change makes the old approval stale. A human must review the current Simple copy and diagram and record a new approval; a bot or AI cannot approve.
+- Do not edit generated site files, test output, caches, or the generated inventory.
 
-## If you are unsure
+## Exact commands
 
-- Pause and get a reviewer when a change affects protected workflows, secret handling, or deploy gates.
-- Keep only real docs in the repo; move generated artifacts and runtime files into ignored paths.
+For a new document:
+
+```bash
+npm run docs:new -- <canonical-source.md> --collection <collection> --section <section>
+npm run docs:prepare -- <canonical-source.md> --force
+```
+
+Use `--force` only for the blocked bundle just created by `docs:new`, not to replace unrelated existing work.
+
+After human review:
+
+```bash
+npm run docs:approve -- <canonical-source.md> --reviewed-by "<human-reviewer>" --confirm-human-review
+```
+
+Before a documentation-only commit:
+
+```bash
+npm run wiki:prepare
+npm run validate:content
+npm run validate:links
+npm run validate:mermaid
+npm run test:content-routes
+npm run build
+```
+
+Keep secrets and local environment files out of documents and generated artifacts. Preserve unrelated work and every existing safety boundary.

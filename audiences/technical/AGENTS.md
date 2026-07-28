@@ -10,39 +10,55 @@ wiki:
     state: approved
     publishing: allowed
     reviewed_by: "ramideltoro"
-    reviewed_on: "2026-07-28T20:10:06.000Z"
-    technical_source_hash: 27bc875fa80fa0dee4b2d09a3db0f8d90e528904723e025f645d4fc5a485a617
+    reviewed_on: "2026-07-28T22:39:38.524Z"
+    technical_source_hash: 12f023586ae81d7be116edbb0b1bb12a502add3efdd703038a035c22c0ed105b
 ---
 
 # AGENTS.md (Technical)
 
 ## Purpose
 
-- Document the contribution contract for this repository.
-- Define which changes are documentation-only and which need review gates.
-- Preserve the safety posture for deployment and secrets.
+- Define repository path ownership, contribution boundaries, approval rules, and exact validation commands.
+- Preserve the direct-main policy for documentation-only work and the pull-request policy for site-code work.
 
-## Technical source of truth
+## Path ownership
 
-- `AGENTS.md` is the authoritative technical source for this document set.
-- Simple audience variants should preserve all required facts and safety constraints.
+- `AGENTS.md` is authoritative.
+- Canonical sources live at the root or in `archive/`, `ios/`, `reports/`, and `updates/`.
+- Each source owns `audiences/simple/<source>.md`, `audiences/technical/<source>.md`, and `diagrams/<source-without-md>.mmd`.
+- `src/`, `scripts/wiki/`, `tests/wiki/`, `.github/workflows/`, Astro/Playwright configuration, and npm manifests are site-code or platform paths.
+- Generated content, `_site/`, reports, caches, and the generated inventory are outputs, not editable sources.
 
-## Contribution checks
+## Contribution boundary
 
-- Run static wiki checks before merging:
-  - `node scripts/wiki/validate-doc-paths.mjs`
-  - `node scripts/wiki/validate-wiki-budgets.mjs`
-  - `node scripts/wiki/validate-wiki-secrets.mjs`
-- Ensure no external Mermaid/Pagefind CDN references are introduced.
-- Keep route and collection metadata synchronized with `/simple/AGENTS.md`.
+- Documentation-only changes may be validated and pushed directly to `main`.
+- Site-code, tooling, test, dependency, configuration, workflow, and mixed changes require a branch, a ready pull request, passing checks, and explicit merge approval.
+- Preserve existing work and operational boundaries unless explicitly superseded.
 
-## Operational constraints
+## Approval and diagram gate
 
-- Do not modify application runtime files in this repository.
-- Keep generated build and cache artifacts excluded by `.gitignore`.
-- Preserve commands, commands’ intent, and recovery instructions when editing existing operational docs.
+- Keep the canonical source, both audience mirrors, and accessible Mermaid diagram current together.
+- A substantive source edit invalidates the old hash. A human must review the current Simple mirror and diagram before running:
 
-## Approval metadata
+```bash
+npm run docs:approve -- <canonical-source.md> --reviewed-by "<human-reviewer>" --confirm-human-review
+```
 
-- Keep this article manually reviewed after each meaningful change.
-- Update `approval.reviewed_by`, `approval.reviewed_on`, and the technical source hash when the content is refreshed.
+Generator, bot, model, pending, stale, or missing approval cannot publish.
+
+## Exact commands
+
+```bash
+npm run docs:new -- <canonical-source.md> --collection <collection> --section <section>
+npm run docs:prepare -- <canonical-source.md> --force
+npm run wiki:prepare
+npm run validate:content
+npm run validate:links
+npm run validate:mermaid
+npm run test:content-routes
+npm run build
+```
+
+The `--force` preparation command is only for the blocked bundle created by `docs:new`.
+
+Do not commit credentials, local environment files, generated content, build output, reports, or caches. Never bypass a failing publication gate.
