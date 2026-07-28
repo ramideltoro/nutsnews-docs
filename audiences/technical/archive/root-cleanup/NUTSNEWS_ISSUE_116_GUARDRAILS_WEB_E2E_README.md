@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: c106513ea85a1bcd0d08960c020ca50709b250960734b3459b8fe71c79a5f14b
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: a25ff5cb760cb5eadc44e61163bf8a947c080a2d9b32c9d531d7944683609adb
 ---
 
 # NutsNews Issue #116 Guardrails + Offline Web E2E Update

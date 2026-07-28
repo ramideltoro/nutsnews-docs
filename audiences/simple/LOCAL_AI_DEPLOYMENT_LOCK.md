@@ -11,9 +11,11 @@ wiki:
   collection: ai-and-automation
   section: AI Providers
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 93a0f3002e3e114ba1bbbe58bd8cfa935618a063d1d1e492f52df3fddd2e2686
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 234decbc609a89ec6ea5d4b17fa91b85dc3e91143c4e48f4bc136df02c390e5a
 ---
 
 # Local AI Deployment Lock

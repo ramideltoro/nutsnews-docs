@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 167bc8cfac0168c75e031dca3107fb86e87ddf408fbba704f17a81cf7ae3a869
+---
 # NutsNews iOS Story Page Glow + Like Update
 
 This update adds more story-page interactions and glow feedback.

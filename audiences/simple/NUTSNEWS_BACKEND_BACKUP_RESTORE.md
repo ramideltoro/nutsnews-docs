@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 63de8bff685e056578321035c7490ded2b8f09a054920561675ba567d03f86c4
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 386650a0c9f7e380a5efff86f023cab906be1070603ff946ee4b56c313a44495
 ---
 
 # NutsNews Backend Backup And Restore Baseline

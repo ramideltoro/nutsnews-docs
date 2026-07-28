@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 326b588f48f3dfdebf3c7fbcb099f07a29ca0251834fcfeee77f3c1991fb85b3
+---
 # NutsNews iOS — Saved Stories Thumbnail Ratio Patch
 
 This patch updates the Saved Stories screen so saved-story thumbnails render with the same stable 3:2 thumbnail frame used by the home feed cards.

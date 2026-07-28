@@ -8,9 +8,11 @@ wiki:
   collection: start-here
   section: contributing
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 9fc705661a5badd0dbc48e5c072b7f1586cb486178067df96b4edaf694ad20a5
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 285d5c55624d3ac1baded4fdf8514587c4388b7c428058ef2dfd1c0591ef14b1
 ---
 
 # Architecture (Simple)

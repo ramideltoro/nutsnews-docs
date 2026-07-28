@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: ios
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: c1b8113fb6787b9092514cbd34657d1d5902c359aeeff3e95ce5ab304d2b86bc
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: d2727b2999f544d4a2168cb7a395c77a5f8b2ba85c5809de47e4cd5ea6b5de0f
 ---
 
 # NutsNews iOS Settings Button Glow Update

@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: ios
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 8b36ca31492c45bfbd272f52bab2a99a1cd9e83837aa49292f8e39157d75db95
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 16795fb8f31a4a6a562dcbb9e8eac84b3f2f5401cd3449a02ec1c080bbd9e5f6
 ---
 
 # NutsNews iOS Theme Transition Glow Update

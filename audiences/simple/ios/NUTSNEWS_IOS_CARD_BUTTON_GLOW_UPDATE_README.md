@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: ios
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 21a9985af30d478010f2f8a384b4ca08b9a91d89a49d170b118b4a669c97cb19
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 953d32518f043c490e8bbb0e61590ddb51e775031ff009ae7d958c5a683aa13a
 ---
 
 # NutsNews iOS Card Button Glow Update

@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: be15b0b4eb28a72a8603f8084406df601cc71efe38a7b85f90dd5d202427842d
+---
 # NutsNews iOS Image Resolution Troubleshooting Update
 
 This bundle shows each article thumbnail's pixel resolution directly on the card image.

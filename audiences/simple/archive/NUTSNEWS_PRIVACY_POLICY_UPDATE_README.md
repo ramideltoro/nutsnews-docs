@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 64c8e91eef439bcd207671d21efabdbeb4a7dedf50ec624c6a61981ff54b7a67
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 1764b5ddc5bb7ceca766f96847f01e08f0022da502fc78bc41eaed5540f67c67
 ---
 
 # NutsNews Privacy Policy Update

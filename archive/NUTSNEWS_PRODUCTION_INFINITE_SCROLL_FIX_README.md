@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 1c739f355c5ffcb16f57648aabf0f8a0f4bdadc41d06999f2498fbf744793951
+---
 # NutsNews Production Infinite Scroll Fix
 
 This update fixes the homepage infinite scroll behavior where local development loads more stories, but production stops after the first set of cards.

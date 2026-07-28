@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 430a39729180f154352f29e426350e372e000abfaacfb0b60e6e29bb16545eca
+---
 # NutsNews Web Offline E2E Startup Fix
 
 This fixes `Error: spawn npm ENOENT` in `scripts/web_offline_e2e_regression.mjs`.

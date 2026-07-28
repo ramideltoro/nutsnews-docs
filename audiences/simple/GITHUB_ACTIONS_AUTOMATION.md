@@ -11,9 +11,11 @@ wiki:
   collection: ai-and-automation
   section: Automation & Workers
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 12544912492c2c1613e64022f17c7e02d608acb50864adb96529be6620afaa0b
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 79f3e1cbee4ab270e20d3f8604af4224d1865f57b783a0f78558772000e0ae3a
 ---
 
 # NutsNews GitHub Actions Automation

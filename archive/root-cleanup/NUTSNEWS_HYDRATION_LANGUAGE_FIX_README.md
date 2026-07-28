@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 158fc130329086ca34f699501d85dae842b800a9b68ee1b48a2ffe590b49b335
+---
 # NutsNews Hydration Language Fix
 
 This update fixes a homepage hydration mismatch caused by the hero tagline reading `localStorage` during the first client render.

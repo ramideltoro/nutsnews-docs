@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: Data & Recovery
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 4f1676e9f883a2703765a31ef81850e3454328b9aab08c0a9bf0d1ec50879b6e
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 9cd1169a180d150a2130d4b4917202e1d6c2ef3d86b39cc0ddeb2bedbb6189d0
 ---
 
 # NutsNews Database Resiliency

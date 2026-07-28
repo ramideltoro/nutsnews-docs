@@ -11,9 +11,11 @@ wiki:
   collection: ai-and-automation
   section: Automation & Workers
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 8833ce3ef7f3eadc787668a065d7a922b1d2863fc1b3bbe03f436efae39ceae4
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 2469852a23272540576f7b05fc05c73de214854ac6e752e43c2d63b8fb2a5ff9
 ---
 
 # Controller and Shard Operations

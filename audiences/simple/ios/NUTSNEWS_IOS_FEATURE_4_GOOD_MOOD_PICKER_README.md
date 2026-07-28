@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: ios
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 330630d5b31c23acfd4cd7396666bcf0d4b0b09ddac55c025e720619819dad95
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 9912acad533579ca0a20383774f28d565ce86adaf158bff96aa3f24f57ea016f
 ---
 
 # NutsNews iOS Feature 4: Good Mood Picker

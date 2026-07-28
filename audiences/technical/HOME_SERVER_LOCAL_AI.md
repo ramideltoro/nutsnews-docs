@@ -11,9 +11,11 @@ wiki:
   collection: ai-and-automation
   section: AI Providers
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 1d39ac624095ef8923385bec02bd4a3bce755911131b2b10783cd77a11fef6f4
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: d8b3fce7edc4e698daeb57867f72693c5e6e271449faec0e8fd4bfcc8bac73c2
 ---
 
 # Home Server Local AI Provider

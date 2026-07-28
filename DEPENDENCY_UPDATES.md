@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: adb1427bdd0d2ffea7f7e4596da7ec458c9b6b1b6c73729ff89c1ed923d40549
+---
 # Dependency Update Routine
 
 This document defines the repeatable dependency update process for NutsNews.

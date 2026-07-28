@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: c6c2f3b75cf4ec784aa82868a0e7d7ef8284f9a843e98dc6ff16edc1af4876f7
+---
 # NutsNews Incident Response Policy
 
 Issue: https://github.com/ramideltoro/nutsnews/issues/111

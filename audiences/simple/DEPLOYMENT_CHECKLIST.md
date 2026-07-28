@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 7de1e800bd9d4a252dfea59a063d5012246e0067d8c062062ec36fb0b47a8ef5
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: b2915882d6ecd19fdb8df477ed6068e5d4170f5cc985067af91b70449522e72a
 ---
 
 # Deployment Checklist

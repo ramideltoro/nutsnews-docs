@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 23401dffb4800b780e6fba736306e8ad80432d052191e11a2cdf2158794146f6
+---
 # NutsNews Web Offline E2E Footer Navigation Wait Fix
 
 This update makes the offline web E2E footer navigation checks less flaky on GitHub Actions.

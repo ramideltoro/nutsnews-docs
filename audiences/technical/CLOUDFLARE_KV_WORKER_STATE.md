@@ -11,9 +11,11 @@ wiki:
   collection: ai-and-automation
   section: Automation & Workers
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: a6e1ef5533b7ef179a351244019bcb083c110e8b64b9f1eae72610554cbed0a2
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 121862d68a467ab41ac74b4b66888d6823e8de4cf9dacbd0791e3e1cbf607cf2
 ---
 
 # Cloudflare KV Worker State for NutsNews

@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 298c2fc73677067b468b0d7f05ba28913f0df4146361b130e14f7b8b7efdb65b
+---
 # NutsNews iOS Settings Text Cleanup
 
 This bundle cleans up the settings UI text.

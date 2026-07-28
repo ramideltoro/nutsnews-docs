@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 953d32518f043c490e8bbb0e61590ddb51e775031ff009ae7d958c5a683aa13a
+---
 # NutsNews iOS Card Button Glow Update
 
 This update makes the card action buttons glow when tapped.

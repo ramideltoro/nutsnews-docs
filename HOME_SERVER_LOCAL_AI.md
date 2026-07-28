@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: d8b3fce7edc4e698daeb57867f72693c5e6e271449faec0e8fd4bfcc8bac73c2
+---
 # Home Server Local AI Provider
 
 NutsNews can now review candidate RSS articles using a home-server local AI stack instead of sending every candidate directly to OpenAI.

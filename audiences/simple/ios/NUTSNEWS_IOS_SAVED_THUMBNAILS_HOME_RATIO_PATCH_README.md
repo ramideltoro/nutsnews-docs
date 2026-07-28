@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: ios
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 483a46b921dd34737f5aa9a0e98eceb26ab98a9dfcb5ee0f3a5007e102d1a230
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 326b588f48f3dfdebf3c7fbcb099f07a29ca0251834fcfeee77f3c1991fb85b3
 ---
 
 # NutsNews iOS — Saved Stories Thumbnail Ratio Patch

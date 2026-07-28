@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: fce25baad0794aeef4345488a2c6f6a42275be43a1d4995d0ff118afaaf3658c
+---
 # NutsNews Web Offline E2E Footer Contact Locator Fix
 
 This update fixes another Playwright strict-mode locator in the fully offline Web E2E regression test.

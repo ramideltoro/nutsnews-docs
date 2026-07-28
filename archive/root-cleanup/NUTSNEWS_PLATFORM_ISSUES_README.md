@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: befcee84576715649df7943ad3547e36b34aa6ab0fc113cb6f8813befac646b8
+---
 # NutsNews Platform Improvement Issues Bundle
 
 This bundle adds a script that creates a platform-grade backlog of GitHub issues for NutsNews.

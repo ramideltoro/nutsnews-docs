@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 1764b5ddc5bb7ceca766f96847f01e08f0022da502fc78bc41eaed5540f67c67
+---
 # NutsNews Privacy Policy Update
 
 This update adds a public privacy policy page for App Store submission and links it from the fixed site footer.

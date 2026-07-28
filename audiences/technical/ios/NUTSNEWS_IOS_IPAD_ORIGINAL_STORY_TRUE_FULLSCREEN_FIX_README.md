@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: ios
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: d01b37ff34cef40bba30caae192befcfcde2b1214cd35dc7c83fb75bd85ea781
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: e241f75ceca8432414ea54e2f65ee313b3070dfa2425f1533c11208f7669ea71
 ---
 
 # NutsNews iOS iPad Original Story True Fullscreen Fix

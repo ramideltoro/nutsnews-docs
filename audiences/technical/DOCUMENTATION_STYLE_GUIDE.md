@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: contributing
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: dcdf07eb939f08f4c513f2cc5df5776208e84a67d3bafd8fa1e3feb2c3ef7db3
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: a9d8c4fd61750c18f8c0aa3c0cc7de13b12a7758965798725db299fb1aa1caa6
 ---
 
 # Documentation Style Guide

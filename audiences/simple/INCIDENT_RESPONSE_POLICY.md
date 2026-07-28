@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: Operations & Monitoring
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: eb8ab99a3c013318c0decc5fea22f450f719a2f36e0440306b7fab9bb55cb393
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: c6c2f3b75cf4ec784aa82868a0e7d7ef8284f9a843e98dc6ff16edc1af4876f7
 ---
 
 # NutsNews Incident Response Policy

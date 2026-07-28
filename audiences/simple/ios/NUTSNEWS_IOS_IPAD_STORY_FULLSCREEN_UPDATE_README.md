@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: ios
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 6c3fdad181c4536acd61d0805e9156e814b14ead8f4daf8a403c4549bf671e68
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 0141ab9bbaa5e029f55ef58aad8cf6ad85982640d91fb1ed9954a1130379a201
 ---
 
 # NutsNews iOS iPad Story Fullscreen Update

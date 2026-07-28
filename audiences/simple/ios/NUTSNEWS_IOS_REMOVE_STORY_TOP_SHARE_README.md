@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: ios
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 486df539fb96a515824ff554b6091294e0c27218c315f78f0841cff01c90f4fd
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: a22419f23f22c9dab36f7cdddccbea7979e55cfc299d597b4f1912cff2485a9d
 ---
 
 # NutsNews iOS Remove Story Top Share Update

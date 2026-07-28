@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: ios
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 8bf01c6037d0b7c8c0e5b36ceae61b1857a9ddad4de520f45a59cca11f9c5499
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: e3b20b4ebe6cd65a5c98bff2b7bc23dec5494e8bada21dbfa7aaa94aa7cafae6
 ---
 
 # NutsNews iOS Scroll Twitch Fix

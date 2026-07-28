@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: c3f10959830077be1a1f5c0009ee35a8ca3799279ee72c1bc8f72eac72bea894
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 1c739f355c5ffcb16f57648aabf0f8a0f4bdadc41d06999f2498fbf744793951
 ---
 
 # NutsNews Production Infinite Scroll Fix

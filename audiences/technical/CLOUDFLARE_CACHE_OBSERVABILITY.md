@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: Operations & Monitoring
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 352cea19f8f819e349774b32489236d3fe8c45cdf4b77ec081a128a01c4b99ce
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 25547f7419409b673c910636892d2999ab303cc870e8f97040c1103e29f0f406
 ---
 
 # Cloudflare Cache Observability

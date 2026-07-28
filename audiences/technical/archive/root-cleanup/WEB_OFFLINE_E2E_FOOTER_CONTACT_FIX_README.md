@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 948ba3db481fdc593e8825cce6c5baa2e5bdef4b1537696ac7258c55ea6ef297
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: fce25baad0794aeef4345488a2c6f6a42275be43a1d4995d0ff118afaaf3658c
 ---
 
 # NutsNews Web Offline E2E Footer Contact Locator Fix

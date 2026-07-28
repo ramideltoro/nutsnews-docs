@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 28d41789da47f739dff0992793e1969f94a474f5a3aeddc151e28c7226c3c023
+---
 # NutsNews iOS Like Glow Update
 
 This bundle updates the article card like interaction.
