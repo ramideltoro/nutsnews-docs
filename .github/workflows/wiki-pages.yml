@@ -42,6 +42,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Test author-time draft command with mocked API
+        env:
+          OPENAI_API_KEY: ""
+        run: npm run test:docs-prepare
+
       - name: Validate source contracts
         run: npm run validate:contracts
 
