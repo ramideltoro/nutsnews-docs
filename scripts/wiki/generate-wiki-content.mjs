@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import {
@@ -47,7 +48,7 @@ function splitLinkTarget(rawTarget) {
   const h = target.indexOf('#');
   const next = [q, h].filter((idx) => idx >= 0).sort((x, y) => x - y)[0];
 
-  if (next < 0) {
+  if (next === undefined) {
     return { core: target, query: '', fragment: '' };
   }
 
@@ -94,10 +95,6 @@ function deriveDescription(frontmatter, markdownContent, simpleFrontmatter, maxL
     || simpleFrontmatter?.description
     || wikiContract.defaults.description;
   return first.length > maxLength ? `${first.slice(0, maxLength - 1)}…` : first;
-}
-
-function lineAt(content, offset) {
-  return content.slice(0, offset).split('\n').length;
 }
 
 function toYaml(value) {
@@ -219,7 +216,7 @@ function resolveMarkdownRoute(audience, currentSourceRel, rawTarget, candidateMa
   }
 
   if (core.startsWith('/technical/') || core.startsWith('/simple/')) {
-    return core;
+    return `${core}${query}${fragment}`;
   }
 
   const currentDir = path.posix.dirname(currentSourceRel);
@@ -252,36 +249,176 @@ function rewriteMarkdownBody(content, currentSourceRel, audience, candidateMap, 
   const inline = /(!?\[[^\]]*?\]\()(<[^>]+>|[^\)\s]+)(\s+["'][^"']*["'])?\)/g;
   const reference = /^(\s*\[[^\]]+\]:\s+)(<[^>]+>|[^\s]+)(\s+\"[^\"]*\")?$/gm;
 
-  const replaceInline = (match, left, target, _title, offset) => {
-    const line = lineAt(content, offset);
-    const rewritten = resolveMarkdownRoute(
-      audience,
-      currentSourceRel,
-      target,
-      candidateMap,
-      unresolved,
-      sourceFile,
-      line,
-    );
-    return match.replace(target, rewritten);
+  const rewriteSegment = (segment, line) => {
+    const replaceInline = (_match, left, target, title) => {
+      const rewritten = resolveMarkdownRoute(
+        audience,
+        currentSourceRel,
+        target,
+        candidateMap,
+        unresolved,
+        sourceFile,
+        line,
+      );
+      return `${left}${rewritten}${title || ''})`;
+    };
+
+    const replaceReference = (_match, left, target, suffix) => {
+      const rewritten = resolveMarkdownRoute(
+        audience,
+        currentSourceRel,
+        target,
+        candidateMap,
+        unresolved,
+        sourceFile,
+        line,
+      );
+      return `${left}${rewritten}${suffix || ''}`;
+    };
+
+    return segment.replace(inline, replaceInline).replace(reference, replaceReference);
   };
 
-  const replaceReference = (match, left, target, suffix, offset) => {
-    const line = lineAt(content, offset);
-    const rewritten = resolveMarkdownRoute(
-      audience,
-      currentSourceRel,
-      target,
-      candidateMap,
-      unresolved,
-      sourceFile,
-      line,
-    );
-    return `${left}${rewritten}${suffix || ''}`;
+  const rewriteOutsideInlineCode = (lineContent, lineNumber) => {
+    const codeSpan = /(`+)([\s\S]*?)\1/g;
+    let cursor = 0;
+    let output = '';
+
+    for (const match of lineContent.matchAll(codeSpan)) {
+      output += rewriteSegment(lineContent.slice(cursor, match.index), lineNumber);
+      output += match[0];
+      cursor = match.index + match[0].length;
+    }
+
+    output += rewriteSegment(lineContent.slice(cursor), lineNumber);
+    return output;
   };
 
-  const firstPass = content.replace(inline, replaceInline);
-  return firstPass.replace(reference, replaceReference);
+  const chunks = content.match(/[^\n]*(?:\n|$)/g)?.filter(Boolean) || [];
+  let fenceCharacter = null;
+  let fenceLength = 0;
+
+  return chunks.map((chunk, index) => {
+    const lineNumber = index + 1;
+    const lineWithoutEnding = chunk.replace(/\r?\n$/, '');
+    const fence = lineWithoutEnding.match(/^\s{0,3}(`{3,}|~{3,})/);
+
+    if (fence) {
+      const marker = fence[1];
+      if (!fenceCharacter) {
+        fenceCharacter = marker[0];
+        fenceLength = marker.length;
+      } else if (marker[0] === fenceCharacter && marker.length >= fenceLength) {
+        fenceCharacter = null;
+        fenceLength = 0;
+      }
+      return chunk;
+    }
+
+    if (fenceCharacter || /^(?: {4}|\t)/.test(lineWithoutEnding)) {
+      return chunk;
+    }
+
+    return rewriteOutsideInlineCode(chunk, lineNumber);
+  }).join('');
+}
+
+function validateLinkRewriteFixtures() {
+  const fixtureEntries = [
+    {
+      source: { path: 'ROOT.md' },
+      technical: { route: '/technical/root' },
+      simple: { route: '/simple/root' },
+    },
+    {
+      source: { path: 'updates/ONE.md' },
+      technical: { route: '/technical/updates/one' },
+      simple: { route: '/simple/updates/one' },
+    },
+    {
+      source: { path: 'updates/TWO.md' },
+      technical: { route: '/technical/updates/two' },
+      simple: { route: '/simple/updates/two' },
+    },
+  ];
+  const candidateMap = buildCandidateMap(fixtureEntries);
+
+  for (const audience of wikiContract.audiences) {
+    const unresolved = [];
+    const rootOutput = rewriteMarkdownBody(
+      '[nested](updates/ONE.md#details)\n',
+      'ROOT.md',
+      audience,
+      candidateMap,
+      'ROOT.md',
+      unresolved,
+    );
+    const nestedOutput = rewriteMarkdownBody(
+      [
+        '[root](../ROOT.md)',
+        '[sibling](TWO.md)',
+        '`[inline code](TWO.md)`',
+        '```md',
+        '[fenced code](TWO.md)',
+        '```',
+        '    [indented code](TWO.md)',
+        '',
+      ].join('\n'),
+      'updates/ONE.md',
+      audience,
+      candidateMap,
+      'updates/ONE.md',
+      unresolved,
+    );
+
+    assert.equal(
+      rootOutput,
+      `[nested](/${audience}/updates/one#details)\n`,
+      `${audience} root-to-nested fixture`,
+    );
+    assert.match(nestedOutput, new RegExp(`\\[root\\]\\(/${audience}/root\\)`));
+    assert.match(nestedOutput, new RegExp(`\\[sibling\\]\\(/${audience}/updates/two\\)`));
+    assert.match(nestedOutput, /`\[inline code\]\(TWO\.md\)`/);
+    assert.match(nestedOutput, /\[fenced code\]\(TWO\.md\)/);
+    assert.match(nestedOutput, /    \[indented code\]\(TWO\.md\)/);
+    assert.deepEqual(unresolved, []);
+  }
+
+  const missing = [];
+  rewriteMarkdownBody(
+    '\n\n[missing](MISSING.md)\n',
+    'ROOT.md',
+    'technical',
+    candidateMap,
+    'ROOT.md',
+    missing,
+  );
+  assert.equal(missing[0]?.source, 'ROOT.md');
+  assert.equal(missing[0]?.line, 3);
+  assert.equal(missing[0]?.target, 'MISSING.md');
+
+  const ambiguousMap = buildCandidateMap([
+    {
+      source: { path: 'updates/GUIDE.md' },
+      technical: { route: '/technical/updates/guide-a' },
+      simple: { route: '/simple/updates/guide-a' },
+    },
+    {
+      source: { path: 'updates/guide.md' },
+      technical: { route: '/technical/updates/guide-b' },
+      simple: { route: '/simple/updates/guide-b' },
+    },
+  ]);
+  const ambiguous = [];
+  rewriteMarkdownBody(
+    '[ambiguous](updates/GUIDE.md)\n',
+    'ROOT.md',
+    'simple',
+    ambiguousMap,
+    'ROOT.md',
+    ambiguous,
+  );
+  assert.match(ambiguous[0]?.reason || '', /ambiguous internal reference/);
 }
 
 function routeToGeneratedPath(audience, route) {
@@ -532,6 +669,7 @@ function reportItems(title, items) {
 }
 
 export async function run() {
+  validateLinkRewriteFixtures();
   await fs.rm(GENERATED_DOCS_ROOT, { recursive: true, force: true });
   await fs.mkdir(GENERATED_DOCS_ROOT, { recursive: true });
 

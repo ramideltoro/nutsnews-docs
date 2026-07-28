@@ -1,27 +1,84 @@
+import assert from 'node:assert/strict';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { normalizeRoute, wikiContract } from './wiki-contract.mjs';
+import { parseMarkdownFrontmatter } from './parse-markdown.mjs';
 
 const repoRoot = process.cwd();
-const docsRoot = path.join(repoRoot, 'src', 'content', 'docs');
+const docsRoot = path.join(repoRoot, wikiContract.generatedContentRoot);
+const inventoryPath = path.join(repoRoot, 'scripts', 'wiki', 'wiki-inventory.generated.json');
+const minimumProductionLinkCoverage = 426;
+const audienceFixtureCases = 8;
 
-const INTERNAL_ASSET_EXTENSIONS = /\.(?:png|jpe?g|gif|webp|svg|avif|bmp|ico|pdf|zip|tar|gz|css|js|map|txt|json|mdx?)$/i;
+const INTERNAL_ASSET = /\.(?:png|jpe?g|gif|webp|svg|avif|bmp|ico|pdf|zip|tar|gz|css|js|map|txt|json)$/i;
 const EXTERNAL_LINK = /^(?:https?:\/\/|mailto:|tel:|ftp:\/\/|\/\/|#)/i;
+const MARKDOWN_REFERENCE = /\.md(?:$|[?#])/i;
 
-function normalizeRoute(route) {
-  return route
-    .replace(/\\/g, '/')
-    .replace(/\/+$/, '')
-    .replace(/\/+/, '/');
-}
-
-function toPosix(relPath) {
-  return relPath.split(path.sep).join('/');
+function toPosix(relativePath) {
+  return relativePath.split(path.sep).join('/');
 }
 
 function splitLinkTarget(rawTarget) {
   const target = rawTarget.replace(/^<(.+)>$/, '$1').trim();
   const marker = target.search(/[?#]/);
-  return marker >= 0 ? target.slice(0, marker) : target;
+  if (marker < 0) {
+    return { core: target, suffix: '' };
+  }
+  return { core: target.slice(0, marker), suffix: target.slice(marker) };
+}
+
+function collectLinks(content) {
+  const inline = /(!?\[[^\]]*?\]\()(<[^>]+>|[^)\s]+)(\s+["'][^"']*["'])?\)/g;
+  const reference = /^(\s*\[[^\]]+\]:\s+)(<[^>]+>|[^\s]+)(\s+"[^"]*")?$/gm;
+  const links = [];
+  const chunks = content.match(/[^\n]*(?:\n|$)/g)?.filter(Boolean) || [];
+  let fenceCharacter = null;
+  let fenceLength = 0;
+
+  const collectSegment = (segment, line) => {
+    for (const match of segment.matchAll(inline)) {
+      links.push({ target: match[2], line });
+    }
+    for (const match of segment.matchAll(reference)) {
+      links.push({ target: match[2], line });
+    }
+  };
+
+  const collectOutsideInlineCode = (lineContent, lineNumber) => {
+    const codeSpan = /(`+)([\s\S]*?)\1/g;
+    let cursor = 0;
+    for (const match of lineContent.matchAll(codeSpan)) {
+      collectSegment(lineContent.slice(cursor, match.index), lineNumber);
+      cursor = match.index + match[0].length;
+    }
+    collectSegment(lineContent.slice(cursor), lineNumber);
+  };
+
+  for (let index = 0; index < chunks.length; index += 1) {
+    const chunk = chunks[index];
+    const lineWithoutEnding = chunk.replace(/\r?\n$/, '');
+    const fence = lineWithoutEnding.match(/^\s{0,3}(`{3,}|~{3,})/);
+
+    if (fence) {
+      const marker = fence[1];
+      if (!fenceCharacter) {
+        fenceCharacter = marker[0];
+        fenceLength = marker.length;
+      } else if (marker[0] === fenceCharacter && marker.length >= fenceLength) {
+        fenceCharacter = null;
+        fenceLength = 0;
+      }
+      continue;
+    }
+
+    if (fenceCharacter || /^(?: {4}|\t)/.test(lineWithoutEnding)) {
+      continue;
+    }
+
+    collectOutsideInlineCode(chunk, index + 1);
+  }
+
+  return links;
 }
 
 async function walkMarkdown(dir) {
@@ -32,10 +89,7 @@ async function walkMarkdown(dir) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       out.push(...(await walkMarkdown(full)));
-      continue;
-    }
-
-    if (entry.isFile() && entry.name.endsWith('.md')) {
+    } else if (entry.isFile() && entry.name.endsWith('.md')) {
       out.push(full);
     }
   }
@@ -43,147 +97,182 @@ async function walkMarkdown(dir) {
   return out;
 }
 
-function routeFromPath(filePath) {
+function routeFromGeneratedPath(filePath) {
   const relative = path.relative(docsRoot, filePath);
-  const segments = relative.split(path.sep);
-  const withoutIndex = segments.map((segment) => segment.replace(/\.md$/i, ''));
-
-  if (withoutIndex[withoutIndex.length - 1] === 'index') {
-    withoutIndex.pop();
+  const segments = relative.split(path.sep).map((segment) => segment.replace(/\.md$/i, ''));
+  if (segments[segments.length - 1] === 'index') {
+    segments.pop();
   }
-
-  return `/${withoutIndex.join('/')}`;
+  return normalizeRoute(`/${segments.join('/')}`);
 }
 
-function fileRouteFromPath(filePath) {
-  return normalizeRoute(routeFromPath(filePath));
+function isIgnoredTarget(core) {
+  return !core || EXTERNAL_LINK.test(core) || INTERNAL_ASSET.test(core);
 }
 
-function resolveLink(currentRoute, rawTarget) {
-  const core = splitLinkTarget(rawTarget);
-  if (!core || core === '#') {
-    return null;
+function resolveGeneratedRoute(currentRoute, core) {
+  if (core.startsWith('/')) {
+    return normalizeRoute(core);
   }
-
-  if (EXTERNAL_LINK.test(core)) {
-    return null;
-  }
-
-  if (INTERNAL_ASSET_EXTENSIONS.test(core)) {
-    return null;
-  }
-
-  const linkCore = core.replace(/\/+$/, '');
-  const normalizedCurrent = normalizeRoute(currentRoute);
-  const segments = normalizedCurrent.split('/').filter(Boolean);
-  const base = segments.length <= 1 ? normalizedCurrent : path.posix.dirname(normalizedCurrent.endsWith('/') ? normalizedCurrent : `${normalizedCurrent}/`);
-  const route = linkCore.startsWith('/')
-    ? normalizeRoute(linkCore)
-    : normalizeRoute(path.posix.join(base, linkCore));
-
-  if (!route || route === '/') {
-    return '/';
-  }
-
-  return route;
+  return normalizeRoute(path.posix.join(currentRoute, core));
 }
 
 function hasDescendantRoute(routeSet, route) {
-  const expectedPrefix = `${route}/`;
-  for (const value of routeSet) {
-    if (value.startsWith(expectedPrefix)) {
-      return true;
+  const prefix = `${normalizeRoute(route)}/`;
+  return [...routeSet].some((candidate) => candidate.startsWith(prefix));
+}
+
+function resolveSourceReference(sourcePath, core) {
+  const relative = core.startsWith('/')
+    ? core.replace(/^\/+/, '')
+    : path.posix.join(path.posix.dirname(sourcePath), core);
+  return path.posix.normalize(relative).replace(/^\.\//, '');
+}
+
+async function validateProductionSourceLinks(inventory, errors) {
+  const sourceLookup = new Map(
+    inventory.sourcePaths.map((sourcePath) => [sourcePath.toLowerCase(), sourcePath]),
+  );
+  let covered = 0;
+
+  for (const sourcePath of inventory.sourcePaths) {
+    const raw = await fs.readFile(path.join(repoRoot, sourcePath), 'utf8');
+    const markdown = parseMarkdownFrontmatter(raw).content;
+    for (const { target, line } of collectLinks(markdown)) {
+      const { core } = splitLinkTarget(target);
+      if (isIgnoredTarget(core)) {
+        continue;
+      }
+
+      covered += 1;
+      const resolved = resolveSourceReference(sourcePath, core);
+
+      if (MARKDOWN_REFERENCE.test(target)) {
+        if (!sourceLookup.has(resolved.toLowerCase())) {
+          errors.push({
+            source: sourcePath,
+            line,
+            target,
+            reason: `unresolved source path ${resolved}`,
+          });
+        }
+        continue;
+      }
+
+      const directoryPrefix = `${resolved.replace(/\/+$/, '')}/`.toLowerCase();
+      if (
+        !sourceLookup.has(resolved.toLowerCase())
+        && ![...sourceLookup.keys()].some((candidate) => candidate.startsWith(directoryPrefix))
+      ) {
+        errors.push({
+          source: sourcePath,
+          line,
+          target,
+          reason: `unresolved internal target ${resolved}`,
+        });
+      }
     }
   }
-  return false;
-}
 
-function collectLinks(content) {
-  const inline = /(!?\[[^\]]*\]\()(<[^>]+>|[^)\s]+)(\s+['"][^'"]*['"])?\)/g;
-  const reference = /(^\s*\[[^\]]+\]:\s+)(<[^>]+>|[^\s]+)(\s+"[^"]*")?$/gm;
-
-  const out = [];
-
-  for (const match of content.matchAll(inline)) {
-    out.push({ target: match[2], offset: match.index || 0 });
+  if (covered < minimumProductionLinkCoverage) {
+    errors.push({
+      source: 'production inventory',
+      line: 0,
+      target: `${covered} internal links`,
+      reason: `expected coverage of at least ${minimumProductionLinkCoverage}`,
+    });
   }
 
-  for (const match of content.matchAll(reference)) {
-    out.push({ target: match[2], offset: match.index || 0 });
-  }
-
-  return out;
+  return covered;
 }
 
-function lineNumberForOffset(content, offset) {
-  return content.slice(0, offset).split(/\r?\n/).length;
-}
-
-(async () => {
+async function validateGeneratedLinks(errors) {
   const docs = await walkMarkdown(docsRoot);
-  const routeSet = new Set(docs.map(fileRouteFromPath));
-  const routeWithTrailingSlashSet = new Set([...routeSet].map((route) => `${route}/`));
-  const unresolved = [];
+  const routeSet = new Set(docs.map(routeFromGeneratedPath));
+  let checked = 0;
+
+  assert.equal(docs.length, 454, 'expected 454 generated audience documents');
 
   for (const doc of docs) {
-    const route = fileRouteFromPath(doc);
+    const currentRoute = routeFromGeneratedPath(doc);
+    const currentAudience = currentRoute.split('/').filter(Boolean)[0];
     const source = toPosix(path.relative(repoRoot, doc));
     const raw = await fs.readFile(doc, 'utf8');
-    const links = collectLinks(raw);
+    const markdown = parseMarkdownFrontmatter(raw).content;
 
-    for (const { target, offset } of links) {
-      const resolved = resolveLink(route, target);
-      if (!resolved) {
+    for (const { target, line } of collectLinks(markdown)) {
+      const { core } = splitLinkTarget(target);
+      if (isIgnoredTarget(core)) {
         continue;
       }
 
-      const normalizedCore = splitLinkTarget(target).replace(/\.md$/i, '');
-      if (!normalizedCore || normalizedCore.startsWith('#')) {
+      checked += 1;
+      if (MARKDOWN_REFERENCE.test(target)) {
+        errors.push({
+          source,
+          line,
+          target,
+          reason: 'generated internal URL contains a .md suffix',
+        });
         continue;
       }
 
-      const candidate = resolveLink(route, `${normalizedCore}/index`);
-
+      const resolved = resolveGeneratedRoute(currentRoute, core);
+      const resolvedAudience = resolved.split('/').filter(Boolean)[0];
       if (
-        routeSet.has(resolved)
-        || routeWithTrailingSlashSet.has(resolved)
-        || (candidate && (routeSet.has(candidate) || routeWithTrailingSlashSet.has(candidate)))
-        || hasDescendantRoute(routeSet, resolved)
+        ['simple', 'technical'].includes(resolvedAudience)
+        && resolvedAudience !== currentAudience
       ) {
+        errors.push({
+          source,
+          line,
+          target,
+          reason: `cross-audience route from ${currentAudience} to ${resolvedAudience}`,
+        });
         continue;
       }
 
-      unresolved.push({
-        source,
-        target,
-        resolved,
-        line: lineNumberForOffset(raw, offset),
-      });
+      if (!routeSet.has(resolved) && !hasDescendantRoute(routeSet, resolved)) {
+        errors.push({
+          source,
+          line,
+          target,
+          reason: `unresolved generated route ${resolved}`,
+        });
+      }
     }
   }
 
-  if (unresolved.length > 0) {
-    console.error(`Link validation found ${unresolved.length} unresolved internal route(s):`);
-    for (const issue of unresolved.slice(0, 80)) {
-      console.error(`- ${issue.source}:${issue.line} -> ${issue.target} (resolved: ${issue.resolved})`);
-    }
+  return { docs: docs.length, checked };
+}
 
-    if (unresolved.length > 80) {
-      console.error(`- ... and ${unresolved.length - 80} more`);
-    }
+async function run() {
+  const errors = [];
+  const inventory = JSON.parse(await fs.readFile(inventoryPath, 'utf8'));
+  const productionLinks = await validateProductionSourceLinks(inventory, errors);
+  const generated = await validateGeneratedLinks(errors);
 
-    process.exitCode = 1;
-    return;
+  if (errors.length > 0) {
+    console.error(`Link validation found ${errors.length} error(s):`);
+    for (const error of errors.slice(0, 80)) {
+      const line = error.line ? `:${error.line}` : '';
+      console.error(`- ${error.source}${line} -> ${error.target} (${error.reason})`);
+    }
+    if (errors.length > 80) {
+      console.error(`- ... and ${errors.length - 80} more`);
+    }
+    process.exit(1);
   }
 
-  if (docs.length === 0) {
-    console.error('No generated markdown documents found under src/content/docs.');
-    process.exitCode = 1;
-    return;
-  }
+  console.log(
+    `Internal route link validation passed: ${productionLinks} production source links covered, `
+      + `${audienceFixtureCases} audience fixture cases, `
+      + `${generated.checked} generated internal links checked across ${generated.docs} documents, `
+      + 'zero generated .md URLs.',
+  );
+}
 
-  console.log(`Internal route link validation passed for ${docs.length} generated documents.`);
-})().catch((error) => {
+run().catch((error) => {
   console.error(error.message || error);
   process.exit(1);
 });
