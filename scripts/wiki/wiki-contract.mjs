@@ -267,6 +267,10 @@ export function simplePathFromSource(relPath) {
   return `${wikiContract.paths.simpleSourceRoot}/${normalizeSourcePath(relPath)}`;
 }
 
+export function technicalMirrorPathFromSource(relPath) {
+  return `audiences/technical/${normalizeSourcePath(relPath)}`;
+}
+
 export function validateMirrorInventory(sourcePaths, simplePaths) {
   const errors = [];
   const sourceSet = new Set(sourcePaths.map((sourcePath) => normalizeSourcePath(sourcePath)));
