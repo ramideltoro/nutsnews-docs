@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: public-product
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 013d4ae8c7f0bd670e3c5a402fb476ec9b02ae854fb3d6e1aeadeff60445937e
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 9927d2f712610c53a25584b7ae29994124c520e65b22dd238ac6f223047ecb1a
 ---
 
 # NutsNews Feed Visibility Fade Fix

@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 374334be70c41442e1876f804985ed73a96acf8c86f21bf247143db4eaa1dc3b
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: c46dfd5dbcb0f5f9b0c29bd7158f5fe301ccc8f3d57f212f6728169702302510
 ---
 
 # NutsNews VPS Ansible Bootstrap

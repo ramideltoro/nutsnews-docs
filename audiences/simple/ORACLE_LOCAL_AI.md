@@ -11,9 +11,11 @@ wiki:
   collection: ai-and-automation
   section: AI Providers
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 0e8ee0a76d235bff7c027637662f5a0a25d7cc48b7279f593af4569aadbe2a7f
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: f779ad815c60772a469ab156bafde94a28ac901793e50429dc12b0583edf3c3c
 ---
 
 # Oracle Local AI Provider

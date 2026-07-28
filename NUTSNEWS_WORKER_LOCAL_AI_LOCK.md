@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 760794f30399b65d12e1fc2ac88e97a4cb0fb44afba0cab21b794b794987b65b
+---
 # NutsNews Worker Local AI Lock
 
 The public web repo does not deploy the ingestion Workers. Worker shard deployment lives in `ramideltoro/nutsnews-worker`.

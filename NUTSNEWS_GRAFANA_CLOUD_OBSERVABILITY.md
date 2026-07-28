@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 88d5f9c0bfe8c7295c8547ac8b96212772c30c68aa9510584494dabd543bc531
+---
 # NutsNews Grafana Cloud Observability
 
 Architecture status: Grafana Cloud resources are centralized in

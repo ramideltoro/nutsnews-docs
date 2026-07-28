@@ -11,9 +11,11 @@ wiki:
   collection: ai-and-automation
   section: Automation & Workers
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 3bf61e80338eff587236e4a0fb8ab12cdd0f2dac6cc496753118a5a19838b960
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: c13d5ffb8d49bf6f20b7180fc4921865e1918ffcd0f68f790163b716b2cd2ead
 ---
 
 # NutsNews Worker-Uplift RabbitMQ Provisioning

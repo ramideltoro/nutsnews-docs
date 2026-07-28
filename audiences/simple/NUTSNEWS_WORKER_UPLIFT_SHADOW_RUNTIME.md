@@ -11,9 +11,11 @@ wiki:
   collection: ai-and-automation
   section: Automation & Workers
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 2b307df683520608809c9062e0a60e99ebce24f356616983c9d7e460d3701383
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: c59a5e6a2098e34266faa7f61f0a33b1be49f5b65e41c56813daa1a4ce4c3962
 ---
 
 # NutsNews Worker-Uplift Shadow Runtime

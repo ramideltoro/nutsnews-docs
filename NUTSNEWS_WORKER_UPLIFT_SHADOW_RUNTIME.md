@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: c59a5e6a2098e34266faa7f61f0a33b1be49f5b65e41c56813daa1a4ce4c3962
+---
 # NutsNews Worker-Uplift Shadow Runtime
 
 This document records the backend-owned shadow runtime for

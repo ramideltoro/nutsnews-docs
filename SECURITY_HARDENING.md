@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: e658e6ee2f168ecb5d8cb1bb06eb3fad5934c3a0d4a7ab36b09e427b53765d96
+---
 # Security Hardening
 
 Issue #106 adds a focused security pass for the NutsNews web app.

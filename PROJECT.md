@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: d76e72dbee761318bd7ee0f32d2ffd10e8d475bb640c3087e5e9b8d16f11ff99
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 73e20b7089eab49b4681a74cff24552b724f8f12e9f1d3ae5f58956769ceaf71
 ---
 
 # Project Overview

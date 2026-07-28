@@ -11,9 +11,11 @@ wiki:
   collection: ai-and-automation
   section: AI Providers
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 132345e3c2b19d497ac3656320d8f248509852e5ff949e2f02f06f6c68f0f070
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 760794f30399b65d12e1fc2ac88e97a4cb0fb44afba0cab21b794b794987b65b
 ---
 
 # NutsNews Worker Local AI Lock

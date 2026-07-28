@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 4d8f0bd4c1d8132fedcd8ba0ad54683d84abd0a84388651a5470955a6fe9a2c6
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: f0ebeb7d621c3e3c0dc1cebe4d4abb65ad7799ed89f1e20e7fc2795d59452f46
 ---
 
 # Public Feed Snapshot and Edge Fallback

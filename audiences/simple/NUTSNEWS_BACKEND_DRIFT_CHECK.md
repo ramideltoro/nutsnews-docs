@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 8c4a0a0b69d3467e2fa5af53794c3f997f97836e635fa8ea245c2efce684f0be
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 529d100ea6334a88d236fc903481e563cb5f76ce2a1317c3b76cfe3548bac8e3
 ---
 
 # NutsNews Backend Drift Check

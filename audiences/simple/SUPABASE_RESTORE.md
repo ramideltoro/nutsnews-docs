@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 9857377e1c11679a475d1fca0a931f4462b49e1fffce380dd84327eece348a94
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: d023eba63365bb9db4128171df2437d01d2d1cf6119f79c26574c2b920b8705d
 ---
 
 # Supabase Restore Procedure

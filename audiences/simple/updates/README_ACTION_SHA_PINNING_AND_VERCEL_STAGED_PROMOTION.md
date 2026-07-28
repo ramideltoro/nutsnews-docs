@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: ccb9a0c00c26e3e9b3f3179c431f93faa1c819c1e8e0c93977134136c39e2b81
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 9b0e529210a65378cc6163c060e6ab91250859557a1540f03376deb38790b708
 ---
 
 # GitHub Actions SHA Pinning and Vercel Staged Promotion

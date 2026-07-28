@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 78aa2a5e033cc0473e02f2240f95ad4188812be6f4a2df37ea2f19c4facc783e
+---
 # Runtime Feature Flags
 
 NutsNews uses a small Supabase-backed runtime flag table to pause two documented behaviors without redeploying the Next.js app or Cloudflare Worker.

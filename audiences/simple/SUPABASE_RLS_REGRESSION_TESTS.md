@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 4ac512bf834915ab66b5d1fd04e6801f60652ae600f7ab796e377a93f109a789
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: ee61f8b98b360fc1928a18ec38d6c0905f985b4fde3728c21308c3b0d9922f63
 ---
 
 # Supabase RLS Regression Tests

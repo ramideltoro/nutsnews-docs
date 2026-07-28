@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 9422168bbe4773aa68386decae0d1e5173ce213a35d8878848c62a3b98926c71
+---
 # Production Readiness Dashboard
 
 NutsNews has an admin-only production readiness scorecard at `/admin/readiness`.

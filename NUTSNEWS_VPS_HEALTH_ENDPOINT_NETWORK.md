@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 86f0c51ef209931f7608203b8e809b9270cfea86579bea18ed8639de2457bb41
+---
 # NutsNews VPS Health Endpoint Network
 
 This document defines the intended production network boundary for the

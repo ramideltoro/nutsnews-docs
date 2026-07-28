@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 1d52afc07e2be9d953ac5ddcd3bd746c68c8f3bcc358d93a1b21e9f4f4827c09
+---
 # NutsNews Backend OpenAI Maintenance Robot
 
 This page documents the daily maintenance robot owned by

@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: public-product
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 16d86f8e00f075ffb5e971bb74dcb0eb80d37fa592f5ede0465c3b7b8f6c7af5
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 78b7afff49ea8b1c0e820d29c112700c4edfb0e452bb62eec74516e2f3be8025
 ---
 
 # NutsNews Home Button Update

@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: afc766e97b4d4e2c277e3225152e9076a9ceb576927370ebb4f368750bd3c997
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: b5dc66f1bf1ac928935b087bc45da487ac4b1d4440f4db62c2a328e058fb2305
 ---
 
 # Security CI Scans

@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 397967a9d7a9020b4ae52c9dc96589128bb0f609e6ae1106080160a0adb843a5
+---
 # NutsNews Footer Search Menu Patch
 
 This is a UI-only patch that keeps the existing `/api/search` backend but moves search out of the home feed.

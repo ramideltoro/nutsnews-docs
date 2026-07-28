@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: bb7cc62ffb80d8e6131972b79b9439a694e9ed8db9a269efe071d65687535f6f
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 48a6300998fc7d488615ae2b56cae2534ddee52f0b32f6859650b9e7bfbcc7d3
 ---
 
 # NutsNews Protected Ansible Apply Workflow

@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 1e74c6853c6a6695b475d5f48616d94aa0f48bf8aed43741afc4bfb242acad11
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: debeef5f6a06f69a90667df1476107ae44b7fe39bbeb90cb76e78c1d78436c15
 ---
 
 # NutsNews Worker-Uplift RabbitMQ Capacity And Security

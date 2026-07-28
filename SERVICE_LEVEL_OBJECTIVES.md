@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 01d462a0d4750796c0365338110b0d5d006a5ce4ace69e0792e74ca2ec712569
+---
 # NutsNews Service Level Objectives
 
 Issue: https://github.com/ramideltoro/nutsnews/issues/89

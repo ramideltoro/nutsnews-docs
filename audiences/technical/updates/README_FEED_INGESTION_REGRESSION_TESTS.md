@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 69cbec2c702cb4d832ae3fc3b4dcbce79b98d65ff5fe6c7749b2bd1da2ffb1c6
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 2cd4a9003c2048bf1e52065f2467737ecbc5064127bc7dc601cdea4964fa7926
 ---
 
 # Feed Ingestion Regression Tests

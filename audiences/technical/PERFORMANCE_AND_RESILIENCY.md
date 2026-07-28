@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 560fe1b852fbf3abe22095656c32d81609a215d7aaa08fb0655e075e67de35e7
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 71864b7f99521fafce38dab3d6ff63272d4e45577556cdf86df33489e4286e9b
 ---
 
 # Performance and Resiliency

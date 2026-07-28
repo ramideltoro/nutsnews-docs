@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 2f137a29ed1348d1b0a60d01f186aa7566c5b8f7b2f27c414034af6d1acd7861
+---
 # NutsNews Worker-Uplift Operation Map
 
 This page links the shared documentation hub to the backend-owned operation map

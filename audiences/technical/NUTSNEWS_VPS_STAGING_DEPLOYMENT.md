@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: b229c1dfafdc77c466c1b309671c87c344823edb5c058e5d0e5ab66bd7af909b
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 37babac6abf874308472af1e20be869b43f5ccd097adb97e35e0048bc180534e
 ---
 
 # NutsNews Immutable Staging Deployment

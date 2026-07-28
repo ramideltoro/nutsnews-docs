@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: aeef737aabb69aa0718288838fd5c3dce7f0a1bde24a8bdb53f964bf2373ed5b
+---
 # NutsNews Backend Health Report
 
 ## Simple Summary

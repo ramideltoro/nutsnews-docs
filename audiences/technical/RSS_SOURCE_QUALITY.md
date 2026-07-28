@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: public-product
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 0968e0b6f9187a3b2449b0d6205df8fd0e8cb8c5271bad86cd0a1b4e01013b0b
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 8ba49649cd50688a335e331e95c4c01e2fef5c9d5e4836647826fe1d884cf5bf
 ---
 
 # RSS Source Quality Scoring

@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: public-product
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 8010133ecf3754baf72307d7c42d9cd36a53658521f57650bad6e186f2473cbf
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 9ad569bde86d3eee821ae5cda8e58f432aadfb8c12a88b050ebef9e6205cb05d
 ---
 
 # NutsNews Web Modern Theme UI Update

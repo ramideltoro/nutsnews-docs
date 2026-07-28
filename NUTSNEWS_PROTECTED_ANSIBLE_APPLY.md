@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 48a6300998fc7d488615ae2b56cae2534ddee52f0b32f6859650b9e7bfbcc7d3
+---
 # NutsNews Protected Ansible Apply Workflow
 
 This explains the first protected GitHub Actions workflow that can run the Ansible VPS baseline against `vps.nutsnews.com`. It is a production mutation path, so it wears a seatbelt, uses the `production-vps` Environment, and defaults to check mode because infrastructure should ask before touching the expensive-looking buttons.

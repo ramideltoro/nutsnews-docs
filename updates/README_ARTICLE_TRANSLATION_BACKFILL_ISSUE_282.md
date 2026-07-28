@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 780755ed704d49bb9e8a02c363d6741d3f175a3c540e637b696f316304e35aaa
+---
 # Article translation backfill issue #282
 
 This update documents the production article summary translation backfill completed for `ramideltoro/nutsnews#282` on 2026-07-20.

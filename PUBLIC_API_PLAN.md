@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 006ead318f79e76e76a2c95d7b06de8f3784353d46cd388460ff49e9a4f79bda
+---
 # Public API Plan
 
 Related issue: `ramideltoro/nutsnews#39`
