@@ -28,6 +28,19 @@ const runOptions = {
   failOnMissingDiagrams: args.has('--strict') || args.has('--fail-on-missing-diagrams'),
 };
 
+function normalizeBase(value) {
+  const trimmed = `${value || '/'}`.trim();
+  if (!trimmed || trimmed === '/') return '';
+  return `/${trimmed.replace(/^\/+|\/+$/g, '')}`;
+}
+
+const buildBasePrefix = normalizeBase(process.env.WIKI_BASE_PATH);
+
+function withBuildBase(route) {
+  const normalized = `/${`${route || ''}`.replace(/^\/+/, '')}`;
+  return `${buildBasePrefix}${normalized}`;
+}
+
 function toPosix(relPath) {
   return relPath.split(path.sep).join('/');
 }
@@ -212,7 +225,8 @@ function resolveCandidate(map, normalizedCandidate) {
 }
 
 function routeFor(entry, audience) {
-  return audience === 'technical' ? entry.technical.route : entry.simple.route;
+  const route = audience === 'technical' ? entry.technical.route : entry.simple.route;
+  return withBuildBase(route);
 }
 
 function resolveMarkdownRoute(audience, currentSourceRel, rawTarget, candidateMap, unresolved, sourceFile, lineNumber) {
@@ -222,18 +236,26 @@ function resolveMarkdownRoute(audience, currentSourceRel, rawTarget, candidateMa
     return rawTarget;
   }
 
-  if (!isMarkdownReference(core)) {
-    return rawTarget;
-  }
-
   if (core.startsWith('/technical/') || core.startsWith('/simple/')) {
-    return `${core}${query}${fragment}`;
+    return `${withBuildBase(core)}${query}${fragment}`;
   }
 
   const currentDir = path.posix.dirname(currentSourceRel);
   const resolvedRaw = core.startsWith('/')
     ? `/${core.replace(/^\/+/, '')}`
     : path.posix.join(currentDir, core);
+  const normalizedResolved = normalizeCandidate(path.posix.normalize(resolvedRaw));
+  if (
+    core.endsWith('/')
+    && wikiContract.history.groups.some((group) => group.id === normalizedResolved)
+  ) {
+    return `${withBuildBase(`/${audience}/collections/overview`)}${query}${fragment}`;
+  }
+
+  if (!isMarkdownReference(core)) {
+    return rawTarget;
+  }
+
   const resolved = normalizeCandidate(path.posix.normalize(resolvedRaw).replace(/\.md$/i, ''));
 
   let candidate = resolveCandidate(candidateMap, resolved);
@@ -292,17 +314,17 @@ function rewriteMarkdownBody(content, currentSourceRel, audience, candidateMap, 
 
   const rewriteOutsideInlineCode = (lineContent, lineNumber) => {
     const codeSpan = /(`+)([\s\S]*?)\1/g;
-    let cursor = 0;
-    let output = '';
-
-    for (const match of lineContent.matchAll(codeSpan)) {
-      output += rewriteSegment(lineContent.slice(cursor, match.index), lineNumber);
-      output += match[0];
-      cursor = match.index + match[0].length;
-    }
-
-    output += rewriteSegment(lineContent.slice(cursor), lineNumber);
-    return output;
+    const protectedSpans = [];
+    const protectedLine = lineContent.replace(codeSpan, (match) => {
+      const token = `WIKICODESPAN${protectedSpans.length}TOKEN`;
+      protectedSpans.push(match);
+      return token;
+    });
+    const rewritten = rewriteSegment(protectedLine, lineNumber);
+    return rewritten.replace(
+      /WIKICODESPAN(\d+)TOKEN/g,
+      (_match, index) => protectedSpans[Number(index)],
+    );
   };
 
   const chunks = content.match(/[^\n]*(?:\n|$)/g)?.filter(Boolean) || [];
@@ -368,6 +390,8 @@ function validateLinkRewriteFixtures() {
       [
         '[root](../ROOT.md)',
         '[sibling](TWO.md)',
+        '[`code label`](TWO.md)',
+        '[history](../updates/)',
         '`[inline code](TWO.md)`',
         '```md',
         '[fenced code](TWO.md)',
@@ -384,11 +408,23 @@ function validateLinkRewriteFixtures() {
 
     assert.equal(
       rootOutput,
-      `[nested](/${audience}/updates/one#details)\n`,
+      `[nested](${withBuildBase(`/${audience}/updates/one`)}#details)\n`,
       `${audience} root-to-nested fixture`,
     );
-    assert.match(nestedOutput, new RegExp(`\\[root\\]\\(/${audience}/root\\)`));
-    assert.match(nestedOutput, new RegExp(`\\[sibling\\]\\(/${audience}/updates/two\\)`));
+    const fixturePrefix = buildBasePrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    assert.match(nestedOutput, new RegExp(`\\[root\\]\\(${fixturePrefix}/${audience}/root\\)`));
+    assert.match(
+      nestedOutput,
+      new RegExp(`\\[sibling\\]\\(${fixturePrefix}/${audience}/updates/two\\)`),
+    );
+    assert.match(
+      nestedOutput,
+      new RegExp('\\[`code label`\\]\\(' + `${fixturePrefix}/${audience}/updates/two\\)`),
+    );
+    assert.match(
+      nestedOutput,
+      new RegExp(`\\[history\\]\\(${fixturePrefix}/${audience}/collections/overview\\)`),
+    );
     assert.match(nestedOutput, /`\[inline code\]\(TWO\.md\)`/);
     assert.match(nestedOutput, /\[fenced code\]\(TWO\.md\)/);
     assert.match(nestedOutput, /    \[indented code\]\(TWO\.md\)/);

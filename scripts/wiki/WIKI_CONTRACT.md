@@ -62,6 +62,14 @@ text/captions/assets, and orphan artifacts. Failures are grouped by source and
 include a remediation. Any defect exits nonzero, and the production build runs
 the same gate before Astro.
 
+The offline `npm run test:content-routes` suite builds and inspects both `/` and
+the custom `/wiki-preview/` base without a browser or network service. It loads
+every generated audience pair and built route, checks root and nested content,
+mirror/category/slug metadata, internal links and fragments, audience
+precedence/persistence, and Pagefind filters. Controlled broken metadata and
+link fixtures must fail. The test finishes with the default-base build so later
+validation and deployment steps inspect production-shaped output.
+
 ## Frontmatter and precedence
 
 Generated expert frontmatter always contains `title`, `description`, `slug`,

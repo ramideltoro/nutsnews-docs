@@ -72,6 +72,11 @@ const shouldRenderSearch =
 </div>
 
 <script>
+  import {
+    destinationWithCurrentFragment,
+    persistAudiencePreference,
+  } from '../lib/audience-routing.mjs';
+
   const switcher = document.querySelector('[data-audience-switch]');
 
   if (switcher instanceof HTMLElement) {
@@ -81,19 +86,15 @@ const shouldRenderSearch =
     const explicitAudience = switcher.dataset.currentAudience;
 
     const storeAudience = (value) => {
-      if (!key || (value !== 'simple' && value !== 'technical')) return;
-      try {
-        localStorage.setItem(key, value);
-      } catch {
-        // Normal links continue to work when storage is unavailable.
-      }
+      persistAudiencePreference(localStorage, key, value);
     };
 
     const preserveFragment = () => {
       for (const control of controls) {
-        const target = new URL(control.href, location.href);
-        target.hash = location.hash;
-        control.href = `${target.pathname}${target.search}${target.hash}`;
+        control.href = destinationWithCurrentFragment({
+          currentHref: location.href,
+          destinationHref: control.href,
+        });
       }
     };
 

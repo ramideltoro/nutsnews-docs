@@ -37,14 +37,13 @@ async function run() {
   );
 
   assert.match(page, /import\.meta\.env\.BASE_URL/);
-  assert.match(page, /localStorage\.getItem\(key\)/);
-  assert.match(page, /allowed\.includes\(explicit\)/);
-  assert.match(page, /allowed\.includes\(stored\)/);
-  assert.match(page, /current\.searchParams\.delete\(queryParameter\)/);
-  assert.match(page, /target\.search = current\.searchParams\.toString\(\)/);
-  assert.match(page, /target\.hash = current\.hash/);
-  assert.match(page, /location\.replace\(target\.href\)/);
-  assert.match(page, /target\.href !== current\.href/);
+  assert.match(page, /from ['"]\.\.\/lib\/audience-routing\.mjs['"]/);
+  assert.match(page, /readAudiencePreference\(localStorage, key\)/);
+  assert.match(page, /selectAudience\(\{ explicit, stored, fallback, allowed \}\)/);
+  assert.match(page, /resolvedAudienceUrl\(\{/);
+  assert.match(page, /persistAudiencePreference\(localStorage, key, audience, allowed\)/);
+  assert.match(page, /location\.replace\(targetHref\)/);
+  assert.match(page, /targetHref !== current\.href/);
   assert.doesNotMatch(page, /location\.assign\(/);
   assert.doesNotMatch(page, /http-equiv=["']refresh/i);
 

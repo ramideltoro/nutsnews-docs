@@ -71,6 +71,9 @@ jobs:
       - name: Validate complete content contract
         run: npm run validate:content
 
+      - name: Test content loading and audience routes
+        run: npm run test:content-routes
+
       - name: Validate internal links
         run: npm run validate:links
 
