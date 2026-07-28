@@ -1,93 +1,118 @@
 ---
 title: GitHub Pages Publishing for the NutsNews Wiki (Simple)
+description: A plain-language guide to previewing, checking, launching, and rolling back the static NutsNews Wiki.
 wiki:
   source_route: /technical/github-wiki-automation/
   simple_route: /simple/github-wiki-automation/
+  slug: github-wiki-automation
   primary_diagram:
     file: diagrams/GITHUB_WIKI_AUTOMATION.mmd
     accTitle: "Wiki publish pipeline"
-    accDescr: "A flow describing doc edits, validation gates, optional manual run, and Pages publish."
+    accDescr: "A reviewed wiki change passes quality and exact-commit checks before GitHub Pages deployment. Production cutover then adds one DNS-only CNAME, deploys the root artifact, configures the custom domain, waits for HTTPS, and either passes smoke tests or rolls back."
   status: active
   collection: start-here
   section: contributing
+  order: 42
   approval:
     state: approved
     publishing: allowed
     reviewed_by: "ramideltoro"
-    reviewed_on: "2026-07-28T20:10:06.000Z"
-    technical_source_hash: 677dde95bad57c958c952bba026751f4b76411e54ac77e593541f73a108fa640
+    reviewed_on: "2026-07-28T23:05:55.928Z"
+    technical_source_hash: a08bcae6eae07cf2afe5dcfd32c4021a2c8f12014da8d5a458f34966b964494e
 ---
 
 # GitHub Pages publishing for the NutsNews wiki
 
-NutsNews docs are published as the static site at `https://wiki.nutsnews.com`.
+The repository is the source of truth. Astro builds the docs into static files, and GitHub Actions publishes only a checked artifact.
 
-The repository is the source of truth. When you edit markdown and push to `main`, the next GitHub Actions run publishes the site update.
+## Where the wiki is now
 
-## Source contract
+- Before cutover: `https://ramideltoro.github.io/nutsnews-docs/`
+- After cutover: `https://wiki.nutsnews.com/`
+- The custom domain stays unset until the launch gate.
 
-- Workflow: `.github/workflows/wiki-pages.yml`
-- Published pages: all Markdown files not in excluded paths.
-- Exclusions come from `scripts/wiki/validate-doc-paths.mjs` and `.gitignore`.
+Do not edit `_site/`, generated content, reports, caches, or the live Pages files.
 
-## What you can edit
+## Preview and check locally
 
-- Add, change, or archive markdown docs.
-- Update workflow and validation config when needed.
+```bash
+npm ci
+npm run dev -- --host 127.0.0.1 --port 4321
+```
 
-Do not edit:
+For a production preview:
 
-- Generated Pages HTML (`_site`)
-- Deployed pages directly in GitHub Pages
+```bash
+npm run build
+npm run preview -- --host 127.0.0.1 --port 4321
+```
 
-## Publishing process
+Run the documentation and browser gates:
 
-1. Push approved docs to `main`.
-2. CI validates:
-   - document inventory
-   - secret safety
-   - Jekyll build
-   - build-size/time/pagefind budgets
-   - artifact upload
-3. If deployment environment is protected, reviewer approval is required in GitHub Environments.
-4. Publish job writes the new site to Pages.
+```bash
+npm run wiki:prepare
+npm run validate:content
+npm run validate:links
+npm run validate:mermaid
+npm run test:content-routes
+npm run test:workflow
+npm run test:pages-artifact
+npm run test:browser
+npm run build
+```
 
-## Manual run
+## What Actions does
 
-If needed:
+Pull requests run checks but never deploy.
 
-1. Open the `wiki-pages` workflow.
-2. Run workflow → `main`.
+A push or manual run on `main` follows this order:
 
-## Local checks
+1. Check the 227 sources, both mirror sets, approvals, diagrams, links, secrets, routes, build, budgets, accessibility, keyboard flows, and screenshots.
+2. Mark the exact commit as ready only after every check passes.
+3. Check out that same commit in the Pages build.
+4. Build, stamp, and inspect the final artifact.
+5. Upload it.
+6. Deploy it from the `main`-only Pages environment.
 
-- `node scripts/wiki/validate-doc-paths.mjs`
-- `node scripts/wiki/validate-wiki-budgets.mjs`
-- `node scripts/wiki/validate-wiki-secrets.mjs --smoke-test`
-- `bundle exec jekyll serve`
+Only deployment can write to Pages. The workflow does not use a repository secret or an OpenAI key.
 
-## DNS and HTTPS
+## Launch order
 
-- Set DNS CNAME for `wiki.nutsnews.com` to the Pages hostname (example: `ramideltoro.github.io`).
-- Confirm HTTPS is active after DNS propagation.
+1. Finish every platform and local QA gate. Smoke-test the default URL.
+2. Prepare and fully validate the production-target site-code pull request, but do not merge it.
+3. In Cloudflare, change only this record:
+
+   | Type | Name | Target | Proxy |
+   | --- | --- | --- | --- |
+   | CNAME | `wiki` | `ramideltoro.github.io` | DNS only |
+
+   Do not change any other DNS record.
+4. Merge the ready production-target pull request and wait for its root artifact to deploy.
+5. Set the repository Pages custom domain to `wiki.nutsnews.com`.
+6. Wait for GitHub’s certificate, then turn on **Enforce HTTPS**.
+7. Test the release stamp, root, both audiences, search/History, diagrams, 404, and nested pages.
 
 ## Rollback
 
-If publish is wrong:
+### Rollback verification contract
 
-1. Re-run workflow using the last-good commit.
-2. Verify `https://wiki.nutsnews.com` is serving expected pages.
-3. If needed, repoint DNS/domain to last-good source briefly and republish.
+Record the last-good commit SHA first. Verify `https://wiki.nutsnews.com` serves it after a production rollback and test both audiences; after a cutover fallback, verify the default project URL instead.
 
-## Failure checks
+For a bad production release, revert or rerun the last good commit, require every gate, confirm `release.json`, and smoke the affected routes.
 
-If publish fails, inspect workflow logs first:
+For a failed domain cutover:
 
-- inventory script error
-- Jekyll frontmatter or markdown parse issue
-- permission scope issue (`pages: write`)
-- CNAME or DNS mismatch
-- publish output path mismatch
+1. Redeploy the last pre-cutover `/nutsnews-docs` artifact.
+2. Remove the repository custom domain and verify the default URL.
+3. Remove or correct only the `wiki` CNAME if DNS caused the failure.
+4. Leave every other DNS record unchanged and repeat the full gate.
 
-No runtime OpenAI key is used for publishing.
+## When something fails
 
+- Quality: check approval, inventory, mirrors, diagrams, links, or browser results.
+- Build: check the exact commit, site/base, Astro, Pagefind, and budgets.
+- Artifact: check the stamp and blocked secret/env/source/CNAME files.
+- Deploy: check the `main` environment, Pages status, permissions, and artifact.
+- Domain: check the one DNS-only CNAME, custom-domain status, certificate, and HTTPS.
+
+Fix the source and rerun. Do not edit deployed HTML or use `.wiki-build`, `wiki-push`, Jekyll, or bundle commands.

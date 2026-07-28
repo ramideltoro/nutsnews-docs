@@ -1,90 +1,106 @@
 ---
 title: GitHub Pages Publishing for the NutsNews Wiki (Technical)
+description: The technical preview, validation, deployment, cutover, HTTPS, rollback, and failure contract for the static wiki.
 wiki:
   source_route: /technical/github-wiki-automation/
   simple_route: /simple/github-wiki-automation/
+  slug: github-wiki-automation
   primary_diagram:
     file: diagrams/GITHUB_WIKI_AUTOMATION.mmd
     accTitle: "Wiki publish pipeline"
-    accDescr: "A flow showing CI checks, optional manual trigger, and publish/deploy handoff to GitHub Pages."
+    accDescr: "A reviewed wiki change passes quality and exact-commit checks before GitHub Pages deployment. Production cutover then adds one DNS-only CNAME, deploys the root artifact, configures the custom domain, waits for HTTPS, and either passes smoke tests or rolls back."
   status: active
   collection: start-here
   section: contributing
+  order: 42
   approval:
     state: approved
     publishing: allowed
     reviewed_by: "ramideltoro"
-    reviewed_on: "2026-07-28T20:10:06.000Z"
-    technical_source_hash: 677dde95bad57c958c952bba026751f4b76411e54ac77e593541f73a108fa640
+    reviewed_on: "2026-07-28T23:05:55.928Z"
+    technical_source_hash: a08bcae6eae07cf2afe5dcfd32c4021a2c8f12014da8d5a458f34966b964494e
 ---
 
 # GitHub Pages publishing for the NutsNews wiki
 
-NutsNews documentation is built and published from this repository to `https://wiki.nutsnews.com` by GitHub Actions.
+Astro/Starlight and Pagefind build a pure-static site. The pinned `.github/workflows/wiki-pages.yml` publishes only an exact-SHA, inspected `_site/` artifact.
 
-GitHub Pages builds the site from markdown and serves it from a static artifact; Cloudflare remains DNS-only.
+## Targets and paths
 
-## Source contract
+The current pre-cutover target is `https://ramideltoro.github.io/nutsnews-docs/`; `scripts/wiki/wiki-release.json` allowlists site `https://ramideltoro.github.io`, base `/nutsnews-docs`, and mode `pre-cutover`. Production will use `https://wiki.nutsnews.com/` at base `/`.
 
-The published set is governed by:
+The active contract includes `.github/workflows/wiki-pages.yml`, Astro/Playwright and npm configuration, `scripts/wiki/wiki-release.json`, artifact/budget/secret validators, browser tests, and the tracked `CNAME`. Generated content, `_site/`, reports, caches, and inventory output are not editable sources.
 
-- `.github/workflows/wiki-pages.yml`
-- `scripts/wiki/validate-doc-paths.mjs`
-- `scripts/wiki/validate-wiki-budgets.mjs`
-- `scripts/wiki/validate-wiki-secrets.mjs`
-- `_config.yml`
-- `index.md`
+## Preview and validation
 
-Generated artifacts and non-doc tooling paths are excluded by ignore policies.
+```bash
+npm ci
+npm run build
+npm run preview -- --host 127.0.0.1 --port 4321
+```
 
-## Publishing controls
+```bash
+npm run wiki:prepare
+npm run validate:content
+npm run validate:links
+npm run validate:mermaid
+npm run test:content-routes
+npm run test:workflow
+npm run test:pages-artifact
+npm run test:browser
+npm run build
+```
 
-1. Push docs to `main` and create a successful commit.
-2. CI runs ordered checks:
-   - markdown inventory
-   - secret-safety scan
-   - Jekyll build
-   - budget validation
-   - Pages artifact upload
-3. Environment protection review (if configured for `wiki-pages`).
-4. Deploy to Pages from the artifact.
+Pre-cutover artifact reproduction:
 
-## Manual workflow run
+```bash
+WIKI_SITE_URL=https://ramideltoro.github.io WIKI_BASE_PATH=/nutsnews-docs npm run build
+npm run wiki:release:stamp -- --sha="$(git rev-parse HEAD)"
+WIKI_SITE_URL=https://ramideltoro.github.io WIKI_BASE_PATH=/nutsnews-docs npm run validate:pages-artifact -- --sha="$(git rev-parse HEAD)"
+```
 
-Use GitHub Actions **Run workflow**:
+## Actions dependency chain
 
-1. Open `wiki-pages` workflow
-2. Select branch `main`
-3. Execute run
+Pull requests run quality only. Relevant `main` pushes and manual runs execute:
 
-## Validation commands
+1. full source/fixture/build/browser validation
+2. `validated_sha` output
+3. exact-SHA checkout and verification
+4. allowlisted site/base build
+5. release stamp
+6. budget and final artifact inspection
+7. pinned Pages artifact upload
+8. `main`-restricted Pages deployment
 
-- `node scripts/wiki/validate-doc-paths.mjs`
-- `node scripts/wiki/validate-wiki-budgets.mjs`
-- `node scripts/wiki/validate-wiki-secrets.mjs --smoke-test`
-- `node scripts/wiki/validate-wiki-secrets.mjs`
-- `bundle exec jekyll serve`
+Concurrency cancels superseded same-ref runs. Global permission is `contents: read`; only deploy receives `pages: write` and `id-token: write`. No repository secret or OpenAI key is consumed.
 
-## DNS and HTTPS checks
+## Production launch
 
-- `CNAME` in Cloudflare/registrar must resolve to the repository Pages domain (example: `ramideltoro.github.io`).
-- Repository Pages custom domain and HTTPS status must match.
+1. Complete all platform and local launch gates against the default URL.
+2. Prepare a checked site-code PR changing the workflow, release manifest, artifact validator, and tests from project Pages to `https://wiki.nutsnews.com/` at base `/`.
+3. Add or update only Cloudflare DNS-only `CNAME wiki → ramideltoro.github.io`; do not touch other records.
+4. Merge the validated target PR and wait for the root artifact deployment.
+5. Configure repository Pages custom domain `wiki.nutsnews.com`.
+6. Wait for certificate approval, enable HTTPS enforcement, and run production smoke tests.
 
-## Rollback procedure
+The smoke covers `release.json`, root resolution, Simple and Technical representative/nested routes, Pagefind and History, Mermaid/fullscreen, 404, assets, and HTTPS behavior.
 
-1. Re-run publish on last verified-good commit.
-2. Confirm `https://wiki.nutsnews.com` content.
-3. If needed, repoint to prior Pages source as temporary containment and republish.
+## Rollback
 
-## Failure analysis checklist
+### Rollback verification contract
 
-When publish fails, inspect workflow run:
+Record the last-good commit SHA before changing the deployment. Verify `https://wiki.nutsnews.com` serves that release after a production rollback and smoke both audiences; after a cutover fallback, verify the default project URL.
 
-- missing docs or unexpected ignore behavior
-- build failure from markdown structure/frontmatter
-- workflow permissions (`contents: read`, `pages: write`, `id-token: write`)
-- CNAME/DNS mismatch
-- artifact/output path mismatch
+For a bad release, revert or rerun the stamped last-good production commit, require the full chain, and verify routes.
 
-The publish flow has no runtime OpenAI/API key dependency.
+For cutover failure, deploy the last pre-cutover `/nutsnews-docs` commit first, remove the Pages custom domain, verify the default URL, then remove or repair only the `wiki` CNAME if necessary. Do not modify other DNS records.
 
+## Failure analysis
+
+- Quality: approval, inventory, mirror, diagram, link, secret fixture, axe, visual
+- Build: missing/mismatched ready SHA, site/base, Astro, Pagefind, budget
+- Artifact: wrong stamp, source/env/secret/hidden/symlink/CNAME file, missing route
+- Deploy: environment branch policy, Pages status, permissions, artifact
+- Domain: DNS-only CNAME, custom-domain setting, certificate, HTTPS
+
+Repair the source of failure and rerun. Deployed HTML is immutable output. `.wiki-build`, `wiki-push`, Jekyll, and bundle commands are obsolete and must not appear in the workflow.
