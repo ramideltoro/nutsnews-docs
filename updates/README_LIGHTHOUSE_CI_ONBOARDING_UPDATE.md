@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 43b2f2d558a2320b3861af630ccae15ca3a1048e311e56db001b34cc5226658c
+---
 # Lighthouse CI Documentation Update
 
 This update documents the correct Google Lighthouse CI onboarding flow for NutsNews.

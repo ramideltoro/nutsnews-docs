@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 873daf8ee7fe5372a5b865d7ecfbd9348abdeb2cb55160708607c5cf444089d9
+---
 # VPS Release Smoke Health Target Fix
 
 > Superseded note: the current shared VPS image build contract uses `/healthz`

@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 7dbdf8d1fac18ef56d7824a600a4421a58d2277c0f8c83cde42e41802ce73861
+---
 # Swiss German, German, and Greek Language Update
 
 This update adds three NutsNews languages across the web UI and article translation pipeline:

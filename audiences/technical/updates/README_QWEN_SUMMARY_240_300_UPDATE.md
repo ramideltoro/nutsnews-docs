@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: fec942897772341055762b0a05308445e8e45d849be6b7ed6743022e2cfebbfc
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: cedb61db7fb03c68498126275dd544d09b938b45aae73a3838b947b75541a71f
 ---
 
 # NutsNews Qwen Summary Length Update

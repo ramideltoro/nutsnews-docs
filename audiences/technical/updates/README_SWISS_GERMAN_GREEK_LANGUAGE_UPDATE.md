@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 381c07a5ea945576de96d8ac86be6440e42a06684e61318ec4b13979974d468b
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 7dbdf8d1fac18ef56d7824a600a4421a58d2277c0f8c83cde42e41802ce73861
 ---
 
 # Swiss German, German, and Greek Language Update

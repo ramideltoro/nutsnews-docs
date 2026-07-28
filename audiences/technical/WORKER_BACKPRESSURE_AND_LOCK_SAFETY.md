@@ -11,9 +11,11 @@ wiki:
   collection: ai-and-automation
   section: Operations & Monitoring
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 81e165838cc3800b59cdb9bb3205690bd9f0a5db4379a696fc6b7e89e94a98c8
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 58e0807c5512f35c9a5a54c8f61587122a5300e1fc9a277517d9d266aff30c38
 ---
 
 # Worker Backpressure and Lock Safety

@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 60ec0d0e93b8be7034d597a9e17b5cbd4cc2190653005d9c913c50d1664fe8e4
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 162bb075de4f7f60cf1a2a89d9e84bfce69c65f634cd4849d0790f60b4fb808a
 ---
 
 # VPS and Vercel Production Lockstep Update

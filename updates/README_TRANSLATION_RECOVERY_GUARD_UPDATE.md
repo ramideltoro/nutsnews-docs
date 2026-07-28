@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 45e8a34470592e5db28a81b6ad11869fae3acad8a3defb1d056e7d8348cbe066
+---
 # NutsNews Translation Recovery Guard Update
 
 This update fixes the failure mode where a newly accepted article can appear in English before French/Japanese summary rows exist.

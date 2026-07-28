@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: faff0f35feb3924d208d22cc2a9112a4b786a4301cd0cfd3405478da70989504
+---
 # Vercel Promotion Rollback Guard Update
 
 ## Short Summary

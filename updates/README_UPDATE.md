@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 3fba068703965cc9ef32b38fa5860dadecf4c66fc44e1cebdef4352cdee00f3d
+---
 # NutsNews Local AI Summary Length Update
 
 This update fixes the local AI review path so accepted article summaries stop coming back in the old short 150-160 character style.

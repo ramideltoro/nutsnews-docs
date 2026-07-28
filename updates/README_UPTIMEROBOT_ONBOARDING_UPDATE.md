@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 0c3d75c9c41ab13ca5d199b667c7be02d9f13cf3636390858b4fa6806d466774
+---
 # UptimeRobot Documentation Update
 
 This update adds a dedicated UptimeRobot onboarding guide for NutsNews.

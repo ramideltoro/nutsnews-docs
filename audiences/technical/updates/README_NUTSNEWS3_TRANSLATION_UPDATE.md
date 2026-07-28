@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: e30613a211713c40fcce9d59d0244339d63d7391e4feaf590b254e80063aedbe
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 3f20b400f42389a989f975b347785a9b4633c66a4d338a2fcce70d04a35fdaa8
 ---
 
 # NutsNews3 Translation Diagnostics Update

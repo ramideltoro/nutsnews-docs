@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 58e0807c5512f35c9a5a54c8f61587122a5300e1fc9a277517d9d266aff30c38
+---
 # Worker Backpressure and Lock Safety
 
 Architecture status: this document describes legacy Cloudflare Worker

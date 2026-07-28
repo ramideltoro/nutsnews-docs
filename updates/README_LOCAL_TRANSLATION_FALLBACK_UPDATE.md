@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: dd60a0599d7b9a6b0fccbb59f8466436ffa00faad7ad1b3cdebfc0e4fc199fa7
+---
 # NutsNews home-server translation fallback update
 
 This update changes new Worker-generated article translations so the home server is tried before OpenAI.

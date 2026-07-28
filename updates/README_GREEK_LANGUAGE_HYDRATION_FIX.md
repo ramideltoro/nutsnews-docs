@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: d634947df2f2cc83a00f43641e63805c5d818bba5f7c997e2685e24d163de496
+---
 # Greek language hydration fix
 
 This update fixes a React hydration warning that appeared after selecting Greek and reloading the home page.

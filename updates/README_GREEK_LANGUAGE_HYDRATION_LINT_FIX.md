@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 59fa6d2d93712aaec7e203681b9398f526636ad78a2ae13648ef6793d78282fd
+---
 # Greek Language Hydration Lint Fix
 
 This update keeps the ThemeSwitcher hydration-safe without violating the React hooks lint rule.

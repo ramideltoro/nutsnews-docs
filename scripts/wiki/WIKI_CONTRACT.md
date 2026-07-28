@@ -34,6 +34,16 @@ command validates Mermaid locally and retries an invalid diagram once. It
 checks all target paths before the API request and refuses to replace any
 existing artifact unless the author explicitly adds `--force`.
 
+After review, run
+`npm run docs:approve -- <canonical-source.md> --reviewed-by <identity> --confirm-human-review`.
+This separate command records the reviewer, review time, and normalized
+Technical-source hash on the canonical Technical source, Simple mirror, and
+tracked Technical mirror. Generator, automation, bot, and pending identities
+are rejected. The hash excludes the approval record itself and normalizes line
+endings, so approval metadata and LF/CRLF conversions do not stale content;
+any substantive Technical source change does. Draft, blocked, missing, or
+stale approval fails CI and the production build.
+
 ## Frontmatter and precedence
 
 Generated expert frontmatter always contains `title`, `description`, `slug`,

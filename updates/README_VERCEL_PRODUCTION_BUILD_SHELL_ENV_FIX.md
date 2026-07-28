@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: d6ee68392a77d6e006248056e6e2933cefaf48a861e3ddff37fd5cf51320178e
+---
 # Vercel Production Build Shell Env, Remote Staging, and Bypass Smoke Fix
 
 ## Simple Summary

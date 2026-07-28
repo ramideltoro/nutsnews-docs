@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 9650368eb702c7f280de7fdad8e70e10235d35b2c52d71ffcf540eb82a145319
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: fe6fe1f2f101b7b1b9570de159613036338e22d3c37b017963ea5564780c398e
 ---
 
 # Staging-Qualified Production Promotion Update

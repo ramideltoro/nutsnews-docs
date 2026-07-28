@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 80b7ec290a3f781bf4930b6fc9300087d3a87c0aa5b83cdad333ccbbff013c33
+---
 # Full Archive Search Update
 
 This bundle adds backend-supported archive search to NutsNews web.

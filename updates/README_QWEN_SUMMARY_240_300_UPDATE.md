@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: cedb61db7fb03c68498126275dd544d09b938b45aae73a3838b947b75541a71f
+---
 # NutsNews Qwen Summary Length Update
 
 This update makes accepted Qwen/Ollama AI article summaries return in the 240-300 character range.

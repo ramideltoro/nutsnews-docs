@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 9fa34cdf3e6d9e9fb880a0becea2d67abad30e9e9b0ff12d7939680aefe1daaa
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 0e6bd3893d0c97b79119bb14b545d4f4f202a55f9540d825fe3f850968d60fc2
 ---
 
 # Worker summary translation task limit fix

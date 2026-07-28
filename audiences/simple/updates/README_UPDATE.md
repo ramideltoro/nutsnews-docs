@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 316e349b963dc7b32418aad3702a97b108efa47a053ce10a46e86e6ca8f7223b
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 3fba068703965cc9ef32b38fa5860dadecf4c66fc44e1cebdef4352cdee00f3d
 ---
 
 # NutsNews Local AI Summary Length Update
