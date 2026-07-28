@@ -1,7 +1,10 @@
 ---
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { wikiContract } from '../../scripts/wiki/wiki-contract.mjs';
+import {
+  historyGroupForSource,
+  wikiContract,
+} from '../../scripts/wiki/wiki-contract.mjs';
 
 const { data } = Astro.locals.starlightRoute.entry;
 const audience = data.audience
@@ -16,6 +19,13 @@ const title = data.title;
 const description = data.description;
 const diagramPath = data.diagram;
 const isArticle = !String(data.source_path || '').startsWith('virtual:');
+const historyGroup = historyGroupForSource(data.source_path);
+const pageStatus = historyGroup
+  ? 'Historical'
+  : `${data.status || wikiContract.defaults.status}`.replace(
+    /^./,
+    (character) => character.toUpperCase(),
+  );
 const diagramRoot = path.resolve(process.cwd(), wikiContract.paths.diagramRoot);
 const resolvedDiagramPath = path.resolve(process.cwd(), diagramPath);
 
@@ -45,6 +55,10 @@ const withBase = (route) => `${basePrefix}${route.startsWith('/') ? route : `/${
 
 <header class="article-header" data-article-header>
   <p class="article-kicker">{audienceLabel} guide · {sectionLabel}</p>
+  <p class="article-status" data-page-status={pageStatus.toLowerCase()}>
+    <span>Page status: {pageStatus}</span>
+    {historyGroup && <span>History group: {historyGroup.label}</span>}
+  </p>
   <h1 id="_top">{title}</h1>
   <p class="article-description">{description}</p>
 </header>
@@ -125,6 +139,27 @@ const withBase = (route) => `${basePrefix}${route.startsWith('/') ? route : `/${
       font-weight: 750;
       letter-spacing: 0.08em;
       text-transform: uppercase;
+    }
+
+    .article-status {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--wiki-space-2);
+      margin: 0;
+      color: var(--wiki-color-text-muted);
+      font-size: var(--wiki-type-xs);
+      font-weight: 700;
+    }
+
+    .article-status span {
+      padding: var(--wiki-space-1) var(--wiki-space-3);
+      border: 1px solid var(--wiki-color-border);
+      border-radius: 999px;
+      background: var(--wiki-color-surface-raised);
+    }
+
+    .article-status[data-page-status='historical'] span:first-child {
+      border-color: var(--wiki-color-control);
     }
 
     h1 {

@@ -1,6 +1,9 @@
 ---
 import { getCollection } from 'astro:content';
-import { wikiContract } from '../../scripts/wiki/wiki-contract.mjs';
+import {
+  historyGroupForSource,
+  wikiContract,
+} from '../../scripts/wiki/wiki-contract.mjs';
 
 const { data } = Astro.locals.starlightRoute.entry;
 const pathname = Astro.url.pathname;
@@ -18,23 +21,15 @@ const sectionEntries = (await getCollection('docs'))
     && entry.data.status !== 'obsolete')
   .sort((left, right) =>
     left.data.order - right.data.order || left.data.title.localeCompare(right.data.title));
-const historicalRoots = [
-  { id: 'updates', label: 'Updates' },
-  { id: 'archive', label: 'Archive' },
-  { id: 'reports', label: 'Reports' },
-  { id: 'ios', label: 'iOS notes' },
-];
-const sourceRoot = (entry) => {
-  const [root] = entry.data.source_path.split('/');
-  return entry.data.source_path.includes('/') ? root : 'root';
-};
 const currentEntries = sectionEntries.filter(
-  (entry) => !historicalRoots.some((group) => group.id === sourceRoot(entry)),
+  (entry) => !historyGroupForSource(entry.data.source_path),
 );
-const historyGroups = historicalRoots
+const historyGroups = wikiContract.history.groups
   .map((group) => ({
     ...group,
-    entries: sectionEntries.filter((entry) => sourceRoot(entry) === group.id),
+    entries: sectionEntries.filter(
+      (entry) => historyGroupForSource(entry.data.source_path)?.id === group.id,
+    ),
   }))
   .filter((group) => group.entries.length > 0);
 const withBase = (route) => `${basePrefix}${route.startsWith('/') ? route : `/${route}`}`;
@@ -96,7 +91,10 @@ const withBase = (route) => `${basePrefix}${route.startsWith('/') ? route : `/${
       <section class="history-navigation" aria-labelledby="history-navigation-title">
         <h3 id="history-navigation-title">History</h3>
         {historyGroups.map((group) => (
-          <details data-history-group={group.id}>
+          <details
+            data-history-group={group.id}
+            open={group.entries.some((entry) => activeRoute === entry.data.generated_for)}
+          >
             <summary>
               <span>{group.label}</span>
               <span class="history-count">{group.entries.length}</span>

@@ -37,10 +37,17 @@ const navigationRail = [
   { id: 'contributing', label: 'Contributing', shortLabel: 'Contribute', order: 6 },
 ];
 
+const historyGroups = [
+  { id: 'updates', label: 'Updates' },
+  { id: 'reports', label: 'Reports' },
+  { id: 'archive', label: 'Archives' },
+  { id: 'ios', label: 'Classified notes' },
+];
+
 const expertFields = ['title', 'description', 'slug', 'collection', 'section', 'status', 'order'];
 
 export const wikiContract = {
-  version: '1.3.0',
+  version: '1.4.0',
   audiences: ['simple', 'technical'],
   route: {
     root: '/',
@@ -124,6 +131,15 @@ export const wikiContract = {
   navigation: {
     collections: navigationCollections,
     rail: navigationRail,
+  },
+  history: {
+    groups: historyGroups,
+    searchFilter: {
+      key: 'history',
+      currentValue: 'current',
+      historicalValue: 'historical',
+      defaultIncludeHistory: false,
+    },
   },
   markdown: {
     fileExtension: '.md',
@@ -353,6 +369,17 @@ export function deriveStatus(frontmatter = {}) {
     || wikiContract.defaults.status;
 }
 
+export function historyGroupForSource(sourcePath) {
+  const normalized = `${sourcePath ?? ''}`.replace(/\\/g, '/').replace(/^\/+/, '');
+  return wikiContract.history.groups.find(
+    (group) => normalized === group.id || normalized.startsWith(`${group.id}/`),
+  );
+}
+
+export function isHistoricalSourcePath(sourcePath) {
+  return Boolean(historyGroupForSource(sourcePath));
+}
+
 export function deriveOrder(frontmatter = {}, fallback = wikiContract.defaults.order) {
   const rawOrder = sourceValue(frontmatter, wikiContract.frontmatter.sourceMetadata.orderKey);
   const parsed = Number.parseInt(rawOrder, 10);
@@ -374,6 +401,7 @@ export function wikiContractSnapshot() {
     statusValues: wikiContract.statusValues,
     navigationCollections: wikiContract.navigation.collections,
     navigationRail: wikiContract.navigation.rail,
+    history: wikiContract.history,
     defaults: wikiContract.defaults,
     precedence: wikiContract.frontmatter.precedence,
   };

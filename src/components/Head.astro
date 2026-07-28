@@ -1,6 +1,10 @@
 ---
 import StarlightHead from '@astrojs/starlight/components/Head.astro';
-import { publishedRoute } from '../../scripts/wiki/wiki-contract.mjs';
+import {
+  isHistoricalSourcePath,
+  publishedRoute,
+  wikiContract,
+} from '../../scripts/wiki/wiki-contract.mjs';
 
 const { data } = Astro.locals.starlightRoute.entry;
 const {
@@ -18,6 +22,9 @@ const basePrefix = configuredBase === '/'
   : `/${configuredBase.replace(/^\/+|\/+$/g, '')}`;
 const alternatePath = `${basePrefix}${publishedRoute(pairedRoute)}`;
 const alternateUrl = new URL(alternatePath, Astro.site || Astro.url);
+const historyValue = isHistoricalSourcePath(sourcePath)
+  ? wikiContract.history.searchFilter.historicalValue
+  : wikiContract.history.searchFilter.currentValue;
 ---
 
 <StarlightHead />
@@ -30,8 +37,10 @@ const alternateUrl = new URL(alternatePath, Astro.site || Astro.url);
 <meta name="nutsnews:audience" content={audience} />
 <meta name="nutsnews:collection" content={collection} />
 <meta name="nutsnews:status" content={status} />
+<meta name="nutsnews:history" content={historyValue} />
 <meta name="nutsnews:source-path" content={sourcePath} />
 <meta data-pagefind-filter="audience[content]" content={audience} />
 <meta data-pagefind-filter="collection[content]" content={collection} />
 <meta data-pagefind-filter="section[content]" content={section} />
 <meta data-pagefind-filter="status[content]" content={status} />
+<meta data-pagefind-filter="history[content]" content={historyValue} />
