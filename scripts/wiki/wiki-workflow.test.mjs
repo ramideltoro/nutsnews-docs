@@ -17,6 +17,7 @@ const requiredActions = new Set([
 const requiredCommands = [
   'npm ci',
   'npm run test:docs-prepare',
+  'npm run test:secret-safety',
   'npm run test:wiki-approvals',
   'npm run test:docs-new',
   'npm run test:content-contract',
@@ -29,7 +30,7 @@ const requiredCommands = [
   'npm run validate:content',
   'npm run test:content-routes',
   'npm run validate:links',
-  'node scripts/wiki/validate-wiki-secrets.mjs --smoke-test',
+  'npm run validate:secrets',
   'npm run validate:mermaid',
   'npm run build',
   'node scripts/wiki/validate-wiki-budgets.mjs',
