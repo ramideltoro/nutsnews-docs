@@ -234,6 +234,40 @@ export function simplePathFromSource(relPath) {
   return `${wikiContract.paths.simpleSourceRoot}/${normalizeSourcePath(relPath)}`;
 }
 
+export function validateMirrorInventory(sourcePaths, simplePaths) {
+  const errors = [];
+  const sourceSet = new Set(sourcePaths.map((sourcePath) => normalizeSourcePath(sourcePath)));
+  const simpleSet = new Set();
+  const caseInsensitiveSimplePaths = new Map();
+
+  for (const simplePath of simplePaths) {
+    const normalized = normalizeSourcePath(simplePath);
+    const key = normalized.toLowerCase();
+    if (caseInsensitiveSimplePaths.has(key)) {
+      errors.push(
+        `duplicate simple mirror: ${caseInsensitiveSimplePaths.get(key)} and ${normalized}`,
+      );
+    } else {
+      caseInsensitiveSimplePaths.set(key, normalized);
+    }
+    simpleSet.add(normalized);
+  }
+
+  for (const sourcePath of sourceSet) {
+    if (!simpleSet.has(sourcePath)) {
+      errors.push(`missing simple mirror: ${simplePathFromSource(sourcePath)}`);
+    }
+  }
+
+  for (const simplePath of simpleSet) {
+    if (!sourceSet.has(simplePath)) {
+      errors.push(`orphan simple mirror: ${simplePathFromSource(simplePath)}`);
+    }
+  }
+
+  return errors;
+}
+
 export function classifySourcePath(relPath) {
   const sourcePath = normalizeSourcePath(relPath);
   if (!sourcePath.includes('/')) {

@@ -14,6 +14,7 @@ import {
   normalizeRoute,
   publishedRoute,
   simplePathFromSource,
+  validateMirrorInventory,
   wikiContract,
   wikiContractFixtures,
   wikiContractSnapshot,
@@ -81,6 +82,23 @@ async function validateContractDefinition(errors) {
       () => classifySourcePath('unclassified/FUTURE_GUIDE.md'),
       /unclassified canonical wiki source path/,
     );
+  });
+
+  recordAssertion(errors, 'audience mirror fixtures', () => {
+    assert.deepEqual(
+      validateMirrorInventory(
+        ['ROOT.md', 'updates/NESTED.md'],
+        ['ROOT.md', 'updates/NESTED.md'],
+      ),
+      [],
+    );
+    const mirrorErrors = validateMirrorInventory(
+      ['ROOT.md', 'updates/MISSING.md'],
+      ['ROOT.md', 'orphan/EXTRA.md', 'ORPHAN/extra.md'],
+    );
+    assert.ok(mirrorErrors.some((error) => error.includes('missing simple mirror')));
+    assert.ok(mirrorErrors.some((error) => error.includes('orphan simple mirror')));
+    assert.ok(mirrorErrors.some((error) => error.includes('duplicate simple mirror')));
   });
 
   for (const fixture of wikiContractFixtures) {

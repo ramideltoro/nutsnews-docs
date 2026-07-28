@@ -11,6 +11,7 @@ import {
   deriveStatus,
   normalizeRoute,
   simplePathFromSource,
+  validateMirrorInventory,
   wikiContract,
 } from './wiki-contract.mjs';
 import { parseMarkdownFrontmatter } from './parse-markdown.mjs';
@@ -300,7 +301,10 @@ async function buildSourceInventory() {
   const sourcePaths = (await walkMarkdown(path.join(repoRoot)))
     .filter((item) => item !== 'index.md' && !item.startsWith('audiences/'))
     .sort((left, right) => left.localeCompare(right));
-  const errors = [];
+  const simplePaths = (await walkMarkdown(
+    path.join(repoRoot, wikiContract.paths.simpleSourceRoot),
+  )).sort((left, right) => left.localeCompare(right));
+  const errors = validateMirrorInventory(sourcePaths, simplePaths);
   const warnings = [];
   const seenRoutes = new Map();
   const seenSlugs = new Map();
@@ -326,7 +330,6 @@ async function buildSourceInventory() {
     const simpleSourcePath = simplePathFromSource(sourcePath);
     const simpleExists = await fileExists(simpleSourcePath);
     if (!simpleExists) {
-      errors.push(`missing simple mirror: audiences/simple/${sourcePath}`);
       continue;
     }
 
@@ -337,10 +340,16 @@ async function buildSourceInventory() {
     const simpleRoute = deriveAudienceRoute('simple', sourcePath, sourceData);
 
     if (seenRoutes.has(normalizeRoute(technicalRoute))) {
-      errors.push(`duplicate technical route: ${technicalRoute}`);
+      errors.push(
+        `duplicate technical route ${technicalRoute}: `
+          + `${seenRoutes.get(normalizeRoute(technicalRoute))} and ${sourcePath}`,
+      );
     }
     if (seenRoutes.has(normalizeRoute(simpleRoute))) {
-      errors.push(`duplicate simple route: ${simpleRoute}`);
+      errors.push(
+        `duplicate simple route ${simpleRoute}: `
+          + `${seenRoutes.get(normalizeRoute(simpleRoute))} and ${sourcePath}`,
+      );
     }
     seenRoutes.set(normalizeRoute(technicalRoute), sourcePath);
     seenRoutes.set(normalizeRoute(simpleRoute), sourcePath);
@@ -476,17 +485,19 @@ async function writeGeneratedPages(entries, candidateMap) {
       simple_route: entry.simple.route,
       source_path: entry.source.path,
       diagram: entry.diagram.path,
-      generated_for: entry.technical.route,
-      paired_route: entry.simple.route,
     };
 
     const technicalOutput = `${frontmatterText({
       ...sharedMeta,
+      audience: 'technical',
       generated_for: entry.technical.route,
+      paired_route: entry.simple.route,
     })}${technicalMarkdown}`;
     const simpleOutput = `${frontmatterText({
       ...sharedMeta,
+      audience: 'simple',
       generated_for: entry.simple.route,
+      paired_route: entry.technical.route,
     })}${simpleMarkdown}`;
 
     const technicalOut = path.join(GENERATED_DOCS_ROOT, routeToGeneratedPath('technical', entry.technical.route));

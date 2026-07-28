@@ -27,6 +27,9 @@ export default defineConfig({
     starlight({
       title: 'NutsNews Wiki',
       description: 'NutsNews technical and reader documentation',
+      components: {
+        Head: './src/components/Head.astro',
+      },
       sidebar: [
         {
           label: 'Technical',
