@@ -12,6 +12,7 @@
     "wiki:prepare": "node scripts/wiki/generate-wiki-content.mjs",
     "wiki:prepare:strict": "node scripts/wiki/generate-wiki-content.mjs --strict",
     "validate:contracts": "node scripts/wiki/validate-wiki-contracts.mjs",
+    "validate:inventory": "node scripts/wiki/validate-wiki-inventory.mjs",
     "validate:links": "node scripts/wiki/validate-link-routes.mjs",
     "validate:mermaid": "node scripts/wiki/validate-mermaid-diagrams.mjs"
   },

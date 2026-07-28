@@ -234,6 +234,22 @@ export function simplePathFromSource(relPath) {
   return `${wikiContract.paths.simpleSourceRoot}/${normalizeSourcePath(relPath)}`;
 }
 
+export function classifySourcePath(relPath) {
+  const sourcePath = normalizeSourcePath(relPath);
+  if (!sourcePath.includes('/')) {
+    return 'root';
+  }
+
+  const area = wikiContract.paths.sourceAreas.find(
+    (candidate) => candidate.prefix && sourcePath.startsWith(`${candidate.prefix}/`),
+  );
+  if (!area) {
+    throw new Error(`unclassified canonical wiki source path: ${sourcePath}`);
+  }
+
+  return area.id;
+}
+
 export function deriveAudienceRoute(audience, relPath, frontmatter = {}) {
   if (!wikiContract.audiences.includes(audience)) {
     throw new Error(`unsupported wiki audience: ${audience}`);
