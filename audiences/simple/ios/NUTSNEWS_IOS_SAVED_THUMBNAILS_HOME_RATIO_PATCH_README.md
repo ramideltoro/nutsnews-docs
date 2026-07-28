@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/ios/nutsnews-ios-saved-thumbnails-home-ratio-patch-readme/
   simple_route: /simple/ios/nutsnews-ios-saved-thumbnails-home-ratio-patch-readme/
   primary_diagram:
-    file: diagrams/ios/NUTSNEWS_IOS_SAVED_THUMBNAILS_HOME_RATIO_PATCH_README.md
+    file: diagrams/ios/NUTSNEWS_IOS_SAVED_THUMBNAILS_HOME_RATIO_PATCH_README.mmd
     accTitle: "NutsNews iOS — Saved Stories Thumbnail Ratio Patch diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

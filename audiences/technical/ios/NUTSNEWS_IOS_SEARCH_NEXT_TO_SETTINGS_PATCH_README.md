@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/ios/nutsnews-ios-search-next-to-settings-patch-readme/
   simple_route: /simple/ios/nutsnews-ios-search-next-to-settings-patch-readme/
   primary_diagram:
-    file: diagrams/ios/NUTSNEWS_IOS_SEARCH_NEXT_TO_SETTINGS_PATCH_README.md
+    file: diagrams/ios/NUTSNEWS_IOS_SEARCH_NEXT_TO_SETTINGS_PATCH_README.mmd
     accTitle: "NutsNews iOS Search Button Next to Settings Patch diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/archive/root-cleanup/nutsnews-github-actions-update-readme/
   simple_route: /simple/archive/root-cleanup/nutsnews-github-actions-update-readme/
   primary_diagram:
-    file: diagrams/archive/root-cleanup/NUTSNEWS_GITHUB_ACTIONS_UPDATE_README.md
+    file: diagrams/archive/root-cleanup/NUTSNEWS_GITHUB_ACTIONS_UPDATE_README.mmd
     accTitle: "NutsNews GitHub Actions Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

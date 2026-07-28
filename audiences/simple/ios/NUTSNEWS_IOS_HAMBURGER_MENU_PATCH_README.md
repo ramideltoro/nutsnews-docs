@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/ios/nutsnews-ios-hamburger-menu-patch-readme/
   simple_route: /simple/ios/nutsnews-ios-hamburger-menu-patch-readme/
   primary_diagram:
-    file: diagrams/ios/NUTSNEWS_IOS_HAMBURGER_MENU_PATCH_README.md
+    file: diagrams/ios/NUTSNEWS_IOS_HAMBURGER_MENU_PATCH_README.mmd
     accTitle: "NutsNews iOS Hamburger Menu Patch diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

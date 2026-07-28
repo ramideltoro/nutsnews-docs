@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/archive/readme-nutsnews-worker-offline-e2e-fix/
   simple_route: /simple/archive/readme-nutsnews-worker-offline-e2e-fix/
   primary_diagram:
-    file: diagrams/archive/README-NUTSNEWS-WORKER-OFFLINE-E2E-FIX.md
+    file: diagrams/archive/README-NUTSNEWS-WORKER-OFFLINE-E2E-FIX.mmd
     accTitle: "NutsNews Worker Offline E2E Fix diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

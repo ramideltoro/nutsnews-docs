@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/ios/nutsnews-ios-persistent-likes-update-readme/
   simple_route: /simple/ios/nutsnews-ios-persistent-likes-update-readme/
   primary_diagram:
-    file: diagrams/ios/NUTSNEWS_IOS_PERSISTENT_LIKES_UPDATE_README.md
+    file: diagrams/ios/NUTSNEWS_IOS_PERSISTENT_LIKES_UPDATE_README.mmd
     accTitle: "NutsNews iOS Persistent Likes Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

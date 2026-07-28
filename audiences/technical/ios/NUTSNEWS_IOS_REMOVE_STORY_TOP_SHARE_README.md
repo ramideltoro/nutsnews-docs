@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/ios/nutsnews-ios-remove-story-top-share-readme/
   simple_route: /simple/ios/nutsnews-ios-remove-story-top-share-readme/
   primary_diagram:
-    file: diagrams/ios/NUTSNEWS_IOS_REMOVE_STORY_TOP_SHARE_README.md
+    file: diagrams/ios/NUTSNEWS_IOS_REMOVE_STORY_TOP_SHARE_README.mmd
     accTitle: "NutsNews iOS Remove Story Top Share Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

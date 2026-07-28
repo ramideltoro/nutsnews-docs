@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/ios/nutsnews-ios-ipad-landscape-story-no-scroll-update-readme/
   simple_route: /simple/ios/nutsnews-ios-ipad-landscape-story-no-scroll-update-readme/
   primary_diagram:
-    file: diagrams/ios/NUTSNEWS_IOS_IPAD_LANDSCAPE_STORY_NO_SCROLL_UPDATE_README.md
+    file: diagrams/ios/NUTSNEWS_IOS_IPAD_LANDSCAPE_STORY_NO_SCROLL_UPDATE_README.mmd
     accTitle: "NutsNews iOS iPad Landscape Story No-Scroll Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/reports/nutsnews-issue-282-final-audit/
   simple_route: /simple/reports/nutsnews-issue-282-final-audit/
   primary_diagram:
-    file: diagrams/reports/translations/nutsnews-issue-282-final-audit.md
+    file: diagrams/reports/translations/nutsnews-issue-282-final-audit.mmd
     accTitle: "NutsNews issue #282 final translation backfill audit diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

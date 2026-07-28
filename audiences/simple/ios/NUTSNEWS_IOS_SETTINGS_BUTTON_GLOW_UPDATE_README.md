@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/ios/nutsnews-ios-settings-button-glow-update-readme/
   simple_route: /simple/ios/nutsnews-ios-settings-button-glow-update-readme/
   primary_diagram:
-    file: diagrams/ios/NUTSNEWS_IOS_SETTINGS_BUTTON_GLOW_UPDATE_README.md
+    file: diagrams/ios/NUTSNEWS_IOS_SETTINGS_BUTTON_GLOW_UPDATE_README.mmd
     accTitle: "NutsNews iOS Settings Button Glow Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

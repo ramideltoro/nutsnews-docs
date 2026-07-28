@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/archive/nutsnews-production-infinite-scroll-fix-readme/
   simple_route: /simple/archive/nutsnews-production-infinite-scroll-fix-readme/
   primary_diagram:
-    file: diagrams/archive/NUTSNEWS_PRODUCTION_INFINITE_SCROLL_FIX_README.md
+    file: diagrams/archive/NUTSNEWS_PRODUCTION_INFINITE_SCROLL_FIX_README.mmd
     accTitle: "NutsNews Production Infinite Scroll Fix diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

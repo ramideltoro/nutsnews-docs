@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/archive/root-cleanup/nutsnews-turnstile-update-readme/
   simple_route: /simple/archive/root-cleanup/nutsnews-turnstile-update-readme/
   primary_diagram:
-    file: diagrams/archive/root-cleanup/NUTSNEWS_TURNSTILE_UPDATE_README.md
+    file: diagrams/archive/root-cleanup/NUTSNEWS_TURNSTILE_UPDATE_README.mmd
     accTitle: "NutsNews Cloudflare Turnstile Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

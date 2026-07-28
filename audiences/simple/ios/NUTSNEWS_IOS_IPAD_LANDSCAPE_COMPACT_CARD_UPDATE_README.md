@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/ios/nutsnews-ios-ipad-landscape-compact-card-update-readme/
   simple_route: /simple/ios/nutsnews-ios-ipad-landscape-compact-card-update-readme/
   primary_diagram:
-    file: diagrams/ios/NUTSNEWS_IOS_IPAD_LANDSCAPE_COMPACT_CARD_UPDATE_README.md
+    file: diagrams/ios/NUTSNEWS_IOS_IPAD_LANDSCAPE_COMPACT_CARD_UPDATE_README.mmd
     accTitle: "NutsNews iOS iPad Landscape Compact Card Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/ios/nutsnews-ios-ipad-settings-fullscreen-update-readme/
   simple_route: /simple/ios/nutsnews-ios-ipad-settings-fullscreen-update-readme/
   primary_diagram:
-    file: diagrams/ios/NUTSNEWS_IOS_IPAD_SETTINGS_FULLSCREEN_UPDATE_README.md
+    file: diagrams/ios/NUTSNEWS_IOS_IPAD_SETTINGS_FULLSCREEN_UPDATE_README.mmd
     accTitle: "NutsNews iOS iPad Settings Fullscreen Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active
