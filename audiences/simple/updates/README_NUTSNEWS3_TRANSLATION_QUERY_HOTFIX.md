@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-nutsnews3-translation-query-hotfix/
   simple_route: /simple/updates/readme-nutsnews3-translation-query-hotfix/
   primary_diagram:
-    file: diagrams/updates/README_NUTSNEWS3_TRANSLATION_QUERY_HOTFIX.md
+    file: diagrams/updates/README_NUTSNEWS3_TRANSLATION_QUERY_HOTFIX.mmd
     accTitle: "NutsNews3 translation diagnostics query hotfix diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

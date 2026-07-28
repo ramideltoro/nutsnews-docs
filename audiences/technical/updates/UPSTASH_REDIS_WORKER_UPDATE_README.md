@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/upstash-redis-worker-update-readme/
   simple_route: /simple/updates/upstash-redis-worker-update-readme/
   primary_diagram:
-    file: diagrams/updates/UPSTASH_REDIS_WORKER_UPDATE_README.md
+    file: diagrams/updates/UPSTASH_REDIS_WORKER_UPDATE_README.mmd
     accTitle: "NutsNews Worker Upstash Redis Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

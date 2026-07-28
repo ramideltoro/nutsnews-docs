@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-translation-diagnostics-update/
   simple_route: /simple/updates/readme-translation-diagnostics-update/
   primary_diagram:
-    file: diagrams/updates/README_TRANSLATION_DIAGNOSTICS_UPDATE.md
+    file: diagrams/updates/README_TRANSLATION_DIAGNOSTICS_UPDATE.mmd
     accTitle: "NutsNews Translation Diagnostics Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

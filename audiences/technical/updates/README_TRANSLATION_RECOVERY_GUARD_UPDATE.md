@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-translation-recovery-guard-update/
   simple_route: /simple/updates/readme-translation-recovery-guard-update/
   primary_diagram:
-    file: diagrams/updates/README_TRANSLATION_RECOVERY_GUARD_UPDATE.md
+    file: diagrams/updates/README_TRANSLATION_RECOVERY_GUARD_UPDATE.mmd
     accTitle: "NutsNews Translation Recovery Guard Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

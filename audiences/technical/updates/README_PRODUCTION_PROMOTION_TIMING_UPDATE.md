@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-production-promotion-timing-update/
   simple_route: /simple/updates/readme-production-promotion-timing-update/
   primary_diagram:
-    file: diagrams/updates/README_PRODUCTION_PROMOTION_TIMING_UPDATE.md
+    file: diagrams/updates/README_PRODUCTION_PROMOTION_TIMING_UPDATE.mmd
     accTitle: "Production Promotion Timing Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

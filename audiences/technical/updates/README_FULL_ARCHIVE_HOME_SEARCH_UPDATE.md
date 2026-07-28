@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-full-archive-home-search-update/
   simple_route: /simple/updates/readme-full-archive-home-search-update/
   primary_diagram:
-    file: diagrams/updates/README_FULL_ARCHIVE_HOME_SEARCH_UPDATE.md
+    file: diagrams/updates/README_FULL_ARCHIVE_HOME_SEARCH_UPDATE.mmd
     accTitle: "NutsNews full archive home search update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

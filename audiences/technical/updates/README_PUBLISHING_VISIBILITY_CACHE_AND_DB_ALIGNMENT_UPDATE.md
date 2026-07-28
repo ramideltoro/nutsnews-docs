@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-publishing-visibility-cache-and-db-alignment-update/
   simple_route: /simple/updates/readme-publishing-visibility-cache-and-db-alignment-update/
   primary_diagram:
-    file: diagrams/updates/README_PUBLISHING_VISIBILITY_CACHE_AND_DB_ALIGNMENT_UPDATE.md
+    file: diagrams/updates/README_PUBLISHING_VISIBILITY_CACHE_AND_DB_ALIGNMENT_UPDATE.mmd
     accTitle: "Publishing Visibility Cache And DB Alignment Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

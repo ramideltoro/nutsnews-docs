@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-vercel-production-build-shell-env-fix/
   simple_route: /simple/updates/readme-vercel-production-build-shell-env-fix/
   primary_diagram:
-    file: diagrams/updates/README_VERCEL_PRODUCTION_BUILD_SHELL_ENV_FIX.md
+    file: diagrams/updates/README_VERCEL_PRODUCTION_BUILD_SHELL_ENV_FIX.mmd
     accTitle: "Vercel Production Build Shell Env, Remote Staging, and Bypass Smoke Fix diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

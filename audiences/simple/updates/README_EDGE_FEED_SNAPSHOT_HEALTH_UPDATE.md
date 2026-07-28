@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-edge-feed-snapshot-health-update/
   simple_route: /simple/updates/readme-edge-feed-snapshot-health-update/
   primary_diagram:
-    file: diagrams/updates/README_EDGE_FEED_SNAPSHOT_HEALTH_UPDATE.md
+    file: diagrams/updates/README_EDGE_FEED_SNAPSHOT_HEALTH_UPDATE.mmd
     accTitle: "Edge Feed Snapshot Health Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-home-search-box-layout-patch/
   simple_route: /simple/updates/readme-home-search-box-layout-patch/
   primary_diagram:
-    file: diagrams/updates/README_HOME_SEARCH_BOX_LAYOUT_PATCH.md
+    file: diagrams/updates/README_HOME_SEARCH_BOX_LAYOUT_PATCH.mmd
     accTitle: "NutsNews Home Search Box Layout Patch diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

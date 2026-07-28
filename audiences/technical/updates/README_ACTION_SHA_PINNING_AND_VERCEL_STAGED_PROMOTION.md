@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-action-sha-pinning-and-vercel-staged-promotion/
   simple_route: /simple/updates/readme-action-sha-pinning-and-vercel-staged-promotion/
   primary_diagram:
-    file: diagrams/updates/README_ACTION_SHA_PINNING_AND_VERCEL_STAGED_PROMOTION.md
+    file: diagrams/updates/README_ACTION_SHA_PINNING_AND_VERCEL_STAGED_PROMOTION.mmd
     accTitle: "GitHub Actions SHA Pinning and Vercel Staged Promotion diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

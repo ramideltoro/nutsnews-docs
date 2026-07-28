@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-vps-release-smoke-health-target-fix/
   simple_route: /simple/updates/readme-vps-release-smoke-health-target-fix/
   primary_diagram:
-    file: diagrams/updates/README_VPS_RELEASE_SMOKE_HEALTH_TARGET_FIX.md
+    file: diagrams/updates/README_VPS_RELEASE_SMOKE_HEALTH_TARGET_FIX.mmd
     accTitle: "VPS Release Smoke Health Target Fix diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

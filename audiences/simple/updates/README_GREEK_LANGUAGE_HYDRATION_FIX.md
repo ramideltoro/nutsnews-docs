@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-greek-language-hydration-fix/
   simple_route: /simple/updates/readme-greek-language-hydration-fix/
   primary_diagram:
-    file: diagrams/updates/README_GREEK_LANGUAGE_HYDRATION_FIX.md
+    file: diagrams/updates/README_GREEK_LANGUAGE_HYDRATION_FIX.mmd
     accTitle: "Greek language hydration fix diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

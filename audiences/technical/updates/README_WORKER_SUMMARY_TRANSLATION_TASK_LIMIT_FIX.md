@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-worker-summary-translation-task-limit-fix/
   simple_route: /simple/updates/readme-worker-summary-translation-task-limit-fix/
   primary_diagram:
-    file: diagrams/updates/README_WORKER_SUMMARY_TRANSLATION_TASK_LIMIT_FIX.md
+    file: diagrams/updates/README_WORKER_SUMMARY_TRANSLATION_TASK_LIMIT_FIX.mmd
     accTitle: "Worker summary translation task limit fix diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

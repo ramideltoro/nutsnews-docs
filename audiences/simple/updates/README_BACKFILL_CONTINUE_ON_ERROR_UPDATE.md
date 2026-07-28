@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-backfill-continue-on-error-update/
   simple_route: /simple/updates/readme-backfill-continue-on-error-update/
   primary_diagram:
-    file: diagrams/updates/README_BACKFILL_CONTINUE_ON_ERROR_UPDATE.md
+    file: diagrams/updates/README_BACKFILL_CONTINUE_ON_ERROR_UPDATE.mmd
     accTitle: "NutsNews backfill continue-on-error update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

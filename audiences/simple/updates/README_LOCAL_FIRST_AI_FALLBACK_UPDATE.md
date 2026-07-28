@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-local-first-ai-fallback-update/
   simple_route: /simple/updates/readme-local-first-ai-fallback-update/
   primary_diagram:
-    file: diagrams/updates/README_LOCAL_FIRST_AI_FALLBACK_UPDATE.md
+    file: diagrams/updates/README_LOCAL_FIRST_AI_FALLBACK_UPDATE.mmd
     accTitle: "NutsNews local-first AI fallback update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

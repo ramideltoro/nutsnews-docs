@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-lockstep-vps-vercel-pipeline-update/
   simple_route: /simple/updates/readme-lockstep-vps-vercel-pipeline-update/
   primary_diagram:
-    file: diagrams/updates/README_LOCKSTEP_VPS_VERCEL_PIPELINE_UPDATE.md
+    file: diagrams/updates/README_LOCKSTEP_VPS_VERCEL_PIPELINE_UPDATE.mmd
     accTitle: "VPS and Vercel Production Lockstep Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active
