@@ -1,0 +1,247 @@
+---
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
+import { wikiContract } from '../../scripts/wiki/wiki-contract.mjs';
+
+const { data } = Astro.locals.starlightRoute.entry;
+const audience = data.audience
+  || (Astro.url.pathname === '/technical/' || Astro.url.pathname.startsWith('/technical/')
+    ? 'technical'
+    : 'simple');
+const audienceLabel = audience === 'technical' ? 'Technical' : 'Simple';
+const section = data.section || wikiContract.defaults.section;
+const sectionConfig = wikiContract.navigation.rail.find((item) => item.id === section);
+const sectionLabel = sectionConfig?.label || 'Overview';
+const title = data.title;
+const description = data.description;
+const diagramPath = data.diagram;
+const isArticle = !String(data.source_path || '').startsWith('virtual:');
+const diagramRoot = path.resolve(process.cwd(), wikiContract.paths.diagramRoot);
+const resolvedDiagramPath = path.resolve(process.cwd(), diagramPath);
+
+if (
+  isArticle
+  && resolvedDiagramPath !== diagramRoot
+  && !resolvedDiagramPath.startsWith(`${diagramRoot}${path.sep}`)
+) {
+  throw new Error(`Article diagram must be inside ${wikiContract.paths.diagramRoot}: ${diagramPath}`);
+}
+
+const diagramSource = isArticle ? await fs.readFile(resolvedDiagramPath, 'utf8') : '';
+const base = import.meta.env.BASE_URL || '/';
+const basePrefix = base === '/' ? '' : `/${base.replace(/^\/+|\/+$/g, '')}`;
+const withBase = (route) => `${basePrefix}${route.startsWith('/') ? route : `/${route}`}`;
+---
+
+<nav class="article-breadcrumbs" aria-label="Breadcrumb">
+  <ol>
+    <li><a href={withBase(`/${audience}/`)}>{audienceLabel}</a></li>
+    <li>
+      <a href={withBase(`/${audience}/collections/${section}/`)}>{sectionLabel}</a>
+    </li>
+    <li aria-current="page">{title}</li>
+  </ol>
+</nav>
+
+<header class="article-header" data-article-header>
+  <p class="article-kicker">{audienceLabel} guide · {sectionLabel}</p>
+  <h1 id="_top">{title}</h1>
+  <p class="article-description">{description}</p>
+</header>
+
+{
+  isArticle && (
+    <section
+      class="diagram-slot"
+      aria-labelledby="primary-diagram-title"
+      data-wiki-diagram-slot
+      data-diagram-source-path={diagramPath}
+    >
+      <div class="diagram-slot-heading">
+        <div>
+          <p class="diagram-kicker">Visual overview</p>
+          <h2 id="primary-diagram-title">Primary diagram</h2>
+        </div>
+        <span class="diagram-status">System map</span>
+      </div>
+      <div class="diagram-stage" data-wiki-diagram-stage>
+        <div class="diagram-placeholder" aria-hidden="true">
+          <span></span>
+          <i></i>
+          <span></span>
+          <i></i>
+          <span></span>
+        </div>
+        <p>Explore the article’s system flow before reading the implementation details.</p>
+      </div>
+      <pre hidden data-wiki-mermaid-source><code>{diagramSource}</code></pre>
+    </section>
+  )
+}
+
+<style>
+  @layer starlight.core {
+    .article-breadcrumbs {
+      color: var(--wiki-color-text-muted);
+      font-size: var(--wiki-type-xs);
+    }
+
+    .article-breadcrumbs ol {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--wiki-space-2);
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .article-breadcrumbs li {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .article-breadcrumbs li + li::before {
+      margin-inline-end: var(--wiki-space-2);
+      color: var(--wiki-color-border);
+      content: "/";
+    }
+
+    .article-breadcrumbs a {
+      color: var(--wiki-color-link);
+      text-underline-offset: 0.18em;
+    }
+
+    .article-header {
+      display: grid;
+      gap: var(--wiki-space-3);
+      margin-top: var(--wiki-space-5);
+    }
+
+    .article-kicker,
+    .diagram-kicker {
+      margin: 0;
+      color: var(--wiki-color-text-muted);
+      font-size: var(--wiki-type-xs);
+      font-weight: 750;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 18ch;
+      margin: 0;
+      color: var(--wiki-color-text);
+      font-family: var(--wiki-font-display);
+      font-size: var(--wiki-type-display);
+      font-weight: 700;
+      line-height: var(--wiki-leading-tight);
+      overflow-wrap: anywhere;
+    }
+
+    .article-description {
+      max-width: 68ch;
+      margin: 0;
+      color: var(--wiki-color-text-muted);
+      font-size: var(--wiki-type-lg);
+      line-height: 1.6;
+      overflow-wrap: anywhere;
+    }
+
+    .diagram-slot {
+      display: grid;
+      gap: var(--wiki-space-4);
+      margin-top: var(--wiki-space-6);
+      padding: var(--wiki-space-5);
+      border: 1px solid var(--wiki-diagram-border);
+      border-radius: var(--wiki-radius-lg);
+      background:
+        radial-gradient(circle at 88% 12%, color-mix(in srgb, var(--wiki-diagram-accent) 16%, transparent), transparent 34%),
+        var(--wiki-diagram-background);
+      color: var(--wiki-diagram-text);
+      overflow: clip;
+    }
+
+    .diagram-slot-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--wiki-space-4);
+    }
+
+    .diagram-slot h2 {
+      margin: var(--wiki-space-1) 0 0;
+      color: var(--wiki-diagram-text);
+      font-size: var(--wiki-type-xl);
+    }
+
+    .diagram-status {
+      flex: 0 0 auto;
+      padding: var(--wiki-space-1) var(--wiki-space-3);
+      border: 1px solid var(--wiki-diagram-border);
+      border-radius: 999px;
+      color: var(--wiki-diagram-text);
+      font-size: var(--wiki-type-xs);
+      font-weight: 700;
+    }
+
+    .diagram-stage {
+      display: grid;
+      place-items: center;
+      gap: var(--wiki-space-4);
+      min-height: 11rem;
+      padding: var(--wiki-space-5);
+      border: 1px dashed var(--wiki-diagram-edge);
+      border-radius: var(--wiki-radius-md);
+      background: var(--wiki-diagram-surface);
+      text-align: center;
+    }
+
+    .diagram-stage p {
+      max-width: 42ch;
+      margin: 0;
+      color: var(--wiki-diagram-text);
+      font-size: var(--wiki-type-sm);
+    }
+
+    .diagram-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: min(100%, 24rem);
+    }
+
+    .diagram-placeholder span {
+      width: 3rem;
+      height: 2rem;
+      border: 2px solid var(--wiki-diagram-border);
+      border-radius: var(--wiki-radius-sm);
+      background: var(--wiki-diagram-background);
+    }
+
+    .diagram-placeholder i {
+      flex: 1 1 2rem;
+      height: 2px;
+      background: var(--wiki-diagram-edge);
+    }
+
+    @media (max-width: 30rem) {
+      .diagram-slot {
+        padding: var(--wiki-space-4);
+      }
+
+      .diagram-slot-heading {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .diagram-status {
+        align-self: flex-start;
+      }
+
+      .diagram-stage {
+        min-height: 9rem;
+        padding: var(--wiki-space-4);
+      }
+    }
+  }
+</style>

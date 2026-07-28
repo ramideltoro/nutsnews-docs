@@ -1,0 +1,102 @@
+---
+import { getCollection } from 'astro:content';
+
+const { data } = Astro.locals.starlightRoute.entry;
+const audience = data.audience;
+const section = data.section;
+const currentRoute = data.generated_for;
+const base = import.meta.env.BASE_URL || '/';
+const basePrefix = base === '/' ? '' : `/${base.replace(/^\/+|\/+$/g, '')}`;
+const withBase = (route) => `${basePrefix}${route.startsWith('/') ? route : `/${route}`}`;
+const articles = (await getCollection('docs'))
+  .filter((entry) =>
+    entry.data.audience === audience
+    && entry.data.section === section
+    && entry.data.status !== 'obsolete')
+  .sort((left, right) =>
+    left.data.order - right.data.order || left.data.title.localeCompare(right.data.title));
+const currentIndex = articles.findIndex((entry) => entry.data.generated_for === currentRoute);
+const previous = currentIndex > 0 ? articles[currentIndex - 1] : undefined;
+const next = currentIndex >= 0 && currentIndex < articles.length - 1
+  ? articles[currentIndex + 1]
+  : undefined;
+---
+
+{
+  (previous || next) && (
+    <nav class="article-pagination print:hidden" aria-label="Article navigation">
+      {previous ? (
+        <a href={`${withBase(previous.data.generated_for)}/`} rel="prev">
+          <span class="direction"><span aria-hidden="true">←</span> Previous article</span>
+          <strong>{previous.data.title}</strong>
+        </a>
+      ) : <span></span>}
+      {next && (
+        <a href={`${withBase(next.data.generated_for)}/`} rel="next">
+          <span class="direction">Next article <span aria-hidden="true">→</span></span>
+          <strong>{next.data.title}</strong>
+        </a>
+      )}
+    </nav>
+  )
+}
+
+<style>
+  @layer starlight.core {
+    .article-pagination {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--wiki-space-4);
+      margin-top: var(--wiki-space-7);
+      padding-top: var(--wiki-space-5);
+      border-top: 1px solid var(--wiki-color-border);
+    }
+
+    a {
+      display: grid;
+      align-content: start;
+      gap: var(--wiki-space-2);
+      min-width: 0;
+      min-height: calc(var(--wiki-touch-target) * 2);
+      padding: var(--wiki-space-4);
+      border: 1px solid var(--wiki-color-border);
+      border-radius: var(--wiki-radius-md);
+      color: var(--wiki-color-text);
+      background: var(--wiki-color-surface);
+      text-decoration: none;
+      overflow-wrap: anywhere;
+    }
+
+    a:hover {
+      border-color: var(--wiki-color-link);
+      background: var(--wiki-color-surface-raised);
+    }
+
+    a[rel="next"] {
+      text-align: end;
+    }
+
+    .direction {
+      color: var(--wiki-color-link);
+      font-size: var(--wiki-type-xs);
+      font-weight: 750;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    strong {
+      font-size: var(--wiki-type-base);
+      line-height: 1.4;
+    }
+
+    @media (max-width: 30rem) {
+      .article-pagination {
+        grid-template-columns: 1fr;
+      }
+
+      .article-pagination > span:empty {
+        display: none;
+      }
+    }
+  }
+</style>
