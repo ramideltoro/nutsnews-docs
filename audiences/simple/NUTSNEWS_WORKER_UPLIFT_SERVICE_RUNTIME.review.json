@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "state": "unreviewed",
+  "publishing": "blocked",
+  "generated_at": "2026-07-28T21:20:44.036Z",
+  "generator": {
+    "provider": "openai",
+    "api": "responses",
+    "model": "gpt-5.4-mini-2026-03-17",
+    "store": false
+  },
+  "source": {
+    "path": "NUTSNEWS_WORKER_UPLIFT_SERVICE_RUNTIME.md",
+    "sha256": "d0de67f2d72af5b6d3bda6d8385d69f8df4f966a089c2c41934789ded501ab2f"
+  },
+  "artifacts": {
+    "simple_markdown": "audiences/simple/NUTSNEWS_WORKER_UPLIFT_SERVICE_RUNTIME.md",
+    "primary_diagram": "diagrams/NUTSNEWS_WORKER_UPLIFT_SERVICE_RUNTIME.mmd",
+    "review_manifest": "audiences/simple/NUTSNEWS_WORKER_UPLIFT_SERVICE_RUNTIME.review.json"
+  },
+  "accessibility": {
+    "title": "Worker runtime guardrail flow",
+    "description": "The diagram shows the backend installing the worker runtime in shadow mode, validating manifests, restricting scoped Worker DB commands, and only allowing production actions after cutover gates are met. If the gates are not met, production writes stay off and legacy ingestion remains the owner."
+  },
+  "review_notes": [
+    "Verify the approval metadata in the canonical source is not to be published verbatim if publication rules require a fresh review despite the source marking itself approved.",
+    "Confirm the canonical backend runbook path and all GitHub Actions run URLs are still valid and intended for reader-facing publication.",
+    "Check whether the implementation status wording should remain \"implemented for ramideltoro/nutsnews-worker#85 on 2026-07-23\" or be updated by editorial policy.",
+    "Verify the exact set of protected manager actions and environment variable names against the live backend runbook before publishing.",
+    "Confirm the telemetry restrictions and the deferred Tempo/OTLP wording still match current backend policy.",
+    "Review whether the Recovery section's operational steps and gate names match the current production procedures exactly."
+  ]
+}
