@@ -1,0 +1,117 @@
+---
+import { Icon } from '@astrojs/starlight/components';
+---
+
+<starlight-menu-button class="menu-toggle print:hidden" aria-expanded="false">
+  <button
+    aria-expanded="false"
+    aria-label="Menu"
+    aria-controls="starlight__sidebar"
+    class="sl-flex md:sl-hidden"
+    type="button"
+  >
+    <Icon name="bars" class="open-menu" />
+    <Icon name="close" class="close-menu" />
+  </button>
+</starlight-menu-button>
+
+<script>
+  class NutsNewsMenuButton extends HTMLElement {
+    btn = this.querySelector('button');
+    pageScroll = 0;
+    sidebarScroll = 0;
+
+    constructor() {
+      super();
+      this.btn?.addEventListener('click', () => this.setExpanded(!this.expanded));
+      this.closest('nav')?.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && this.expanded) {
+          event.preventDefault();
+          this.setExpanded(false);
+        }
+      });
+      matchMedia('(min-width: 50em)').addEventListener('change', () => {
+        if (this.expanded) this.setExpanded(false);
+      });
+    }
+
+    get expanded() {
+      return this.btn?.getAttribute('aria-expanded') === 'true';
+    }
+
+    setExpanded(expanded) {
+      const sidebar = document.getElementById('starlight__sidebar');
+      if (expanded) {
+        this.pageScroll = window.scrollY;
+        this.sidebarScroll = sidebar?.scrollTop || 0;
+      }
+
+      this.toggleAttribute('data-expanded', expanded);
+      this.setAttribute('aria-expanded', String(expanded));
+      this.btn?.setAttribute('aria-expanded', String(expanded));
+      document.body.toggleAttribute('data-mobile-menu-expanded', expanded);
+      document.querySelectorAll('.main-frame, .sl-skip-link').forEach((element) => {
+        element.toggleAttribute('inert', expanded);
+      });
+
+      if (!expanded) {
+        if (sidebar) sidebar.scrollTop = this.sidebarScroll;
+        window.scrollTo({ top: this.pageScroll, behavior: 'instant' });
+        this.btn?.focus({ preventScroll: true });
+      }
+    }
+  }
+
+  if (!customElements.get('starlight-menu-button')) {
+    customElements.define('starlight-menu-button', NutsNewsMenuButton);
+  }
+</script>
+
+<style>
+  @layer starlight.core {
+    button {
+      position: fixed;
+      z-index: var(--sl-z-index-navbar);
+      top: calc((var(--sl-nav-height) - var(--wiki-touch-target)) / 2);
+      inset-inline-end: var(--sl-nav-pad-x);
+      display: inline-grid;
+      place-items: center;
+      width: var(--wiki-touch-target);
+      height: var(--wiki-touch-target);
+      padding: var(--wiki-space-2);
+      border: 1px solid var(--wiki-color-border);
+      border-radius: 50%;
+      color: var(--wiki-color-control-text);
+      background: var(--wiki-color-control);
+      box-shadow: var(--sl-shadow-md);
+      cursor: pointer;
+    }
+
+    .menu-toggle[data-expanded] button {
+      color: var(--wiki-color-text);
+      background: var(--wiki-color-surface-raised);
+      box-shadow: none;
+    }
+
+    .menu-toggle[data-expanded] .open-menu,
+    .menu-toggle:not([data-expanded]) .close-menu {
+      display: none;
+    }
+  }
+</style>
+
+<style is:global>
+  @layer starlight.core {
+    body[data-mobile-menu-expanded] {
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    @media (min-width: 50rem) {
+      body[data-mobile-menu-expanded] {
+        overflow: auto;
+        touch-action: auto;
+      }
+    }
+  }
+</style>
