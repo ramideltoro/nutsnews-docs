@@ -1,0 +1,159 @@
+---
+import Pagination from 'virtual:starlight/components/Pagination';
+import { sourceMetadataForPage } from '../../scripts/wiki/source-metadata.mjs';
+
+const { data } = Astro.locals.starlightRoute.entry;
+const metadata = await sourceMetadataForPage({
+  audience: data.audience,
+  canonicalSourcePath: data.source_path,
+  sourceStatus: data.status,
+});
+const formattedDate = metadata
+  ? new Intl.DateTimeFormat('en', {
+      dateStyle: 'medium',
+      timeZone: 'UTC',
+    }).format(new Date(metadata.lastUpdated))
+  : '';
+---
+
+<footer class="wiki-footer sl-flex">
+  {
+    metadata && (
+      <section class="source-metadata" aria-labelledby="source-metadata-title" data-source-metadata>
+        <div class="source-heading">
+          <div>
+            <p class="source-kicker">Repository source</p>
+            <h2 id="source-metadata-title">Verify or improve this page</h2>
+          </div>
+          <a href={metadata.editUrl} data-edit-source>
+            Edit on GitHub
+          </a>
+        </div>
+        <dl>
+          <div>
+            <dt>Source</dt>
+            <dd><code data-source-path>{metadata.sourcePath}</code></dd>
+          </div>
+          <div>
+            <dt>Page status</dt>
+            <dd data-source-status>{metadata.pageStatus}</dd>
+          </div>
+          <div>
+            <dt>Last updated</dt>
+            <dd>
+              <time datetime={metadata.lastUpdated} data-last-updated>{formattedDate}</time>
+            </dd>
+          </div>
+        </dl>
+      </section>
+    )
+  }
+  <Pagination />
+</footer>
+
+<style>
+  @layer starlight.core {
+    .wiki-footer {
+      flex-direction: column;
+      gap: var(--wiki-space-5);
+      margin-top: var(--wiki-space-7);
+    }
+
+    .source-metadata {
+      display: grid;
+      gap: var(--wiki-space-4);
+      padding: var(--wiki-space-5);
+      border: 1px solid var(--wiki-color-border);
+      border-radius: var(--wiki-radius-lg);
+      color: var(--wiki-color-text);
+      background: var(--wiki-color-surface);
+    }
+
+    .source-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--wiki-space-4);
+    }
+
+    .source-kicker {
+      margin: 0 0 var(--wiki-space-1);
+      color: var(--wiki-color-text-muted);
+      font-size: var(--wiki-type-xs);
+      font-weight: 750;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      margin: 0;
+      color: var(--wiki-color-text);
+      font-size: var(--wiki-type-lg);
+    }
+
+    .source-heading a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: var(--wiki-touch-target);
+      border: 1px solid var(--wiki-color-control);
+      border-radius: var(--wiki-radius-sm);
+      padding-inline: var(--wiki-space-4);
+      color: var(--wiki-color-control-text);
+      background: var(--wiki-color-control);
+      font-size: var(--wiki-type-sm);
+      font-weight: 750;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .source-heading a:focus-visible {
+      outline: var(--wiki-focus-ring-width) solid var(--wiki-color-focus);
+      outline-offset: var(--wiki-focus-ring-offset);
+    }
+
+    dl {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--wiki-space-4);
+      margin: 0;
+    }
+
+    dl > div {
+      min-width: 0;
+    }
+
+    dt {
+      color: var(--wiki-color-text-muted);
+      font-size: var(--wiki-type-xs);
+      font-weight: 700;
+    }
+
+    dd {
+      margin: var(--wiki-space-1) 0 0;
+      color: var(--wiki-color-text);
+      font-size: var(--wiki-type-sm);
+      overflow-wrap: anywhere;
+    }
+
+    code {
+      font-family: var(--wiki-font-code);
+      font-size: var(--wiki-type-xs);
+    }
+
+    @media (max-width: 50rem) {
+      .source-heading {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .source-heading a {
+        align-self: flex-start;
+      }
+
+      dl {
+        grid-template-columns: 1fr;
+      }
+    }
+  }
+</style>
