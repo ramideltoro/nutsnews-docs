@@ -47,6 +47,7 @@ export default defineConfig({
         MobileMenuToggle: './src/components/MobileMenuToggle.astro',
         PageTitle: './src/components/ArticleHeader.astro',
         Pagination: './src/components/ArticlePagination.astro',
+        Search: './src/components/AudienceSearch.astro',
         Sidebar: './src/components/CollectionRail.astro',
       },
       sidebar: [
