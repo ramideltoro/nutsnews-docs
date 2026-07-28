@@ -79,16 +79,17 @@ jobs:
         run: npm run test:content-routes
 
       - name: Test browser journeys, accessibility, and visual baselines
-        run: npm run test:browser
+        run: npm run test:browser:update
 
       - name: Upload browser failure artifacts
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: wiki-browser-failures
           path: |
             playwright-report/
             test-results/wiki/
+            tests/wiki/reader-journeys.spec.mjs-snapshots/
           retention-days: 7
           if-no-files-found: ignore
 

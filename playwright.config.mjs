@@ -21,7 +21,7 @@ export default defineConfig({
   reporter: process.env.CI
     ? [['line'], ['html', { open: 'never', outputFolder: 'playwright-report' }]]
     : [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]],
-  snapshotPathTemplate: '{testDir}/{testFilePath}-snapshots/{arg}-{projectName}{ext}',
+  snapshotPathTemplate: '{testDir}/{testFilePath}-snapshots/{arg}-{projectName}-{platform}{ext}',
   use: {
     baseURL,
     browserName: 'chromium',
