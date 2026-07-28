@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: db9add116fa57ab1a7643282d542efacf43164cd8c545105693c5039c36fd15d
+---
 # Web Public Reader Smoke Test
 
 NutsNews uses a dedicated Playwright smoke test to verify critical public reader flows with offline mock services.

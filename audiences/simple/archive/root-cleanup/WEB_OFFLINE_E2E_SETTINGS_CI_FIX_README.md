@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 2d9b7a6f228a01f90450ad26b98416200286cc7447226f886d893baeaa12a3e7
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: e27a7e39f14a9dd0004a84d5638346661f62cd68bb9bb45d5a3e2a08db596108
 ---
 
 # NutsNews Web Offline E2E Settings CI Fix

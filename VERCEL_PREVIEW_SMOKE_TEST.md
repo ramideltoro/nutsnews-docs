@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 78418fedafdde888f73aacf11598e7d0af493eab3e7884de474e862f241b388b
+---
 # Vercel Preview Smoke Test
 
 This regression runs against the real Vercel Preview deployment created for a pull request.

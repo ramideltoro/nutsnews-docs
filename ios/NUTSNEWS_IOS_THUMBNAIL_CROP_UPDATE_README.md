@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: db2a9e8e25769bef6b803acac917d62b57ea58400e4a708667b9990d1397ab73
+---
 # NutsNews iOS Thumbnail Crop Update
 
 This bundle removes the troubleshooting image-resolution badge and changes wide thumbnails to display in a cropped 3:2 image area.

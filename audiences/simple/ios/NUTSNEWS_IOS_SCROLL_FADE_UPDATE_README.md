@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: ios
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 4b3f7ea51de0888cc3a8665970df97b16d493bd23e36a0a38957c5ab3f241ff4
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 66213daca1298403391c566d77a88b6d42d06e7bc6a10ef8d79362a50fe9faff
 ---
 
 # NutsNews iOS Scroll Fade Update

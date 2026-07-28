@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: ios
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 4a2857bc34efebf16001e89d777412465502744e7876c4c7251aa28c9b0e30d8
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: c75b5030509bafd2739787615c59553413039be2c8a79baf2f41d9d39f89edfb
 ---
 
 # NutsNews iOS Feature 7 — Daily Digest / Today’s Picks

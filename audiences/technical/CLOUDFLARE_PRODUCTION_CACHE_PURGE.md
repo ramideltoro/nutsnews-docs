@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 1e09da045a2ef52abdfcb1eac68c62e50bbe1d0e38b1b7e7c40975a0c88d78e6
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 9571e4545035c016c08a02e3f74dabf1115ce62631ec23c1a87dbcdcb15a8be4
 ---
 
 # Cloudflare Production Cache Purge

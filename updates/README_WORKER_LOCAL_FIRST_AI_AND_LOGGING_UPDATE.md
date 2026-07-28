@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 9547d3a9866166e255e7172cac4b43117715865d0951df7ecd1c0c5a76e07c5b
+---
 # Worker local-first AI and diagnostic logging update
 
 This update makes Cloudflare Workers try local AI first for article review/classification and summary translation when `LOCAL_AI_URL` + `LOCAL_AI_API_KEY` are configured. If local AI fails and `OPENAI_API_KEY` is available, the Worker falls back to OpenAI.

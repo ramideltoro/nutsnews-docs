@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: Operations & Monitoring
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 2742f4cfdaa3ed17b42ce7e47cad3420963a052857134ef3e6321890ab1629e1
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: ed45a97403c9e945143f34be9c8d58e8a12390a2b012e7ad89d084cf809afc86
 ---
 
 # Observability

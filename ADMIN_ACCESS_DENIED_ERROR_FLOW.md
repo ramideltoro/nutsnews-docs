@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: admin-experience
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 6d022384de8492fc320d114895b164a5b1433a41d88993c4c560275479cf4f17
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 25622731683990cfcad5110a4f7649ce38f906e034c3da5006f1b1e6536b8d3e
 ---
 # Admin Access-Denied Error Flow
 

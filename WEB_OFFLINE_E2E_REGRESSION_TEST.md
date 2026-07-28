@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: d3426e30ceb9d9fe95712e745fe751ac040bb9088a93bf4bb8fecd8d54e7af84
+---
 # NutsNews Web Offline E2E Regression Test
 
 This test runs the real Next.js web app against mocked Supabase/PostgREST, Turnstile, and Resend services.

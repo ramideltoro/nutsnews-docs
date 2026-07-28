@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 0be2ed7ac88e1e5f12ffa6c1db6443fb9defdc658239cb03269a43d517f10978
+---
 # axe Accessibility CI with Playwright
 
 axe Accessibility CI is the automated accessibility safety net for the NutsNews web app.

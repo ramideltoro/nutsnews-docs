@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 3ebcd02c8b16188bf04d0a6cadb333258abd2f3309275f9d2e173a8887aead04
+---
 # NutsNews API Compatibility Contracts
 
 NutsNews treats its deployed response behavior as a compatibility contract. The iOS app consumes the public article and search APIs, so a field removal, type change, status change, pagination change, cache regression, or authentication change is release-blocking unless it follows the migration process below.

@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: ios
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: c7e7ee5ae14803cd4617c984a272552c66512a5c74cd4bfdd79edc41bbec8388
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 79c2cd18b539988078aabe1a210f0e052d0e4b342e70bf3c1e955bd2e33f94b2
 ---
 
 # NutsNews iOS Search Button Next to Settings Patch

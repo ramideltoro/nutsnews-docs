@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: bb72ac7f8710b76b0a7319e957f0ab23c37f40ec37e99cf9e96996144673ec00
+---
 # NutsNews Translation Diagnostics Update
 
 This update is intentionally diagnostic-first. It does not assume that missing translated cards should be blindly backfilled before you understand why they were missed.

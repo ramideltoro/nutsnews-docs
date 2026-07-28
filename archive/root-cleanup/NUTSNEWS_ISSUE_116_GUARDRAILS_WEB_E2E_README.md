@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: a25ff5cb760cb5eadc44e61163bf8a947c080a2d9b32c9d531d7944683609adb
+---
 # NutsNews Issue #116 Guardrails + Offline Web E2E Update
 
 This update implements issue #116 with a new admin free-tier guardrails dashboard and adds a fully mocked public web end-to-end regression test.

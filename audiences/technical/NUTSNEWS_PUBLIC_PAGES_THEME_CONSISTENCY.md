@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: public-product
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 7e8f9203036bb8c40e60652bc91fb271e8b6612169eec8fe3c5ec120805527cf
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: c3fb81e54059c69dc5e69653c28609202bcdd1cb8bbddd6957f10f48ccde6c44
 ---
 
 # NutsNews Public Pages Theme Consistency

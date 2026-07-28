@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 2cd4a9003c2048bf1e52065f2467737ecbc5064127bc7dc601cdea4964fa7926
+---
 # Feed Ingestion Regression Tests
 
 Issue #211 adds fixture-driven regression coverage for feed ingestion contracts in the app repository.

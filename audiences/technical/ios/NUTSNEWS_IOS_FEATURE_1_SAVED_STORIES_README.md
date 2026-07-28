@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: ios
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: ffa5a8d73fe7a511335b4737defebdd01b8700b8ed0e07c577396b60da57a2c5
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 3e57c17415cb97ff7b2eea4abb14afbde227441d7e5db1aadf6e784ba9340e44
 ---
 
 # NutsNews iOS — Feature 1: Saved Stories Library

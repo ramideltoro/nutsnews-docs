@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: b2ccdeb51cdcdbc6296d7577bdbe598ce8f3f63339e2be3555391667251cd092
+---
 # Publishing Visibility Cache And DB Alignment Update
 
 ## Simple Summary

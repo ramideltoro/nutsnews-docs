@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 2647b179d0df3ba76681500cdb3bda097246577afc33f2284225d3bfff9a6bc0
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 23401dffb4800b780e6fba736306e8ad80432d052191e11a2cdf2158794146f6
 ---
 
 # NutsNews Web Offline E2E Footer Navigation Wait Fix

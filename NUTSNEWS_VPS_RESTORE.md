@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 3207631f957638b891fc03cecafeaa9428d1587805380c8dd50c6088132a4d03
+---
 # NutsNews VPS Restore
 
 This is the restore runbook for encrypted VPS restic backups.

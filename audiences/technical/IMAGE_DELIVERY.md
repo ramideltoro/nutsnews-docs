@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: cc2f7818d5a20a9d9147e4b0355f14937b0199e8ce2f58d18098f8f798b385c1
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 7336eb8459d77ef8072c3b503650b6c306fbd38f4caa9b5af29731d59d001887
 ---
 
 # Image Delivery

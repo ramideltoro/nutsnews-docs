@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 8dfeb58eff2c238fa433af258d811fcedaeba49187c6ac3dd39d2c370d3fe90d
+---
 # NutsNews backfill continue-on-error update
 
 This update changes `scripts/backfill_article_summaries.mjs` so a bad translation row does not stop the whole backfill.

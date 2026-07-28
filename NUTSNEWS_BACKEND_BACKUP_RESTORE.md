@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 386650a0c9f7e380a5efff86f023cab906be1070603ff946ee4b56c313a44495
+---
 # NutsNews Backend Backup And Restore Baseline
 
 This documents the backup and restore policy for `ramideltoro/nutsnews-backend` before any production backend state is stored on `65.75.201.18`.

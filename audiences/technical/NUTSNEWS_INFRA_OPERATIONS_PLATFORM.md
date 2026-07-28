@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: e8e5c7222f17521a2954a80fcf7194d01684cdfa2373e2587b4e21671bd6e3b7
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: bdda5693808c4d1b702f73fc07dc971bb36bd36a7558fbf1e8016014bac4708c
 ---
 
 # NutsNews Infra Operations Platform

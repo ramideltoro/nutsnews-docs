@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 050d4eb84acbdcbd31a5b6778f45cfa481a3efe40c5a89f20a0b3921abe3281e
+---
 # NutsNews GitHub Actions Update
 
 This bundle adds the missing GitHub Actions and support scripts for NutsNews.

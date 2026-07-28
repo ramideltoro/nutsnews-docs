@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: public-product
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 3a22d188ef451510a35bb91b13e596ee934acdeeaf6ca6bb034427bff27ae393
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: e542d7b5e14f7e8c468283a53b675f36d6a8e8a7489b166d1e611a4c021b15f0
 ---
 
 # NutsNews SEO Structured Data Audit

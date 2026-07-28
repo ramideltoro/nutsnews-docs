@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 66213daca1298403391c566d77a88b6d42d06e7bc6a10ef8d79362a50fe9faff
+---
 # NutsNews iOS Scroll Fade Update
 
 This bundle updates the home feed so article cards fade, scale slightly, and lift into place while scrolling.

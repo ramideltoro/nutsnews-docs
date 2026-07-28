@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 80c15e8eb5c760f919fcbf6bc97729564d3707a67610365be4838a90d450b2ea
+---
 # NutsNews Dual-Target Web Deployment
 
 This guide defines how one reviewed commit from `ramideltoro/nutsnews` is

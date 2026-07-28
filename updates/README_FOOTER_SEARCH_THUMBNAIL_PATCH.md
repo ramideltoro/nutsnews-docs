@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 170b61f9e196e09a0a1fb25ea5810f86844d1eb13ea98cb73a486d2f792f1998
+---
 # NutsNews Footer Search Thumbnail Patch
 
 This is a small UI-only patch for the existing centered footer search modal.

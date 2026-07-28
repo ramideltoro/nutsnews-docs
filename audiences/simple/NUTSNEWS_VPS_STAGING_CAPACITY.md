@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: adf89ee867f2f38d615f3375f139fb5e67dd0e0815f3df82b4c7085f51ae99d7
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 01f9cf6d6c688dfabde239c82b04a36db5b5136cdfb9497ce558f25bd74b4608
 ---
 
 # NutsNews VPS Same-Host Staging Capacity Budget

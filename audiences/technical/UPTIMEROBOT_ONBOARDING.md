@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: Operations & Monitoring
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 9c200aa55cc940720fdd288e599e53d141085302fb0ff49985c69e1968a02a36
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: d01a85df123c6a054fc3a2a83f996997967a11f90b48440d77175591a09c61bb
 ---
 
 # UptimeRobot Onboarding

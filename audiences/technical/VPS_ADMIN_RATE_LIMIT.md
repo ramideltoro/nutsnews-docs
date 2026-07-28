@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: admin-experience
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 0ea273b21c4d22ea65bcdb9ad8a764c85f62948ccd9e56f0398e41738e1d6281
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 3a6528ac01c4d3631cf9a21457f808660b4fe795064a12485e9b85898ad6b80b
 ---
 
 # VPS Admin Navigation Rate Limit

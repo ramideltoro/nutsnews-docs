@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 16d89256c9c7370b4f2698e3d7c301fb2cfac2766c936e92248aadc51baa2b5f
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 0c0d2613eea8ce7e284d1a22353bb1d5582fc67008c4002611b8fb8c1862270f
 ---
 
 # Secure Image Proxy/Cache Design

@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 698c8e39d6647f84f0d4b69ce51406142116d2243c3ae8bdf7655f1c10cb0176
+---
 # NutsNews issue #282 final translation backfill audit
 
 Generated on 2026-07-20 for `ramideltoro/nutsnews#282`.

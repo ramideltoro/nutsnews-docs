@@ -47,6 +47,9 @@ jobs:
           OPENAI_API_KEY: ""
         run: npm run test:docs-prepare
 
+      - name: Test human approval and freshness gate
+        run: npm run test:wiki-approvals
+
       - name: Validate source contracts
         run: npm run validate:contracts
 
@@ -55,6 +58,9 @@ jobs:
 
       - name: Generate wiki markdown for route validation
         run: npm run wiki:prepare
+
+      - name: Validate human approval freshness
+        run: node scripts/wiki/validate-wiki-approvals.mjs
 
       - name: Validate internal links
         run: npm run validate:links

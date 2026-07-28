@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 1f248681e99c74c1c1f9c123f3fced14f1dffe216eabe1b33a6bed3e1f53e981
+---
 # NutsNews Release Pipeline
 
 Current as of July 18, 2026.

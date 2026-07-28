@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: e27a7e39f14a9dd0004a84d5638346661f62cd68bb9bb45d5a3e2a08db596108
+---
 # NutsNews Web Offline E2E Settings CI Fix
 
 This update stabilizes the fully mocked Web Offline E2E regression in GitHub Actions.

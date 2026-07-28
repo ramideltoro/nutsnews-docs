@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 164df6dbc8bedfcf500b79850ca46f6de26d703d514ea61fb8d51cae79dcd847
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 59fa6d2d93712aaec7e203681b9398f526636ad78a2ae13648ef6793d78282fd
 ---
 
 # Greek Language Hydration Lint Fix

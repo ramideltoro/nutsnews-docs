@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: ffb10a4517127cacb99ca61c7b48652729ed5ecf9dcfaed767b9ac681abf7373
+---
 # NutsNews Backend PostgreSQL Primary And Supabase Hot Standby
 
 Architecture status: backend PostgreSQL is the production read/write primary.

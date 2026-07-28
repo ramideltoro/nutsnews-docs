@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { createHash, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import matter from 'gray-matter';
@@ -16,6 +16,7 @@ import {
   normalizeSourcePath,
   simplePathFromSource,
 } from './wiki-contract.mjs';
+import { expertSourceHash } from './wiki-approval.mjs';
 
 export const DOCS_PREPARE_MODEL = 'gpt-5.4-mini-2026-03-17';
 export const DOCS_PREPARE_SCHEMA_NAME = 'nutsnews_wiki_author_draft';
@@ -130,10 +131,6 @@ function safeRelativeArtifactPath(rawPath, expectedRoot, extension) {
 
 function reviewPathFromSimple(simplePath) {
   return simplePath.replace(/\.md$/i, '.review.json');
-}
-
-function sourceHash(rawSource) {
-  return createHash('sha256').update(rawSource).digest('hex');
 }
 
 function oneLine(value, field) {
@@ -479,7 +476,7 @@ export async function prepareWikiDraft({
     }
   }
 
-  const hash = sourceHash(rawSource);
+  const hash = expertSourceHash(rawSource);
   const simpleBody = simpleMarkdownBody(draft.simple_markdown);
   const simpleMarkdown = matter.stringify(
     simpleBody,

@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 234decbc609a89ec6ea5d4b17fa91b85dc3e91143c4e48f4bc136df02c390e5a
+---
 # Local AI Deployment Lock
 
 NutsNews Worker shards must use the home-server local AI provider first.

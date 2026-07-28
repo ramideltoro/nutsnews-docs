@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 356d39f745a223bbcd2277bee7a1e302a45d5da1f86130e9414e6335b490f889
+---
 # NutsNews iOS Like Toggle Update
 
 This update makes the Like buttons toggle liked state.

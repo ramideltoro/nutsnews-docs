@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 121862d68a467ab41ac74b4b66888d6823e8de4cf9dacbd0791e3e1cbf607cf2
+---
 # Cloudflare KV Worker State for NutsNews
 
 This update adds an optional Cloudflare Workers KV binding named `NUTSNEWS_KV` to the RSS shard Workers.

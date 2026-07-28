@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 555197cfea254767d2e36614e27128e41cba2ade200f9ed85ba390957d4ecf56
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: ad9a7672892bbd647eda3373ba2e10b2910c2b7a890501b090c332ebc416081c
 ---
 
 # NutsNews Worker Fully Offline E2E Regression Test

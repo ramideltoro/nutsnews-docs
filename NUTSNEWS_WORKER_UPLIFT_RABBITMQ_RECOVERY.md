@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 2f1a1c568e87b35cc08448ad85ad3503adc28dd6bbbb25cddec25e6f984b3dd0
+---
 # NutsNews Worker-Uplift RabbitMQ Recovery
 
 Status: implemented for `ramideltoro/nutsnews-worker#83`.

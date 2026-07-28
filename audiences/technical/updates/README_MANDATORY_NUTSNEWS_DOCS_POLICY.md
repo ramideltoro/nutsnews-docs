@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: a35b4236fec8cbe67ad94e54bbc7c76433b4f32809fced0d99fc3ecd39f4e044
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: aaa224151b2070aaf69a71256c4e45e15e39dde3698e086b617402b956f33124
 ---
 
 # Mandatory NutsNews Docs Policy

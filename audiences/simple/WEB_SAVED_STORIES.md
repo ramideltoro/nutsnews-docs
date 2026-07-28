@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: public-product
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 9e331922708aa3cf875f7c8e8d080deda40ca781acff9e3df35683d3e6082d06
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: ddd39a86266adabc423e19a177ea3643dd72ecddc03d063c581b68d46af4358d
 ---
 
 # Web Saved Stories

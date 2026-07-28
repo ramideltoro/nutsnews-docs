@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 6b64220bf56539fd983eb128923e7b02b4a186925aedbb0dd25c9f6ced4bd6dc
+---
 # NutsNews Worker Upstash Redis Update
 
 This update adds optional Upstash Redis support to the Cloudflare Worker shard refresh flow.

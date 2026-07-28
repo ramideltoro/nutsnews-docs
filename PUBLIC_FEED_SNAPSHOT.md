@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: f0ebeb7d621c3e3c0dc1cebe4d4abb65ad7799ed89f1e20e7fc2795d59452f46
+---
 # Public Feed Snapshot and Edge Fallback
 
 Architecture status: Supabase `public_feed_snapshot` remains the current

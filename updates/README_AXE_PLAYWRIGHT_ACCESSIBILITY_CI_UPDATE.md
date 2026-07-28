@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: b5b8f736bf0e0eec3c0701a3c70aa1d107e96f9c1706b0d9f752aca8edc5a417
+---
 # Update: axe Playwright Accessibility CI
 
 This update adds automated accessibility regression checks for the NutsNews web app using Playwright and `@axe-core/playwright`.

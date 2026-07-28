@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 363d54e12b022740b96994d2e7cb95a9b8d1da7b1bf8d313d8242f3ba91fe204
+---
 # NutsNews VPS Staging Access And Credential Boundary
 
 Status: complete. Cloudflare and VPS staging infrastructure are live, the

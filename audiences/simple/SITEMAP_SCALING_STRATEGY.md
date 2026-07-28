@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: public-product
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 0552f047aa97acdb5ae678510a479a30a96dcf388eac8347bf930572232adabd
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: b2bef0bc4d3971035e797bfeae9bc6367174a960f59dd5b65e785961c8454127
 ---
 
 # Sitemap Scaling Strategy

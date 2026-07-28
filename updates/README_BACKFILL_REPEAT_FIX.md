@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 0372764e2588235d5c4deece1be188aece6e9e68f9104333b7ce95ae5606be58
+---
 # Backfill repeat fix
 
 This update fixes two translation backfill problems:

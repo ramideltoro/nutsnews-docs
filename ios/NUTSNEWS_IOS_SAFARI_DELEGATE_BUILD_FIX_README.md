@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: b6a9fb899b3250418b63b618ee44303f424540944dd8aa1bcfa8efed90555edd
+---
 # NutsNews iOS Safari Delegate Build Fix
 
 This fixes the Swift build error in `SafariView.swift`.

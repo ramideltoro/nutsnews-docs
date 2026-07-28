@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: d3cd01dde041542f955359aa8e054b5495c0db7236a675cd4545fc4c5804204c
+---
 # NutsNews Backend Security Baseline
 
 This tracks backend host security desired state for `ramideltoro/nutsnews-backend` and `65.75.201.18`.

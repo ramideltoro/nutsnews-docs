@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: c9926906f44ff578889b947509e48e3aea0aff2efb82245cfeed5e913ca96428
+---
 # Issue 104 Edge Feed Snapshot Fallback Update
 
 This update implements GitHub issue #104.

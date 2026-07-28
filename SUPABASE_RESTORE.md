@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: d023eba63365bb9db4128171df2437d01d2d1cf6119f79c26574c2b920b8705d
+---
 # Supabase Restore Procedure
 
 This runbook explains how to restore the NutsNews Supabase database after a crash, bad deploy, hacked data, bad migration, or accidental delete.

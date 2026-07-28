@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: aa77f874f01ca9a7933dd9f7e3975c1fbe982fb381fcc7218568e2faf519c823
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: b76ce71b73ff5f1db5657598f7cadae14b72bd95eac545f17bafdde2e83d49a5
 ---
 
 # NutsNews Home Search Box Layout Patch

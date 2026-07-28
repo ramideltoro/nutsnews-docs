@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: c747528920f717827a70dd674fdccbe28760ee47cb0dbbf721bb2a9b1287faf4
+---
 # Worker Translation Diagnostic Samples Update
 
 This update makes Worker translation failures easier to debug.

@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: ad30fbed39f1e68205d0fdbf38ab5bd627aeb6fcfc714220497be6316bac6c7f
+---
 # NutsNews iOS Detail Thumbnail Crop Update
 
 This bundle updates the article detail screen opened from `Read Story`.

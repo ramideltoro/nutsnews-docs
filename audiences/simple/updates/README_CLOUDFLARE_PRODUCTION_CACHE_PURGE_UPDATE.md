@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 4d9d4f51f2f251eedc562e8c7a802a83e66b024e98b96c0473d43e9c381b7c02
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 5f17208101c741fefeb4bf83ac0694f760af0cb8d6539a19d5dacf916d245db1
 ---
 
 # Cloudflare Production Cache Purge Update

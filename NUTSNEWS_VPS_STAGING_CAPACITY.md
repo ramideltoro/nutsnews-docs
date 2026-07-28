@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 01f9cf6d6c688dfabde239c82b04a36db5b5136cdfb9497ce558f25bd74b4608
+---
 # NutsNews VPS Same-Host Staging Capacity Budget
 
 The production VPS can host a tightly bounded staging application, but this

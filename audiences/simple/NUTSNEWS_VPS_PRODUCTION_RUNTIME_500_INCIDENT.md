@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: Operations & Monitoring
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 8a86e16a4273276557c0e5eb6e5c986e25b046a12aecdced19a4c417f9b30894
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 14641ba4609dacd016613d7e429615bd75bd3166177a6069bab74bef1b6a2747
 ---
 
 # VPS production runtime 500 incident

@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: bdda5693808c4d1b702f73fc07dc971bb36bd36a7558fbf1e8016014bac4708c
+---
 # NutsNews Infra Operations Platform
 
 This explains how the NutsNews infrastructure repo is supposed to make one small VPS behave like a boringly reliable production platform, which is the dream. Boring infrastructure is beautiful. Exciting infrastructure usually texts you at 2:14 a.m.

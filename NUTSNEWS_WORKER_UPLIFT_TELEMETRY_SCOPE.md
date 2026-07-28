@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 6a62a0dba8e86f315ea3c46b7988d0ce56db340e69a823bbdd56a31bdcb80695
+---
 # NutsNews Worker-Uplift Telemetry Scope
 
 Status: approved for `ramideltoro/nutsnews-worker#144` on 2026-07-23.

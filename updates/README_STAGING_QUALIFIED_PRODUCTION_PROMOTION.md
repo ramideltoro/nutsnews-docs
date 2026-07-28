@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: fe6fe1f2f101b7b1b9570de159613036338e22d3c37b017963ea5564780c398e
+---
 # Staging-Qualified Production Promotion Update
 
 Current note: this file describes the earlier July 2026 staging-qualified VPS

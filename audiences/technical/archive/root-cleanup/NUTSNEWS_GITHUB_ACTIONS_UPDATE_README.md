@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 4dadc0a25b5973e1c8fe5ff863122573f50ddcce5f37717f01c4243a07719cb4
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 050d4eb84acbdcbd31a5b6778f45cfa481a3efe40c5a89f20a0b3921abe3281e
 ---
 
 # NutsNews GitHub Actions Update

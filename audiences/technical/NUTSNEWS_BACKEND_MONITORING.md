@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: a30392578d0ab3604800bfc0c1a24f598c951980c811734310da2c36b3f151a2
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 7b2531e6fe8d86fb2546cdbe60017014ef4065b0ec3f384bb14a4bf96492c327
 ---
 
 # NutsNews Backend Monitoring Baseline

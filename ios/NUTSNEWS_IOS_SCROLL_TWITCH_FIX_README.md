@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: e3b20b4ebe6cd65a5c98bff2b7bc23dec5494e8bada21dbfa7aaa94aa7cafae6
+---
 # NutsNews iOS Scroll Twitch Fix
 
 This bundle fixes the scroll twitch caused by thumbnail cards changing height after async image metadata checks completed.

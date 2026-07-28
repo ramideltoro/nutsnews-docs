@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: Operations & Monitoring
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 35735de2aa3d6a662c362f722a2c3a610b0b168ced5383401e24bcaa7027dba2
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: aeef737aabb69aa0718288838fd5c3dce7f0a1bde24a8bdb53f964bf2373ed5b
 ---
 
 # NutsNews Backend Health Report

@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: ios
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: c43e156ccef480b10b1a1d9cc62adc8449a170dafeb074c9e8d141aeae58b9ad
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 28d41789da47f739dff0992793e1969f94a474f5a3aeddc151e28c7226c3c023
 ---
 
 # NutsNews iOS Like Glow Update

@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: b6d26fffef600908f6d9f940bd1f6d2d3dbbaa9adf0d57c66108aadd63e4fcb5
+---
 # NutsNews iOS iPad Landscape Story No-Scroll Update
 
 This update changes the story page only on iPad in landscape mode.

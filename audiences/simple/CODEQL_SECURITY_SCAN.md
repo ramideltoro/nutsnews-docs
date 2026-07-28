@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 9ef891ea87328fb0c963eedcbac090abeb75288130a7d6bca9e6e049cf7dadb0
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 99b19629bb0dfd6cfc8f56f953c0937b322f8365a3edb335f531091f7aef1301
 ---
 
 # CodeQL Security Scan

@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 2b2dc77cac62533740739c2d169f2f549a9be8747deafff66833300f430e2c65
+---
 # NutsNews iOS New Themes Update
 
 This update adds three new selectable app themes to NutsNews iOS and wires them into the existing theme system.

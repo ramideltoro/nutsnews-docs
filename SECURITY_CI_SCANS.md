@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: b5dc66f1bf1ac928935b087bc45da487ac4b1d4440f4db62c2a328e058fb2305
+---
 # Security CI Scans
 
 NutsNews uses GitHub Actions and repository security settings to catch dependency, workflow, secret, and supply-chain risks before release.

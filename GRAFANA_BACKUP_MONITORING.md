@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 533d56ec37549abbef61fd8a34cf5b24bcca41e53801a703a334554f97d1691a
+---
 # Grafana Cloud Backup Monitoring
 
 NutsNews uses Grafana Cloud Explore and Prometheus/PromQL to inspect home-server backup metrics before turning them into a dashboard.

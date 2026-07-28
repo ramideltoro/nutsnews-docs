@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 5f17208101c741fefeb4bf83ac0694f760af0cb8d6539a19d5dacf916d245db1
+---
 # Cloudflare Production Cache Purge Update
 
 This update adds automatic full Cloudflare cache purge after a successful production deployment.

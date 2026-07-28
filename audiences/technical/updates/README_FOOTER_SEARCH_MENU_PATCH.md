@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: c9d42d025bdd1aafed96cdbd589252a0c210338dd4e7f687da32693811c42bc1
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 397967a9d7a9020b4ae52c9dc96589128bb0f609e6ae1106080160a0adb843a5
 ---
 
 # NutsNews Footer Search Menu Patch

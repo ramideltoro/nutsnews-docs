@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 99831d482f775c6f87fcaf22fa331050c409b9de1bd722d5a3cc87e5e6125932
+---
 # NutsNews Free-Tier Guardrails
 
 Issue #116 adds a dedicated admin dashboard at `/admin/guardrails` for cost forecasting and free-tier risk monitoring.

@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 6e538a8071c8d57513d9e715c08bcd03e2f8da67a77e8a12956638929e7063bf
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 8342cc8518cf399aae801b792613c5499575b49494c974646d8bce787a860c7d
 ---
 
 # Edge Feed Snapshot Admin Health Update

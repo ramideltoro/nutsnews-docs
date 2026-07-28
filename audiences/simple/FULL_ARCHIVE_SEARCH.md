@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: public-product
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 82c9e4b919d065dc116089267429ff58c5be9678e73148d5f59d34729180f517
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: de31e8c0d8551efa841cd8701ccd6ed3a016911402219378598a35a545199ab6
 ---
 
 # Full archive search

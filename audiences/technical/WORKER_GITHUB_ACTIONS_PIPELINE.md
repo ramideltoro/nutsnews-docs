@@ -11,9 +11,11 @@ wiki:
   collection: ai-and-automation
   section: Operations & Monitoring
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 3841ab09595f0e889ebeabb539660a50c8c3fb061fd83f80a9cde017b9c3ff9a
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 15d8c42b604fb04b03f07d9126a9cd647b38116cb8b28a2b3708489227cb3256
 ---
 
 # Worker GitHub Actions Pipeline

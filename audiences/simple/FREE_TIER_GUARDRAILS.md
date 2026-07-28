@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 06c1c573a43365134df532ba318bbf823d82d2a31dc2643c2f5f17e2e75e2726
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 99831d482f775c6f87fcaf22fa331050c409b9de1bd722d5a3cc87e5e6125932
 ---
 
 # NutsNews Free-Tier Guardrails

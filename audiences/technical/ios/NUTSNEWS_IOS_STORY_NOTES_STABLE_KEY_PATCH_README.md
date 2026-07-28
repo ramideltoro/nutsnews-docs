@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: ios
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: cfccb9375005ea16da033d94e89f748a339a5e6174deaffaffeace17ae49cc30
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 82c961c34524c66dfb299f5e5d0ac14500d00ce84f47ae1bc93156c248f4a80e
 ---
 
 # NutsNews iOS — Story Notes Stable Key Patch

@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 81ab9ce87e59b7c7559c59c16518072fc85e933c48b6d6a4fb82306dd2d8b37b
+---
 # NutsNews Home Button + Contact Text Update
 
 This bundle updates:

@@ -11,9 +11,11 @@ wiki:
   collection: ai-and-automation
   section: Automation & Workers
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 43133a8914ccc66ba4abc694fc8b4fcbc6142884bf606aec7c4e233757c5d313
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 2f137a29ed1348d1b0a60d01f186aa7566c5b8f7b2f27c414034af6d1acd7861
 ---
 
 # NutsNews Worker-Uplift Operation Map

@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: b3ce692692301ac94447fb6176430e7eff83812043eb7566147b915ad689a463
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 8dfeb58eff2c238fa433af258d811fcedaeba49187c6ac3dd39d2c370d3fe90d
 ---
 
 # NutsNews backfill continue-on-error update

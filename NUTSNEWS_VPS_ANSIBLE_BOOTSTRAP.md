@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: c46dfd5dbcb0f5f9b0c29bd7158f5fe301ccc8f3d57f212f6728169702302510
+---
 # NutsNews VPS Ansible Bootstrap
 
 This explains the first Ansible baseline for the primary NutsNews VPS. It is the careful part before the flashy part: make the server boring, reachable, patched, logged, and recoverable before anything tries to deploy an app and call itself a platform.

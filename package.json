@@ -7,10 +7,12 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "npm run wiki:prepare && astro build",
+    "build": "npm run wiki:prepare && node scripts/wiki/validate-wiki-approvals.mjs && astro build",
     "preview": "astro preview",
     "docs:prepare": "node scripts/wiki/docs-prepare.mjs",
+    "docs:approve": "node scripts/wiki/docs-approve.mjs",
     "test:docs-prepare": "node --test scripts/wiki/docs-prepare.test.mjs",
+    "test:wiki-approvals": "node --test scripts/wiki/wiki-approval.test.mjs",
     "wiki:prepare": "node scripts/wiki/generate-wiki-content.mjs",
     "wiki:prepare:strict": "node scripts/wiki/generate-wiki-content.mjs --strict",
     "wiki:diagrams:a11y": "npm run wiki:prepare && node scripts/wiki/add-mermaid-accessibility.mjs",
@@ -25,6 +27,7 @@
     "validate:audience-switch": "node scripts/wiki/validate-audience-switch.mjs",
     "validate:search": "node scripts/wiki/validate-pagefind-search.mjs",
     "validate:source-metadata": "node scripts/wiki/validate-source-metadata.mjs",
+    "validate:approvals": "npm run wiki:prepare && node scripts/wiki/validate-wiki-approvals.mjs",
     "validate:routing": "node scripts/wiki/validate-static-routing.mjs",
     "validate:shell": "node scripts/wiki/validate-wiki-shell.mjs"
   },

@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 0e6bd3893d0c97b79119bb14b545d4f4f202a55f9540d825fe3f850968d60fc2
+---
 # Worker summary translation task limit fix
 
 This update makes `SUMMARY_TRANSLATION_LIMIT` control the number of translation tasks per Worker invocation directly.

@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: ios
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 9187857488c3611e187afcd76b00bd55a29e9a449349dc7e4fa04d4a7f84f674
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: ad30fbed39f1e68205d0fdbf38ab5bd627aeb6fcfc714220497be6316bac6c7f
 ---
 
 # NutsNews iOS Detail Thumbnail Crop Update

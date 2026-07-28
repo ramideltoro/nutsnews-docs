@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: d9cae0d4f5f68d1d22a616dd0be7eb4cd153580a272ca3578111a2c3e92e8305
+---
 # NutsNews final CI fix
 
 This patch fixes two CI/local issues after the home/contact update:

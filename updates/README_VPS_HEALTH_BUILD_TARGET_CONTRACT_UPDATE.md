@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: d10703a222df10ff0ac07af64662b585aef6b9926813c5ffe100014e45d94358
+---
 # VPS Health Build Target Contract Update
 
 ## Summary

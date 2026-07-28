@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: ios
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 8cf364bceadfbb20eb4f4e3caf0a5add188ded535dae7584416681172d0aec53
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 04984d8451b7ea6f6ea4d487ed5fcba14598f2304176352646f8e543f8ff7cc6
 ---
 
 # NutsNews iOS — Feature 2: Native Feed Search

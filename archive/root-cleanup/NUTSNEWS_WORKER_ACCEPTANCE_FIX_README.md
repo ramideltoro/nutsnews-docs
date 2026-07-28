@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: a9bcbc0f6fe9c346f4251d9c3e8a84f7fb0292527282c396126b4dc232859383
+---
 # NutsNews Worker Acceptance Fix
 
 ## What this fixes

@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 423eaecaf237f62c4865924a418b6610ae5e6245b5b9ac6123b26f849d1bb318
+---
 # Edge Feed Snapshot Health Update
 
 This update makes the Cloudflare Worker edge snapshot fallback easier to diagnose and harder to deploy incorrectly.

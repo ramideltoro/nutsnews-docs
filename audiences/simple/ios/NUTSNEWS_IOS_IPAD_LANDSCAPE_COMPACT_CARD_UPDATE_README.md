@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: ios
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: c185be77bd7f93c6db36b4d0b5051cd6fe92dfe1fe7b09dabe000c86670de033
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 3bccade5164d3d10bab414c52376d543662f2e1eb3ec1993fd7461877b92f258
 ---
 
 # NutsNews iOS iPad Landscape Compact Card Update

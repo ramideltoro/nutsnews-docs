@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: d4132ed16002fe11c3c9a748d24950c068976afaeff65f9114846e018431552c
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: b2ccdeb51cdcdbc6296d7577bdbe598ce8f3f63339e2be3555391667251cd092
 ---
 
 # Publishing Visibility Cache And DB Alignment Update

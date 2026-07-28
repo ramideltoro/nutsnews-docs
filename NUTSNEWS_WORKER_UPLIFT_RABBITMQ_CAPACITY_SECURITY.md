@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: debeef5f6a06f69a90667df1476107ae44b7fe39bbeb90cb76e78c1d78436c15
+---
 # NutsNews Worker-Uplift RabbitMQ Capacity And Security
 
 Status: approved for `ramideltoro/nutsnews-worker#79` on 2026-07-23.

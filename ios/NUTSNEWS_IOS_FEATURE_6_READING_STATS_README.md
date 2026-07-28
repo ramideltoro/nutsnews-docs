@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: ios
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: d06939ae812b3ad2eb254645e8a925222059f8df5856467158a4ee4aa1c0a8c4
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: e0282b4345cbf019f86f1694ee06a1198974ec8d1d19dd0ace2c663d51ff5161
 ---
 
 # NutsNews iOS Feature 6 — Reading Stats

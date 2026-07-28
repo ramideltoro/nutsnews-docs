@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 791f1650d23d48de6b69c965bedb558650ef4349876e160ad7cbfbed93f425da
+---
 # NutsNews Worker Offline E2E Fix
 
 This update fixes the Worker Offline E2E Regression after the summary translation language set expanded to:

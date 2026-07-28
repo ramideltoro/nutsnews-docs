@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 9aab6cc25e1fe6bf50eb722148bee45151411f5c70c43cbf4affa1200e8092df
+---
 # Production Promotion Timing Update
 
 ## Short Summary

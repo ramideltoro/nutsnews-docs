@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 8c60d20165a9af43126faf0fa37acf1c0e7a36e9380aff8b0229a4575f585593
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 78aa2a5e033cc0473e02f2240f95ad4188812be6f4a2df37ea2f19c4facc783e
 ---
 
 # Runtime Feature Flags

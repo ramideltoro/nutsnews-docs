@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 82e38e291a21d56b5edce87bceaefcaebf1c126fdd39aeb4d662dc767ecf41d9
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: f6f3427f6c5fa766f248a16c36b2fded16d112d76755f67c56240a8951a493a3
 ---
 
 # Google Lighthouse CI Onboarding

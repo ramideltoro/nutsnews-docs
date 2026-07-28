@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 71dbaf16c10af0bfdb312aed72843d31857334a5e43505a78e59a200c1b257b2
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 698c8e39d6647f84f0d4b69ce51406142116d2243c3ae8bdf7655f1c10cb0176
 ---
 
 # NutsNews issue #282 final translation backfill audit

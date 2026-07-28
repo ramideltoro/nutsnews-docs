@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 5d741faf3212e170be972ea27e3a280783eb68166aaab0504dd9086e3299225a
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 43b2f2d558a2320b3861af630ccae15ca3a1048e311e56db001b34cc5226658c
 ---
 
 # Lighthouse CI Documentation Update

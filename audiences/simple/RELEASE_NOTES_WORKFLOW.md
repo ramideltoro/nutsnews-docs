@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 89a8410b2e3925147bd9449588e91e8192cf05c5ffd0070b9ecba2bdeddc6d89
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 6725571c37afb363860f79cbb6cb5e2c3c96f43a73b365cf044235a36784283b
 ---
 
 # Release Notes Workflow

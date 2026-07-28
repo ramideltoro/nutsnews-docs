@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 8d67463bf35169e5fe49b9ea3a00d7281f76bba24584e7d5eed6972da4aa611f
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: a9bcbc0f6fe9c346f4251d9c3e8a84f7fb0292527282c396126b4dc232859383
 ---
 
 # NutsNews Worker Acceptance Fix

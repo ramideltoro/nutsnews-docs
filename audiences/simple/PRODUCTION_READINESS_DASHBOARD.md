@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: e3e759b570b68140736e39f1161515354d8dab4ce1cdd6fd10691f1b2f4917ff
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 9422168bbe4773aa68386decae0d1e5173ce213a35d8878848c62a3b98926c71
 ---
 
 # Production Readiness Dashboard

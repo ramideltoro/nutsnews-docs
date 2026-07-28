@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: d84d7da0986c29a630ef5500c85197dba638988fe53fc6d17424d0f243420aa2
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 80c15e8eb5c760f919fcbf6bc97729564d3707a67610365be4838a90d450b2ea
 ---
 
 # NutsNews Dual-Target Web Deployment

@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 3532f17822a2f6f65de9f75a6e0865a295b6fe92a8ce1277a1a83eedf3b4b50e
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 9f86dbd6de44d2c89015f0dfc881edc4ac8a662bc2017bd0aba1b7516006ec44
 ---
 
 # NutsNews Cache Safety Update

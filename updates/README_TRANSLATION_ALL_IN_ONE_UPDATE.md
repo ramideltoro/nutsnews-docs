@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 5c01c7bc56677e08924839281f61607202f39d123b2e91eab3b8ed72b26c0656
+---
 # NutsNews Translation All-in-One Update
 
 This replaces the earlier translation recovery/diagnostics bundles with one cleaner update.

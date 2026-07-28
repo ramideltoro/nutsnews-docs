@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: Operations & Monitoring
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: b3dfe6d893b2d37d0d19b020336d439bf9d7ab831fc1aca38a8afea801dd8c2d
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 86f0c51ef209931f7608203b8e809b9270cfea86579bea18ed8639de2457bb41
 ---
 
 # NutsNews VPS Health Endpoint Network

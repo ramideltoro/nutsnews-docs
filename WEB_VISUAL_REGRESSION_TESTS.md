@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 35e68ecc118350c98f75a5e973c019fb23ac3fbafd3f177c8b63ee3e4edec0f9
+---
 # Web Visual Regression Tests
 
 NutsNews uses Playwright screenshot snapshots to catch public layout regressions that smoke, accessibility, and API tests can miss.
