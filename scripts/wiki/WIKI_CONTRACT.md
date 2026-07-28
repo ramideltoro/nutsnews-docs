@@ -52,6 +52,16 @@ manifest. It rejects unsafe, duplicate, route-colliding, or unclassified paths
 and refuses to overwrite any target. On success it prints the exact
 `docs:prepare`, `docs:approve`, and approval-validation commands to run next.
 
+## Complete publication gate
+
+Run `npm run validate:content` after `npm run wiki:prepare`. This single,
+deterministic gate validates the stable inventory, generated schema, Simple and
+Technical mirrors, human approval freshness, accessible Mermaid syntax,
+unique slugs/orders/routes, internal links and heading fragments, image alt
+text/captions/assets, and orphan artifacts. Failures are grouped by source and
+include a remediation. Any defect exits nonzero, and the production build runs
+the same gate before Astro.
+
 ## Frontmatter and precedence
 
 Generated expert frontmatter always contains `title`, `description`, `slug`,
