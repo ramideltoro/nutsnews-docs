@@ -37,18 +37,6 @@ const PLACEHOLDER_MARKERS = [
   'to_be_set',
 ];
 
-const DEFAULT_IGNORE = new Set([
-  '.git',
-  '.github',
-  '.idea',
-  '.vscode',
-  '.DS_Store',
-  'node_modules',
-  '.cache',
-  '_site',
-  'scripts/wiki/validate-wiki-secrets.mjs',
-]);
-
 function hasPlaceholder(value) {
   const lower = value.toLowerCase();
   return PLACEHOLDER_MARKERS.some((marker) => lower.includes(marker.toLowerCase()));
@@ -78,19 +66,23 @@ function appearsLikeSecret(value) {
   return value.length > 48 && /[a-z0-9]{3,}/i.test(value);
 }
 
-function shouldIgnore(file) {
-  return file.startsWith('node_modules/') || file.startsWith('.git/');
-}
-
 async function getTargets(pathArg) {
   if (pathArg) {
-    return [pathArg];
+    return [{ file: pathArg, source: 'explicit path' }];
   }
 
-  const tracked = (await exec('git', ['ls-files'])).split(/\r?\n/).filter(Boolean);
-  const staged = (await exec('git', ['diff', '--cached', '--name-only'])).split(/\r?\n/).filter(Boolean);
-  const combined = new Set([...tracked, ...staged]);
-  return [...combined].filter((file) => !shouldIgnore(file));
+  const tracked = splitNull(await exec('git', ['ls-files', '-z']));
+  const staged = splitNull(
+    await exec('git', ['diff', '--cached', '--name-only', '--diff-filter=ACMR', '-z']),
+  );
+  return [
+    ...tracked.map((file) => ({ file, source: 'working tree' })),
+    ...staged.map((file) => ({ file, source: 'staged index' })),
+  ];
+}
+
+function splitNull(value) {
+  return value.split('\0').filter(Boolean);
 }
 
 async function exec(command, args) {
@@ -112,7 +104,7 @@ async function exec(command, args) {
   });
 }
 
-function scanLinesForSecrets(file, data) {
+function scanLinesForSecrets(file, data, source) {
   const findings = [];
   let lineNumber = 0;
 
@@ -130,6 +122,7 @@ function scanLinesForSecrets(file, data) {
           file,
           lineNumber,
           reason: candidate.name,
+          source,
         });
       }
       candidate.regex.lastIndex = 0;
@@ -142,6 +135,7 @@ function scanLinesForSecrets(file, data) {
           file,
           lineNumber,
           reason: candidate.name,
+          source,
         });
       }
       candidate.regex.lastIndex = 0;
@@ -151,10 +145,20 @@ function scanLinesForSecrets(file, data) {
   return findings;
 }
 
-async function scanFile(file) {
+async function readTarget(target) {
+  if (target.source === 'staged index') {
+    return exec('git', ['show', `:${target.file}`]);
+  }
+  return fs.readFile(path.resolve(repoRoot, target.file), 'utf8');
+}
+
+async function scanFile(target) {
   try {
-    const data = await fs.readFile(path.join(repoRoot, file), 'utf8');
-    return scanLinesForSecrets(file, data);
+    const data = await readTarget(target);
+    if (data.includes('\0')) {
+      return [];
+    }
+    return scanLinesForSecrets(target.file, data, target.source);
   } catch {
     // skip binaries/non-text files
     return [];
@@ -163,28 +167,17 @@ async function scanFile(file) {
 
 async function runValidation(targets) {
   const allFindings = [];
-  for (const file of targets) {
-    const ext = path.extname(file);
-    if (DEFAULT_IGNORE.has(path.basename(file)) || DEFAULT_IGNORE.has(ext)) {
-      continue;
-    }
-    try {
-      const stats = await fs.stat(path.join(repoRoot, file));
-      if (!stats.isFile()) {
-        continue;
-      }
-    } catch {
-      continue;
-    }
-
-    const hits = await scanFile(file);
+  for (const target of targets) {
+    const hits = await scanFile(target);
     allFindings.push(...hits);
   }
 
   if (allFindings.length > 0) {
     console.error('Potential non-redacted secret-like values detected:');
     for (const finding of allFindings) {
-      console.error(`- ${finding.file}:${finding.lineNumber}: ${finding.reason}`);
+      console.error(
+        `- ${finding.file}:${finding.lineNumber}: ${finding.reason} (${finding.source})`,
+      );
     }
     return { success: false, count: allFindings.length };
   }
@@ -196,7 +189,7 @@ async function runSmokeTest() {
   const file = path.join(tmpdir(), `wiki-secret-fixture-${randomUUID()}`);
   const syntheticSecret = `OPENAI_API_KEY=sk-${randomBytes(32).toString('hex')}`;
   await fs.writeFile(file, syntheticSecret, 'utf8');
-  const findings = scanLinesForSecrets(file, syntheticSecret);
+  const findings = scanLinesForSecrets(file, syntheticSecret, 'synthetic fixture');
   await fs.unlink(file);
   return findings.length > 0 ? 0 : 1;
 }

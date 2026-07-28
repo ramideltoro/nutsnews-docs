@@ -13,6 +13,7 @@
     "docs:approve": "node scripts/wiki/docs-approve.mjs",
     "docs:new": "node scripts/wiki/docs-new.mjs",
     "test:docs-prepare": "node --test scripts/wiki/docs-prepare.test.mjs",
+    "test:secret-safety": "node --test scripts/wiki/wiki-secret-safety.test.mjs",
     "test:wiki-approvals": "node --test scripts/wiki/wiki-approval.test.mjs",
     "test:docs-new": "node --test scripts/wiki/docs-new.test.mjs",
     "test:content-contract": "node --test scripts/wiki/wiki-content-contract.test.mjs",
@@ -40,7 +41,8 @@
     "validate:source-metadata": "node scripts/wiki/validate-source-metadata.mjs",
     "validate:approvals": "npm run wiki:prepare && node scripts/wiki/validate-wiki-approvals.mjs",
     "validate:routing": "node scripts/wiki/validate-static-routing.mjs",
-    "validate:shell": "node scripts/wiki/validate-wiki-shell.mjs"
+    "validate:shell": "node scripts/wiki/validate-wiki-shell.mjs",
+    "validate:secrets": "node scripts/wiki/validate-wiki-secrets.mjs --smoke-test"
   },
   "dependencies": {
     "@astrojs/markdown-remark": "^7.2.1",

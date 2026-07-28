@@ -8,11 +8,14 @@ _site/**
 # Node and tooling caches
 node_modules/
 coverage/
+.nyc_output/
 playwright-report/
 test-results/
+dist/
 .npm/
 .yarn/
 .pnpm-store/
+.turbo/
 .cache/
 .astro/
 tmp/
@@ -21,7 +24,10 @@ temp/
 # Environment and secrets
 .env
 .env.*
+*.env
+*.env.*
 !.env.example
+.direnv/
 
 # Editor and OS artifacts
 .DS_Store
@@ -31,7 +37,10 @@ Thumbs.db
 **/*.tmp
 **/*.tmp.md
 **/*.ai.md
+**/*.ai-draft.md
 **/*.draft.md
+**/.ai-drafts/
+**/.ai-drafts/**
 src/content/docs/
 src/content/docs/**
 **/tmp/*

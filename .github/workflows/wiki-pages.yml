@@ -54,6 +54,9 @@ jobs:
           OPENAI_API_KEY: ""
         run: npm run test:docs-prepare
 
+      - name: Test repository secret safety
+        run: npm run test:secret-safety
+
       - name: Test human approval and freshness gate
         run: npm run test:wiki-approvals
 
@@ -91,7 +94,7 @@ jobs:
         run: npm run validate:links
 
       - name: Validate secret safety with blocked fixture
-        run: node scripts/wiki/validate-wiki-secrets.mjs --smoke-test
+        run: npm run validate:secrets
 
       - name: Validate mermaid diagrams
         run: npm run validate:mermaid
