@@ -3,13 +3,17 @@ import Search from 'virtual:starlight/components/Search';
 import SiteTitle from 'virtual:starlight/components/SiteTitle';
 import ThemeSelect from 'virtual:starlight/components/ThemeSelect';
 import config from 'virtual:starlight/user-config';
+import { wikiContract } from '../../scripts/wiki/wiki-contract.mjs';
 
 const path = Astro.url.pathname;
 const isTechnical = path === '/technical/' || path.startsWith('/technical/');
 const audience = isTechnical ? 'technical' : 'simple';
 const pairedAudience = isTechnical ? 'simple' : 'technical';
 const entry = Astro.locals.starlightRoute.entry;
+const currentRoute = entry.data.generated_for || `/${audience}/`;
 const pairedRoute = entry.data.paired_route || `/${pairedAudience}/`;
+const simpleRoute = audience === 'simple' ? currentRoute : pairedRoute;
+const technicalRoute = audience === 'technical' ? currentRoute : pairedRoute;
 const base = import.meta.env.BASE_URL || '/';
 const basePrefix = base === '/' ? '' : `/${base.replace(/^\/+|\/+$/g, '')}`;
 const withBase = (route) => `${basePrefix}${route.startsWith('/') ? route : `/${route}`}`;
@@ -33,17 +37,78 @@ const shouldRenderSearch =
     >
       GitHub
     </a>
-    <a
-      class="audience-control"
-      href={withBase(pairedRoute)}
-      data-audience-control
-      data-target-audience={pairedAudience}
+    <div
+      class="audience-switch"
+      role="group"
+      aria-label="Audience"
+      data-audience-switch
+      data-current-audience={audience}
+      data-preference-key={wikiContract.route.resolver.preferenceKey}
     >
-      {pairedAudience === 'simple' ? 'Simple' : 'Technical'}
-    </a>
+      <a
+        class="audience-control"
+        href={withBase(simpleRoute)}
+        aria-current={audience === 'simple' ? 'page' : undefined}
+        aria-label="Simple audience"
+        data-audience-control
+        data-target-audience="simple"
+      >
+        Simple
+      </a>
+      <a
+        class="audience-control"
+        href={withBase(technicalRoute)}
+        aria-current={audience === 'technical' ? 'page' : undefined}
+        aria-label="Technical audience"
+        data-audience-control
+        data-target-audience="technical"
+      >
+        <span class="audience-label-full">Technical</span>
+        <span class="audience-label-short" aria-hidden="true">Tech</span>
+      </a>
+    </div>
     <ThemeSelect />
   </nav>
 </div>
+
+<script>
+  const switcher = document.querySelector('[data-audience-switch]');
+
+  if (switcher instanceof HTMLElement) {
+    const key = switcher.dataset.preferenceKey;
+    const controls = [...switcher.querySelectorAll('[data-audience-control]')]
+      .filter((control) => control instanceof HTMLAnchorElement);
+    const explicitAudience = switcher.dataset.currentAudience;
+
+    const storeAudience = (value) => {
+      if (!key || (value !== 'simple' && value !== 'technical')) return;
+      try {
+        localStorage.setItem(key, value);
+      } catch {
+        // Normal links continue to work when storage is unavailable.
+      }
+    };
+
+    const preserveFragment = () => {
+      for (const control of controls) {
+        const target = new URL(control.href, location.href);
+        target.hash = location.hash;
+        control.href = `${target.pathname}${target.search}${target.hash}`;
+      }
+    };
+
+    if (explicitAudience) storeAudience(explicitAudience);
+    preserveFragment();
+    addEventListener('hashchange', preserveFragment);
+
+    for (const control of controls) {
+      control.addEventListener('click', () => {
+        preserveFragment();
+        storeAudience(control.dataset.targetAudience);
+      });
+    }
+  }
+</script>
 
 <style>
   @layer starlight.core {
@@ -91,9 +156,36 @@ const shouldRenderSearch =
     }
 
     .audience-control {
+      min-width: var(--wiki-touch-target);
       border-color: var(--wiki-color-control);
-      background: var(--wiki-color-control);
+      color: var(--wiki-color-link);
+      background: transparent;
+    }
+
+    .audience-switch {
+      display: inline-flex;
+      flex: 0 0 auto;
+      border: 1px solid var(--wiki-color-control);
+      border-radius: var(--wiki-radius-sm);
+      overflow: hidden;
+    }
+
+    .audience-switch .audience-control {
+      border: 0;
+      border-radius: 0;
+    }
+
+    .audience-switch .audience-control + .audience-control {
+      border-inline-start: 1px solid var(--wiki-color-control);
+    }
+
+    .audience-control[aria-current="page"] {
       color: var(--wiki-color-control-text);
+      background: var(--wiki-color-control);
+    }
+
+    .audience-label-short {
+      display: none;
     }
 
     @media (max-width: 64rem) {
@@ -112,12 +204,47 @@ const shouldRenderSearch =
         align-items: flex-start;
       }
 
+      .global-tools {
+        margin-inline-end: var(--wiki-space-2);
+      }
+
       .tool-link {
         display: none;
       }
 
       .audience-control {
-        padding-inline: var(--wiki-space-2);
+        padding-inline: var(--wiki-space-1);
+      }
+
+      .global-tools :global(button[data-open-modal]) {
+        min-width: var(--wiki-touch-target);
+      }
+
+      .audience-label-full {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+
+      .audience-label-short {
+        display: inline;
+      }
+
+      .global-tools :global(starlight-theme-select label) {
+        --sl-select-width: 1.5rem !important;
+        --sl-caret-size: 0rem;
+      }
+
+      .global-tools :global(starlight-theme-select select) {
+        color: transparent;
+      }
+
+      .global-tools :global(starlight-theme-select .caret) {
+        display: none;
       }
     }
 
