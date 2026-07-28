@@ -1,0 +1,162 @@
+---
+import { wikiContract } from '../../scripts/wiki/wiki-contract.mjs';
+
+const { data } = Astro.locals.starlightRoute.entry;
+const pathname = Astro.url.pathname;
+const audience = data.audience
+  || (pathname === '/technical/' || pathname.startsWith('/technical/') ? 'technical' : 'simple');
+const activeSection = data.section || wikiContract.defaults.section;
+const base = import.meta.env.BASE_URL || '/';
+const basePrefix = base === '/' ? '' : `/${base.replace(/^\/+|\/+$/g, '')}`;
+---
+
+<nav class="collection-rail" aria-label="Wiki collections" data-collection-rail>
+  <div class="rail-heading">
+    <span class="rail-title">Collections</span>
+    <button
+      class="rail-toggle"
+      type="button"
+      aria-expanded="true"
+      aria-controls="collection-rail-list"
+      data-collection-rail-toggle
+    >
+      <span aria-hidden="true">‹</span>
+      <span class="sr-only">Collapse collection rail</span>
+    </button>
+  </div>
+  <ul id="collection-rail-list">
+    {wikiContract.navigation.rail.map((item) => (
+      <li>
+        <a
+          href={`${basePrefix}/${audience}/collections/${item.id}/`}
+          aria-current={activeSection === item.id ? 'page' : undefined}
+          data-collection={item.id}
+        >
+          <span class="rail-mark" aria-hidden="true">{item.order + 1}</span>
+          <span class="rail-label">{item.label}</span>
+        </a>
+      </li>
+    ))}
+  </ul>
+</nav>
+
+<script>
+  const rail = document.querySelector('[data-collection-rail]');
+  const toggle = rail?.querySelector('[data-collection-rail-toggle]');
+
+  toggle?.addEventListener('click', () => {
+    const collapsed = rail?.toggleAttribute('data-collapsed');
+    document.documentElement.toggleAttribute('data-collection-rail-collapsed', Boolean(collapsed));
+    toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    const label = toggle.querySelector('.sr-only');
+    if (label) {
+      label.textContent = collapsed ? 'Expand collection rail' : 'Collapse collection rail';
+    }
+  });
+</script>
+
+<style>
+  @layer starlight.core {
+    .collection-rail {
+      display: grid;
+      gap: var(--wiki-space-3);
+      padding-block: var(--wiki-space-4);
+      color: var(--wiki-color-text);
+    }
+
+    .rail-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--wiki-space-2);
+      padding-inline: var(--wiki-space-2);
+    }
+
+    .rail-title {
+      color: var(--wiki-color-text-muted);
+      font-size: var(--wiki-type-xs);
+      font-weight: 750;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .rail-toggle {
+      display: inline-grid;
+      place-items: center;
+      width: var(--wiki-touch-target);
+      min-height: var(--wiki-touch-target);
+      border: 1px solid var(--wiki-color-border);
+      border-radius: var(--wiki-radius-sm);
+      background: var(--wiki-color-surface-raised);
+      color: var(--wiki-color-text);
+      font-size: var(--wiki-type-xl);
+      cursor: pointer;
+    }
+
+    ul {
+      display: grid;
+      gap: var(--wiki-space-1);
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    a {
+      display: flex;
+      align-items: center;
+      gap: var(--wiki-space-3);
+      min-height: var(--wiki-touch-target);
+      padding: var(--wiki-space-2) var(--wiki-space-3);
+      border: 1px solid transparent;
+      border-radius: var(--wiki-radius-md);
+      color: var(--wiki-color-text-muted);
+      font-size: var(--wiki-type-sm);
+      font-weight: 650;
+      text-decoration: none;
+    }
+
+    a:hover {
+      border-color: var(--wiki-color-border);
+      color: var(--wiki-color-text);
+      background: var(--wiki-color-surface-raised);
+    }
+
+    a[aria-current="page"] {
+      border-color: var(--wiki-color-control);
+      color: var(--wiki-color-control-text);
+      background: var(--wiki-color-control);
+    }
+
+    .rail-mark {
+      display: inline-grid;
+      flex: 0 0 auto;
+      place-items: center;
+      width: 1.75rem;
+      height: 1.75rem;
+      border: 1px solid currentColor;
+      border-radius: 50%;
+      font-size: var(--wiki-type-xs);
+    }
+
+    [data-collapsed] .rail-title,
+    [data-collapsed] .rail-label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    [data-collapsed] .rail-heading,
+    [data-collapsed] a {
+      justify-content: center;
+      padding-inline: var(--wiki-space-1);
+    }
+
+    :global(html[data-collection-rail-collapsed]) {
+      --sl-sidebar-width: 5rem;
+    }
+  }
+</style>

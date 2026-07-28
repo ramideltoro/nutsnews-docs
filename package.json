@@ -16,7 +16,8 @@
     "validate:audiences": "npm run build && node scripts/wiki/validate-audience-routes.mjs",
     "validate:brand": "node scripts/wiki/validate-wiki-brand.mjs",
     "validate:links": "node scripts/wiki/validate-link-routes.mjs",
-    "validate:mermaid": "node scripts/wiki/validate-mermaid-diagrams.mjs"
+    "validate:mermaid": "node scripts/wiki/validate-mermaid-diagrams.mjs",
+    "validate:shell": "node scripts/wiki/validate-wiki-shell.mjs"
   },
   "dependencies": {
     "@astrojs/starlight": "^0.41.4",

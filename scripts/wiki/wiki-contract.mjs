@@ -27,10 +27,20 @@ const navigationCollections = [
   },
 ];
 
+const navigationRail = [
+  { id: 'start-here', label: 'Start here', shortLabel: 'Start', order: 0 },
+  { id: 'overview', label: 'Overview', shortLabel: 'Overview', order: 1 },
+  { id: 'public-product', label: 'Public product', shortLabel: 'Public', order: 2 },
+  { id: 'admin-experience', label: 'Admin experience', shortLabel: 'Admin', order: 3 },
+  { id: 'ios', label: 'iOS', shortLabel: 'iOS', order: 4 },
+  { id: 'core-platform', label: 'Core platform', shortLabel: 'Platform', order: 5 },
+  { id: 'contributing', label: 'Contributing', shortLabel: 'Contribute', order: 6 },
+];
+
 const expertFields = ['title', 'description', 'slug', 'collection', 'section', 'status', 'order'];
 
 export const wikiContract = {
-  version: '1.1.0',
+  version: '1.2.0',
   audiences: ['simple', 'technical'],
   route: {
     root: '/',
@@ -107,6 +117,7 @@ export const wikiContract = {
   },
   navigation: {
     collections: navigationCollections,
+    rail: navigationRail,
   },
   markdown: {
     fileExtension: '.md',
@@ -356,6 +367,7 @@ export function wikiContractSnapshot() {
     route: wikiContract.route,
     statusValues: wikiContract.statusValues,
     navigationCollections: wikiContract.navigation.collections,
+    navigationRail: wikiContract.navigation.rail,
     defaults: wikiContract.defaults,
     precedence: wikiContract.frontmatter.precedence,
   };

@@ -1,0 +1,124 @@
+---
+import Search from 'virtual:starlight/components/Search';
+import SiteTitle from 'virtual:starlight/components/SiteTitle';
+import ThemeSelect from 'virtual:starlight/components/ThemeSelect';
+import config from 'virtual:starlight/user-config';
+
+const path = Astro.url.pathname;
+const isTechnical = path === '/technical/' || path.startsWith('/technical/');
+const audience = isTechnical ? 'technical' : 'simple';
+const pairedAudience = isTechnical ? 'simple' : 'technical';
+const entry = Astro.locals.starlightRoute.entry;
+const pairedRoute = entry.data.paired_route || `/${pairedAudience}/`;
+const base = import.meta.env.BASE_URL || '/';
+const basePrefix = base === '/' ? '' : `/${base.replace(/^\/+|\/+$/g, '')}`;
+const withBase = (route) => `${basePrefix}${route.startsWith('/') ? route : `/${route}`}`;
+const historyRoute = `/${audience}/collections/overview/`;
+const shouldRenderSearch =
+  config.pagefind || config.components.Search !== '@astrojs/starlight/components/Search.astro';
+---
+
+<div class="wiki-header">
+  <div class="brand-slot">
+    <SiteTitle />
+  </div>
+
+  <nav class="global-tools" aria-label="Wiki tools">
+    {shouldRenderSearch && <Search />}
+    <a class="tool-link history-link" href={withBase(historyRoute)}>History</a>
+    <a
+      class="tool-link github-link"
+      href="https://github.com/ramideltoro/nutsnews-docs"
+      rel="noreferrer"
+    >
+      GitHub
+    </a>
+    <a
+      class="audience-control"
+      href={withBase(pairedRoute)}
+      data-audience-control
+      data-target-audience={pairedAudience}
+    >
+      {pairedAudience === 'simple' ? 'Simple' : 'Technical'}
+    </a>
+    <ThemeSelect />
+  </nav>
+</div>
+
+<style>
+  @layer starlight.core {
+    .wiki-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--wiki-space-5);
+      min-width: 0;
+      width: 100%;
+    }
+
+    .brand-slot {
+      min-width: 0;
+      overflow: clip;
+    }
+
+    .global-tools {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: var(--wiki-space-3);
+      min-width: 0;
+    }
+
+    .tool-link,
+    .audience-control {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: var(--wiki-touch-target);
+      padding-inline: var(--wiki-space-3);
+      border: 1px solid transparent;
+      border-radius: var(--wiki-radius-sm);
+      color: var(--wiki-color-text);
+      font-size: var(--wiki-type-sm);
+      font-weight: 650;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .tool-link:hover {
+      border-color: var(--wiki-color-border);
+      background: var(--wiki-color-surface-raised);
+    }
+
+    .audience-control {
+      border-color: var(--wiki-color-control);
+      background: var(--wiki-color-control);
+      color: var(--wiki-color-control-text);
+    }
+
+    @media (max-width: 64rem) {
+      .global-tools {
+        gap: var(--wiki-space-2);
+      }
+
+      .history-link,
+      .github-link {
+        display: none;
+      }
+    }
+
+    @media (max-width: 50rem) {
+      .wiki-header {
+        align-items: flex-start;
+      }
+
+      .tool-link {
+        display: none;
+      }
+
+      .audience-control {
+        padding-inline: var(--wiki-space-2);
+      }
+    }
+  }
+</style>
