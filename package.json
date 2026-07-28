@@ -20,11 +20,13 @@
     "validate:resolver": "node scripts/wiki/validate-root-resolver.mjs",
     "validate:article": "node scripts/wiki/validate-article-layout.mjs",
     "validate:audience-switch": "node scripts/wiki/validate-audience-switch.mjs",
+    "validate:search": "node scripts/wiki/validate-pagefind-search.mjs",
     "validate:shell": "node scripts/wiki/validate-wiki-shell.mjs"
   },
   "dependencies": {
     "@astrojs/markdown-remark": "^7.2.1",
     "@astrojs/starlight": "^0.41.4",
+    "@pagefind/default-ui": "^1.5.2",
     "astro": "^7.1.3",
     "gray-matter": "^4.0.3"
   }

@@ -7,6 +7,7 @@ const {
   audience,
   collection,
   paired_route: pairedRoute,
+  section,
   source_path: sourcePath,
   status,
 } = data;
@@ -30,3 +31,7 @@ const alternateUrl = new URL(alternatePath, Astro.site || Astro.url);
 <meta name="nutsnews:collection" content={collection} />
 <meta name="nutsnews:status" content={status} />
 <meta name="nutsnews:source-path" content={sourcePath} />
+<meta data-pagefind-filter="audience[content]" content={audience} />
+<meta data-pagefind-filter="collection[content]" content={collection} />
+<meta data-pagefind-filter="section[content]" content={section} />
+<meta data-pagefind-filter="status[content]" content={status} />

@@ -1,0 +1,394 @@
+---
+import project from 'virtual:starlight/project-context';
+
+const { data } = Astro.locals.starlightRoute.entry;
+const audience = data.audience === 'technical' ? 'technical' : 'simple';
+const audienceLabel = audience === 'technical' ? 'Technical' : 'Simple';
+const pagefindTranslations = {
+  placeholder: `Search ${audienceLabel} wiki`,
+  ...Object.fromEntries(
+    Object.entries(Astro.locals.t.all())
+      .filter(([key]) => key.startsWith('pagefind.'))
+      .map(([key, value]) => [key.replace('pagefind.', ''), value]),
+  ),
+};
+const dataAttributes: DOMStringMap = {
+  'data-audience': audience,
+  'data-audience-label': audienceLabel,
+  'data-base-url': import.meta.env.BASE_URL,
+  'data-translations': JSON.stringify(pagefindTranslations),
+};
+if (project.trailingSlash === 'never') dataAttributes['data-strip-trailing-slash'] = '';
+---
+
+<audience-search class={Astro.props.class} {...dataAttributes}>
+  <button
+    type="button"
+    data-open-modal
+    disabled
+    aria-label={`Search ${audienceLabel} wiki`}
+    aria-keyshortcuts="Control+K"
+  >
+    <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20">
+      <path
+        fill="currentColor"
+        d="m21.7 20.3-4.6-4.6a8.5 8.5 0 1 0-1.4 1.4l4.6 4.6a1 1 0 0 0 1.4-1.4ZM4 10.5a6.5 6.5 0 1 1 13 0 6.5 6.5 0 0 1-13 0Z"
+      />
+    </svg>
+    <span class="search-label" aria-hidden="true">Search</span>
+    <kbd class="search-shortcut" style="display: none;">
+      <kbd>Ctrl</kbd><kbd>K</kbd>
+    </kbd>
+  </button>
+
+  <dialog aria-labelledby="wiki-search-title" aria-describedby="wiki-search-description">
+    <div class="dialog-frame">
+      <header class="search-header">
+        <div>
+          <p class="search-eyebrow">{audienceLabel} audience</p>
+          <h2 id="wiki-search-title">Search the {audienceLabel} wiki</h2>
+          <p id="wiki-search-description">
+            Results are limited to {audienceLabel} pages.
+          </p>
+        </div>
+        <button type="button" data-close-modal aria-label="Close search">
+          <span aria-hidden="true">×</span>
+        </button>
+      </header>
+
+      {
+        import.meta.env.DEV ? (
+          <p class="search-dev-note">Search is available in the production preview and deployed wiki.</p>
+        ) : (
+          <div class="search-container">
+            <label class="search-input-label" for="nutsnews-search-input">
+              Search {audienceLabel} wiki
+            </label>
+            <div id="nutsnews__search" />
+            <p class="search-status sl-hidden" data-search-status aria-live="polite">
+              Loading {audienceLabel} search.
+            </p>
+          </div>
+        )
+      }
+    </div>
+  </dialog>
+</audience-search>
+
+<script is:inline>
+  (() => {
+    const root = document.querySelector('audience-search');
+    const openButton = root?.querySelector('button[data-open-modal]');
+    const shortcut = openButton?.querySelector('.search-shortcut');
+    if (!(openButton instanceof HTMLButtonElement) || !(shortcut instanceof HTMLElement)) return;
+    const platformKey = shortcut.querySelector('kbd');
+    if (platformKey && /(Mac|iPhone|iPod|iPad)/i.test(navigator.platform)) {
+      platformKey.textContent = '⌘';
+      openButton.setAttribute('aria-keyshortcuts', 'Meta+K');
+    }
+    shortcut.style.display = '';
+  })();
+</script>
+
+<script>
+  import { pagefindUserConfig } from 'virtual:starlight/pagefind-config';
+
+  class AudienceSearch extends HTMLElement {
+    constructor() {
+      super();
+      const openButton = this.querySelector<HTMLButtonElement>('button[data-open-modal]');
+      const closeButton = this.querySelector<HTMLButtonElement>('button[data-close-modal]');
+      const dialog = this.querySelector<HTMLDialogElement>('dialog');
+      const dialogFrame = this.querySelector<HTMLElement>('.dialog-frame');
+      const status = this.querySelector<HTMLElement>('[data-search-status]');
+
+      if (!openButton || !closeButton || !dialog || !dialogFrame) return;
+
+      const closeModal = () => dialog.close();
+      const openModal = (event?: Event) => {
+        if (!dialog.open) dialog.showModal();
+        document.body.toggleAttribute('data-search-modal-open', true);
+        requestAnimationFrame(() => this.querySelector<HTMLInputElement>('input')?.focus());
+        event?.stopPropagation();
+        window.addEventListener('click', onWindowClick);
+      };
+      const onWindowClick = (event: MouseEvent) => {
+        const target = event.target;
+        if (!(target instanceof Node)) return;
+        if (
+          target instanceof HTMLAnchorElement ||
+          (document.body.contains(target) && !dialogFrame.contains(target))
+        ) {
+          closeModal();
+        }
+      };
+
+      openButton.addEventListener('click', openModal);
+      openButton.disabled = false;
+      closeButton.addEventListener('click', closeModal);
+      dialog.addEventListener('close', () => {
+        document.body.toggleAttribute('data-search-modal-open', false);
+        window.removeEventListener('click', onWindowClick);
+        openButton.focus();
+      });
+      window.addEventListener('keydown', (event) => {
+        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+          dialog.open ? closeModal() : openModal(event);
+          event.preventDefault();
+        }
+      });
+
+      let translations = {};
+      try {
+        translations = JSON.parse(this.dataset.translations || '{}');
+      } catch {
+        // Pagefind falls back to its bundled English strings.
+      }
+
+      const stripTrailingSlash = (path: string) => path.replace(/(.)\/(#.*)?$/, '$1$2');
+      const formatURL = this.dataset.stripTrailingSlash !== undefined
+        ? stripTrailingSlash
+        : (path: string) => path;
+
+      window.addEventListener('DOMContentLoaded', () => {
+        if (import.meta.env.DEV) return;
+        const onIdle = window.requestIdleCallback || ((callback) => setTimeout(callback, 1));
+        onIdle(async () => {
+          // @ts-expect-error The Pagefind UI package does not publish TypeScript declarations.
+          const { PagefindUI } = await import('@pagefind/default-ui');
+          const baseUrl = this.dataset.baseUrl || '/';
+          const audience = this.dataset.audience || 'simple';
+          const audienceLabel = this.dataset.audienceLabel || 'Simple';
+          const pagefind = new PagefindUI({
+            ...pagefindUserConfig,
+            element: '#nutsnews__search',
+            baseUrl,
+            bundlePath: `${baseUrl.replace(/\/$/, '')}/pagefind/`,
+            showEmptyFilters: false,
+            showImages: false,
+            showSubResults: true,
+            translations,
+            processResult: (result: { url: string; sub_results: Array<{ url: string }> }) => {
+              result.url = formatURL(result.url);
+              result.sub_results = result.sub_results.map((subResult) => ({
+                ...subResult,
+                url: formatURL(subResult.url),
+              }));
+            },
+          });
+          pagefind.triggerFilters({ audience: [audience] });
+
+          const input = this.querySelector<HTMLInputElement>('.pagefind-ui__search-input');
+          if (input) input.id = 'nutsnews-search-input';
+          if (status) status.textContent = `${audienceLabel} search ready.`;
+          if (dialog.open) input?.focus();
+        });
+      });
+    }
+  }
+
+  if (!customElements.get('audience-search')) {
+    customElements.define('audience-search', AudienceSearch);
+  }
+</script>
+
+<style>
+  @layer starlight.core {
+    audience-search {
+      display: contents;
+    }
+
+    button[data-open-modal] {
+      display: flex;
+      align-items: center;
+      gap: var(--wiki-space-2);
+      min-width: var(--wiki-touch-target);
+      min-height: var(--wiki-touch-target);
+      border: 1px solid transparent;
+      border-radius: var(--wiki-radius-sm);
+      padding-inline: var(--wiki-space-2);
+      color: var(--wiki-color-text);
+      background: transparent;
+      cursor: pointer;
+    }
+
+    button[data-open-modal]:hover {
+      border-color: var(--wiki-color-border);
+      background: var(--wiki-color-surface-raised);
+    }
+
+    button:focus-visible {
+      outline: 3px solid var(--wiki-color-focus);
+      outline-offset: 2px;
+    }
+
+    .search-shortcut {
+      display: flex;
+      gap: 0.2rem;
+      margin-inline-start: var(--wiki-space-1);
+      border: 1px solid var(--wiki-color-border);
+      border-radius: var(--wiki-radius-sm);
+      padding: 0.2rem 0.35rem;
+      color: var(--wiki-color-text-muted);
+      font: inherit;
+      font-size: var(--wiki-type-xs);
+    }
+
+    .search-shortcut kbd {
+      font: inherit;
+    }
+
+    dialog {
+      width: 100%;
+      max-width: 100%;
+      height: 100%;
+      max-height: 100%;
+      margin: 0;
+      border: 1px solid var(--wiki-color-border);
+      padding: 0;
+      color: var(--wiki-color-text);
+      background: var(--wiki-color-surface);
+      box-shadow: var(--sl-shadow-lg);
+    }
+
+    dialog[open] {
+      display: flex;
+    }
+
+    dialog::backdrop {
+      background: color-mix(in srgb, black 56%, transparent);
+      backdrop-filter: blur(0.2rem);
+    }
+
+    .dialog-frame {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      gap: var(--wiki-space-5);
+      min-width: 0;
+      overflow: auto;
+      padding: var(--wiki-space-5);
+    }
+
+    .search-header {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--wiki-space-4);
+      align-items: flex-start;
+    }
+
+    .search-eyebrow {
+      margin: 0 0 var(--wiki-space-1);
+      color: var(--wiki-color-link);
+      font-size: var(--wiki-type-xs);
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .search-header h2 {
+      margin: 0;
+      font-size: var(--wiki-type-xl);
+    }
+
+    .search-header p:last-child {
+      margin: var(--wiki-space-1) 0 0;
+      color: var(--wiki-color-text-muted);
+    }
+
+    button[data-close-modal] {
+      display: grid;
+      flex: 0 0 auto;
+      place-items: center;
+      width: var(--wiki-touch-target);
+      height: var(--wiki-touch-target);
+      border: 1px solid var(--wiki-color-border);
+      border-radius: var(--wiki-radius-sm);
+      color: var(--wiki-color-text);
+      background: transparent;
+      cursor: pointer;
+      font-size: 1.75rem;
+      line-height: 1;
+    }
+
+    .search-container {
+      min-width: 0;
+    }
+
+    .search-input-label {
+      display: inline-block;
+      margin-bottom: var(--wiki-space-2);
+      font-size: var(--wiki-type-sm);
+      font-weight: 700;
+    }
+
+    .search-dev-note {
+      margin: auto;
+      text-align: center;
+    }
+
+    #nutsnews__search {
+      --pagefind-ui-primary: var(--wiki-color-link);
+      --pagefind-ui-text: var(--wiki-color-text);
+      --pagefind-ui-background: var(--wiki-color-surface);
+      --pagefind-ui-border: var(--wiki-color-border);
+      --pagefind-ui-tag: var(--wiki-color-surface-raised);
+      --pagefind-ui-font: var(--__sl-font);
+    }
+
+    @media (min-width: 50rem) {
+      button[data-open-modal] {
+        min-width: 8rem;
+      }
+
+      dialog {
+        width: min(42rem, calc(100% - 2rem));
+        height: max-content;
+        min-height: 18rem;
+        max-height: calc(100% - 6rem);
+        margin: 3rem auto auto;
+        border-radius: var(--wiki-radius-md);
+      }
+
+      .dialog-frame {
+        padding: var(--wiki-space-6);
+      }
+    }
+  }
+</style>
+
+<style is:global>
+  @import url('@pagefind/default-ui/css/ui.css') layer(starlight.core);
+
+  @layer starlight.core {
+    [data-search-modal-open] {
+      overflow: hidden;
+    }
+
+    #nutsnews__search .pagefind-ui__filter-panel {
+      display: none;
+    }
+
+    #nutsnews__search .pagefind-ui__search-input {
+      color: var(--wiki-color-text);
+      font-weight: 450;
+    }
+
+    #nutsnews__search .pagefind-ui__search-input:focus {
+      --pagefind-ui-border: var(--wiki-color-focus);
+    }
+
+    #nutsnews__search .pagefind-ui__result {
+      border-color: var(--wiki-color-border);
+    }
+
+    #nutsnews__search .pagefind-ui__result-link {
+      color: var(--wiki-color-link);
+    }
+
+    #nutsnews__search mark {
+      color: inherit;
+      background: color-mix(in srgb, var(--wiki-color-link) 18%, transparent);
+    }
+  }
+</style>
