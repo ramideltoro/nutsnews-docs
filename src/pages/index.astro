@@ -1,0 +1,270 @@
+---
+import logo from '../assets/nutsnews-logo.png';
+import { wikiContract } from '../../scripts/wiki/wiki-contract.mjs';
+import '../styles/wiki.css';
+
+const { resolver } = wikiContract.route;
+const base = import.meta.env.BASE_URL || '/';
+const basePrefix = base === '/' ? '' : `/${base.replace(/^\/+|\/+$/g, '')}`;
+const destination = (audience) => `${basePrefix}${resolver.destinations[audience]}`;
+const canonicalPath = base === '/' ? '/' : `${basePrefix}/`;
+---
+
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NutsNews Wiki</title>
+    <meta
+      name="description"
+      content="Choose the Simple or Technical NutsNews Wiki."
+    />
+    <link rel="canonical" href={new URL(canonicalPath, Astro.site)} />
+  </head>
+  <body>
+    <main
+      class="resolver-shell"
+      data-root-resolver
+      data-preference-key={resolver.preferenceKey}
+      data-query-parameter={resolver.queryParameter}
+      data-default-audience={wikiContract.route.landingAudience}
+      data-allowed-audiences={resolver.allowedValues.join(',')}
+    >
+      <div class="resolver-card">
+        <header>
+          <a class="resolver-brand" href={base} aria-label="NutsNews Wiki home">
+            <img src={logo.src} alt="" width="640" height="517" />
+            <span>NutsNews Wiki</span>
+          </a>
+          <p class="eyebrow">Guided knowledge map</p>
+          <h1>Choose how you want to read</h1>
+          <p class="lede">
+            Start with a plain-language guide or open the full implementation detail.
+            You can switch audiences from every article.
+          </p>
+        </header>
+
+        <nav class="audience-destinations" aria-label="Choose a wiki audience">
+          <a
+            class="audience-card audience-card-primary"
+            href={destination('simple')}
+            data-audience-destination="simple"
+          >
+            <span class="audience-card-kicker">Recommended</span>
+            <strong>Simple</strong>
+            <span>Clear explanations, visual orientation, and less jargon.</span>
+          </a>
+          <a
+            class="audience-card"
+            href={destination('technical')}
+            data-audience-destination="technical"
+          >
+            <span class="audience-card-kicker">Full detail</span>
+            <strong>Technical</strong>
+            <span>Architecture, operations, code, and implementation context.</span>
+          </a>
+        </nav>
+
+        <p class="resolver-note" aria-live="polite">
+          First-time visitors continue to Simple automatically.
+        </p>
+        <noscript>
+          <p class="no-script-note">
+            Automatic audience selection needs JavaScript. Both links above work without it.
+          </p>
+        </noscript>
+      </div>
+    </main>
+
+    <script>
+      const resolver = document.querySelector('[data-root-resolver]');
+
+      if (resolver instanceof HTMLElement) {
+        const key = resolver.dataset.preferenceKey;
+        const queryParameter = resolver.dataset.queryParameter;
+        const allowed = (resolver.dataset.allowedAudiences || '').split(',');
+        const fallback = resolver.dataset.defaultAudience;
+        const current = new URL(location.href);
+        const explicit = queryParameter ? current.searchParams.get(queryParameter) : null;
+        let stored = null;
+
+        try {
+          stored = key ? localStorage.getItem(key) : null;
+        } catch {
+          // Storage is optional; the Simple default remains deterministic.
+        }
+
+        const audience = allowed.includes(explicit)
+          ? explicit
+          : allowed.includes(stored)
+            ? stored
+            : fallback;
+        const targetLink = resolver.querySelector(`[data-audience-destination="${audience}"]`);
+
+        if (targetLink instanceof HTMLAnchorElement) {
+          const target = new URL(targetLink.href, location.href);
+          if (queryParameter) current.searchParams.delete(queryParameter);
+          target.search = current.searchParams.toString();
+          target.hash = current.hash;
+
+          try {
+            if (key && allowed.includes(audience)) localStorage.setItem(key, audience);
+          } catch {
+            // Redirects and normal links do not depend on storage.
+          }
+
+          if (target.href !== current.href) location.replace(target.href);
+        }
+      }
+    </script>
+  </body>
+</html>
+
+<style>
+  .resolver-shell {
+    display: grid;
+    min-height: 100vh;
+    min-height: 100svh;
+    place-items: center;
+    padding: var(--wiki-space-5);
+    background:
+      radial-gradient(circle at 18% 12%, rgb(217 134 23 / 16%), transparent 30rem),
+      radial-gradient(circle at 82% 86%, rgb(246 189 90 / 10%), transparent 28rem),
+      var(--wiki-color-canvas);
+  }
+
+  .resolver-card {
+    display: grid;
+    gap: var(--wiki-space-6);
+    width: min(100%, 56rem);
+    padding: clamp(1.25rem, 5vw, 3.5rem);
+    border: 1px solid var(--wiki-color-border);
+    border-radius: var(--wiki-radius-lg);
+    background: color-mix(in srgb, var(--wiki-color-surface) 94%, transparent);
+    box-shadow: 0 1.5rem 5rem rgb(0 0 0 / 24%);
+  }
+
+  header {
+    display: grid;
+    gap: var(--wiki-space-3);
+  }
+
+  .resolver-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--wiki-space-3);
+    width: fit-content;
+    color: var(--wiki-color-text);
+    font-family: var(--wiki-font-display);
+    font-size: var(--wiki-type-xl);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .resolver-brand img {
+    width: 3rem;
+    height: 2.5rem;
+    object-fit: contain;
+    filter: drop-shadow(0 0.125rem 0.25rem rgb(0 0 0 / 35%));
+  }
+
+  .eyebrow,
+  .audience-card-kicker {
+    margin: 0;
+    color: var(--wiki-color-text-muted);
+    font-size: var(--wiki-type-xs);
+    font-weight: 750;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    max-width: 15ch;
+    margin: 0;
+    color: var(--wiki-color-text);
+    font-family: var(--wiki-font-display);
+    font-size: var(--wiki-type-display);
+    line-height: var(--wiki-leading-tight);
+    overflow-wrap: anywhere;
+  }
+
+  .lede {
+    max-width: 62ch;
+    margin: 0;
+    color: var(--wiki-color-text-muted);
+    font-size: var(--wiki-type-lg);
+  }
+
+  .audience-destinations {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--wiki-space-4);
+  }
+
+  .audience-card {
+    display: grid;
+    align-content: start;
+    gap: var(--wiki-space-2);
+    min-width: 0;
+    min-height: 10rem;
+    padding: var(--wiki-space-5);
+    border: 1px solid var(--wiki-color-border);
+    border-radius: var(--wiki-radius-md);
+    color: var(--wiki-color-text);
+    background: var(--wiki-color-surface-raised);
+    text-decoration: none;
+    overflow-wrap: anywhere;
+  }
+
+  .audience-card:hover {
+    border-color: var(--wiki-color-link);
+    transform: translateY(-0.125rem);
+  }
+
+  .audience-card-primary {
+    border-color: var(--wiki-color-control);
+    background:
+      linear-gradient(135deg, rgb(246 189 90 / 14%), transparent 70%),
+      var(--wiki-color-surface-raised);
+  }
+
+  .audience-card strong {
+    color: var(--wiki-color-link);
+    font-family: var(--wiki-font-display);
+    font-size: var(--wiki-type-xl);
+  }
+
+  .audience-card > span:last-child,
+  .resolver-note,
+  .no-script-note {
+    color: var(--wiki-color-text-muted);
+    font-size: var(--wiki-type-sm);
+  }
+
+  .resolver-note,
+  .no-script-note {
+    margin: 0;
+  }
+
+  @media (max-width: 40rem) {
+    .resolver-shell {
+      align-items: start;
+      padding: var(--wiki-space-3);
+    }
+
+    .resolver-card {
+      gap: var(--wiki-space-5);
+      margin-block: var(--wiki-space-3);
+    }
+
+    .audience-destinations {
+      grid-template-columns: 1fr;
+    }
+
+    .audience-card {
+      min-height: 0;
+      padding: var(--wiki-space-4);
+    }
+  }
+</style>

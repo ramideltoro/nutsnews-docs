@@ -40,7 +40,7 @@ const navigationRail = [
 const expertFields = ['title', 'description', 'slug', 'collection', 'section', 'status', 'order'];
 
 export const wikiContract = {
-  version: '1.2.0',
+  version: '1.3.0',
   audiences: ['simple', 'technical'],
   route: {
     root: '/',
@@ -50,8 +50,14 @@ export const wikiContract = {
     landingAudience: 'simple',
     resolver: {
       preferenceKey: 'nutsnews.wiki.audience',
+      queryParameter: 'audience',
       allowedValues: ['simple', 'technical'],
       precedence: ['explicit-choice', 'stored-preference', 'landing-audience'],
+      forwarding: {
+        removeQueryParameters: ['audience'],
+        preserveOtherQueryParameters: true,
+        preserveFragment: true,
+      },
       destinations: {
         simple: '/simple/',
         technical: '/technical/',

@@ -17,6 +17,7 @@
     "validate:brand": "node scripts/wiki/validate-wiki-brand.mjs",
     "validate:links": "node scripts/wiki/validate-link-routes.mjs",
     "validate:mermaid": "node scripts/wiki/validate-mermaid-diagrams.mjs",
+    "validate:resolver": "node scripts/wiki/validate-root-resolver.mjs",
     "validate:article": "node scripts/wiki/validate-article-layout.mjs",
     "validate:audience-switch": "node scripts/wiki/validate-audience-switch.mjs",
     "validate:shell": "node scripts/wiki/validate-wiki-shell.mjs"
