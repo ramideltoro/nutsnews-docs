@@ -1,0 +1,32 @@
+---
+import StarlightHead from '@astrojs/starlight/components/Head.astro';
+import { publishedRoute } from '../../scripts/wiki/wiki-contract.mjs';
+
+const { data } = Astro.locals.starlightRoute.entry;
+const {
+  audience,
+  collection,
+  paired_route: pairedRoute,
+  source_path: sourcePath,
+  status,
+} = data;
+const pairedAudience = audience === 'simple' ? 'technical' : 'simple';
+const configuredBase = import.meta.env.BASE_URL || '/';
+const basePrefix = configuredBase === '/'
+  ? ''
+  : `/${configuredBase.replace(/^\/+|\/+$/g, '')}`;
+const alternatePath = `${basePrefix}${publishedRoute(pairedRoute)}`;
+const alternateUrl = new URL(alternatePath, Astro.site || Astro.url);
+---
+
+<StarlightHead />
+<link
+  rel="alternate"
+  href={alternateUrl}
+  title={`${pairedAudience} audience version`}
+  data-audience={pairedAudience}
+/>
+<meta name="nutsnews:audience" content={audience} />
+<meta name="nutsnews:collection" content={collection} />
+<meta name="nutsnews:status" content={status} />
+<meta name="nutsnews:source-path" content={sourcePath} />

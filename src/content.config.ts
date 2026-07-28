@@ -22,6 +22,7 @@ const docs = defineCollection({
       section: z.string(),
       status: z.string(),
       order: z.number(),
+      audience: z.enum(['simple', 'technical']),
       source_route: z.string(),
       simple_route: z.string(),
       source_path: z.string(),
