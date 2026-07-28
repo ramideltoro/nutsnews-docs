@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-swiss-german-greek-language-update/
   simple_route: /simple/updates/readme-swiss-german-greek-language-update/
   primary_diagram:
-    file: diagrams/updates/README_SWISS_GERMAN_GREEK_LANGUAGE_UPDATE.md
+    file: diagrams/updates/README_SWISS_GERMAN_GREEK_LANGUAGE_UPDATE.mmd
     accTitle: "Swiss German, German, and Greek Language Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-backfill-repeat-fix/
   simple_route: /simple/updates/readme-backfill-repeat-fix/
   primary_diagram:
-    file: diagrams/updates/README_BACKFILL_REPEAT_FIX.md
+    file: diagrams/updates/README_BACKFILL_REPEAT_FIX.mmd
     accTitle: "Backfill repeat fix diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

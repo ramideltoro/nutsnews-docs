@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-article-translation-backfill-issue-282/
   simple_route: /simple/updates/readme-article-translation-backfill-issue-282/
   primary_diagram:
-    file: diagrams/updates/README_ARTICLE_TRANSLATION_BACKFILL_ISSUE_282.md
+    file: diagrams/updates/README_ARTICLE_TRANSLATION_BACKFILL_ISSUE_282.mmd
     accTitle: "Article translation backfill issue #282 diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

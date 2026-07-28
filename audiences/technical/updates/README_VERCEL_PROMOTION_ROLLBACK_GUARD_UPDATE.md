@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-vercel-promotion-rollback-guard-update/
   simple_route: /simple/updates/readme-vercel-promotion-rollback-guard-update/
   primary_diagram:
-    file: diagrams/updates/README_VERCEL_PROMOTION_ROLLBACK_GUARD_UPDATE.md
+    file: diagrams/updates/README_VERCEL_PROMOTION_ROLLBACK_GUARD_UPDATE.mmd
     accTitle: "Vercel Promotion Rollback Guard Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

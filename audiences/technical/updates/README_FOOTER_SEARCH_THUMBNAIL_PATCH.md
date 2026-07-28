@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-footer-search-thumbnail-patch/
   simple_route: /simple/updates/readme-footer-search-thumbnail-patch/
   primary_diagram:
-    file: diagrams/updates/README_FOOTER_SEARCH_THUMBNAIL_PATCH.md
+    file: diagrams/updates/README_FOOTER_SEARCH_THUMBNAIL_PATCH.mmd
     accTitle: "NutsNews Footer Search Thumbnail Patch diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

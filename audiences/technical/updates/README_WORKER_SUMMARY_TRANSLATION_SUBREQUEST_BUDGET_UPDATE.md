@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-worker-summary-translation-subrequest-budget-update/
   simple_route: /simple/updates/readme-worker-summary-translation-subrequest-budget-update/
   primary_diagram:
-    file: diagrams/updates/README_WORKER_SUMMARY_TRANSLATION_SUBREQUEST_BUDGET_UPDATE.md
+    file: diagrams/updates/README_WORKER_SUMMARY_TRANSLATION_SUBREQUEST_BUDGET_UPDATE.mmd
     accTitle: "Worker Summary Translation Subrequest Budget Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

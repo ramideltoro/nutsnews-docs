@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-settings-menu-update/
   simple_route: /simple/updates/readme-settings-menu-update/
   primary_diagram:
-    file: diagrams/updates/README_SETTINGS_MENU_UPDATE.md
+    file: diagrams/updates/README_SETTINGS_MENU_UPDATE.mmd
     accTitle: "NutsNews Settings Menu Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-update/
   simple_route: /simple/updates/readme-update/
   primary_diagram:
-    file: diagrams/updates/README_UPDATE.md
+    file: diagrams/updates/README_UPDATE.mmd
     accTitle: "NutsNews Local AI Summary Length Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

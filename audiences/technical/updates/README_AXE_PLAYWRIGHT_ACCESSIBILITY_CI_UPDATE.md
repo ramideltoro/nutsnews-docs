@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-axe-playwright-accessibility-ci-update/
   simple_route: /simple/updates/readme-axe-playwright-accessibility-ci-update/
   primary_diagram:
-    file: diagrams/updates/README_AXE_PLAYWRIGHT_ACCESSIBILITY_CI_UPDATE.md
+    file: diagrams/updates/README_AXE_PLAYWRIGHT_ACCESSIBILITY_CI_UPDATE.mmd
     accTitle: "Update: axe Playwright Accessibility CI diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-worker-local-first-ai-and-logging-update/
   simple_route: /simple/updates/readme-worker-local-first-ai-and-logging-update/
   primary_diagram:
-    file: diagrams/updates/README_WORKER_LOCAL_FIRST_AI_AND_LOGGING_UPDATE.md
+    file: diagrams/updates/README_WORKER_LOCAL_FIRST_AI_AND_LOGGING_UPDATE.mmd
     accTitle: "Worker local-first AI and diagnostic logging update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

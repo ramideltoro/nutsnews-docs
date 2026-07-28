@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-full-archive-search-update/
   simple_route: /simple/updates/readme-full-archive-search-update/
   primary_diagram:
-    file: diagrams/updates/README_FULL_ARCHIVE_SEARCH_UPDATE.md
+    file: diagrams/updates/README_FULL_ARCHIVE_SEARCH_UPDATE.mmd
     accTitle: "Full Archive Search Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

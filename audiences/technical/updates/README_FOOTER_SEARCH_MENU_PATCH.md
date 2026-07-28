@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-footer-search-menu-patch/
   simple_route: /simple/updates/readme-footer-search-menu-patch/
   primary_diagram:
-    file: diagrams/updates/README_FOOTER_SEARCH_MENU_PATCH.md
+    file: diagrams/updates/README_FOOTER_SEARCH_MENU_PATCH.mmd
     accTitle: "NutsNews Footer Search Menu Patch diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

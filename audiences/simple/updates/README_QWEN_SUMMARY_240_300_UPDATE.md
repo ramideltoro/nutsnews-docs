@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-qwen-summary-240-300-update/
   simple_route: /simple/updates/readme-qwen-summary-240-300-update/
   primary_diagram:
-    file: diagrams/updates/README_QWEN_SUMMARY_240_300_UPDATE.md
+    file: diagrams/updates/README_QWEN_SUMMARY_240_300_UPDATE.mmd
     accTitle: "NutsNews Qwen Summary Length Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-mandatory-nutsnews-docs-policy/
   simple_route: /simple/updates/readme-mandatory-nutsnews-docs-policy/
   primary_diagram:
-    file: diagrams/updates/README_MANDATORY_NUTSNEWS_DOCS_POLICY.md
+    file: diagrams/updates/README_MANDATORY_NUTSNEWS_DOCS_POLICY.mmd
     accTitle: "Mandatory NutsNews Docs Policy diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active
