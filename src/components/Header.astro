@@ -16,7 +16,9 @@ const simpleRoute = audience === 'simple' ? currentRoute : pairedRoute;
 const technicalRoute = audience === 'technical' ? currentRoute : pairedRoute;
 const base = import.meta.env.BASE_URL || '/';
 const basePrefix = base === '/' ? '' : `/${base.replace(/^\/+|\/+$/g, '')}`;
-const withBase = (route) => `${basePrefix}${route.startsWith('/') ? route : `/${route}`}`;
+const withBase = (route) => (
+  `${basePrefix}${route.startsWith('/') ? route : `/${route}`}`.replace(/\/?$/, '/')
+);
 const historyRoute = `/${audience}/collections/overview/`;
 const shouldRenderSearch =
   config.pagefind || config.components.Search !== '@astrojs/starlight/components/Search.astro';

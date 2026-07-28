@@ -70,6 +70,15 @@ precedence/persistence, and Pagefind filters. Controlled broken metadata and
 link fixtures must fail. The test finishes with the default-base build so later
 validation and deployment steps inspect production-shaped output.
 
+Run `npm run test:browser` for the Chromium reader-journey matrix. Its
+1440×1024, 834×1194, and 390×844 projects cover collection navigation, the
+mobile drawer, filtered search and History, audience switching, local Mermaid
+rendering/zoom/fullscreen, edit links, nested content, and the branded 404.
+Each project rejects serious or critical axe findings and document-level
+horizontal overflow, verifies keyboard focus restoration, and compares the
+article shell and search dialog with six reviewed responsive baselines. Update
+those baselines intentionally with `npm run test:browser:update`.
+
 ## Frontmatter and precedence
 
 Generated expert frontmatter always contains `title`, `description`, `slug`,

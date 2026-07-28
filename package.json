@@ -17,6 +17,8 @@
     "test:docs-new": "node --test scripts/wiki/docs-new.test.mjs",
     "test:content-contract": "node --test scripts/wiki/wiki-content-contract.test.mjs",
     "test:content-routes": "node --test scripts/wiki/wiki-content-routes.test.mjs",
+    "test:browser": "playwright test",
+    "test:browser:update": "playwright test --update-snapshots",
     "wiki:prepare": "node scripts/wiki/generate-wiki-content.mjs",
     "wiki:prepare:strict": "node scripts/wiki/generate-wiki-content.mjs --strict",
     "wiki:diagrams:a11y": "npm run wiki:prepare && node scripts/wiki/add-mermaid-accessibility.mjs",
@@ -46,6 +48,8 @@
     "openai": "^7.0.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
+    "@playwright/test": "^1.62.0",
     "jsdom": "^28.1.0"
   }
 }

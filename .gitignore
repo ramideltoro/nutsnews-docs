@@ -8,6 +8,8 @@ _site/**
 # Node and tooling caches
 node_modules/
 coverage/
+playwright-report/
+test-results/
 .npm/
 .yarn/
 .pnpm-store/

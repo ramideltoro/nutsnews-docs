@@ -195,8 +195,10 @@ const historyRoot = withBase('/simple/collections/overview/');
   }
 
   .not-found-card {
+    box-sizing: border-box;
     display: grid;
     gap: var(--wiki-space-6);
+    min-width: 0;
     width: min(100%, 64rem);
     padding: clamp(1.25rem, 5vw, 3.5rem);
     border: 1px solid var(--wiki-color-border);
