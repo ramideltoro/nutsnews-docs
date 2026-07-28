@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/nutsnews-vps-backups/
   simple_route: /simple/nutsnews-vps-backups/
   primary_diagram:
-    file: diagrams/NUTSNEWS_VPS_BACKUPS.md
+    file: diagrams/NUTSNEWS_VPS_BACKUPS.mmd
     accTitle: "NutsNews VPS Backups diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

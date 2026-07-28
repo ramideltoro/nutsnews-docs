@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/vercel-preview-smoke-test/
   simple_route: /simple/vercel-preview-smoke-test/
   primary_diagram:
-    file: diagrams/VERCEL_PREVIEW_SMOKE_TEST.md
+    file: diagrams/VERCEL_PREVIEW_SMOKE_TEST.mmd
     accTitle: "Vercel Preview Smoke Test diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

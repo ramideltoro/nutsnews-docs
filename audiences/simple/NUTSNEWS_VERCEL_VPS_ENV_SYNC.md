@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/nutsnews-vercel-vps-env-sync/
   simple_route: /simple/nutsnews-vercel-vps-env-sync/
   primary_diagram:
-    file: diagrams/NUTSNEWS_VERCEL_VPS_ENV_SYNC.md
+    file: diagrams/NUTSNEWS_VERCEL_VPS_ENV_SYNC.mmd
     accTitle: "Vercel-to-VPS environment synchronization diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

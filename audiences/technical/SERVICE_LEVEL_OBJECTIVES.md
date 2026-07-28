@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/service-level-objectives/
   simple_route: /simple/service-level-objectives/
   primary_diagram:
-    file: diagrams/SERVICE_LEVEL_OBJECTIVES.md
+    file: diagrams/SERVICE_LEVEL_OBJECTIVES.mmd
     accTitle: "NutsNews Service Level Objectives diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

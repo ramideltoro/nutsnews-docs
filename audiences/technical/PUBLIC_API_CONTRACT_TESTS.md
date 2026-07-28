@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/public-api-contract-tests/
   simple_route: /simple/public-api-contract-tests/
   primary_diagram:
-    file: diagrams/PUBLIC_API_CONTRACT_TESTS.md
+    file: diagrams/PUBLIC_API_CONTRACT_TESTS.mmd
     accTitle: "NutsNews API Compatibility Contracts diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

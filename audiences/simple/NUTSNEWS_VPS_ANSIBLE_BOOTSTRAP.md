@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/nutsnews-vps-ansible-bootstrap/
   simple_route: /simple/nutsnews-vps-ansible-bootstrap/
   primary_diagram:
-    file: diagrams/NUTSNEWS_VPS_ANSIBLE_BOOTSTRAP.md
+    file: diagrams/NUTSNEWS_VPS_ANSIBLE_BOOTSTRAP.mmd
     accTitle: "NutsNews VPS Ansible Bootstrap diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

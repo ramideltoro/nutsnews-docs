@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/release-notes-workflow/
   simple_route: /simple/release-notes-workflow/
   primary_diagram:
-    file: diagrams/RELEASE_NOTES_WORKFLOW.md
+    file: diagrams/RELEASE_NOTES_WORKFLOW.mmd
     accTitle: "Release Notes Workflow diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/nutsnews-backend-cleanup-maintenance/
   simple_route: /simple/nutsnews-backend-cleanup-maintenance/
   primary_diagram:
-    file: diagrams/NUTSNEWS_BACKEND_CLEANUP_MAINTENANCE.md
+    file: diagrams/NUTSNEWS_BACKEND_CLEANUP_MAINTENANCE.mmd
     accTitle: "NutsNews Backend Cleanup Maintenance diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/nutsnews-vps-restore/
   simple_route: /simple/nutsnews-vps-restore/
   primary_diagram:
-    file: diagrams/NUTSNEWS_VPS_RESTORE.md
+    file: diagrams/NUTSNEWS_VPS_RESTORE.mmd
     accTitle: "NutsNews VPS Restore diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

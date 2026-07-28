@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/migration-release-gate/
   simple_route: /simple/migration-release-gate/
   primary_diagram:
-    file: diagrams/MIGRATION_RELEASE_GATE.md
+    file: diagrams/MIGRATION_RELEASE_GATE.mmd
     accTitle: "Migration Release Gate diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

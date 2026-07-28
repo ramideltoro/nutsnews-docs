@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/vps-alert-email-policy/
   simple_route: /simple/vps-alert-email-policy/
   primary_diagram:
-    file: diagrams/VPS_ALERT_EMAIL_POLICY.md
+    file: diagrams/VPS_ALERT_EMAIL_POLICY.mmd
     accTitle: "VPS Alert Email Policy diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

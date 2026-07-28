@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/lighthouse-ci-onboarding/
   simple_route: /simple/lighthouse-ci-onboarding/
   primary_diagram:
-    file: diagrams/LIGHTHOUSE_CI_ONBOARDING.md
+    file: diagrams/LIGHTHOUSE_CI_ONBOARDING.mmd
     accTitle: "Google Lighthouse CI Onboarding diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

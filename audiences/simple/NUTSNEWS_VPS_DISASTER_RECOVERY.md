@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/nutsnews-vps-disaster-recovery/
   simple_route: /simple/nutsnews-vps-disaster-recovery/
   primary_diagram:
-    file: diagrams/NUTSNEWS_VPS_DISASTER_RECOVERY.md
+    file: diagrams/NUTSNEWS_VPS_DISASTER_RECOVERY.mmd
     accTitle: "NutsNews VPS Disaster Recovery diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

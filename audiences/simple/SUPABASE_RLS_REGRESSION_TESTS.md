@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/supabase-rls-regression-tests/
   simple_route: /simple/supabase-rls-regression-tests/
   primary_diagram:
-    file: diagrams/SUPABASE_RLS_REGRESSION_TESTS.md
+    file: diagrams/SUPABASE_RLS_REGRESSION_TESTS.mmd
     accTitle: "Supabase RLS Regression Tests diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

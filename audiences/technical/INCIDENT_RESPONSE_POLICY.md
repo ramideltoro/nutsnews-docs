@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/incident-response-policy/
   simple_route: /simple/incident-response-policy/
   primary_diagram:
-    file: diagrams/INCIDENT_RESPONSE_POLICY.md
+    file: diagrams/INCIDENT_RESPONSE_POLICY.mmd
     accTitle: "NutsNews Incident Response Policy diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/uptimerobot-onboarding/
   simple_route: /simple/uptimerobot-onboarding/
   primary_diagram:
-    file: diagrams/UPTIMEROBOT_ONBOARDING.md
+    file: diagrams/UPTIMEROBOT_ONBOARDING.mmd
     accTitle: "UptimeRobot Onboarding diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

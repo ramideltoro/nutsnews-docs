@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/snyk-security-scan/
   simple_route: /simple/snyk-security-scan/
   primary_diagram:
-    file: diagrams/SNYK_SECURITY_SCAN.md
+    file: diagrams/SNYK_SECURITY_SCAN.mmd
     accTitle: "Snyk Security Scan diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active
