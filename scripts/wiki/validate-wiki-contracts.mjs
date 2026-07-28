@@ -159,6 +159,15 @@ async function validateContractDefinition(errors) {
       wikiContract.route.resolver.precedence,
       ['explicit-choice', 'stored-preference', 'landing-audience'],
     );
+    assert.equal(wikiContract.route.resolver.queryParameter, 'audience');
+    assert.deepEqual(
+      wikiContract.route.resolver.forwarding,
+      {
+        removeQueryParameters: ['audience'],
+        preserveOtherQueryParameters: true,
+        preserveFragment: true,
+      },
+    );
     assert.equal(
       wikiContract.route.resolver.destinations[wikiContract.route.landingAudience],
       '/simple/',

@@ -43,6 +43,14 @@ derived diagram path.
 `nutsnews.wiki.audience` preference, then the Simple default. The only accepted
 audiences are `simple` and `technical`.
 
+An explicit root choice uses `?audience=simple` or `?audience=technical`. The
+resolver removes that control parameter before navigating, preserves every
+other query parameter and the fragment, and replaces the root history entry.
+Invalid audience values are ignored. With JavaScript disabled, the root remains
+a branded landing page with normal Simple and Technical links; those fallback
+links start at the chosen audience root without forwarding the root query or
+fragment.
+
 Navigation uses the ordered collections and sections in the checked contract
 block. Documents without collection or section metadata use `start-here` and
 `overview`. The seven-item collection rail maps directly to the seven accepted
@@ -53,7 +61,7 @@ section values. Status must be `active`, `draft`, `deprecated`, or `obsolete`.
 <!-- wiki-contract:start -->
 ```json
 {
-  "version": "1.2.0",
+  "version": "1.3.0",
   "audiences": [
     "simple",
     "technical"
@@ -102,6 +110,7 @@ section values. Status must be `active`, `draft`, `deprecated`, or `obsolete`.
     "landingAudience": "simple",
     "resolver": {
       "preferenceKey": "nutsnews.wiki.audience",
+      "queryParameter": "audience",
       "allowedValues": [
         "simple",
         "technical"
@@ -111,6 +120,13 @@ section values. Status must be `active`, `draft`, `deprecated`, or `obsolete`.
         "stored-preference",
         "landing-audience"
       ],
+      "forwarding": {
+        "removeQueryParameters": [
+          "audience"
+        ],
+        "preserveOtherQueryParameters": true,
+        "preserveFragment": true
+      },
       "destinations": {
         "simple": "/simple/",
         "technical": "/technical/"
