@@ -71,6 +71,26 @@ assert.match(
   /\[historyFilterKey\]:\s*\[historyCurrentValue\]/,
   'search must exclude History by default',
 );
+assert.match(
+  searchSource,
+  /await pagefindIndex\.filters\(\)/,
+  'search must verify the local index before creating the UI',
+);
+assert.match(
+  searchSource,
+  /input\.disabled = true/,
+  'the fixed audience and History filters must not be user-removable',
+);
+assert.match(
+  searchSource,
+  /input\.closest\(['"]details['"]\)\?\.toggleAttribute\(['"]hidden['"], true\)/,
+  'the duplicate fixed Pagefind controls must stay hidden',
+);
+assert.match(
+  searchSource,
+  /data-search-error/,
+  'search initialization failures need a visible recovery state',
+);
 assert.match(articleHeaderSource, /Page status:/, 'pages must show their status in text');
 assert.match(
   collectionRailSource,

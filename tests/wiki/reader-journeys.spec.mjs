@@ -5,6 +5,7 @@ import { wikiContract } from '../../scripts/wiki/wiki-contract.mjs';
 
 const articlePath = '/simple/project/';
 const nestedArticlePath = '/simple/archive/nutsnews-app-store-privacy-policy-update-readme/';
+const historicalArticlePath = '/simple/updates/readme-footer-search-menu-patch/';
 const screenshotStyle = new URL('./visual-stability.css', import.meta.url).pathname;
 
 function seriousOrCritical(violations) {
@@ -102,7 +103,11 @@ test('navigation, drawer, History, audience toggle, and edit link journey', asyn
   await assertNoViewportOverflow(page);
 });
 
-test('search keyboard journey filters current audience and restores focus', async ({ page }) => {
+test('search isolates audience, opts into History, and passes keyboard and empty states', async ({
+  page,
+}) => {
+  const pageErrors = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
   const open = page.locator('button[data-open-modal]');
   await expect(open).toBeEnabled();
   await open.focus();
@@ -114,13 +119,147 @@ test('search keyboard journey filters current audience and restores focus', asyn
   await expect(input).toBeFocused();
   await input.fill('deployment');
   await expect(dialog.locator('.pagefind-ui__result').first()).toBeVisible();
+  const deploymentPaths = await dialog.locator('.pagefind-ui__result-link').evaluateAll(
+    (links) => links.map((link) => new URL(link.href).pathname),
+  );
+  expect(deploymentPaths.length).toBeGreaterThan(0);
+  expect(deploymentPaths.every((route) => route.startsWith('/simple/'))).toBe(true);
+  expect(deploymentPaths.some((route) => route.startsWith('/technical/'))).toBe(false);
+
+  await expect.poll(async () => dialog.locator(
+    '.pagefind-ui__filter-checkbox[name="audience"], '
+      + '.pagefind-ui__filter-checkbox[name="history"]',
+  ).count()).toBeGreaterThan(0);
+  const fixedFiltersLocked = await dialog.locator(
+    '.pagefind-ui__filter-checkbox[name="audience"], '
+      + '.pagefind-ui__filter-checkbox[name="history"]',
+  ).evaluateAll((inputs) => inputs.every(
+    (input) => input.disabled && input.closest('details')?.hidden,
+  ));
+  expect(fixedFiltersLocked).toBe(true);
+
   await expect(dialog.locator('[data-include-history]')).not.toBeChecked();
+  await input.fill('"NutsNews Footer Search Menu Patch"');
+  await expect(dialog.locator('.pagefind-ui__message')).toContainText('result');
+  await expect.poll(async () => dialog.locator('.pagefind-ui__result-link').evaluateAll(
+    (links) => links.some(
+      (link) => new URL(link.href).pathname === '/simple/updates/readme-footer-search-menu-patch/',
+    ),
+  )).toBe(false);
   await dialog.locator('[data-include-history]').check();
   await expect(dialog.locator('[data-search-status]')).toContainText('includes History');
+  await expect.poll(async () => dialog.locator('.pagefind-ui__result-link').evaluateAll(
+    (links) => links.some(
+      (link) => new URL(link.href).pathname === '/simple/updates/readme-footer-search-menu-patch/',
+    ),
+  )).toBe(true);
+
+  await input.fill('"qxjzvkwp987654321"');
+  await expect(dialog.locator('.pagefind-ui__message')).toContainText('No results');
+  await expect(dialog.locator('.pagefind-ui__result')).toHaveCount(0);
   await assertNoSeriousAxeIssues(page, 'audience-search dialog');
   await page.keyboard.press('Escape');
   await expect(dialog).not.toBeVisible();
   await expect(open).toBeFocused();
+
+  await page.keyboard.press('Control+K');
+  await expect(input).toBeFocused();
+  await input.fill('deployment checklist');
+  await expect(dialog.locator('.pagefind-ui__result-link').first()).toBeVisible();
+  let focusedResultPath = null;
+  for (let press = 0; press < 20 && !focusedResultPath; press += 1) {
+    await page.keyboard.press('Tab');
+    focusedResultPath = await page.evaluate(() => {
+      const active = document.activeElement;
+      return active instanceof HTMLAnchorElement
+        && active.classList.contains('pagefind-ui__result-link')
+        ? new URL(active.href).pathname
+        : null;
+    });
+  }
+  expect(focusedResultPath).toMatch(/^\/simple\//);
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(new RegExp(`${focusedResultPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+
+  await page.goto(historicalArticlePath);
+  await expect(page.locator('[data-page-status="historical"]')).toContainText(
+    'Page status: Historical',
+  );
+  await expect(page.locator('[data-history-group="updates"]')).toHaveAttribute('open', '');
+  expect(pageErrors).toEqual([]);
+});
+
+test('Pagefind exhaustively isolates audience and History index partitions', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'desktop-1440x1024',
+    'One exhaustive index pass covers the shared static Pagefind artifact.',
+  );
+  const audit = await page.evaluate(async () => {
+    const pagefind = await import('/pagefind/pagefind.js');
+    const filters = await pagefind.filters();
+    const partitions = {};
+    for (const audience of ['simple', 'technical']) {
+      for (const history of ['current', 'historical']) {
+        const result = await pagefind.search(null, {
+          filters: { audience: [audience], history: [history] },
+        });
+        const data = await Promise.all(result.results.map((entry) => entry.data()));
+        const routes = data.map((entry) => (
+          new URL(entry.meta?.url || entry.url, window.location.origin).pathname
+        ));
+        partitions[`${audience}:${history}`] = {
+          count: routes.length,
+          unique: new Set(routes).size,
+          isolated: routes.every((route) => route.startsWith(`/${audience}/`)),
+        };
+      }
+    }
+    return {
+      filters: {
+        audience: filters.audience,
+        history: filters.history,
+      },
+      partitions,
+    };
+  });
+
+  expect(audit).toEqual({
+    filters: {
+      audience: { simple: 234, technical: 234 },
+      history: { current: 260, historical: 208 },
+    },
+    partitions: {
+      'simple:current': { count: 130, unique: 130, isolated: true },
+      'simple:historical': { count: 104, unique: 104, isolated: true },
+      'technical:current': { count: 130, unique: 130, isolated: true },
+      'technical:historical': { count: 104, unique: 104, isolated: true },
+    },
+  });
+});
+
+test('search initialization failure exposes an accessible recovery state', async ({ page }) => {
+  const pageErrors = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+  await page.route('**/pagefind/**', (route) => route.abort('failed'));
+  await page.goto(`${articlePath}?search-index=unavailable`);
+  await expect(page.locator('main')).toBeVisible();
+
+  const open = page.locator('button[data-open-modal]');
+  await open.click();
+  const dialog = page.locator('audience-search dialog');
+  const error = dialog.locator('[data-search-error]');
+  await expect(error).toBeVisible();
+  await expect(error).toContainText('search is temporarily unavailable');
+  await expect(error).toContainText('reload to try again');
+  await expect(dialog.locator('[data-include-history]')).toBeDisabled();
+  await expect(dialog.locator('.pagefind-ui__search-input')).toHaveCount(0);
+  await assertNoSeriousAxeIssues(page, 'audience-search dialog');
+  await page.keyboard.press('Escape');
+  await expect(dialog).not.toBeVisible();
+  await expect(open).toBeFocused();
+  expect(pageErrors).toEqual([]);
 });
 
 test('diagram render, zoom, fullscreen, and focus restoration journey', async ({ page }) => {
