@@ -7,5 +7,5 @@ flowchart TD
   D -->|No| E[Set ga-disable flag and expire GA cookies]
   D -->|Yes| F[Load GA4 with ads and Signals disabled]
   D -->|Yes| G[Allow engagement events]
-  G --> H[/api/engagement endpoint]
+  G --> H["/api/engagement endpoint"]
   H --> I[record_article_engagement_event RPC]

@@ -12,6 +12,6 @@ flowchart TD
   observability --> web
   web --> ops
 
-  storage --> graph["public_feed_snapshot\npublic projection"]
-  graph --> readers
+  storage --> feedSnapshot["public_feed_snapshot\npublic projection"]
+  feedSnapshot --> readers
   web --> preview["/opengraph-image previews"]

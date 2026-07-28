@@ -7,7 +7,7 @@ flowchart TD
   F --> R
   R -->|true| V[Validate secrets + zone format only]
   R -->|false| C[POST Cloudflare /purge_cache]
-  C --> A[{"purge_everything": true}]
+  C --> A["Purge everything request body"]
   C --> T[Run with no token logging]
   V --> H[No API call made]
   T --> H

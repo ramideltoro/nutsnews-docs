@@ -1,5 +1,7 @@
+import assert from 'node:assert/strict';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { JSDOM } from 'jsdom';
 
 import { parseMarkdownFrontmatter } from './parse-markdown.mjs';
 import { deriveSlugFromSource, wikiContract } from './wiki-contract.mjs';
@@ -167,7 +169,7 @@ async function resolveDiagramPath(rawDiagramPath, sourcePath) {
   return null;
 }
 
-async function validateDiagramSyntax(diagramPath) {
+async function validateDiagramSyntax(mermaid, diagramPath) {
   const text = await fs.readFile(path.join(repoRoot, diagramPath), 'utf8');
   const trimmed = text.trim();
 
@@ -175,10 +177,55 @@ async function validateDiagramSyntax(diagramPath) {
     return { valid: false, reason: 'diagram is empty' };
   }
 
-  return looksLikeMermaid(trimmed);
+  const shape = looksLikeMermaid(trimmed);
+  if (!shape.valid) {
+    return shape;
+  }
+
+  try {
+    await mermaid.parse(trimmed, { suppressErrors: false });
+    return { valid: true };
+  } catch (error) {
+    return {
+      valid: false,
+      reason: `${error?.message || error}`.split('\n')[0],
+    };
+  }
 }
 
 (async () => {
+  const dom = new JSDOM('<!doctype html><html><body></body></html>');
+  globalThis.window = dom.window;
+  globalThis.document = dom.window.document;
+  globalThis.DOMParser = dom.window.DOMParser;
+  globalThis.HTMLElement = dom.window.HTMLElement;
+  globalThis.SVGElement = dom.window.SVGElement;
+  const { default: mermaid } = await import('mermaid');
+  mermaid.initialize({
+    startOnLoad: false,
+    securityLevel: 'strict',
+    suppressErrorRendering: true,
+  });
+  await assert.rejects(
+    () => mermaid.parse('flowchart TD\n  A["unterminated', { suppressErrors: false }),
+    /(?:Lexical|Parse) error/i,
+    'Mermaid parser must reject invalid syntax',
+  );
+
+  const [rendererSource, packageSource] = await Promise.all([
+    fs.readFile(path.join(repoRoot, 'src/components/ArticleHeader.astro'), 'utf8'),
+    fs.readFile(path.join(repoRoot, 'package.json'), 'utf8'),
+  ]);
+  assert.match(rendererSource, /data-render-diagram/, 'diagram rendering must require a manual action');
+  assert.match(rendererSource, /import\('mermaid'\)/, 'Mermaid must be bundled as a local lazy import');
+  assert.match(rendererSource, /securityLevel:\s*'strict'/, 'Mermaid security must be strict');
+  assert.match(rendererSource, /startOnLoad:\s*false/, 'Mermaid must not render automatically');
+  assert.match(rendererSource, /fallback\.open = true/, 'render failure must reveal the text fallback');
+  assert.match(rendererSource, /data-wiki-mermaid-source/, 'diagram text fallback must stay in the page');
+  assert.match(rendererSource, /data-pagefind-ignore/, 'diagram source must not pollute search results');
+  assert.doesNotMatch(rendererSource, /https?:\/\//, 'diagram rendering must not use a CDN');
+  assert.equal(JSON.parse(packageSource).dependencies.mermaid, '^11.16.0');
+
   const sourcePaths = await walkSourceMarkdown('');
   const errors = [];
   const diagramPaths = [];
@@ -198,7 +245,7 @@ async function validateDiagramSyntax(diagramPath) {
     diagramPaths.push(resolvedPath);
     diagramCountByPath.set(resolvedPath, (diagramCountByPath.get(resolvedPath) || 0) + 1);
 
-    const result = await validateDiagramSyntax(resolvedPath);
+    const result = await validateDiagramSyntax(mermaid, resolvedPath);
     if (!result.valid) {
       errors.push(`invalid mermaid syntax in ${resolvedPath}: ${result.reason}`);
     }
@@ -246,6 +293,7 @@ async function validateDiagramSyntax(diagramPath) {
   console.log(`Mermaid diagram validation passed for ${sourcePaths.length} source documents.`);
   console.log(`Canonical diagram references: ${new Set(diagramPaths).size}`);
   console.log(`Canonical diagram checks: ${diagramPaths.length}`);
+  dom.window.close();
 })().catch((error) => {
   console.error(error.message || error);
   process.exit(1);

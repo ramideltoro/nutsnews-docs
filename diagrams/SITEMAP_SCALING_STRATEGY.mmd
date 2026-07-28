@@ -1,7 +1,7 @@
 flowchart TD
-  A[Crawler reads /robots.txt] --> B[Find /sitemap-index.xml and /sitemap.xml]
-  B --> C[/sitemap-index.xml lists shard URLs and root sitemap/]
-  B --> D[/sitemap.xml lists static + recent articles]
-  C --> E[/articles/sitemap/[id].xml]
+  A["Crawler reads /robots.txt"] --> B["Find /sitemap-index.xml and /sitemap.xml"]
+  B --> C["/sitemap-index.xml lists shard URLs and root sitemap"]
+  B --> D["/sitemap.xml lists static + recent articles"]
+  C --> E["/articles/sitemap/[id].xml"]
   E --> F[Published article ranges from bounded DB query]
   F --> G[Crawler discovers full archive safely]

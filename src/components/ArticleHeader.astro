@@ -78,20 +78,106 @@ const withBase = (route) => `${basePrefix}${route.startsWith('/') ? route : `/${
         </div>
         <span class="diagram-status">System map</span>
       </div>
-      <div class="diagram-stage" data-wiki-diagram-stage>
-        <div class="diagram-placeholder" aria-hidden="true">
-          <span></span>
-          <i></i>
-          <span></span>
-          <i></i>
-          <span></span>
+      <diagram-renderer data-diagram-title={`${title} system map`}>
+        <div class="diagram-stage" data-wiki-diagram-stage>
+          <div class="diagram-placeholder" aria-hidden="true">
+            <span></span>
+            <i></i>
+            <span></span>
+            <i></i>
+            <span></span>
+          </div>
+          <p>Render the repository-owned system map when you need it.</p>
         </div>
-        <p>Explore the article’s system flow before reading the implementation details.</p>
-      </div>
-      <pre hidden data-wiki-mermaid-source><code>{diagramSource}</code></pre>
+        <div class="diagram-actions">
+          <button type="button" data-render-diagram>Render diagram</button>
+          <p data-diagram-status aria-live="polite">Diagram is not rendered yet.</p>
+        </div>
+        <details class="diagram-source" data-diagram-fallback data-pagefind-ignore>
+          <summary>View diagram text</summary>
+          <pre data-wiki-mermaid-source><code>{diagramSource}</code></pre>
+        </details>
+      </diagram-renderer>
     </section>
   )
 }
+
+<script>
+  class DiagramRenderer extends HTMLElement {
+    constructor() {
+      super();
+      const button = this.querySelector<HTMLButtonElement>('[data-render-diagram]');
+      const stage = this.querySelector<HTMLElement>('[data-wiki-diagram-stage]');
+      const status = this.querySelector<HTMLElement>('[data-diagram-status]');
+      const fallback = this.querySelector<HTMLDetailsElement>('[data-diagram-fallback]');
+      const source = this.querySelector<HTMLElement>('[data-wiki-mermaid-source] code');
+
+      if (!button || !stage || !status || !fallback || !source) return;
+
+      button.addEventListener('click', async () => {
+        button.disabled = true;
+        button.textContent = 'Rendering…';
+        status.textContent = 'Rendering the diagram locally.';
+
+        try {
+          const { default: mermaid } = await import('mermaid');
+          const isLight = document.documentElement.dataset.theme === 'light';
+          mermaid.initialize({
+            startOnLoad: false,
+            securityLevel: 'strict',
+            suppressErrorRendering: true,
+            theme: 'base',
+            maxTextSize: 50_000,
+            flowchart: { htmlLabels: false, useMaxWidth: true },
+            themeVariables: isLight
+              ? {
+                  background: '#f7edd7',
+                  primaryColor: '#fff9ea',
+                  primaryTextColor: '#21140e',
+                  primaryBorderColor: '#8a4b00',
+                  lineColor: '#7a5540',
+                  secondaryColor: '#e8d8ba',
+                  tertiaryColor: '#f7edd7',
+                  fontFamily: 'system-ui, sans-serif',
+                }
+              : {
+                  background: '#21140e',
+                  primaryColor: '#332116',
+                  primaryTextColor: '#fff9ea',
+                  primaryBorderColor: '#f6bd5a',
+                  lineColor: '#cfb88f',
+                  secondaryColor: '#4a3020',
+                  tertiaryColor: '#21140e',
+                  fontFamily: 'system-ui, sans-serif',
+                },
+          });
+
+          const definition = source.textContent || '';
+          await mermaid.parse(definition, { suppressErrors: false });
+          const diagramId = `nutsnews-diagram-${Date.now().toString(36)}`;
+          const { svg } = await mermaid.render(diagramId, definition);
+          stage.innerHTML = svg;
+          const renderedSvg = stage.querySelector('svg');
+          renderedSvg?.setAttribute('role', 'img');
+          renderedSvg?.setAttribute('aria-label', this.dataset.diagramTitle || 'System diagram');
+          stage.toggleAttribute('data-rendered', true);
+          button.textContent = 'Diagram rendered';
+          status.textContent = 'Diagram rendered locally.';
+        } catch (error) {
+          console.error('Unable to render repository Mermaid diagram.', error);
+          fallback.open = true;
+          button.disabled = false;
+          button.textContent = 'Try rendering again';
+          status.textContent = 'Diagram could not be rendered. The text fallback is available below.';
+        }
+      });
+    }
+  }
+
+  if (!customElements.get('diagram-renderer')) {
+    customElements.define('diagram-renderer', DiagramRenderer);
+  }
+</script>
 
 <style>
   @layer starlight.core {
@@ -231,11 +317,94 @@ const withBase = (route) => `${basePrefix}${route.startsWith('/') ? route : `/${
       text-align: center;
     }
 
+    diagram-renderer {
+      display: grid;
+      gap: var(--wiki-space-3);
+    }
+
     .diagram-stage p {
       max-width: 42ch;
       margin: 0;
       color: var(--wiki-diagram-text);
       font-size: var(--wiki-type-sm);
+    }
+
+    .diagram-stage[data-rendered] {
+      display: block;
+      overflow: auto;
+      background: var(--wiki-diagram-background);
+    }
+
+    .diagram-stage[data-rendered] :global(svg) {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      margin-inline: auto;
+    }
+
+    .diagram-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--wiki-space-3);
+    }
+
+    .diagram-actions button {
+      min-height: var(--wiki-touch-target);
+      border: 1px solid var(--wiki-diagram-border);
+      border-radius: var(--wiki-radius-sm);
+      padding-inline: var(--wiki-space-4);
+      color: var(--wiki-color-control-text);
+      background: var(--wiki-diagram-accent);
+      font: inherit;
+      font-size: var(--wiki-type-sm);
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    .diagram-actions button:disabled {
+      cursor: wait;
+      opacity: 0.75;
+    }
+
+    .diagram-actions button:focus-visible,
+    .diagram-source summary:focus-visible {
+      outline: var(--wiki-focus-ring-width) solid var(--wiki-color-focus);
+      outline-offset: var(--wiki-focus-ring-offset);
+    }
+
+    .diagram-actions p {
+      margin: 0;
+      color: var(--wiki-diagram-text);
+      font-size: var(--wiki-type-xs);
+    }
+
+    .diagram-source {
+      border: 1px solid var(--wiki-diagram-edge);
+      border-radius: var(--wiki-radius-sm);
+      color: var(--wiki-diagram-text);
+      background: var(--wiki-diagram-background);
+    }
+
+    .diagram-source summary {
+      min-height: var(--wiki-touch-target);
+      padding: var(--wiki-space-3);
+      font-size: var(--wiki-type-sm);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .diagram-source pre {
+      max-height: 20rem;
+      margin: 0;
+      border-top: 1px solid var(--wiki-diagram-edge);
+      border-radius: 0 0 var(--wiki-radius-sm) var(--wiki-radius-sm);
+      padding: var(--wiki-space-4);
+      overflow: auto;
+      color: var(--wiki-diagram-text);
+      background: var(--wiki-diagram-surface);
+      white-space: pre;
     }
 
     .diagram-placeholder {
