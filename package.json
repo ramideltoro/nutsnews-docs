@@ -14,6 +14,7 @@
     "validate:contracts": "node scripts/wiki/validate-wiki-contracts.mjs",
     "validate:inventory": "node scripts/wiki/validate-wiki-inventory.mjs",
     "validate:audiences": "npm run build && node scripts/wiki/validate-audience-routes.mjs",
+    "validate:brand": "node scripts/wiki/validate-wiki-brand.mjs",
     "validate:links": "node scripts/wiki/validate-link-routes.mjs",
     "validate:mermaid": "node scripts/wiki/validate-mermaid-diagrams.mjs"
   },

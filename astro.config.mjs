@@ -27,6 +27,12 @@ export default defineConfig({
     starlight({
       title: 'NutsNews Wiki',
       description: 'NutsNews technical and reader documentation',
+      logo: {
+        src: './src/assets/nutsnews-logo.png',
+        alt: 'NutsNews chestnut logo',
+        replacesTitle: false,
+      },
+      customCss: ['./src/styles/wiki.css'],
       components: {
         Head: './src/components/Head.astro',
       },

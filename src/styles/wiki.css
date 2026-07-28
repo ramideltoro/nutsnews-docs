@@ -1,0 +1,205 @@
+:root {
+  color-scheme: dark;
+
+  /* Brand palette */
+  --wiki-espresso-950: #140c08;
+  --wiki-espresso-900: #21140e;
+  --wiki-espresso-800: #332116;
+  --wiki-espresso-700: #4a3020;
+  --wiki-espresso-500: #7a5540;
+  --wiki-amber-200: #ffd58a;
+  --wiki-amber-300: #f6bd5a;
+  --wiki-amber-500: #d98617;
+  --wiki-amber-700: #8a4b00;
+  --wiki-amber-800: #663600;
+  --wiki-cream-50: #fff9ea;
+  --wiki-cream-100: #f7edd7;
+  --wiki-cream-200: #e8d8ba;
+  --wiki-cream-300: #cfb88f;
+  --wiki-cream-500: #9d815d;
+  --wiki-focus-on-dark: #7dd3fc;
+  --wiki-focus-on-light: #6d28d9;
+
+  /* Diagram palette */
+  --wiki-diagram-background: var(--wiki-espresso-900);
+  --wiki-diagram-surface: var(--wiki-espresso-800);
+  --wiki-diagram-border: var(--wiki-amber-300);
+  --wiki-diagram-edge: var(--wiki-cream-300);
+  --wiki-diagram-text: var(--wiki-cream-50);
+  --wiki-diagram-accent: var(--wiki-amber-300);
+
+  /* Local and system type */
+  --wiki-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", "Noto Sans", Arial, sans-serif;
+  --wiki-font-display: Georgia, "Times New Roman", Times, serif;
+  --wiki-font-code: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  --wiki-type-xs: 0.75rem;
+  --wiki-type-sm: 0.875rem;
+  --wiki-type-base: 1rem;
+  --wiki-type-lg: 1.125rem;
+  --wiki-type-xl: 1.375rem;
+  --wiki-type-display: clamp(2rem, 4vw, 3.5rem);
+  --wiki-leading-tight: 1.2;
+  --wiki-leading-body: 1.7;
+
+  /* Spacing and layout */
+  --wiki-space-1: 0.25rem;
+  --wiki-space-2: 0.5rem;
+  --wiki-space-3: 0.75rem;
+  --wiki-space-4: 1rem;
+  --wiki-space-5: 1.5rem;
+  --wiki-space-6: 2rem;
+  --wiki-space-7: 3rem;
+  --wiki-space-8: 4rem;
+  --wiki-rail-width: 19rem;
+  --wiki-content-width: 52rem;
+  --wiki-content-gutter: clamp(1rem, 3vw, 2rem);
+  --wiki-radius-sm: 0.375rem;
+  --wiki-radius-md: 0.75rem;
+  --wiki-radius-lg: 1.25rem;
+
+  /* Responsive reference tokens for component media queries. */
+  --wiki-breakpoint-sm: 30rem;
+  --wiki-breakpoint-md: 50rem;
+  --wiki-breakpoint-lg: 72rem;
+  --wiki-touch-target: 2.75rem;
+
+  /* Semantic theme tokens */
+  --wiki-color-canvas: var(--wiki-espresso-950);
+  --wiki-color-surface: var(--wiki-espresso-900);
+  --wiki-color-surface-raised: var(--wiki-espresso-800);
+  --wiki-color-text: var(--wiki-cream-100);
+  --wiki-color-text-muted: var(--wiki-cream-300);
+  --wiki-color-link: var(--wiki-amber-200);
+  --wiki-color-control: var(--wiki-amber-300);
+  --wiki-color-control-text: var(--wiki-espresso-900);
+  --wiki-color-border: var(--wiki-espresso-500);
+  --wiki-color-focus: var(--wiki-focus-on-dark);
+  --wiki-focus-ring-width: 0.1875rem;
+  --wiki-focus-ring-offset: 0.1875rem;
+
+  /* Starlight consumes the same shared system. */
+  --sl-font: var(--wiki-font-sans);
+  --sl-font-mono: var(--wiki-font-code);
+  --__sl-font: var(--wiki-font-sans);
+  --__sl-font-mono: var(--wiki-font-code);
+  --sl-sidebar-width: var(--wiki-rail-width);
+  --sl-content-width: var(--wiki-content-width);
+  --sl-content-pad-x: var(--wiki-content-gutter);
+  --sl-color-white: var(--wiki-cream-50);
+  --sl-color-gray-1: var(--wiki-cream-100);
+  --sl-color-gray-2: var(--wiki-cream-200);
+  --sl-color-gray-3: var(--wiki-cream-300);
+  --sl-color-gray-4: var(--wiki-cream-500);
+  --sl-color-gray-5: var(--wiki-espresso-500);
+  --sl-color-gray-6: var(--wiki-espresso-800);
+  --sl-color-gray-7: var(--wiki-espresso-900);
+  --sl-color-black: var(--wiki-espresso-950);
+  --sl-color-accent-low: var(--wiki-espresso-700);
+  --sl-color-accent: var(--wiki-amber-500);
+  --sl-color-accent-high: var(--wiki-amber-200);
+  --sl-color-text-accent: var(--wiki-color-link);
+  --sl-color-text-invert: var(--wiki-color-control-text);
+  --sl-color-bg: var(--wiki-color-canvas);
+  --sl-color-bg-nav: var(--wiki-color-surface);
+  --sl-color-bg-sidebar: var(--wiki-color-surface);
+  --sl-color-bg-inline-code: var(--wiki-color-surface-raised);
+  --sl-color-bg-accent: var(--wiki-color-control);
+  --sl-color-hairline-light: var(--wiki-color-border);
+  --sl-color-hairline: var(--wiki-espresso-800);
+  --sl-color-hairline-shade: var(--wiki-espresso-950);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --wiki-color-canvas: var(--wiki-cream-50);
+  --wiki-color-surface: var(--wiki-cream-100);
+  --wiki-color-surface-raised: var(--wiki-cream-200);
+  --wiki-color-text: var(--wiki-espresso-900);
+  --wiki-color-text-muted: var(--wiki-espresso-500);
+  --wiki-color-link: var(--wiki-amber-800);
+  --wiki-color-control: var(--wiki-amber-700);
+  --wiki-color-control-text: var(--wiki-cream-50);
+  --wiki-color-border: var(--wiki-cream-300);
+  --wiki-color-focus: var(--wiki-focus-on-light);
+  --wiki-diagram-background: var(--wiki-cream-100);
+  --wiki-diagram-surface: var(--wiki-cream-50);
+  --wiki-diagram-border: var(--wiki-amber-700);
+  --wiki-diagram-edge: var(--wiki-espresso-500);
+  --wiki-diagram-text: var(--wiki-espresso-900);
+  --wiki-diagram-accent: var(--wiki-amber-700);
+
+  --sl-color-white: var(--wiki-espresso-900);
+  --sl-color-gray-1: var(--wiki-espresso-800);
+  --sl-color-gray-2: var(--wiki-espresso-700);
+  --sl-color-gray-3: var(--wiki-espresso-500);
+  --sl-color-gray-4: var(--wiki-cream-500);
+  --sl-color-gray-5: var(--wiki-cream-300);
+  --sl-color-gray-6: var(--wiki-cream-200);
+  --sl-color-gray-7: var(--wiki-cream-100);
+  --sl-color-black: var(--wiki-cream-50);
+  --sl-color-accent-low: var(--wiki-cream-200);
+  --sl-color-accent: var(--wiki-amber-700);
+  --sl-color-accent-high: var(--wiki-amber-800);
+  --sl-color-text-accent: var(--wiki-color-link);
+  --sl-color-text-invert: var(--wiki-color-control-text);
+  --sl-color-bg: var(--wiki-color-canvas);
+  --sl-color-bg-nav: var(--wiki-color-surface);
+  --sl-color-bg-sidebar: var(--wiki-color-surface);
+  --sl-color-bg-inline-code: var(--wiki-color-surface-raised);
+  --sl-color-bg-accent: var(--wiki-color-control);
+  --sl-color-hairline-light: var(--wiki-color-border);
+  --sl-color-hairline: var(--wiki-cream-200);
+  --sl-color-hairline-shade: var(--wiki-cream-300);
+}
+
+html {
+  background: var(--wiki-color-canvas);
+}
+
+body {
+  color: var(--wiki-color-text);
+  font-family: var(--wiki-font-sans);
+  line-height: var(--wiki-leading-body);
+}
+
+:where(a, button, input, select, summary, textarea, [tabindex]):focus-visible {
+  outline: var(--wiki-focus-ring-width) solid var(--wiki-color-focus);
+  outline-offset: var(--wiki-focus-ring-offset);
+}
+
+:where(button, [role="button"], input, select, summary) {
+  min-height: var(--wiki-touch-target);
+}
+
+.site-title {
+  gap: var(--wiki-space-3);
+  font-family: var(--wiki-font-display);
+}
+
+.site-title img {
+  filter: drop-shadow(0 0.125rem 0.25rem rgb(0 0 0 / 35%));
+}
+
+.sl-markdown-content a {
+  color: var(--wiki-color-link);
+  text-decoration-thickness: 0.1em;
+  text-underline-offset: 0.18em;
+}
+
+@media (max-width: 50rem) {
+  :root {
+    --wiki-content-gutter: var(--wiki-space-4);
+    --sl-content-pad-x: var(--wiki-content-gutter);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
