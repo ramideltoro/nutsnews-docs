@@ -43,6 +43,7 @@ export default defineConfig({
       components: {
         Head: './src/components/Head.astro',
         Header: './src/components/Header.astro',
+        Footer: './src/components/SourceFooter.astro',
         MarkdownContent: './src/components/ArticleBody.astro',
         MobileMenuToggle: './src/components/MobileMenuToggle.astro',
         PageTitle: './src/components/ArticleHeader.astro',
