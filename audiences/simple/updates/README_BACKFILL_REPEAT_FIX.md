@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: b78a220b66e03fcff8e52e7ef4570506dc3c86abffbb6c31d66687768206d88e
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 0372764e2588235d5c4deece1be188aece6e9e68f9104333b7ce95ae5606be58
 ---
 
 # Backfill repeat fix

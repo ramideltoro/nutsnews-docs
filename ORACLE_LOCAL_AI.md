@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: f779ad815c60772a469ab156bafde94a28ac901793e50429dc12b0583edf3c3c
+---
 # Oracle Local AI Provider
 
 > **Current production note:** NutsNews currently uses the home-server local AI setup documented in [Home Server Local AI Provider](HOME_SERVER_LOCAL_AI.md). This Oracle document remains as an alternative runbook if Oracle Free Tier capacity becomes available later.

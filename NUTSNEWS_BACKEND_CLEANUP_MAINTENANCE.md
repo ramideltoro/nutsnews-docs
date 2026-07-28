@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: a89dc63d7ba16b5f7d132e62894f0058a047bbafdbb2754d1cba54a43d2009bc
+---
 # NutsNews Backend Cleanup Maintenance
 
 Backend issue `ramideltoro/nutsnews-backend#41` adds fixed-purpose disk and

@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 026886657070c19f44ca583e7073e49cef2a720c41a736c0276a3ecfd09ba5a8
+---
 # NutsNews VPS Backups
 
 This is the setup and operations guide for encrypted VPS backups to OneDrive.

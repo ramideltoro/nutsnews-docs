@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: public-product
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 777aef7bb9d44fe2c16271bd0ad7a1e3b34b2de3920200af3eff4c451f7f679d
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: ed2dcf9d128bf71bf11253303a56d99df3463dadfc88a0eb52d1c467f987f9c3
 ---
 
 # NutsNews Public Page Translation Update

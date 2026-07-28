@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: e07022ca25045e3b43f72606990abfd472e4165a6d5eaa012f47714468e6c9b7
+---
 # NutsNews VPS Service Foundation
 
 This explains the next layer in the NutsNews VPS platform: Docker Engine, Docker Compose, the `/opt/nutsnews` runtime layout, a small zram fallback, Caddy, public infrastructure health, the protected Ops Portal route, Caddy rate limiting, and the GitOps-controlled NutsNews app foundation.

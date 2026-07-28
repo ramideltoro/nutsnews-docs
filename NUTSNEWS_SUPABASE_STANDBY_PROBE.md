@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 9bfa02ee177981d50a40919fdd89e0824e5d925d987cdea56426fa3c94f3a900
+---
 # NutsNews Supabase Standby Restricted Probe
 
 This is the shared operations guide for proving Supabase standby credential and

@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 33a3e76533248f3a62cc53379ebbce8e9ed090d4cf1ba212b99eb390c3bbaea8
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 780755ed704d49bb9e8a02c363d6741d3f175a3c540e637b696f316304e35aaa
 ---
 
 # Article translation backfill issue #282

@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 71b344ec9db74120cc5d761764e12afafa09ad3bef394b3e38acc9cfb632c110
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: b30a427532cf50eb0e9d7d1941d20a747b4b9a5be3c4db349ef8736341ba268f
 ---
 
 # NutsNews Platform Improvement Issue Backlog

@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 61a96afe58b86a2e1bfdfa8a4a19bc4812f05b679948b8b40f25a28f177c0911
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 1f248681e99c74c1c1f9c123f3fced14f1dffe216eabe1b33a6bed3e1f53e981
 ---
 
 # NutsNews Release Pipeline

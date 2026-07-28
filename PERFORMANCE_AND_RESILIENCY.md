@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 71864b7f99521fafce38dab3d6ff63272d4e45577556cdf86df33489e4286e9b
+---
 # Performance and Resiliency
 
 NutsNews is designed to stay fast, reliable, and inexpensive as traffic and RSS volume grow.

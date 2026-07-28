@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 1612a99e802af8ec54861ed1291785c8089c1088c401004985c19eab267e113a
+---
 # NutsNews VPS Disaster Recovery
 
 This is the rebuild runbook for moving NutsNews to another VPS provider after a serious host failure or provider migration.

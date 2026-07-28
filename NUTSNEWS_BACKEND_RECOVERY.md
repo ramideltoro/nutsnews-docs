@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 2cf741f83412d2b1fafe1d1bd070240cab73c128e3fb7b543d7f608d414180f6
+---
 # NutsNews Backend Recovery Workflows
 
 This page documents the fixed-purpose recovery workflows for

@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: Data & Recovery
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 32044cfe19b2750a8f688e6d453313e7b892bc1a75750d43e2a67a3d701c9e0c
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 9bfa02ee177981d50a40919fdd89e0824e5d925d987cdea56426fa3c94f3a900
 ---
 
 # NutsNews Supabase Standby Restricted Probe

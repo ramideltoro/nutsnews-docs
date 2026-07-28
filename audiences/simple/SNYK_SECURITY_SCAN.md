@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: ea5598c724f518798a8ccaaf593a106211d0c757c918966e3f726a5cc09d56d7
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 6c16c163054d06121c2b8533ef272a1fe8b4d033f2bd257c0c2bc92f1319a8ab
 ---
 
 # Snyk Security Scan

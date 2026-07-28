@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 5f7d6d2ddffaaf217f01de7dc9213152c2c43cf02ed8bf07e992ca57b5b7a946
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 3207631f957638b891fc03cecafeaa9428d1587805380c8dd50c6088132a4d03
 ---
 
 # NutsNews VPS Restore

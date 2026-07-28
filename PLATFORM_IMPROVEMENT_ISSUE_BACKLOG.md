@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: b30a427532cf50eb0e9d7d1941d20a747b4b9a5be3c4db349ef8736341ba268f
+---
 # NutsNews Platform Improvement Issue Backlog
 
 This backlog was generated from a scan of the NutsNews main branch plus the current open GitHub Issues page. It avoids recreating already-visible issues such as database planning, public API, feed expansion, manual review, native mobile app path, social sharing, personalization, richer thumbnails, and engagement analytics.

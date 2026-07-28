@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: f051066a85f27ef77f9f3526517ecae0a7d68c44051b47b388d0e647059cb503
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 1be3c8014e7198434cb10492c4467fea4c9672a31e132682c83af91da5ccda92
 ---
 
 # Vercel-to-VPS environment synchronization

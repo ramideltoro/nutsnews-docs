@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 39d8bb3c5474ad28b2c1af59f4388bd31c05840958047fddf2469149e583d25b
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 3b81cd6b78f39148f4be2e66f0e784bf70128cc58e6639b1d0cafff2844e622a
 ---
 
 # NutsNews Backend Cloudflare Routing

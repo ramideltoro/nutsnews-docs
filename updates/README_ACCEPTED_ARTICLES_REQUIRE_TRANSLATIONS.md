@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 323bb22fc0fdab97f1c8e2893e9ce6412b188a1f45922fd0cc599af5944a2ba9
+---
 # Accepted articles require translations before publishing
 
 This update makes the Worker treat accepted articles as `translation_pending` until every enabled summary language has a saved row in `article_summaries`.

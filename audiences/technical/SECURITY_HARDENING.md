@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: b3de86bcfccd017ed77e38ab0aefa45fc6f0611dcbd0ae2206ad59412f599cfc
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: e658e6ee2f168ecb5d8cb1bb06eb3fad5934c3a0d4a7ab36b09e427b53765d96
 ---
 
 # Security Hardening

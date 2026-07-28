@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 67e976f4f871e1f7d3fcb96f2551a16f28c5218e9ff722aab5ac269e5964e5f0
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: a8d38c34d6737f41728393fa99172ef3405c5a02849ff192a81edacef80b550d
 ---
 
 # NutsNews VPS Runtime Environment Isolation

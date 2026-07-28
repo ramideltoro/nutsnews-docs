@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: ee8cb657981a50a4ba73ae427a4cc665bf1380b6d425ab465ab9b2ba54fb200a
+---
 # PageSpeed Insights for NutsNews
 
 PageSpeed Insights is the manual production performance check for NutsNews after major UI changes.

@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: feb4922c49bb634989b6a7ef9f88b37edcb9c38ea42a154a52c2f079fd9dc395
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: dc8512f75e11d3f31816513f45ceadea1efbdb8a8894e94eaa47642706e610c0
 ---
 
 # NutsNews Backend Credential Bootstrap

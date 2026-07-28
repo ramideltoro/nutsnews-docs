@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: ee61f8b98b360fc1928a18ec38d6c0905f985b4fde3728c21308c3b0d9922f63
+---
 # Supabase RLS Regression Tests
 
 ## Simple Summary

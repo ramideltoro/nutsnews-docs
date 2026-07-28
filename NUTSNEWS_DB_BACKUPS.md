@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: e13b6bf63cbecc4592476dc7d3c16dec7589a21de28fbb02c167be63e190cde3
+---
 # NutsNews Supabase Backup Automation
 
 This runbook documents the production Supabase backup automation for NutsNews.

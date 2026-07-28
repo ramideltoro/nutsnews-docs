@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 6c16c163054d06121c2b8533ef272a1fe8b4d033f2bd257c0c2bc92f1319a8ab
+---
 # Snyk Security Scan
 
 NutsNews uses Snyk as an extra dependency scanner alongside Dependabot and CodeQL.

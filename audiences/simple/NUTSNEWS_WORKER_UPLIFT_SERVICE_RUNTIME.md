@@ -11,9 +11,11 @@ wiki:
   collection: ai-and-automation
   section: Automation & Workers
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 78af3d97642fdd225410283f3c359c82d55f47cc6c148ccb89ce78c87a8e143e
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 35e14aa4d5f299ea7a9fe8bacbb940d8940ae0a0b567b6ce1b6e80e07baf13ba
 ---
 
 # NutsNews Worker-Uplift Service Runtime

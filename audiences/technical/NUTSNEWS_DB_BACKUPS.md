@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 63df22d568099d9c8896bbff17263b00cbe8af9b708e6077f284f6ed0803a288
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: e13b6bf63cbecc4592476dc7d3c16dec7589a21de28fbb02c167be63e190cde3
 ---
 
 # NutsNews Supabase Backup Automation

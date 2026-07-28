@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: Operations & Monitoring
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 62ad93faa38e37c3d0d67b526a4f9e42d76ceab160c2feefe162fa2be98550f7
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 88d5f9c0bfe8c7295c8547ac8b96212772c30c68aa9510584494dabd543bc531
 ---
 
 # NutsNews Grafana Cloud Observability

@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 761ab73b4cf25c36c06a5a0ec6a8b849b3b26e7fa62f7bd342e2eaadced6dc04
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 006ead318f79e76e76a2c95d7b06de8f3784353d46cd388460ff49e9a4f79bda
 ---
 
 # Public API Plan

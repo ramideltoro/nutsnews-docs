@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: public-product
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: fc992eec420aa9c19077a1e6e2dcbdca8089336d1163e459bb5875ab533b6fde
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 404778b4c3001a54f7f1dcde041bf213908b3853f25d1d146275bcf4aa7ee1db
 ---
 
 # NutsNews Page Fade Appear Update

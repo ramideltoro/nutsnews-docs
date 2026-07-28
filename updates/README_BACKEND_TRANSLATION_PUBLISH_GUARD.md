@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 4d9ac7a2b04f6eb621649d8a884c5d5cf59f47b6989ae96dd459de6bdcce9856
+---
 # Backend translation publish guard
 
 This update documents the backend compatibility API guard for `ramideltoro/nutsnews-backend#263`.

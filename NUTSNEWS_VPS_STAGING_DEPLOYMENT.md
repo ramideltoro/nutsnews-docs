@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 37babac6abf874308472af1e20be869b43f5ccd097adb97e35e0048bc180534e
+---
 # NutsNews Immutable Staging Deployment
 
 ## Purpose

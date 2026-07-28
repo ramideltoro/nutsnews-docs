@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: d0acaf824a9d5f792d1b029c409c7a411778b4990f18b9c4128b44b4568919dd
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 3ebcd02c8b16188bf04d0a6cadb333258abd2f3309275f9d2e173a8887aead04
 ---
 
 # NutsNews API Compatibility Contracts

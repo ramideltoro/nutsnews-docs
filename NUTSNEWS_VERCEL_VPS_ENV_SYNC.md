@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 1be3c8014e7198434cb10492c4467fea4c9672a31e132682c83af91da5ccda92
+---
 # Vercel-to-VPS environment synchronization
 
 NutsNews keeps one source of truth with two deployment targets:

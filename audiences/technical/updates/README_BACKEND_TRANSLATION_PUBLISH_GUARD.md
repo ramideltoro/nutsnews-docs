@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 40805697773ee509e6e7f5e489b2edd60b078d3c830378bdbe0d9a134dc7de65
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 4d9ac7a2b04f6eb621649d8a884c5d5cf59f47b6989ae96dd459de6bdcce9856
 ---
 
 # Backend translation publish guard

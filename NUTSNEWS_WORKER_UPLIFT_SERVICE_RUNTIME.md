@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 35e14aa4d5f299ea7a9fe8bacbb940d8940ae0a0b567b6ce1b6e80e07baf13ba
+---
 # NutsNews Worker-Uplift Service Runtime
 
 Status: implemented for `ramideltoro/nutsnews-worker#85` on 2026-07-23.
