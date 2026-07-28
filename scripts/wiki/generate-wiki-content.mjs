@@ -1,6 +1,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import {
+  classifySourcePath,
   deriveAudienceRoute,
   deriveCollection,
   deriveDiagramPath,
@@ -303,6 +304,7 @@ async function buildSourceInventory() {
   const warnings = [];
   const seenRoutes = new Map();
   const seenSlugs = new Map();
+  const seenOrders = new Map();
   const entries = [];
 
   for (let index = 0; index < sourcePaths.length; index += 1) {
@@ -311,6 +313,14 @@ async function buildSourceInventory() {
     const sourceParsed = parseMarkdownFrontmatter(sourceRaw);
     const sourceData = sourceParsed.data || {};
     const sourceBody = sourceParsed.content || '';
+    let sourceArea;
+
+    try {
+      sourceArea = classifySourcePath(sourcePath);
+    } catch (error) {
+      errors.push(error.message);
+      continue;
+    }
 
     const technicalRoute = deriveAudienceRoute('technical', sourcePath, sourceData);
     const simpleSourcePath = simplePathFromSource(sourcePath);
@@ -336,10 +346,17 @@ async function buildSourceInventory() {
     seenRoutes.set(normalizeRoute(simpleRoute), sourcePath);
 
     const slug = deriveSlugFromSource(sourcePath, sourceData);
+    const order = deriveOrder(sourceData, index + 1);
     if (seenSlugs.has(slug) && seenSlugs.get(slug) !== sourcePath) {
-      warnings.push(`duplicate slug: ${slug}`);
+      errors.push(`duplicate slug ${slug}: ${seenSlugs.get(slug)} and ${sourcePath}`);
     } else {
       seenSlugs.set(slug, sourcePath);
+    }
+
+    if (seenOrders.has(order) && seenOrders.get(order) !== sourcePath) {
+      errors.push(`duplicate order ${order}: ${seenOrders.get(order)} and ${sourcePath}`);
+    } else {
+      seenOrders.set(order, sourcePath);
     }
 
     if (!sourceData.title && !simpleData.title) {
@@ -364,13 +381,14 @@ async function buildSourceInventory() {
     entries.push({
       source: {
         path: toPosix(sourcePath),
+        area: sourceArea,
         title: sourceData.title || simpleData.title || wikiContract.defaults.title,
         description: deriveDescription(sourceData, sourceBody, simpleData, 180),
         slug,
         collection: deriveCollection(sourceData),
         section: deriveSection(sourceData),
         status: deriveStatus(sourceData),
-        order: deriveOrder(sourceData, index + 1),
+        order,
         route: technicalRoute,
         routeWithoutAudience: normalizeCandidate(sourcePath.replace(/\.md$/i, '')),
       },
@@ -380,7 +398,7 @@ async function buildSourceInventory() {
       },
       simple: {
         route: simpleRoute,
-        sourcePath: toPosix(sourcePath),
+        sourcePath: toPosix(simpleSourcePath),
       },
       diagram: {
         path: diagramPath,
@@ -401,7 +419,6 @@ function writeInventory(entries, warnings) {
     INVENTORY_PATH,
     JSON.stringify(
       {
-        generatedAtUtc: new Date().toISOString(),
         contractVersion: wikiContract.version,
         sourceCount: entries.length,
         sourcePaths: entries.map((entry) => entry.source.path),

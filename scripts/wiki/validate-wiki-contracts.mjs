@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import {
+  classifySourcePath,
   deriveAudienceRoute,
   deriveCollection,
   deriveDiagramPath,
@@ -51,14 +52,6 @@ async function walkMarkdownFiles(rootDir, relativeRoot = '') {
   return out;
 }
 
-function sourceAreaFor(sourcePath) {
-  const normalized = sourcePath.replace(/\\/g, '/');
-  const nestedArea = wikiContract.paths.sourceAreas.find(
-    (area) => area.prefix && normalized.startsWith(`${area.prefix}/`),
-  );
-  return nestedArea?.id || 'root';
-}
-
 function recordAssertion(errors, label, callback) {
   try {
     callback();
@@ -83,8 +76,16 @@ async function validateContractDefinition(errors) {
     assert.ok(wikiContractFixtures.some((fixture) => fixture.source.includes('/')));
   });
 
+  recordAssertion(errors, 'unclassified source fixture', () => {
+    assert.throws(
+      () => classifySourcePath('unclassified/FUTURE_GUIDE.md'),
+      /unclassified canonical wiki source path/,
+    );
+  });
+
   for (const fixture of wikiContractFixtures) {
     recordAssertion(errors, `${fixture.area} contract fixture`, () => {
+      assert.equal(classifySourcePath(fixture.source), fixture.area);
       assert.equal(deriveSlugFromSource(fixture.source), fixture.slug);
       assert.equal(simplePathFromSource(fixture.source), fixture.simplePath);
       assert.equal(diagramPathFromSource(fixture.source), fixture.diagramPath);
@@ -193,7 +194,7 @@ async function run() {
     const sourceRaw = await fs.readFile(path.join(repoRoot, sourcePath), 'utf8');
     const sourceParsed = parseMarkdownFrontmatter(sourceRaw);
     const sourceData = sourceParsed.data || {};
-    const area = sourceAreaFor(sourcePath);
+    const area = classifySourcePath(sourcePath);
     sourceAreaCounts.set(area, (sourceAreaCounts.get(area) || 0) + 1);
 
     const technicalRoute = deriveAudienceRoute('technical', sourcePath, sourceData);
