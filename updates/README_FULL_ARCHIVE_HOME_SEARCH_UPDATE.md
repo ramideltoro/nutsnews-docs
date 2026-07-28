@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 996d48c8d97980927c64042b698f3691a44d8fd0c17dd0cde998bd11d228696b
+---
 # NutsNews full archive home search update
 
 This update keeps full archive search in the backend, but changes the website UX so search happens directly on the home page instead of sending visitors to a separate `/search` page.

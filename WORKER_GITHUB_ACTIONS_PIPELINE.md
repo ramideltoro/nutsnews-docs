@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 15d8c42b604fb04b03f07d9126a9cd647b38116cb8b28a2b3708489227cb3256
+---
 # Worker GitHub Actions Pipeline
 
 This repo now has one guarded Worker pipeline for pull requests and post-merge Cloudflare deploys.

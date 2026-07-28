@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 1d3a2c014e0c861d373daa6756d3c6e6701abc942e4787a0ae41b8df904c212d
+---
 # Worker Summary Translation Subrequest Budget Update
 
 ## Problem

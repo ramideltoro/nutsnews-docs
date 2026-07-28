@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 21ff5128e3da879274a05aa1818d80be0eaee50630f1999d554353174b43aafb
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 873daf8ee7fe5372a5b865d7ecfbd9348abdeb2cb55160708607c5cf444089d9
 ---
 
 # VPS Release Smoke Health Target Fix

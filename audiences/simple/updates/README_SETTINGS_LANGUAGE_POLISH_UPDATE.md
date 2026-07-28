@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 7a82356a17041ca11cf5e89e9ad3c4231053923b4dcdfd325439c2e999759884
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: a64818a256c48dc4146e79066ff6d2cc0ceba791a467b2152afebc91f2c3f2c4
 ---
 
 # NutsNews Settings Language Polish Update

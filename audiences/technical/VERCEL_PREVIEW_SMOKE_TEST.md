@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: bbfffe1ba475b5dc99558476fe12c3c614a50f004b64f0ee5c4bf58a0a707e68
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 78418fedafdde888f73aacf11598e7d0af493eab3e7884de474e862f241b388b
 ---
 
 # Vercel Preview Smoke Test

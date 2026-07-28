@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: b261cc6d1786c7fcc636ae332bec3131e2e3c42667f61e2fd96b1b3036a9601e
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 6b64220bf56539fd983eb128923e7b02b4a186925aedbb0dd25c9f6ced4bd6dc
 ---
 
 # NutsNews Worker Upstash Redis Update

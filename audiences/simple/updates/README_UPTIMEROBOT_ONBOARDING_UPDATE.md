@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 68cd6b23fcde5c1218d6cfe4cc80d45d73448e49c91c47492005d796d017cd8e
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 0c3d75c9c41ab13ca5d199b667c7be02d9f13cf3636390858b4fa6806d466774
 ---
 
 # UptimeRobot Documentation Update

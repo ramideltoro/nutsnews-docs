@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 162bb075de4f7f60cf1a2a89d9e84bfce69c65f634cd4849d0790f60b4fb808a
+---
 # VPS and Vercel Production Lockstep Update
 
 ## Simple Summary

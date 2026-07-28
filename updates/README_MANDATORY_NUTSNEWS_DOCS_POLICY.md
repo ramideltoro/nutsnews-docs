@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: aaa224151b2070aaf69a71256c4e45e15e39dde3698e086b617402b956f33124
+---
 # Mandatory NutsNews Docs Policy
 
 This update documents the REQUIRED policy that every NutsNews change MUST update this documentation repository.

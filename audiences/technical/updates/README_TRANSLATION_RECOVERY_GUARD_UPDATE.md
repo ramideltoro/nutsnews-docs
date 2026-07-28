@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: d2ddf0e510a1ed7edf0f6644c6b2c7ed17f568a6ed906e2c95600fa160283d2a
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 45e8a34470592e5db28a81b6ad11869fae3acad8a3defb1d056e7d8348cbe066
 ---
 
 # NutsNews Translation Recovery Guard Update

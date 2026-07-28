@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: b76ce71b73ff5f1db5657598f7cadae14b72bd95eac545f17bafdde2e83d49a5
+---
 # NutsNews Home Search Box Layout Patch
 
 This is a UI-only patch for the full archive search box on the home page.

@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: Operations & Monitoring
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: c18a685bb153a5818ad44c4e002a144ebf804a1aa236bf5a96e9b68ab205ea1f
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 6e3eed0a05ecf43cf3b9e54108cd5517395aafb325a1a562514c2161337fe7c9
 ---
 
 # VPS Alert Email Policy

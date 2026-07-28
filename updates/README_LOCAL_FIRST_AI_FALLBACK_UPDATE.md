@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: f21cbf1f2946d5a4b438eb0eb817e76a5737262bed5234366672ca40500b5276
+---
 # NutsNews local-first AI fallback update
 
 This update makes the Worker support a full local-first AI flow:

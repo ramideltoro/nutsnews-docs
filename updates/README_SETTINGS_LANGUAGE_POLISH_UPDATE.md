@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: a64818a256c48dc4146e79066ff6d2cc0ceba791a467b2152afebc91f2c3f2c4
+---
 # NutsNews Settings Language Polish Update
 
 This is a small follow-up to the settings menu update.

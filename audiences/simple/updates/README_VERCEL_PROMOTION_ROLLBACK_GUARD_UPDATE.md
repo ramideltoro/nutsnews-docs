@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: fac2778502c2cb2d6caac90c73dd26cc1f174b6eeebdaefb8c9fa728fd1c9a13
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: faff0f35feb3924d208d22cc2a9112a4b786a4301cd0cfd3405478da70989504
 ---
 
 # Vercel Promotion Rollback Guard Update

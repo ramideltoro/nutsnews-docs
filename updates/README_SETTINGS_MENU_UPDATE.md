@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 0e27461e34a5b4a5058dda7bf9a7150da60c25bfb1c18fb88782034d0dbc47ab
+---
 # NutsNews Settings Menu Update
 
 This update reorganizes the footer Settings panel into a two-level menu.

@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: caf7b9fe811e39b7c48483718f30805662cdfd537ecac26748dec5faf494b03b
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 5b582c830e1a0519050311450ee8b9838cbc54fb64d26d7d060b23b68c92bad6
 ---
 
 # NutsNews3 translation diagnostics query hotfix

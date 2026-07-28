@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: d0abe6d333a001065b8d4a661a322d0e68dd5486601c13988db9ddcf47e67305
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: e7573b4c7675566ec8da1104f0fb0c4a16e0693b061bd230b3ffae52976400cd
 ---
 
 # Staging Bundle Marker Refresh Update

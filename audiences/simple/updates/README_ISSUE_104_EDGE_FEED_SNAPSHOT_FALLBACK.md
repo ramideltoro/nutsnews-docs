@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 4ae46154fd3297a264505a0ce600c020e276626fd0d6f287ea5555b8d007c54b
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: c9926906f44ff578889b947509e48e3aea0aff2efb82245cfeed5e913ca96428
 ---
 
 # Issue 104 Edge Feed Snapshot Fallback Update

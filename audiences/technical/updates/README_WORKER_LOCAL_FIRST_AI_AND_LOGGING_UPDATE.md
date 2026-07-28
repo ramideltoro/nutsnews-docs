@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: f0b6d937b52867d4686240fad7838270d2923294436f89d9e10609dda405c2f8
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 9547d3a9866166e255e7172cac4b43117715865d0951df7ecd1c0c5a76e07c5b
 ---
 
 # Worker local-first AI and diagnostic logging update

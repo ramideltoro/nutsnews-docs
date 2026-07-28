@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 60ddc0f559630e191275b40a84c9b670cf3c78d92d231243ea08035028dca5a5
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: db9add116fa57ab1a7643282d542efacf43164cd8c545105693c5039c36fd15d
 ---
 
 # Web Public Reader Smoke Test
