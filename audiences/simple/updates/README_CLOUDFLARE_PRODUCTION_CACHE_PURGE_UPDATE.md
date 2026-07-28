@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-cloudflare-production-cache-purge-update/
   simple_route: /simple/updates/readme-cloudflare-production-cache-purge-update/
   primary_diagram:
-    file: diagrams/updates/README_CLOUDFLARE_PRODUCTION_CACHE_PURGE_UPDATE.md
+    file: diagrams/updates/README_CLOUDFLARE_PRODUCTION_CACHE_PURGE_UPDATE.mmd
     accTitle: "Cloudflare Production Cache Purge Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

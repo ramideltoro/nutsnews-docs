@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/nutsnews-release-pipeline/
   simple_route: /simple/nutsnews-release-pipeline/
   primary_diagram:
-    file: diagrams/NUTSNEWS_RELEASE_PIPELINE.md
+    file: diagrams/NUTSNEWS_RELEASE_PIPELINE.mmd
     accTitle: "NutsNews Release Pipeline diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

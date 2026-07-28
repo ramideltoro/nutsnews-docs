@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-uptimerobot-onboarding-update/
   simple_route: /simple/updates/readme-uptimerobot-onboarding-update/
   primary_diagram:
-    file: diagrams/updates/README_UPTIMEROBOT_ONBOARDING_UPDATE.md
+    file: diagrams/updates/README_UPTIMEROBOT_ONBOARDING_UPDATE.mmd
     accTitle: "UptimeRobot Documentation Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

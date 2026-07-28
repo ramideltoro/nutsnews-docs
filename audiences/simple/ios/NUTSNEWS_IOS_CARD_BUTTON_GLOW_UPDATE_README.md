@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/ios/nutsnews-ios-card-button-glow-update-readme/
   simple_route: /simple/ios/nutsnews-ios-card-button-glow-update-readme/
   primary_diagram:
-    file: diagrams/ios/NUTSNEWS_IOS_CARD_BUTTON_GLOW_UPDATE_README.md
+    file: diagrams/ios/NUTSNEWS_IOS_CARD_BUTTON_GLOW_UPDATE_README.mmd
     accTitle: "NutsNews iOS Card Button Glow Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

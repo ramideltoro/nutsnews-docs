@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/ios/nutsnews-ios-new-themes-update-readme/
   simple_route: /simple/ios/nutsnews-ios-new-themes-update-readme/
   primary_diagram:
-    file: diagrams/ios/NUTSNEWS_IOS_NEW_THEMES_UPDATE_README.md
+    file: diagrams/ios/NUTSNEWS_IOS_NEW_THEMES_UPDATE_README.mmd
     accTitle: "NutsNews iOS New Themes Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

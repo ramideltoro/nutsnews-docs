@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/archive/nutsnews-privacy-policy-update-readme/
   simple_route: /simple/archive/nutsnews-privacy-policy-update-readme/
   primary_diagram:
-    file: diagrams/archive/NUTSNEWS_PRIVACY_POLICY_UPDATE_README.md
+    file: diagrams/archive/NUTSNEWS_PRIVACY_POLICY_UPDATE_README.mmd
     accTitle: "NutsNews Privacy Policy Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

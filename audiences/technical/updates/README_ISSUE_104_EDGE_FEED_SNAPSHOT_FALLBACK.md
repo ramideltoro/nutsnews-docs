@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-issue-104-edge-feed-snapshot-fallback/
   simple_route: /simple/updates/readme-issue-104-edge-feed-snapshot-fallback/
   primary_diagram:
-    file: diagrams/updates/README_ISSUE_104_EDGE_FEED_SNAPSHOT_FALLBACK.md
+    file: diagrams/updates/README_ISSUE_104_EDGE_FEED_SNAPSHOT_FALLBACK.mmd
     accTitle: "Issue 104 Edge Feed Snapshot Fallback Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

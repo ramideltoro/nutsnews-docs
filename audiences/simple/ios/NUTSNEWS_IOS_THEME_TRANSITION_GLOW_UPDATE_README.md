@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/ios/nutsnews-ios-theme-transition-glow-update-readme/
   simple_route: /simple/ios/nutsnews-ios-theme-transition-glow-update-readme/
   primary_diagram:
-    file: diagrams/ios/NUTSNEWS_IOS_THEME_TRANSITION_GLOW_UPDATE_README.md
+    file: diagrams/ios/NUTSNEWS_IOS_THEME_TRANSITION_GLOW_UPDATE_README.mmd
     accTitle: "NutsNews iOS Theme Transition Glow Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

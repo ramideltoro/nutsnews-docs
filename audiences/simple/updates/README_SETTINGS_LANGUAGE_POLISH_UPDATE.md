@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-settings-language-polish-update/
   simple_route: /simple/updates/readme-settings-language-polish-update/
   primary_diagram:
-    file: diagrams/updates/README_SETTINGS_LANGUAGE_POLISH_UPDATE.md
+    file: diagrams/updates/README_SETTINGS_LANGUAGE_POLISH_UPDATE.mmd
     accTitle: "NutsNews Settings Language Polish Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

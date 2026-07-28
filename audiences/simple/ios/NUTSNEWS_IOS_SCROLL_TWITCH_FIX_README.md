@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/ios/nutsnews-ios-scroll-twitch-fix-readme/
   simple_route: /simple/ios/nutsnews-ios-scroll-twitch-fix-readme/
   primary_diagram:
-    file: diagrams/ios/NUTSNEWS_IOS_SCROLL_TWITCH_FIX_README.md
+    file: diagrams/ios/NUTSNEWS_IOS_SCROLL_TWITCH_FIX_README.mmd
     accTitle: "NutsNews iOS Scroll Twitch Fix diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/nutsnews-vps-staging-capacity/
   simple_route: /simple/nutsnews-vps-staging-capacity/
   primary_diagram:
-    file: diagrams/NUTSNEWS_VPS_STAGING_CAPACITY.md
+    file: diagrams/NUTSNEWS_VPS_STAGING_CAPACITY.mmd
     accTitle: "NutsNews VPS Same-Host Staging Capacity Budget diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

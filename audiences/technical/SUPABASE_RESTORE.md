@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/supabase-restore/
   simple_route: /simple/supabase-restore/
   primary_diagram:
-    file: diagrams/SUPABASE_RESTORE.md
+    file: diagrams/SUPABASE_RESTORE.mmd
     accTitle: "Supabase Restore Procedure diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/nutsnews-vps-staging-deployment/
   simple_route: /simple/nutsnews-vps-staging-deployment/
   primary_diagram:
-    file: diagrams/NUTSNEWS_VPS_STAGING_DEPLOYMENT.md
+    file: diagrams/NUTSNEWS_VPS_STAGING_DEPLOYMENT.mmd
     accTitle: "NutsNews Immutable Staging Deployment diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

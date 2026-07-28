@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/ios/nutsnews-ios-safari-delegate-build-fix-readme/
   simple_route: /simple/ios/nutsnews-ios-safari-delegate-build-fix-readme/
   primary_diagram:
-    file: diagrams/ios/NUTSNEWS_IOS_SAFARI_DELEGATE_BUILD_FIX_README.md
+    file: diagrams/ios/NUTSNEWS_IOS_SAFARI_DELEGATE_BUILD_FIX_README.mmd
     accTitle: "NutsNews iOS Safari Delegate Build Fix diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

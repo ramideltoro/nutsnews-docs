@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-translation-all-in-one-update/
   simple_route: /simple/updates/readme-translation-all-in-one-update/
   primary_diagram:
-    file: diagrams/updates/README_TRANSLATION_ALL_IN_ONE_UPDATE.md
+    file: diagrams/updates/README_TRANSLATION_ALL_IN_ONE_UPDATE.mmd
     accTitle: "NutsNews Translation All-in-One Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

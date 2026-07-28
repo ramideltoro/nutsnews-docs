@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/nutsnews-grafana-cloud-observability/
   simple_route: /simple/nutsnews-grafana-cloud-observability/
   primary_diagram:
-    file: diagrams/NUTSNEWS_GRAFANA_CLOUD_OBSERVABILITY.md
+    file: diagrams/NUTSNEWS_GRAFANA_CLOUD_OBSERVABILITY.mmd
     accTitle: "NutsNews Grafana Cloud Observability diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

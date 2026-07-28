@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-accepted-articles-require-translations/
   simple_route: /simple/updates/readme-accepted-articles-require-translations/
   primary_diagram:
-    file: diagrams/updates/README_ACCEPTED_ARTICLES_REQUIRE_TRANSLATIONS.md
+    file: diagrams/updates/README_ACCEPTED_ARTICLES_REQUIRE_TRANSLATIONS.mmd
     accTitle: "Accepted articles require translations before publishing diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

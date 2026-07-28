@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/nutsnews-dual-target-web-deployment/
   simple_route: /simple/nutsnews-dual-target-web-deployment/
   primary_diagram:
-    file: diagrams/NUTSNEWS_DUAL_TARGET_WEB_DEPLOYMENT.md
+    file: diagrams/NUTSNEWS_DUAL_TARGET_WEB_DEPLOYMENT.mmd
     accTitle: "NutsNews Dual-Target Web Deployment diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/web-visual-regression-tests/
   simple_route: /simple/web-visual-regression-tests/
   primary_diagram:
-    file: diagrams/WEB_VISUAL_REGRESSION_TESTS.md
+    file: diagrams/WEB_VISUAL_REGRESSION_TESTS.mmd
     accTitle: "Web Visual Regression Tests diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

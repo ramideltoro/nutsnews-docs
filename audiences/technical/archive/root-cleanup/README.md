@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/archive/root-cleanup/readme/
   simple_route: /simple/archive/root-cleanup/readme/
   primary_diagram:
-    file: diagrams/archive/root-cleanup/README.md
+    file: diagrams/archive/root-cleanup/README.mmd
     accTitle: "Archived Root-Level Update Notes diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

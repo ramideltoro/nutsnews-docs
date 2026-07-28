@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-backend-translation-publish-guard/
   simple_route: /simple/updates/readme-backend-translation-publish-guard/
   primary_diagram:
-    file: diagrams/updates/README_BACKEND_TRANSLATION_PUBLISH_GUARD.md
+    file: diagrams/updates/README_BACKEND_TRANSLATION_PUBLISH_GUARD.mmd
     accTitle: "Backend translation publish guard diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

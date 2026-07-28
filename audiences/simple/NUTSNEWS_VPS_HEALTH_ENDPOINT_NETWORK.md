@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/nutsnews-vps-health-endpoint-network/
   simple_route: /simple/nutsnews-vps-health-endpoint-network/
   primary_diagram:
-    file: diagrams/NUTSNEWS_VPS_HEALTH_ENDPOINT_NETWORK.md
+    file: diagrams/NUTSNEWS_VPS_HEALTH_ENDPOINT_NETWORK.mmd
     accTitle: "NutsNews VPS Health Endpoint Network diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

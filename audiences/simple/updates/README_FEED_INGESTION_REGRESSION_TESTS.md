@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-feed-ingestion-regression-tests/
   simple_route: /simple/updates/readme-feed-ingestion-regression-tests/
   primary_diagram:
-    file: diagrams/updates/README_FEED_INGESTION_REGRESSION_TESTS.md
+    file: diagrams/updates/README_FEED_INGESTION_REGRESSION_TESTS.mmd
     accTitle: "Feed Ingestion Regression Tests diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

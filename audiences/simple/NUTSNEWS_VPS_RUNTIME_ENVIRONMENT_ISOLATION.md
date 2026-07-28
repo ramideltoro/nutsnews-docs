@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/nutsnews-vps-runtime-environment-isolation/
   simple_route: /simple/nutsnews-vps-runtime-environment-isolation/
   primary_diagram:
-    file: diagrams/NUTSNEWS_VPS_RUNTIME_ENVIRONMENT_ISOLATION.md
+    file: diagrams/NUTSNEWS_VPS_RUNTIME_ENVIRONMENT_ISOLATION.mmd
     accTitle: "NutsNews VPS Runtime Environment Isolation diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

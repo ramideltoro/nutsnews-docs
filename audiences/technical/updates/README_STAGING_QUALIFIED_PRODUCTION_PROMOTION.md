@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-staging-qualified-production-promotion/
   simple_route: /simple/updates/readme-staging-qualified-production-promotion/
   primary_diagram:
-    file: diagrams/updates/README_STAGING_QUALIFIED_PRODUCTION_PROMOTION.md
+    file: diagrams/updates/README_STAGING_QUALIFIED_PRODUCTION_PROMOTION.mmd
     accTitle: "Staging-Qualified Production Promotion Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

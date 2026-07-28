@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/ios/nutsnews-ios-like-toggle-update-readme/
   simple_route: /simple/ios/nutsnews-ios-like-toggle-update-readme/
   primary_diagram:
-    file: diagrams/ios/NUTSNEWS_IOS_LIKE_TOGGLE_UPDATE_README.md
+    file: diagrams/ios/NUTSNEWS_IOS_LIKE_TOGGLE_UPDATE_README.mmd
     accTitle: "NutsNews iOS Like Toggle Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

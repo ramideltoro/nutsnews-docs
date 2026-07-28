@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/ios/nutsnews-ios-thumbnail-crop-update-readme/
   simple_route: /simple/ios/nutsnews-ios-thumbnail-crop-update-readme/
   primary_diagram:
-    file: diagrams/ios/NUTSNEWS_IOS_THUMBNAIL_CROP_UPDATE_README.md
+    file: diagrams/ios/NUTSNEWS_IOS_THUMBNAIL_CROP_UPDATE_README.mmd
     accTitle: "NutsNews iOS Thumbnail Crop Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

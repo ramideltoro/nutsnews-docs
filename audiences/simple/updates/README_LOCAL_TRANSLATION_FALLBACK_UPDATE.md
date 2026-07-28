@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-local-translation-fallback-update/
   simple_route: /simple/updates/readme-local-translation-fallback-update/
   primary_diagram:
-    file: diagrams/updates/README_LOCAL_TRANSLATION_FALLBACK_UPDATE.md
+    file: diagrams/updates/README_LOCAL_TRANSLATION_FALLBACK_UPDATE.mmd
     accTitle: "NutsNews home-server translation fallback update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

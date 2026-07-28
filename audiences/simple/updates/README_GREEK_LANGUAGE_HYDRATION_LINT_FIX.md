@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-greek-language-hydration-lint-fix/
   simple_route: /simple/updates/readme-greek-language-hydration-lint-fix/
   primary_diagram:
-    file: diagrams/updates/README_GREEK_LANGUAGE_HYDRATION_LINT_FIX.md
+    file: diagrams/updates/README_GREEK_LANGUAGE_HYDRATION_LINT_FIX.mmd
     accTitle: "Greek Language Hydration Lint Fix diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

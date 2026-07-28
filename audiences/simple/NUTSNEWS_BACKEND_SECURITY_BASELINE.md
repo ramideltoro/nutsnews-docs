@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/nutsnews-backend-security-baseline/
   simple_route: /simple/nutsnews-backend-security-baseline/
   primary_diagram:
-    file: diagrams/NUTSNEWS_BACKEND_SECURITY_BASELINE.md
+    file: diagrams/NUTSNEWS_BACKEND_SECURITY_BASELINE.mmd
     accTitle: "NutsNews Backend Security Baseline diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

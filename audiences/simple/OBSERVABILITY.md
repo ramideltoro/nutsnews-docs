@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/observability/
   simple_route: /simple/observability/
   primary_diagram:
-    file: diagrams/OBSERVABILITY.md
+    file: diagrams/OBSERVABILITY.mmd
     accTitle: "Observability diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/ios/nutsnews-ios-story-notes-stable-key-patch-readme/
   simple_route: /simple/ios/nutsnews-ios-story-notes-stable-key-patch-readme/
   primary_diagram:
-    file: diagrams/ios/NUTSNEWS_IOS_STORY_NOTES_STABLE_KEY_PATCH_README.md
+    file: diagrams/ios/NUTSNEWS_IOS_STORY_NOTES_STABLE_KEY_PATCH_README.mmd
     accTitle: "NutsNews iOS — Story Notes Stable Key Patch diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

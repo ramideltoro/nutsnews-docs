@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/ios/nutsnews-ios-ipad-original-story-true-fullscreen-fix-readme/
   simple_route: /simple/ios/nutsnews-ios-ipad-original-story-true-fullscreen-fix-readme/
   primary_diagram:
-    file: diagrams/ios/NUTSNEWS_IOS_IPAD_ORIGINAL_STORY_TRUE_FULLSCREEN_FIX_README.md
+    file: diagrams/ios/NUTSNEWS_IOS_IPAD_ORIGINAL_STORY_TRUE_FULLSCREEN_FIX_README.mmd
     accTitle: "NutsNews iOS iPad Original Story True Fullscreen Fix diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

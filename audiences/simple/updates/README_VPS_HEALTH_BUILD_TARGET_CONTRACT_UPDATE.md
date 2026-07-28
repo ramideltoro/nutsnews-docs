@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-vps-health-build-target-contract-update/
   simple_route: /simple/updates/readme-vps-health-build-target-contract-update/
   primary_diagram:
-    file: diagrams/updates/README_VPS_HEALTH_BUILD_TARGET_CONTRACT_UPDATE.md
+    file: diagrams/updates/README_VPS_HEALTH_BUILD_TARGET_CONTRACT_UPDATE.mmd
     accTitle: "VPS Health Build Target Contract Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

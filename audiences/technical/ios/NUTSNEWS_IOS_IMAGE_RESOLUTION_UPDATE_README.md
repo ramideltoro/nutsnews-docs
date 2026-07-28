@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/ios/nutsnews-ios-image-resolution-update-readme/
   simple_route: /simple/ios/nutsnews-ios-image-resolution-update-readme/
   primary_diagram:
-    file: diagrams/ios/NUTSNEWS_IOS_IMAGE_RESOLUTION_UPDATE_README.md
+    file: diagrams/ios/NUTSNEWS_IOS_IMAGE_RESOLUTION_UPDATE_README.mmd
     accTitle: "NutsNews iOS Image Resolution Troubleshooting Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-staging-bundle-marker-refresh-update/
   simple_route: /simple/updates/readme-staging-bundle-marker-refresh-update/
   primary_diagram:
-    file: diagrams/updates/README_STAGING_BUNDLE_MARKER_REFRESH_UPDATE.md
+    file: diagrams/updates/README_STAGING_BUNDLE_MARKER_REFRESH_UPDATE.mmd
     accTitle: "Staging Bundle Marker Refresh Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

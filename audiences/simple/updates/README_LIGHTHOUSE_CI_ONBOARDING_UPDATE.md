@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-lighthouse-ci-onboarding-update/
   simple_route: /simple/updates/readme-lighthouse-ci-onboarding-update/
   primary_diagram:
-    file: diagrams/updates/README_LIGHTHOUSE_CI_ONBOARDING_UPDATE.md
+    file: diagrams/updates/README_LIGHTHOUSE_CI_ONBOARDING_UPDATE.mmd
     accTitle: "Lighthouse CI Documentation Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

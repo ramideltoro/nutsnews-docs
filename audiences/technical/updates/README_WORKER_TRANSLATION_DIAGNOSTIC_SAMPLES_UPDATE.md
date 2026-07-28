@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/updates/readme-worker-translation-diagnostic-samples-update/
   simple_route: /simple/updates/readme-worker-translation-diagnostic-samples-update/
   primary_diagram:
-    file: diagrams/updates/README_WORKER_TRANSLATION_DIAGNOSTIC_SAMPLES_UPDATE.md
+    file: diagrams/updates/README_WORKER_TRANSLATION_DIAGNOSTIC_SAMPLES_UPDATE.mmd
     accTitle: "Worker Translation Diagnostic Samples Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

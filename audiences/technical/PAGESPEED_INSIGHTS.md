@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/pagespeed-insights/
   simple_route: /simple/pagespeed-insights/
   primary_diagram:
-    file: diagrams/PAGESPEED_INSIGHTS.md
+    file: diagrams/PAGESPEED_INSIGHTS.mmd
     accTitle: "PageSpeed Insights for NutsNews diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

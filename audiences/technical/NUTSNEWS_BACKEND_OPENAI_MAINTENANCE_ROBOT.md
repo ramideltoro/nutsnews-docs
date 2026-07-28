@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/nutsnews-backend-openai-maintenance-robot/
   simple_route: /simple/nutsnews-backend-openai-maintenance-robot/
   primary_diagram:
-    file: diagrams/NUTSNEWS_BACKEND_OPENAI_MAINTENANCE_ROBOT.md
+    file: diagrams/NUTSNEWS_BACKEND_OPENAI_MAINTENANCE_ROBOT.mmd
     accTitle: "NutsNews Backend OpenAI Maintenance Robot diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

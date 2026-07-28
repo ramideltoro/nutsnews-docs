@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/ios/nutsnews-ios-story-page-glow-like-update-readme/
   simple_route: /simple/ios/nutsnews-ios-story-page-glow-like-update-readme/
   primary_diagram:
-    file: diagrams/ios/NUTSNEWS_IOS_STORY_PAGE_GLOW_LIKE_UPDATE_README.md
+    file: diagrams/ios/NUTSNEWS_IOS_STORY_PAGE_GLOW_LIKE_UPDATE_README.mmd
     accTitle: "NutsNews iOS Story Page Glow + Like Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

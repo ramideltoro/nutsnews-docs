@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/nutsnews-backend-health-report/
   simple_route: /simple/nutsnews-backend-health-report/
   primary_diagram:
-    file: diagrams/NUTSNEWS_BACKEND_HEALTH_REPORT.md
+    file: diagrams/NUTSNEWS_BACKEND_HEALTH_REPORT.mmd
     accTitle: "NutsNews Backend Health Report diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

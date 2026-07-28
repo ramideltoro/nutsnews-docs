@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/cloudflare-cache-observability/
   simple_route: /simple/cloudflare-cache-observability/
   primary_diagram:
-    file: diagrams/CLOUDFLARE_CACHE_OBSERVABILITY.md
+    file: diagrams/CLOUDFLARE_CACHE_OBSERVABILITY.mmd
     accTitle: "Cloudflare Cache Observability diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active
