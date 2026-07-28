@@ -1,3 +1,5 @@
+accTitle: "NutsNews Cache Safety Update"
+accDescr: "This update prevents stale browser-cached page shells from causing UI problems immediately after a deploy."
 flowchart TD
   A[Deploy new web build] --> B[Set short public page cache policy]
   B --> C[Browsers revalidate page shell on next navigation]
@@ -8,3 +10,4 @@ flowchart TD
   G -->|yes| H[Reload browser once to recover stale shell]
   G -->|no| I[Continue user session]
   H --> I
+

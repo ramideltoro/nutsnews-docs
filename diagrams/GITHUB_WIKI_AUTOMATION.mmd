@@ -1,3 +1,5 @@
+accTitle: "GitHub Pages Publishing for the NutsNews Wiki"
+accDescr: "NutsNews documentation is published as the static site at `https://wiki.nutsnews.com`."
 ---
 title: Wiki publishing pipeline
 ---
@@ -16,4 +18,5 @@ flowchart LR
   H --> I["Deploy to GitHub Pages"]
   I --> J["Resolve DNS + HTTPS on wiki.nutsnews.com"]
   G -->|Failure| K["Fix cause and re-run workflow"]
+
 

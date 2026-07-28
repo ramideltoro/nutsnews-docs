@@ -1,3 +1,5 @@
+accTitle: "NutsNews Backend Protected Apply"
+accDescr: "This documents the protected apply workflow for `ramideltoro/nutsnews-backend`."
 flowchart TD
   A[Open backend change request] --> B{Protected apply workflow triggered}
   B --> C[Validate approvals and required labels]
@@ -7,3 +9,4 @@ flowchart TD
   E -->|yes| G[Apply changes through protected path]
   G --> H[Emit backend environment result report]
   H --> I[Record health and rollback posture]
+

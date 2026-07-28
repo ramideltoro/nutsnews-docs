@@ -1,3 +1,5 @@
+accTitle: "NutsNews Supabase Standby Restricted Probe"
+accDescr: "This is the shared operations guide for proving Supabase standby credential and"
 flowchart TD
   A["Workflow trigger (main)"] --> B["`verify-supabase-standby-readiness` confirmation"]
   B --> C["Protected `supabase-standby` environment gate"]
@@ -12,3 +14,4 @@ flowchart TD
   J --> L["Issue #496 safe evidence update"]
   F --> M["No env, no PTY, no forwarding, no shell"]
   M --> N["No URL/user/secret persistence"]
+

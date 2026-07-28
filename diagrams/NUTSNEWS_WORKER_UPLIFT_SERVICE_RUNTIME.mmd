@@ -1,3 +1,5 @@
+accTitle: "NutsNews Worker-Uplift Service Runtime"
+accDescr: "Status: implemented for `ramideltoro/nutsnews-worker#85` on 2026-07-23."
 flowchart TD
   A["Worker-uplift service runtime request"] --> B["Backend protected apply sets runtime enabled flag"]
   B --> C["Install runtime manager framework"]
@@ -29,3 +31,4 @@ flowchart TD
   until cutover-approved"]
   R --> S["Production proof: status=pass
   shadow mode default"]
+

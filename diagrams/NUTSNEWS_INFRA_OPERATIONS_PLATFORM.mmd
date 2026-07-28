@@ -1,3 +1,5 @@
+accTitle: "NutsNews Infra Operations Platform"
+accDescr: "This explains how the NutsNews infrastructure repo is supposed to make one small VPS behave like a boringly reliable production platform, w…"
 flowchart TD
   A[Infrastructure repo changes] --> B[Change review and scan gates]
   B --> C{Safety gates pass?}
@@ -8,3 +10,4 @@ flowchart TD
   G --> H[Portal and email reports update]
   H --> I[Ops Portal and docs reflect state]
   D --> B
+

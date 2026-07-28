@@ -1,3 +1,5 @@
+accTitle: "VPS Admin Navigation Rate Limit"
+accDescr: "The VPS Caddy edge protects authentication-sensitive traffic without making"
 flowchart TD
   A[Incoming request from remote host] --> B{Path classification}
   B -->|/api/auth/*, /login*, /ops*| C[Auth bucket: 20/min]
@@ -10,3 +12,4 @@ flowchart TD
   G --> J[Lower false positives for Next.js app-router traffic]
   J --> K[Normal admin navigation remains usable]
   I --> K
+

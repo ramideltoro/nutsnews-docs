@@ -1,0 +1,185 @@
+---
+import SiteTitle from 'virtual:starlight/components/SiteTitle';
+import Search from 'virtual:starlight/components/Search';
+import SocialIcons from 'virtual:starlight/components/SocialIcons';
+import ThemeSelect from 'virtual:starlight/components/ThemeSelect';
+import LanguageSelect from 'virtual:starlight/components/LanguageSelect';
+import config from 'virtual:starlight/user-config';
+
+const path = Astro.url.pathname;
+const isTechnical = path.startsWith('/technical/');
+const historyPath = isTechnical ? '/technical/updates/' : '/simple/updates/';
+
+const entry = Astro.locals.starlightRoute?.entry;
+const preferredAudienceLink = entry?.data?.paired_route || (isTechnical ? '/simple/' : '/technical/');
+const activeAudience = isTechnical ? 'technical' : 'simple';
+const nextAudience = activeAudience === 'technical' ? 'simple' : 'technical';
+
+const shouldRenderSearch =
+  config.pagefind || config.components.Search !== '@astrojs/starlight/components/Search.astro';
+---
+
+<header class="wiki-header sl-flex">
+  <div class="title-group sl-flex">
+    <SiteTitle />
+  </div>
+
+  <nav class="audience-tools" aria-label="Audience controls">
+  <a
+    class="audience-switch"
+    href={preferredAudienceLink}
+    data-audience-switch={nextAudience}
+    data-audience-target={preferredAudienceLink}
+  >
+      View {nextAudience}
+    </a>
+    <a class="history-link" href={historyPath}>History</a>
+    <a class="github-link" href="https://github.com/ramideltoro/nutsnews-docs">GitHub</a>
+    {shouldRenderSearch && <Search />}
+    <div class="right-group sl-flex">
+      <div class="sl-flex social-icons">
+        <SocialIcons />
+      </div>
+      <ThemeSelect />
+      <LanguageSelect />
+    </div>
+  </nav>
+</header>
+
+<script>
+(() => {
+  const AUDIENCE_KEY = 'nutsnews.wiki.audience';
+  const isTechnical = window.location.pathname.startsWith('/technical/');
+  const currentAudience = isTechnical ? 'technical' : 'simple';
+  const targetAudience = isTechnical ? 'simple' : 'technical';
+  const routePath = window.location.pathname;
+  const switchButton = document.querySelector('[data-audience-switch]');
+  const switchBase = switchButton?.getAttribute('data-audience-target') || (targetAudience === 'technical' ? '/technical/' : '/simple/');
+
+  const resolveSwitchTarget = () => {
+    if (!routePath || routePath === '/') {
+      return switchBase;
+    }
+
+    const pathOnly = routePath.endsWith('/') ? routePath.slice(0, -1) : routePath;
+    const replaced = pathOnly.startsWith('/simple/')
+      ? pathOnly.replace('/simple', '/technical')
+      : pathOnly.startsWith('/technical/')
+        ? pathOnly.replace('/technical', '/simple')
+        : pathOnly;
+
+    return replaced !== pathOnly && replaced ? `${replaced}${window.location.search}${window.location.hash}` : `${switchBase}${window.location.search}${window.location.hash}`;
+  };
+
+  if (typeof localStorage !== 'undefined') {
+    if (localStorage.getItem(AUDIENCE_KEY) !== currentAudience) {
+      localStorage.setItem(AUDIENCE_KEY, currentAudience);
+    }
+  }
+
+  if (switchButton) {
+    const target = resolveSwitchTarget();
+    switchButton.href = target;
+  }
+
+  switchButton?.addEventListener('click', () => {
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
+    const next = switchButton.getAttribute('data-audience-switch');
+    if (next === 'technical' || next === 'simple') {
+      localStorage.setItem(AUDIENCE_KEY, next);
+    }
+  });
+
+  document.querySelectorAll('pre[data-language=\"mermaid\"]').forEach((node) => {
+    if (!node.hasAttribute('tabindex')) {
+      node.setAttribute('tabindex', '0');
+    }
+    if (!node.getAttribute('aria-label')) {
+      node.setAttribute('aria-label', 'Mermaid diagram content');
+    }
+  });
+})();
+</script>
+
+<style>
+  @layer starlight.core {
+    .wiki-header {
+      gap: var(--sl-nav-gap);
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .title-group {
+      overflow: clip;
+      min-width: 0;
+    }
+
+    .audience-tools {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.75rem;
+      min-width: 0;
+      justify-content: flex-end;
+    }
+
+    .audience-switch,
+    .history-link,
+    .github-link {
+      color: var(--sl-color-text);
+      padding: 0.3rem 0.6rem;
+      border-radius: 0.4rem;
+      border: 1px solid transparent;
+      text-decoration: none;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .audience-switch:focus,
+    .history-link:focus,
+    .github-link:focus {
+      outline: 2px solid var(--sl-color-accent-high);
+      outline-offset: 2px;
+    }
+
+    .audience-switch:hover,
+    .history-link:hover,
+    .github-link:hover {
+      border-color: var(--sl-color-gray-4);
+    }
+
+    .right-group,
+    .social-icons {
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .social-icons::after {
+      content: '';
+      width: 1px;
+      align-self: stretch;
+      background: var(--sl-color-gray-5);
+      margin-inline: 0 0.4rem;
+    }
+
+    @media (max-width: 80rem) {
+      .audience-tools {
+        gap: 0.4rem;
+      }
+    }
+
+    @media (max-width: 64rem) {
+      .audience-tools {
+        justify-content: flex-start;
+      }
+
+      .history-link,
+      .github-link,
+      .audience-switch {
+        font-size: var(--sl-text-sm);
+      }
+    }
+  }
+</style>

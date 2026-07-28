@@ -1,3 +1,5 @@
+accTitle: "NutsNews Backend PostgreSQL Primary And Supabase Hot Standby"
+accDescr: "Architecture status: backend PostgreSQL is the production read/write primary."
 flowchart LR
   A[Protected Backend Apply] -->|provisions PostgreSQL| B[Backend PostgreSQL primary]
   B --> C["Adminer and db bound to 127.0.0.1:5432"]
@@ -28,3 +30,4 @@ flowchart LR
   O -->|if evidence fails| S
   B -->|loopback only| T[Protected backend SSH probe / fixed query]
   T --> H
+

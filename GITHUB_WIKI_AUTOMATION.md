@@ -60,7 +60,7 @@ Publishing is controlled by
 2. CI gate checks:
    - Documentation path inventory validation
    - Secret-safety validation (tracked/staged repository scan)
-   - Jekyll build pass
+   - Astro/Starlight build pass
    - Build artifact size, build duration, and pagefind budget checks
    - Pages artifact generation
 3. Manual/manual-override deployment gate (if `wiki-pages` environment is protected in GitHub):
@@ -96,16 +96,25 @@ node scripts/wiki/validate-wiki-secrets.mjs --smoke-test
 ### Preview build locally
 
 ```bash
-bundle exec jekyll serve
+npm ci
+npm run build
+npm run dev -- --host 127.0.0.1 --port 4321
 ```
 
-(If `bundle` is not installed, install Jekyll with `gem install bundler jekyll` first.)
+If you see the `scripts/wiki/wiki-inventory.generated.json` path in logs, remove it from source if generated locally before committing.
 
 ### Inspect generated route list (pre-publish)
 
 ```bash
 grep -R "^" --no-messages --exclude-dir=.git --include='*.md' . | wc -l
 ```
+
+### Canonical output expectations
+
+- Canonical source documents: 227 markdown files in the repository root contract set.
+- Canonical Simple mirrors: 227 files in `audiences/simple`.
+- Canonical Technical views: 227 generated route pages under `src/content/docs/technical`.
+- Canonical Mermaid diagrams: 227 `.mmd` files under `diagrams/` excluding `diagrams/audiences/`.
 
 ---
 
@@ -138,11 +147,11 @@ If publish fails:
 1. Open the workflow run details for the failed job.
 2. Check these common blockers first:
    - Inventory check failed (script output indicates missing/ignored content).
-   - Jekyll build failed due to markdown frontmatter/structure.
+   - Astro/Starlight build failed due to markdown frontmatter/structure.
    - Pages permissions missing (`contents: read`, `pages: write`, `id-token: write`).
    - CNAME misconfiguration or stale DNS record.
    - Pages build output path mismatch.
 
 3. Fix the root cause, commit, and re-run.
 
-For the standard NutsNews setup, publish runs without any runtime OpenAI key or API dependency.
+For the standard NutsNews setup, publish runs with no runtime OpenAI key and no runtime API dependency.

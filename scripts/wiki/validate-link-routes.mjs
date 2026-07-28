@@ -6,6 +6,7 @@ const docsRoot = path.join(repoRoot, 'src', 'content', 'docs');
 
 const INTERNAL_ASSET_EXTENSIONS = /\.(?:png|jpe?g|gif|webp|svg|avif|bmp|ico|pdf|zip|tar|gz|css|js|map|txt|json|mdx?)$/i;
 const EXTERNAL_LINK = /^(?:https?:\/\/|mailto:|tel:|ftp:\/\/|\/\/|#)/i;
+const INTERNAL_MARKDOWN_LINK = /\.md(?:[?#]|$)/i;
 
 function normalizeRoute(route) {
   return route
@@ -137,6 +138,17 @@ function lineNumberForOffset(content, offset) {
         continue;
       }
 
+      if (INTERNAL_MARKDOWN_LINK.test(target)) {
+        unresolved.push({
+          source,
+          target,
+          resolved,
+          reason: 'markdown extension leak',
+          line: lineNumberForOffset(raw, offset),
+        });
+        continue;
+      }
+
       const normalizedCore = splitLinkTarget(target).replace(/\.md$/i, '');
       if (!normalizedCore || normalizedCore.startsWith('#')) {
         continue;
@@ -163,9 +175,10 @@ function lineNumberForOffset(content, offset) {
   }
 
   if (unresolved.length > 0) {
-    console.error(`Link validation found ${unresolved.length} unresolved internal route(s):`);
+    console.error(`Link validation found ${unresolved.length} issue(s):`);
     for (const issue of unresolved.slice(0, 80)) {
-      console.error(`- ${issue.source}:${issue.line} -> ${issue.target} (resolved: ${issue.resolved})`);
+      const reason = issue.reason ? ` [${issue.reason}]` : '';
+      console.error(`- ${issue.source}:${issue.line} -> ${issue.target} (resolved: ${issue.resolved})${reason}`);
     }
 
     if (unresolved.length > 80) {

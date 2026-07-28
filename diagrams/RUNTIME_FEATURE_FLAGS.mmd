@@ -1,3 +1,5 @@
+accTitle: "Runtime Feature Flags"
+accDescr: "NutsNews uses a small Supabase-backed runtime flag table to pause two documented behaviors without redeploying the Next.js app or Cloudflar…"
 flowchart TD
   A[Client / service starts] --> B[Evaluate runtime feature flags]
   B --> C{Flag enabled?}
@@ -9,3 +11,4 @@ flowchart TD
   G -->|Yes| H[Collect rollback and investigation cues]
   G -->|No| I[Continue normal operation]
   H --> I
+

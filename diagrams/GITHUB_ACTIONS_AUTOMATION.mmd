@@ -1,3 +1,5 @@
+accTitle: "NutsNews GitHub Actions Automation"
+accDescr: "This update adds the missing GitHub Actions around build safety, operations, backups, feed quality, translations, image coverage, links, si…"
 flowchart TD
   A["PR / merge request to main"] --> B["Classify changed paths"]
   B --> C{"Only docs/runbooks changed?"}
@@ -16,3 +18,4 @@ flowchart TD
   O --> P
   Q["Scheduled jobs"] --> R["Backups, size warning, coverage, release notes"]
   R --> S["Archive reports and notify"]
+

@@ -1,3 +1,5 @@
+accTitle: "Public Feed Snapshot and Edge Fallback"
+accDescr: "Architecture status: Supabase `public_feed_snapshot` remains the current"
 flowchart TD
   A[Run feed snapshot workflow] --> B[Collect canonical public feed items]
   B --> C[Write compact snapshot artifact]
@@ -9,3 +11,4 @@ flowchart TD
   H --> I[Route to next successful snapshot run]
   G --> J[Return snapshot version and freshness state]
   I --> J
+

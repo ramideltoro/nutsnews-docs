@@ -1,3 +1,5 @@
+accTitle: "Oracle Local AI Provider"
+accDescr: "> **Current production note:** NutsNews currently uses the home-server local AI setup documented in [Home Server Local AI Provider](HOME_SE…"
 flowchart TD
   A["Worker config supports AI_PROVIDER=openai|local"] --> B["AI_PROVIDER=local"]
   B --> C["Point LOCAL_AI_URL to Cloudflare Tunnel endpoint"]
@@ -15,3 +17,4 @@ flowchart TD
   N --> O["Generate wrangler and deploy all shards"]
   P["Deployment guardrails"] --> Q["OpenAI fallback enabled when quality uncertain"]
   P --> R["Keep Ollama localhost-only + HTTPS"]
+

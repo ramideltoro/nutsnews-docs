@@ -1,3 +1,5 @@
+accTitle: "Fluid Active CPU Reduction"
+accDescr: "This update reduces avoidable Vercel Fluid Active CPU work in the NutsNews public web path while preserving the existing fallback model."
 flowchart TD
   R[Public homepage request] --> S[Read precomputed public_feed_snapshot]
   S --> H[Extract latest 250 rows]
@@ -11,3 +13,4 @@ flowchart TD
   R --> P[Middleware for public reader paths no longer runs]
   P --> N[Middleware still runs for /admin, /monitoring, /api/auth, /api/contact]
   N --> E[Errors still logged with full visibility]
+

@@ -29,6 +29,8 @@ export const wikiContract = {
       'bin',
       'dist',
       'public',
+      'playwright-report',
+      'test-results',
       'scripts',
       'src',
       'diagrams',
@@ -36,6 +38,14 @@ export const wikiContract = {
   },
   frontmatter: {
     requiredOutputFields: ['title', 'description', 'slug', 'section', 'status', 'order'],
+    sourceField: 'source_path',
+    simpleField: 'simple_route',
+    technicalField: 'source_route',
+    pairedField: 'paired_route',
+    diagramField: 'diagram',
+    editField: 'editUrl',
+    generatedForField: 'generated_for',
+    updateField: 'source_last_updated',
     sourceMetadataFields: ['title', 'collection', 'section', 'status', 'order'],
     sourceMetadata: {
       routeKey: 'wiki',
@@ -57,6 +67,11 @@ export const wikiContract = {
   defaults: {
     status: 'active',
     order: 0,
+  },
+  repo: {
+    owner: 'ramideltoro',
+    name: 'nutsnews-docs',
+    branch: 'main',
   },
 };
 
@@ -106,3 +121,20 @@ export function diagramPathFromSource(relPath) {
   const noExt = relPath.replace(/\.md$/i, '');
   return `${wikiContract.paths.diagramRoot}/${noExt}${wikiContract.markdown.diagramExtension}`;
 }
+
+export function diagramFromSource(frontmatter, relPath) {
+  const wiki = frontmatter?.wiki || {};
+  const configured = wiki.primary_diagram || frontmatter?.primary_diagram;
+
+  if (typeof configured === 'string' && configured.trim()) {
+    return configured.trim();
+  }
+
+  if (configured && typeof configured === 'object' && configured.file) {
+    return configured.file;
+  }
+
+  return diagramPathFromSource(relPath);
+}
+
+export const deriveDiagram = diagramFromSource;

@@ -1,6 +1,9 @@
+accTitle: "NutsNews SEO Structured Data Audit"
+accDescr: "This update adds an automated production SEO audit for NutsNews."
 flowchart TD
   A[Audit starts in CLI or Actions] --> B[Validate homepage title, description, OG/Twitter fields]
   B --> C[Fetch sitemap index and article URLs]
   C --> D[Validate JSON-LD schema on homepage and article pages]
   D --> E[Write markdown + JSON reports to web/reports/seo]
   E --> F[Upload artifact in CI workflow]
+

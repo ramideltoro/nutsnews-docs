@@ -1,3 +1,5 @@
+accTitle: "Privacy Analytics And Consent"
+accDescr: "Related issue: `ramideltoro/nutsnews#114`"
 flowchart TD
   R[Reader opens app] --> A[Privacy controls]
   R --> B[RuntimeConfig fetched]
@@ -9,3 +11,4 @@ flowchart TD
   D -->|Yes| G[Allow engagement events]
   G --> H[/api/engagement endpoint]
   H --> I[record_article_engagement_event RPC]
+

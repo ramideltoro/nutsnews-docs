@@ -1,4 +1,5 @@
 import { promises as fs } from 'node:fs';
+import { execFile } from 'node:child_process';
 import path from 'node:path';
 import {
   diagramPathFromSource,
@@ -14,6 +15,7 @@ const GENERATED_DOCS_ROOT = path.join(repoRoot, wikiContract.generatedContentRoo
 const INVENTORY_PATH = path.join(repoRoot, 'scripts', 'wiki', 'wiki-inventory.generated.json');
 const FALLBACK_DIAGRAM = path.join(wikiContract.paths.diagramRoot, `README${wikiContract.markdown.diagramExtension}`);
 const args = new Set(process.argv.slice(2));
+const REPO_URL = `https://github.com/${wikiContract.repo.owner}/${wikiContract.repo.name}/blob/${wikiContract.repo.branch}/`;
 
 const runOptions = {
   failOnUnresolvedLinks: !args.has('--allow-unresolved-links'),
@@ -28,6 +30,7 @@ function normalizeCandidate(rawPath) {
   return rawPath
     .replace(/\.md$/i, '')
     .replace(/\\+/g, '/')
+    .replace(/_/g, '-')
     .replace(/^\/+/, '')
     .replace(/\/+$/, '')
     .replace(/\/+/g, '/')
@@ -40,7 +43,7 @@ function splitLinkTarget(rawTarget) {
   const h = target.indexOf('#');
   const next = [q, h].filter((idx) => idx >= 0).sort((x, y) => x - y)[0];
 
-  if (next < 0) {
+  if (next === undefined) {
     return { core: target, query: '', fragment: '' };
   }
 
@@ -64,6 +67,36 @@ function isExternal(rawHref) {
 
 function isLikelyAsset(rawHref) {
   return /\.(?:png|jpe?g|gif|webp|svg|avif|bmp|ico|pdf|zip|tar|gz|css|js|map)$/i.test(rawHref);
+}
+
+function toGitIsoDate(relativePath) {
+  return new Promise((resolve) => {
+    execFile('git', ['log', '-1', '--format=%cI', '--', relativePath], { cwd: repoRoot }, (error, stdout) => {
+      if (error) {
+        resolve('');
+        return;
+      }
+
+      resolve((stdout || '').trim());
+    });
+  });
+}
+
+function toRouteEditUrl(routePath, isTechnical) {
+  const relative = isTechnical ? routePath : path.join(wikiContract.paths.simpleSourceRoot, routePath);
+  return `${REPO_URL}${toPosix(relative)}`;
+}
+
+function toYaml(value) {
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (typeof value === 'number') {
+    return String(value);
+  }
+
+  return JSON.stringify(value ?? '');
 }
 
 function isMarkdownReference(rawHref) {
@@ -104,9 +137,19 @@ function deriveDiagram(frontmatter, sourcePath) {
 
 function deriveDescription(frontmatter, markdownContent, maxLength = 170) {
   const contentSource = markdownContent || frontmatter?.description || '';
+  const stripMarkdownLinks = (value) => {
+    return value
+      .replace(/!?\[[^\]]*?\]\(([^)]+)\)/g, '$1')
+      .replace(/!\[[^\]]*?\]\[[^\]]*?\]/g, '')
+      .replace(/\[[^\]]*?\]\[[^\]]*?\]/g, '')
+      .replace(/[`*_~]/g, '')
+      .trim();
+  };
+
   const lines = contentSource
     .split('\n')
     .map((line) => line.trim())
+    .map(stripMarkdownLinks)
     .filter(Boolean)
     .filter((line) => !line.startsWith('#') && !line.startsWith('![') && !line.startsWith('['));
 
@@ -116,14 +159,6 @@ function deriveDescription(frontmatter, markdownContent, maxLength = 170) {
 
 function lineAt(content, offset) {
   return content.slice(0, offset).split('\n').length;
-}
-
-function toYaml(value) {
-  if (typeof value === 'number') {
-    return String(value);
-  }
-
-  return JSON.stringify(value ?? '');
 }
 
 function frontmatterText(fields) {
@@ -281,7 +316,7 @@ function rewriteMarkdownBody(content, currentSourceRel, audience, candidateMap, 
       sourceFile,
       line,
     );
-    return match.replace(target, rewritten);
+    return `${left}${rewritten}${_title || ''})`;
   };
 
   const replaceReference = (match, left, target, suffix, offset) => {
@@ -445,6 +480,11 @@ async function writeGeneratedPages(entries, candidateMap) {
   const generatedFiles = [];
 
   for (const entry of entries) {
+    const technicalSourceUpdated = await toGitIsoDate(entry.source.path);
+    const simpleSourcePath = path.join(wikiContract.paths.simpleSourceRoot, entry.source.path);
+    const simpleSourceUpdated = await toGitIsoDate(simpleSourcePath);
+    const sourceLastUpdated = technicalSourceUpdated || simpleSourceUpdated;
+
     const sourceBody = entry.sourceParsed ? entry.sourceParsed.content : entry.sourceContent;
     const simpleBody = entry.simpleParsed ? entry.simpleParsed.content : entry.simpleContent;
     const sourceRel = entry.source.path;
@@ -479,17 +519,21 @@ async function writeGeneratedPages(entries, candidateMap) {
       simple_route: entry.simple.route,
       source_path: entry.source.path,
       diagram: entry.diagram.path,
-      generated_for: entry.technical.route,
+      source_last_updated: sourceLastUpdated,
       paired_route: entry.simple.route,
     };
 
     const technicalOutput = `${frontmatterText({
       ...sharedMeta,
       generated_for: entry.technical.route,
+      paired_route: entry.simple.route,
+      editUrl: toRouteEditUrl(entry.source.path, true),
     })}${technicalMarkdown}`;
     const simpleOutput = `${frontmatterText({
       ...sharedMeta,
       generated_for: entry.simple.route,
+      paired_route: entry.technical.route,
+      editUrl: toRouteEditUrl(entry.source.path, false),
     })}${simpleMarkdown}`;
 
     const technicalOut = path.join(GENERATED_DOCS_ROOT, routeToGeneratedPath('technical', entry.technical.route));

@@ -1,3 +1,5 @@
+accTitle: "Cloudflare Production Cache Purge"
+accDescr: "NutsNews now has a dedicated GitHub Action that purges the full Cloudflare cache after a successful production deployment."
 flowchart TD
   D[GitHub deployment_status event] --> P{env is Production / production?}
   P -->|no| N[No action]
@@ -12,3 +14,4 @@ flowchart TD
   V --> H[No API call made]
   T --> H
   W --> L[Regression workflow can verify lock and guard behavior]
+

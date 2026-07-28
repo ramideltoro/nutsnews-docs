@@ -1,0 +1,49 @@
+---
+import EditLink from 'virtual:starlight/components/EditLink';
+import LastUpdated from 'virtual:starlight/components/LastUpdated';
+import Pagination from 'virtual:starlight/components/Pagination';
+---
+
+<footer class="sl-flex wiki-footer">
+  <div class="meta sl-flex">
+    <EditLink />
+    <LastUpdated />
+  </div>
+  <Pagination />
+  <p class="history-note">
+    <a href="/simple/updates/">History updates</a>
+    and
+    <a href="/technical/updates/">release notes archive</a>
+    are available by audience.
+  </p>
+</footer>
+
+<style>
+  @layer starlight.core {
+    .wiki-footer {
+      flex-direction: column;
+      gap: 1rem;
+      color: var(--sl-color-gray-3);
+    }
+
+    .meta {
+      gap: 0.75rem 3rem;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-top: 3rem;
+      font-size: var(--sl-text-sm);
+      color: var(--sl-color-gray-3);
+    }
+
+    .history-note {
+      margin: 0;
+      text-align: center;
+      font-size: var(--sl-text-sm);
+      color: var(--sl-color-gray-4);
+    }
+
+    .history-note a {
+      color: var(--sl-color-text-accent);
+    }
+  }
+</style>

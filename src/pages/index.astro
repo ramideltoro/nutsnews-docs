@@ -1,0 +1,29 @@
+---
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="robots" content="noindex" />
+    <meta http-equiv="refresh" content="0;url=/simple/" />
+    <title>NutsNews Wiki</title>
+  </head>
+  <body>
+    <p>Redirecting to <a href="/simple/">Simple</a>...</p>
+    <script>
+      (() => {
+        const preference = (() => {
+          try {
+            return localStorage.getItem('nutsnews.wiki.audience');
+          } catch {
+            return null;
+          }
+        })();
+
+        const target = preference === 'technical' ? '/technical/' : '/simple/';
+        window.location.replace(target);
+      })();
+    </script>
+  </body>
+</html>

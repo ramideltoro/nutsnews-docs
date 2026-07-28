@@ -1,3 +1,5 @@
+accTitle: "NutsNews Worker-Uplift RabbitMQ Metrics"
+accDescr: "Status: backend collection path completed for `ramideltoro/nutsnews-worker#87`"
 flowchart TB
   A["Production system state update"] --> B["Backend deploy + apply"]
   B --> C["RabbitMQ Prometheus listener on 127.0.0.1:15692"]
@@ -16,3 +18,4 @@ flowchart TB
   N --> O["Alloy remote-write of canary metrics"]
   O --> G
   O --> P["Alert/SLO proof and evidence runs"]
+

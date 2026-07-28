@@ -1,3 +1,5 @@
+accTitle: "NutsNews Worker-Uplift RabbitMQ Recovery"
+accDescr: "Status: implemented for `ramideltoro/nutsnews-worker#83`."
 flowchart TD
   A["Health check or incident event" ] --> B["Run `export-definitions`"]
   B --> C["Exported raw definitions scrubbed
@@ -30,3 +32,4 @@ flowchart TD
 
   P --> Q["Healthy recovery signal:
   fresh definitions + passing rebuild drill"]
+

@@ -1,6 +1,9 @@
+accTitle: "Web Saved Stories"
+accDescr: "Related issue: https://github.com/ramideltoro/nutsnews/issues/101"
 flowchart TD
   A[Reader taps save on article card] --> B[Write entry to localStorage nutsnews.web.saved-stories]
   B --> C[/saved page reads localStorage]
   C --> D[Render saved cards with publisher links]
   C --> E[Unsaved action removes local entry]
   C --> F[No API call is made]
+

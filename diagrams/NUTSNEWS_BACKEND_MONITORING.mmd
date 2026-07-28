@@ -1,6 +1,9 @@
+accTitle: "NutsNews Backend Monitoring Baseline"
+accDescr: "This documents the initial monitoring, health check, and log-retention baseline for `ramideltoro/nutsnews-backend` and `65.75.201.18`."
 flowchart TD
   A[Backend host baseline run] --> B[Collect service and disk metrics]
   B --> C[Check health endpoints and key process states]
   C --> D[Record log/retention posture]
   D --> E[Emit monitoring dashboard artifact]
   E --> F[Alerting and drift path for anomalies]
+

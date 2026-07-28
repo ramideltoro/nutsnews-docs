@@ -1,3 +1,5 @@
+accTitle: "NutsNews Worker-Uplift Shadow Runtime"
+accDescr: "This document records the backend-owned shadow runtime for"
 flowchart TD
   A["Backend protected apply
   worker runtime enabled"] --> B["Deploy shadow service manifests"]
@@ -28,3 +30,4 @@ flowchart TD
   P --> T["Rollback to previous service manifest
   via protected check/apply"]
   T --> U["Legacy Cloudflare ingestion remains active"]
+

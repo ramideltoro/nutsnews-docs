@@ -25,9 +25,11 @@ const docs = defineCollection({
       source_route: z.string(),
       simple_route: z.string(),
       source_path: z.string(),
+      source_last_updated: z.string().optional(),
       diagram: z.string(),
       paired_route: z.string(),
       generated_for: z.string(),
+      editUrl: z.union([z.url(), z.boolean()]).optional(),
     }),
   }),
 });

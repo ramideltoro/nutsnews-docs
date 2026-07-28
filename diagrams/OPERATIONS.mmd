@@ -1,3 +1,5 @@
+accTitle: "Operations"
+accDescr: "This document explains how NutsNews is operated and maintained."
 flowchart LR
   edit["Operator updates markdown docs"] --> commit["Push commit to main"]
   commit --> ci["GitHub Actions wiki pipeline"]
@@ -18,3 +20,4 @@ flowchart LR
     api --> workers
     workers --> infra
   end
+

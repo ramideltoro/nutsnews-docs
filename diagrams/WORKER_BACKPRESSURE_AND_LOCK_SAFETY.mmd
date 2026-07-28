@@ -1,3 +1,5 @@
+accTitle: "Worker Backpressure and Lock Safety"
+accDescr: "Architecture status: this document describes legacy Cloudflare Worker"
 flowchart TD
   A["Worker refresh starts"] --> B["Acquire shard Redis lock"]
   B --> C{Lock acquired?}
@@ -22,3 +24,4 @@ flowchart TD
   P --> Q
   N --> R["Emit queued/deferred/retried/process counters"]
   R --> Q
+

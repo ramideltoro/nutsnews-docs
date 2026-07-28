@@ -1,3 +1,5 @@
+accTitle: "Multilingual quality checks and fallback policy"
+accDescr: "Issue #99 adds production checks for translated NutsNews article cards. The goal is to keep multilingual cards useful without letting a mis…"
 flowchart TD
   A[Worker accepts article] --> B[Save article as translation_pending]
   B --> C[Build and run summary translations]
@@ -16,3 +18,4 @@ flowchart TD
   O --> P{Localized row missing/invalid?}
   P -->|Yes| H
   P -->|No| Q[Render localized card]
+

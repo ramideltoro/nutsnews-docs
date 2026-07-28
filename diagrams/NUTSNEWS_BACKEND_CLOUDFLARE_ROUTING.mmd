@@ -1,3 +1,5 @@
+accTitle: "NutsNews Backend Cloudflare Routing"
+accDescr: "This documents the backend routing model for `backend.nutsnews.com`."
 flowchart TD
   D[DNS request for backend.nutsnews.com] --> R[Cloudflare DNS-only A record]
   R --> F[Cloudflare routing policy to backend infrastructure]
@@ -6,3 +8,4 @@ flowchart TD
   V -->|other routes| S[VPS/secondary routing services]
   S --> T[Cloudflare Tunnel when required]
   F --> M[Failure or maintenance fallback paths]
+

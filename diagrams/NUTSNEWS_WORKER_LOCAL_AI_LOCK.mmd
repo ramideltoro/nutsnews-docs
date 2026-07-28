@@ -1,3 +1,5 @@
+accTitle: "NutsNews Worker Local AI Lock"
+accDescr: "The public web repo does not deploy the ingestion Workers. Worker shard deployment lives in `ramideltoro/nutsnews-worker`."
 flowchart TD
   A["Public web repo updates worker docs"] --> B["Worker repo (`nutsnews-worker`) owns shard deploys"]
   B --> C["Local-AI lock validation"]
@@ -16,3 +18,4 @@ flowchart TD
   P["Reference artifacts"] --> Q["`docs/LOCAL_AI_DEPLOYMENT_LOCK.md`"]
   P --> R["`docs/HOME_SERVER_LOCAL_AI.md`"]
   P --> S["`scripts/assert_worker_local_ai_lock.mjs`"]
+

@@ -1,0 +1,28 @@
+---
+const isTechnical = Astro.url.pathname.startsWith('/technical/');
+const audienceRoot = isTechnical ? '/technical/' : '/simple/';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="robots" content="noindex" />
+    <title>Page not found | NutsNews Wiki</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body>
+    <main style="font-family: system-ui, sans-serif; max-width: 780px; margin: 4rem auto; padding: 1.25rem;">
+      <h1>Page not found</h1>
+      <p>We could not locate that URL.</p>
+      <p>
+        <a href={audienceRoot}>Return to your current audience home</a>
+      </p>
+      <p>
+        <a href="/simple/">Go to Simple</a>
+        |
+        <a href="/technical/">Go to Technical</a>
+      </p>
+    </main>
+  </body>
+</html>

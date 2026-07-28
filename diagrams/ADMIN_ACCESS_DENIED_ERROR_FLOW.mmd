@@ -1,3 +1,5 @@
+accTitle: "Admin Access-Denied Error Flow"
+accDescr: "This guide records the application-owned denied/error-flow parity fix for"
 flowchart LR
   auth[Auth.js denied or error flow] --> page[/admin/access-denied]
   page --> map[Allowlisted generic message]
@@ -7,3 +9,4 @@ flowchart LR
   image --> gate[Matching Vercel Production deployment]
   gate --> promotion[Normal infra digest-promotion PR]
   promotion --> verified[Protected GitOps apply and read-only verification]
+

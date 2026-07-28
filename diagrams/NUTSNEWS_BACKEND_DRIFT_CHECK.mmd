@@ -1,3 +1,5 @@
+accTitle: "NutsNews Backend Drift Check"
+accDescr: "This documents the read-only drift check for `ramideltoro/nutsnews-backend`."
 flowchart TD
   A[Run drift check job] --> B[Collect live backend host/service snapshot]
   B --> C[Load repo baseline snapshot]
@@ -6,3 +8,4 @@ flowchart TD
   E -->|no| F[Report clean state]
   E -->|yes| G[Emit diff and remediation guidance]
   G --> H[Require operator attention before protected apply]
+

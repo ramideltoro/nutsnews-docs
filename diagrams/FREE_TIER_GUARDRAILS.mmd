@@ -1,3 +1,5 @@
+accTitle: "NutsNews Free-Tier Guardrails"
+accDescr: "Issue #116 adds a dedicated admin dashboard at `/admin/guardrails` for cost forecasting and free-tier risk monitoring."
 flowchart TD
   METRICS["Usage and billing metrics"] --> NORMALIZE["Normalize per service limits"]
   NORMALIZE --> GUARDRAILS["Compare against warning/danger thresholds"]
@@ -6,3 +8,4 @@ flowchart TD
   DECISION -->|No| CONTINUE["Continue with reduced-risk defaults"]
   DECISION -->|Yes| MITIGATE["Reduce load, throttle feature, or hold releases"]
   MITIGATE --> VERIFY["Recheck guardrail dashboard"]
+

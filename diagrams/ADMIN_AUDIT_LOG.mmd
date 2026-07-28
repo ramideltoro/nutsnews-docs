@@ -1,3 +1,5 @@
+accTitle: "NutsNews Admin Audit Log"
+accDescr: "Issue: https://github.com/ramideltoro/nutsnews/issues/112"
 sequenceDiagram
   participant Admin
   participant FeedPage as /admin/feeds Server Action
@@ -17,3 +19,4 @@ sequenceDiagram
   Admin->>AuditPage: Open audit log
   AuditPage->>Audit: no-store service-role read
   AuditPage-->>Admin: Recent audit events
+

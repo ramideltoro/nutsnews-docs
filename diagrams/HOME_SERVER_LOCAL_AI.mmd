@@ -1,3 +1,5 @@
+accTitle: "Home Server Local AI Provider"
+accDescr: "NutsNews can now review candidate RSS articles using a home-server local AI stack instead of sending every candidate directly to OpenAI."
 flowchart TD
   A["Cloudflare Worker Shard"] -->|x-nutsnews-ai-key + request| B["Cloudflare Worker AI gateway"]
   B -->|AI_PROVIDER=local| C["Cloudflare Tunnel `ai.nutsnews.com`"]
@@ -14,3 +16,4 @@ flowchart TD
   J["Cloudflare Zero Trust Tunnel service"] --> C
   C -->|service health| K["https://ai.nutsnews.com/health"]
   K --> L["Public status: 127.0.0.1 bind + auth + keep-alive"]
+

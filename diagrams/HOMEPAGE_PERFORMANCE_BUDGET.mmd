@@ -1,3 +1,5 @@
+accTitle: "Public Performance Budgets"
+accDescr: "NutsNews is mobile-first and image-heavy, so public page speed needs explicit limits. This page defines the current budgets, the CI checks,…"
 flowchart TD
   P[PR touches web code] --> B[CI runs npm run test:performance-budget]
   B --> C{Bundle/lighthouse thresholds pass?}
@@ -8,3 +10,4 @@ flowchart TD
   D --> H[Adjust bundles/images/config and rerun]
   C -->|report generated| I[Lighthouse + route bundle assertions]
   I --> J[Homepage and article detail budgets reviewed]
+

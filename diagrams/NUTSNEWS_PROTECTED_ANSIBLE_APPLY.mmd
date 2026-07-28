@@ -1,3 +1,5 @@
+accTitle: "NutsNews Protected Ansible Apply Workflow"
+accDescr: "This explains the first protected GitHub Actions workflow that can run the Ansible VPS baseline against `vps.nutsnews.com`. It is a product…"
 flowchart TD
   A[workflow_dispatch triggered] --> B{Run mode}
   B -->|check| C[Dry-run Ansible against VPS]
@@ -12,3 +14,4 @@ flowchart TD
   K --> L[Refresh status and report to portal]
   H --> L
   I --> L
+

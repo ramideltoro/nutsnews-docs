@@ -1,3 +1,5 @@
+accTitle: "Image Delivery"
+accDescr: "NutsNews article cards now use the Next.js image pipeline instead of sending every reader directly to each publisher's original image file."
 flowchart TD
   A[Reader opens article feed] --> B[Render image URLs via Next.js image component]
   B --> C[Next.js optimizer requests original image]
@@ -6,3 +8,4 @@ flowchart TD
   E --> F[Reader receives responsive srcset]
   E --> G[Fallback warm placeholder shown while loading]
   F --> H[Image loaded in reader viewport]
+

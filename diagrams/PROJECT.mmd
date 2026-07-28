@@ -1,3 +1,5 @@
+accTitle: "Project Overview"
+accDescr: "NutsNews is a calm, mobile-first positive news platform powered by automation, AI curation, serverless infrastructure, CDN caching, central…"
 flowchart TD
   rss["RSS sources"] --> controller["Controller Worker\n(orchestration)"]
   controller --> shards["Cloudflare Worker shards\nrefresh loop"]
@@ -15,3 +17,4 @@ flowchart TD
   storage --> graph["public_feed_snapshot\npublic projection"]
   graph --> readers
   web --> preview["/opengraph-image previews"]
+

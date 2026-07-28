@@ -1,3 +1,5 @@
+accTitle: "Full archive search"
+accDescr: "NutsNews full archive search is backed by PostgreSQL full-text search in Supabase."
 flowchart TD
   A[User enters search query] --> B[Frontend calls /api/search]
   B --> C[Backend executes Postgres full-text search]
@@ -8,3 +10,4 @@ flowchart TD
   G --> H[Open story detail]
   G --> I[User taps Clear]
   I --> J[Return to normal feed and infinite scroll]
+

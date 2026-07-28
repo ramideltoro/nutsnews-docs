@@ -1,3 +1,5 @@
+accTitle: "NutsNews Database Resiliency"
+accDescr: "Last verified: 2026-07-26"
 flowchart LR
     web["NutsNews web app"] -->|"reads and writes"| appApi["Backend app DB API"]
     worker["NutsNews Worker"] -->|"reads and writes"| workerApi["Backend Worker DB API"]
@@ -33,3 +35,4 @@ flowchart LR
     class standby standby;
     class actions,relay,reconcile control;
     class lag,parity,readiness,promote,blocked,ready decision;
+

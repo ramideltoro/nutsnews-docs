@@ -1,0 +1,80 @@
+name: wiki-qa
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "**/*.md"
+      - "audiences/**"
+      - "diagrams/**"
+      - "package.json"
+      - "package-lock.json"
+      - "astro.config.mjs"
+      - "src/**"
+      - "scripts/wiki/**"
+      - ".github/workflows/wiki-pages.yml"
+      - ".github/workflows/wiki-qa.yml"
+  pull_request:
+    paths:
+      - "**/*.md"
+      - "audiences/**"
+      - "diagrams/**"
+      - "package.json"
+      - "package-lock.json"
+      - "astro.config.mjs"
+      - "src/**"
+      - "scripts/wiki/**"
+      - ".github/workflows/wiki-pages.yml"
+      - ".github/workflows/wiki-qa.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qa:
+    name: Validate and test wiki artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.12
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Validate wiki source contracts
+        run: npm run validate:contracts
+
+      - name: Validate markdown inventory paths
+        run: node scripts/wiki/validate-doc-paths.mjs
+
+      - name: Generate wiki docs
+        run: npm run wiki:prepare
+
+      - name: Validate internal routes
+        run: npm run validate:links
+
+      - name: Validate secret safety
+        run: node scripts/wiki/validate-wiki-secrets.mjs --smoke-test
+
+      - name: Validate Mermaid diagrams
+        run: npm run validate:mermaid
+
+      - name: Run unit tests
+        run: npm run test:unit
+
+      - name: Run browser QA checks
+        run: npm run test:e2e
+
+      - name: Validate static budgets
+        run: node scripts/wiki/validate-wiki-budgets.mjs

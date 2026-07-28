@@ -1,3 +1,5 @@
+accTitle: "Cloudflare KV Worker State for NutsNews"
+accDescr: "This update adds an optional Cloudflare Workers KV binding named `NUTSNEWS_KV` to the RSS shard Workers."
 flowchart TD
   A["Create KV namespace `NUTSNEWS_KV`"] --> B["Set NUTSNEWS_KV_NAMESPACE_ID"]
   B --> C["Generate shard wrangler config"]
@@ -15,3 +17,4 @@ flowchart TD
   O["Runtime safeguards"] --> P["Track KV op counts in memory"]
   O --> Q["Skip unchanged or idle writes"]
   O --> R["Rate-limit misses are tolerated as cache misses"]
+

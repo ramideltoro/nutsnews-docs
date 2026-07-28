@@ -1,3 +1,5 @@
+accTitle: "Admin Article Reviews"
+accDescr: "This document explains the NutsNews article review dashboard created for GitHub issue #18 and expanded for AI prompt/model auditability in …"
 flowchart TD
   A[Change prompt or model] --> B[Assign prompt_version and model_version]
   B --> C[Deploy writer to staging or limited production shard]
@@ -6,3 +8,4 @@ flowchart TD
   E -- Yes --> F[Continue rollout and monitor current vs previous]
   E -- No --> G[Rollback writer config or code to previous version]
   G --> H[Keep audit rows unchanged and compare follow-up rows]
+

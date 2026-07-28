@@ -7,6 +7,7 @@ import { deriveSlugFromSource, wikiContract } from './wiki-contract.mjs';
 const repoRoot = process.cwd();
 const expectedSourceCount = 227;
 const expectedDiagramCount = expectedSourceCount;
+const ACCESSIBILITY_KEYS = new Set(['acctitle', 'accdescr']);
 
 const knownDiagramStarters = new Set([
   'flowchart',
@@ -27,7 +28,7 @@ const knownDiagramStarters = new Set([
   'C4Context',
 ]);
 
-const candidateDiagramExtensions = ['.md', '.mmd'];
+const candidateDiagramExtensions = ['.mmd', '.md'];
 
 function normalizeLine(line) {
   return line.trim().replace(/\s+/g, ' ');
@@ -115,7 +116,7 @@ async function walkSourceMarkdown(dir = '') {
 async function resolveDiagramPath(rawDiagramPath, sourcePath) {
   const normalized = (rawDiagramPath || '').trim().replace(/^\/+/, '').replace(/\\/g, '/');
   const candidates = [];
-  const sourceBase = sourcePath.replace(/\.md$/i, '').replace(/\\/g, '/');
+  const sourceBase = `${wikiContract.paths.diagramRoot}/${sourcePath.replace(/\.md$/i, '').replace(/\\/g, '/')}`;
   const slugBase = `${wikiContract.paths.diagramRoot}/${deriveSlugFromSource(sourcePath)}`;
 
   const addWithExtensions = (base) => {
@@ -138,7 +139,7 @@ async function resolveDiagramPath(rawDiagramPath, sourcePath) {
     addWithExtensions(normalized);
   }
 
-  addWithExtensions(`${wikiContract.paths.diagramRoot}/${sourceBase}`);
+  addWithExtensions(sourceBase);
   addWithExtensions(slugBase);
 
   const uniqueCandidates = [...new Set(candidates)];
@@ -152,19 +153,30 @@ async function resolveDiagramPath(rawDiagramPath, sourcePath) {
 
   const directSourceDiagram = sourcePath.replace(/\.md$/i, `.${wikiContract.markdown.diagramExtension}`);
   const sourceFallback = path.join(wikiContract.paths.diagramRoot, path.basename(directSourceDiagram));
-  const sourceFallbackAlt = sourceFallback.replace(/\.mmd$/i, '.md');
 
   const fallbackStat = await fs.stat(path.join(repoRoot, sourceFallback)).catch(() => null);
   if (fallbackStat && fallbackStat.isFile()) {
     return { candidate: sourceFallback, hasFallback: true };
   }
 
-  const fallbackStatAlt = await fs.stat(path.join(repoRoot, sourceFallbackAlt)).catch(() => null);
-  if (fallbackStatAlt && fallbackStatAlt.isFile()) {
-    return { candidate: sourceFallbackAlt, hasFallback: true };
+  return null;
+}
+
+function extractAccessibilityHeaders(text) {
+  const lines = text.split(/\r?\n/).map((line) => line.trim());
+  const found = new Set();
+
+  for (const line of lines) {
+    const match = /^(acc(?:Title|Descr))\s*:\s*(.*)$/i.exec(line);
+    if (match) {
+      found.add(match[1].toLowerCase());
+    }
   }
 
-  return null;
+  return {
+    hasTitle: found.has('acctitle'),
+    hasDescription: found.has('accdescr'),
+  };
 }
 
 async function validateDiagramSyntax(diagramPath) {
@@ -173,6 +185,14 @@ async function validateDiagramSyntax(diagramPath) {
 
   if (!trimmed) {
     return { valid: false, reason: 'diagram is empty' };
+  }
+
+  const accessibility = extractAccessibilityHeaders(trimmed);
+  if (!accessibility.hasTitle || !accessibility.hasDescription) {
+    return {
+      valid: false,
+      reason: `missing diagram accessibility metadata${!accessibility.hasTitle ? ' (accTitle)' : ''}${!accessibility.hasDescription ? ' (accDescr)' : ''}`,
+    };
   }
 
   return looksLikeMermaid(trimmed);

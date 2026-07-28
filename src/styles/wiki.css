@@ -1,0 +1,45 @@
+:root {
+  --wiki-font-sans: 'Inter', 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --wiki-font-code: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+  --wiki-brand-text: #f8f1df;
+  --wiki-brand-muted: #d8c8a8;
+  --wiki-amber: #efb24d;
+  --wiki-espresso: #201b16;
+  --wiki-ink: #f2efe9;
+  --wiki-focus: #ffe082;
+}
+
+:root,
+:host {
+  --__sl-font: var(--wiki-font-sans);
+  --__sl-font-mono: var(--wiki-font-code);
+}
+
+html,
+body {
+  background: radial-gradient(circle at top, #2a2219 0%, var(--wiki-espresso) 45%, #18120e 100%);
+  color: var(--wiki-ink);
+}
+
+.toggle {
+  color: var(--sl-color-text);
+}
+
+.toggle:focus-visible {
+  outline: 2px solid var(--wiki-focus);
+  outline-offset: 2px;
+}
+
+.wiki-header,
+.wiki-footer {
+  font-family: var(--wiki-font-sans);
+}
+
+.audience-tools {
+  line-height: 1.2;
+}
+
+a.wiki-audience-switch,
+.audience-tools a {
+  text-wrap: balance;
+}

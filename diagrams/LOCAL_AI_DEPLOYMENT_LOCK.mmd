@@ -1,3 +1,5 @@
+accTitle: "Local AI Deployment Lock"
+accDescr: "NutsNews Worker shards must use the home-server local AI provider first."
 flowchart TD
   A["Prepare `worker/.env.deploy.local`"] --> B["Set local AI vars + Secrets Store binding"]
   B --> C["Run `npm run generate:wrangler`"]
@@ -19,3 +21,4 @@ flowchart TD
   S --> T["`deploy:openai-only` (owner-approved)"]
   R --> U["`NUTSNEWS_ALLOW_OPENAI_FALLBACK_DEPLOYMENT` set"]
   U --> V["`deploy:all` with fallback mode (owner-approved)"]
+
