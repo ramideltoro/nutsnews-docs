@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/archive/root-cleanup/nutsnews-issue-116-guardrails-web-e2e-readme/
   simple_route: /simple/archive/root-cleanup/nutsnews-issue-116-guardrails-web-e2e-readme/
   primary_diagram:
-    file: diagrams/archive/root-cleanup/NUTSNEWS_ISSUE_116_GUARDRAILS_WEB_E2E_README.md
+    file: diagrams/archive/root-cleanup/NUTSNEWS_ISSUE_116_GUARDRAILS_WEB_E2E_README.mmd
     accTitle: "NutsNews Issue #116 Guardrails + Offline Web E2E Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

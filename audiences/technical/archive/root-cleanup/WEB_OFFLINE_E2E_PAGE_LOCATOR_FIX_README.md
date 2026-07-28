@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/archive/root-cleanup/web-offline-e2e-page-locator-fix-readme/
   simple_route: /simple/archive/root-cleanup/web-offline-e2e-page-locator-fix-readme/
   primary_diagram:
-    file: diagrams/archive/root-cleanup/WEB_OFFLINE_E2E_PAGE_LOCATOR_FIX_README.md
+    file: diagrams/archive/root-cleanup/WEB_OFFLINE_E2E_PAGE_LOCATOR_FIX_README.mmd
     accTitle: "NutsNews Web Offline E2E Page Locator Fix diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

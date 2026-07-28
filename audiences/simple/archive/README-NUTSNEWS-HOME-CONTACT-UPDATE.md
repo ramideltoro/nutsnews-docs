@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/archive/readme-nutsnews-home-contact-update/
   simple_route: /simple/archive/readme-nutsnews-home-contact-update/
   primary_diagram:
-    file: diagrams/archive/README-NUTSNEWS-HOME-CONTACT-UPDATE.md
+    file: diagrams/archive/README-NUTSNEWS-HOME-CONTACT-UPDATE.mmd
     accTitle: "NutsNews Home Button + Contact Text Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

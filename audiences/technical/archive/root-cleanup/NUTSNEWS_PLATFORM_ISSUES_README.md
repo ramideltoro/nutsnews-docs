@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/archive/root-cleanup/nutsnews-platform-issues-readme/
   simple_route: /simple/archive/root-cleanup/nutsnews-platform-issues-readme/
   primary_diagram:
-    file: diagrams/archive/root-cleanup/NUTSNEWS_PLATFORM_ISSUES_README.md
+    file: diagrams/archive/root-cleanup/NUTSNEWS_PLATFORM_ISSUES_README.mmd
     accTitle: "NutsNews Platform Improvement Issues Bundle diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

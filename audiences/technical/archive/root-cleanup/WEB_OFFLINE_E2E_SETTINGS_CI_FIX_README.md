@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/archive/root-cleanup/web-offline-e2e-settings-ci-fix-readme/
   simple_route: /simple/archive/root-cleanup/web-offline-e2e-settings-ci-fix-readme/
   primary_diagram:
-    file: diagrams/archive/root-cleanup/WEB_OFFLINE_E2E_SETTINGS_CI_FIX_README.md
+    file: diagrams/archive/root-cleanup/WEB_OFFLINE_E2E_SETTINGS_CI_FIX_README.mmd
     accTitle: "NutsNews Web Offline E2E Settings CI Fix diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/archive/root-cleanup/nutsnews-hydration-language-fix-readme/
   simple_route: /simple/archive/root-cleanup/nutsnews-hydration-language-fix-readme/
   primary_diagram:
-    file: diagrams/archive/root-cleanup/NUTSNEWS_HYDRATION_LANGUAGE_FIX_README.md
+    file: diagrams/archive/root-cleanup/NUTSNEWS_HYDRATION_LANGUAGE_FIX_README.mmd
     accTitle: "NutsNews Hydration Language Fix diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/ios/card-date-source-bottom-readme/
   simple_route: /simple/ios/card-date-source-bottom-readme/
   primary_diagram:
-    file: diagrams/ios/CARD_DATE_SOURCE_BOTTOM_README.md
+    file: diagrams/ios/CARD_DATE_SOURCE_BOTTOM_README.mmd
     accTitle: "Card Date Source Bottom Readme diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

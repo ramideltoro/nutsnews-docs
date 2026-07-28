@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/ios/nutsnews-ios-scroll-fade-update-readme/
   simple_route: /simple/ios/nutsnews-ios-scroll-fade-update-readme/
   primary_diagram:
-    file: diagrams/ios/NUTSNEWS_IOS_SCROLL_FADE_UPDATE_README.md
+    file: diagrams/ios/NUTSNEWS_IOS_SCROLL_FADE_UPDATE_README.mmd
     accTitle: "NutsNews iOS Scroll Fade Update diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

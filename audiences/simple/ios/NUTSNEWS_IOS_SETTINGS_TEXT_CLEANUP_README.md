@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/ios/nutsnews-ios-settings-text-cleanup-readme/
   simple_route: /simple/ios/nutsnews-ios-settings-text-cleanup-readme/
   primary_diagram:
-    file: diagrams/ios/NUTSNEWS_IOS_SETTINGS_TEXT_CLEANUP_README.md
+    file: diagrams/ios/NUTSNEWS_IOS_SETTINGS_TEXT_CLEANUP_README.mmd
     accTitle: "NutsNews iOS Settings Text Cleanup diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active
