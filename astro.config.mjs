@@ -35,6 +35,8 @@ export default defineConfig({
       customCss: ['./src/styles/wiki.css'],
       components: {
         Head: './src/components/Head.astro',
+        Header: './src/components/Header.astro',
+        Sidebar: './src/components/CollectionRail.astro',
       },
       sidebar: [
         {

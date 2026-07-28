@@ -167,8 +167,15 @@ async function validateContractDefinition(errors) {
 
   recordAssertion(errors, 'navigation collection contract', () => {
     const ids = wikiContract.navigation.collections.map((collection) => collection.id);
+    const acceptedSections = new Set(
+      wikiContract.navigation.collections.flatMap((collection) => collection.sections),
+    );
+    const railIds = wikiContract.navigation.rail.map((item) => item.id);
     assert.equal(new Set(ids).size, ids.length);
     assert.ok(ids.includes(wikiContract.defaults.collection));
+    assert.equal(new Set(railIds).size, railIds.length);
+    assert.equal(railIds.length, 7);
+    assert.deepEqual(new Set(railIds), acceptedSections);
     for (const collection of wikiContract.navigation.collections) {
       assert.ok(collection.label);
       assert.ok(Number.isInteger(collection.order));

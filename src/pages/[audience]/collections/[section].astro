@@ -1,0 +1,107 @@
+---
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import { getCollection } from 'astro:content';
+import { wikiContract } from '../../../../scripts/wiki/wiki-contract.mjs';
+
+export function getStaticPaths() {
+  return wikiContract.audiences.flatMap((audience) =>
+    wikiContract.navigation.rail.map((item) => ({
+      params: { audience, section: item.id },
+      props: { audience, item },
+    })),
+  );
+}
+
+const { audience, item } = Astro.props;
+const entries = (await getCollection('docs'))
+  .filter((entry) => entry.data.audience === audience && entry.data.section === item.id)
+  .sort((left, right) =>
+    left.data.order - right.data.order || left.data.title.localeCompare(right.data.title));
+const parentCollection = wikiContract.navigation.collections.find(
+  (collection) => collection.sections.includes(item.id),
+);
+const simpleRoute = `/simple/collections/${item.id}`;
+const technicalRoute = `/technical/collections/${item.id}`;
+const currentRoute = audience === 'simple' ? simpleRoute : technicalRoute;
+const pairedRoute = audience === 'simple' ? technicalRoute : simpleRoute;
+const base = import.meta.env.BASE_URL || '/';
+const basePrefix = base === '/' ? '' : `/${base.replace(/^\/+|\/+$/g, '')}`;
+const title = `${item.label} collection`;
+const description = `${entries.length} ${audience} NutsNews wiki articles in ${item.label}.`;
+const frontmatter = {
+  draft: false,
+  title,
+  description,
+  slug: `collections/${item.id}`,
+  collection: parentCollection?.id || wikiContract.defaults.collection,
+  section: item.id,
+  status: 'active',
+  order: item.order,
+  audience,
+  source_route: technicalRoute,
+  simple_route: simpleRoute,
+  source_path: `virtual:collections/${item.id}`,
+  diagram: 'diagrams/README.mmd',
+  paired_route: pairedRoute,
+  generated_for: currentRoute,
+  editUrl: false,
+};
+---
+
+<StarlightPage frontmatter={frontmatter}>
+  <p class="collection-summary">
+    {entries.length} {audience === 'simple' ? 'Simple' : 'Technical'} articles
+  </p>
+  <ul class="collection-list">
+    {entries.map((entry) => (
+      <li>
+        <a href={`${basePrefix}${entry.data.generated_for}/`}>
+          <span>{entry.data.title}</span>
+          <small>{entry.data.description}</small>
+        </a>
+      </li>
+    ))}
+  </ul>
+</StarlightPage>
+
+<style>
+  .collection-summary {
+    color: var(--wiki-color-text-muted);
+    font-size: var(--wiki-type-sm);
+    font-weight: 650;
+  }
+
+  .collection-list {
+    display: grid;
+    gap: var(--wiki-space-3);
+    margin: var(--wiki-space-5) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .collection-list a {
+    display: grid;
+    gap: var(--wiki-space-1);
+    padding: var(--wiki-space-4);
+    border: 1px solid var(--wiki-color-border);
+    border-radius: var(--wiki-radius-md);
+    color: var(--wiki-color-text);
+    background: var(--wiki-color-surface);
+    text-decoration: none;
+  }
+
+  .collection-list a:hover {
+    border-color: var(--wiki-color-control);
+    background: var(--wiki-color-surface-raised);
+  }
+
+  .collection-list span {
+    color: var(--wiki-color-link);
+    font-weight: 750;
+  }
+
+  .collection-list small {
+    color: var(--wiki-color-text-muted);
+    line-height: var(--wiki-leading-body);
+  }
+</style>

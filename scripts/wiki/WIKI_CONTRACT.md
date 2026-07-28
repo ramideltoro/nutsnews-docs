@@ -45,14 +45,15 @@ audiences are `simple` and `technical`.
 
 Navigation uses the ordered collections and sections in the checked contract
 block. Documents without collection or section metadata use `start-here` and
-`overview`. Status must be `active`, `draft`, `deprecated`, or `obsolete`.
+`overview`. The seven-item collection rail maps directly to the seven accepted
+section values. Status must be `active`, `draft`, `deprecated`, or `obsolete`.
 
 ## Machine-checked contract
 
 <!-- wiki-contract:start -->
 ```json
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "audiences": [
     "simple",
     "technical"
@@ -150,6 +151,50 @@ block. Documents without collection or section metadata use `start-here` and
       "sections": [
         "core-platform"
       ]
+    }
+  ],
+  "navigationRail": [
+    {
+      "id": "start-here",
+      "label": "Start here",
+      "shortLabel": "Start",
+      "order": 0
+    },
+    {
+      "id": "overview",
+      "label": "Overview",
+      "shortLabel": "Overview",
+      "order": 1
+    },
+    {
+      "id": "public-product",
+      "label": "Public product",
+      "shortLabel": "Public",
+      "order": 2
+    },
+    {
+      "id": "admin-experience",
+      "label": "Admin experience",
+      "shortLabel": "Admin",
+      "order": 3
+    },
+    {
+      "id": "ios",
+      "label": "iOS",
+      "shortLabel": "iOS",
+      "order": 4
+    },
+    {
+      "id": "core-platform",
+      "label": "Core platform",
+      "shortLabel": "Platform",
+      "order": 5
+    },
+    {
+      "id": "contributing",
+      "label": "Contributing",
+      "shortLabel": "Contribute",
+      "order": 6
     }
   ],
   "defaults": {
