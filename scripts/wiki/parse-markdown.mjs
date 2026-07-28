@@ -4,7 +4,7 @@ const FRONT_MATTER_BOUNDARY = /^---\s*$/;
 
 export function parseMarkdownFrontmatter(rawMarkdown) {
   try {
-    return matter(rawMarkdown);
+    return matter(rawMarkdown, {});
   } catch (error) {
     const repaired = repairFrontmatter(rawMarkdown);
     if (repaired === rawMarkdown) {
@@ -12,7 +12,7 @@ export function parseMarkdownFrontmatter(rawMarkdown) {
     }
 
     try {
-      return matter(repaired);
+      return matter(repaired, {});
     } catch {
       throw error;
     }
