@@ -1,8 +1,10 @@
 ---
 title: Documentation Style Guide (Technical)
+description: The technical contract for equivalent, safe, and accessible dual-audience wiki articles.
 wiki:
   source_route: /technical/documentation-style-guide/
   simple_route: /simple/documentation-style-guide/
+  slug: documentation-style-guide
   primary_diagram:
     file: diagrams/DOCUMENTATION_STYLE_GUIDE.mmd
     accTitle: "Documentation style guide workflow"
@@ -10,93 +12,117 @@ wiki:
   status: active
   collection: start-here
   section: contributing
+  order: 37
   approval:
     state: approved
     publishing: allowed
     reviewed_by: "ramideltoro"
-    reviewed_on: "2026-07-28T20:10:06.000Z"
-    technical_source_hash: a9d8c4fd61750c18f8c0aa3c0cc7de13b12a7758965798725db299fb1aa1caa6
+    reviewed_on: "2026-07-28T22:50:31.364Z"
+    technical_source_hash: a6928f078a0e14b28290ed7ff6c09ad655ac183e523f80b764d7e51e72793a78
 ---
 
 # Documentation Style Guide
 
-## Purpose
+## Authoring invariant
 
-Provide a standard contract for adding and updating repository documentation so readers can execute safely and quickly.
+The canonical source, Simple mirror, Technical mirror, and primary Mermaid diagram form one review unit. Audience wording may differ, but facts, inputs, outputs, commands, cautions, success signals, failure handling, and rollback must remain equivalent.
 
-## Core goal
+Simple content defines terms and explains intent. Technical content names implementation detail, ownership, dependencies, defaults, state transitions, observability, and recovery precisely. Neither audience may omit a safety boundary.
 
-Each document should answer:
+## Metadata contract
 
-1. What is this?
-2. When to use it?
-3. What are the required actions?
-4. How to verify success?
-5. Where to go if it fails?
+New sources include `title`, `description`, `slug`, `collection`, `section`, `status`, and a unique numeric `order`. Explicit internal routes omit trailing slashes.
 
-## Preferred structure
-
-Recommended section order:
-
-```text
-# Clear title
-One-sentence summary.
-## When to use this
-## What it covers
-## Required setup
-## Steps
-## Verify
-## Troubleshooting
-## Related docs
+```yaml
+title: "Cache Invalidation Guide (Technical)"
+description: "How NutsNews invalidates cached reader content safely."
+wiki:
+  source_route: "/technical/cache-invalidation-guide"
+  simple_route: "/simple/cache-invalidation-guide"
+  slug: "cache-invalidation-guide"
+  primary_diagram:
+    file: "diagrams/CACHE_INVALIDATION_GUIDE.mmd"
+    accTitle: "Cache invalidation flow"
+    accDescr: "An operator verifies scope, purges the selected cache, checks the reader response, and rolls back or escalates when verification fails."
+  status: draft
+  collection: platform-and-data
+  section: core-platform
+  order: 228
+  approval:
+    state: unreviewed
+    publishing: blocked
+    reviewed_by: pending
+    reviewed_on: pending
+    technical_source_hash: pending
 ```
 
-Optional sections are allowed when they do not add noise.
+Valid statuses are `active`, `draft`, `deprecated`, and `obsolete`. The collection/section pair must exist in the executable contract.
 
-## Language constraints
+## Full author path
 
-Use imperative, reader-first language:
+```bash
+npm run docs:new -- CACHE_INVALIDATION_GUIDE.md --collection platform-and-data --section core-platform
+npm run docs:prepare -- CACHE_INVALIDATION_GUIDE.md --force
+```
 
-- “Run this command”
-- “Check this dashboard”
-- “This component persists accepted articles”
-- “If this fails, review log source X”
+Replace all scaffold markers. Verify implementation claims, links, commands, warnings, status, observability, failure behavior, and rollback. Reconcile both mirrors and the diagram; generation never grants approval.
 
-Avoid:
+After a human reviews the current complete bundle:
 
-- Excessive context before required action
-- Duplicate statements across adjacent sections
-- Dense prose when a table or short list is clearer
-- Unvetted team abbreviations without definitions
+```bash
+npm run docs:approve -- CACHE_INVALIDATION_GUIDE.md --reviewed-by "<human-reviewer>" --confirm-human-review
+```
 
-## Doc discoverability
+Run the publication contract:
 
-Important docs should be discoverable from [README.md](README.md). For each new document:
+```bash
+npm run wiki:prepare
+npm run validate:content
+npm run validate:links
+npm run validate:mermaid
+npm run test:content-routes
+npm run build
+```
 
-1. Add to the correct category in `README.md`.
-2. Add related cross-links near the end.
-3. Move ephemeral notes into `docs/updates/` or `docs/archive/`.
+Documentation-only delivery may go directly to `main` after validation. Site-code and mixed changes require a checked, explicitly approved pull request under [AGENTS.md](AGENTS.md).
 
-## Naming conventions
+## Stale approval
 
-Use stable uppercase snake-case for durable documents:
+Any substantive canonical edit invalidates the stored Technical-source hash. The correct remediation is:
 
-- `DEPLOYMENT_CHECKLIST.md`
-- `WEB_OFFLINE_E2E_REGRESSION_TEST.md`
-- `FREE_TIER_GUARDRAILS.md`
+1. update both audience mirrors and the diagram
+2. preserve all facts and safety controls
+3. obtain human review of the current bundle
+4. rerun `docs:approve`
+5. rerun the complete gate
 
-Place temporary operational notes in archive locations.
+Never edit only the hash or weaken validation.
 
-## Lifecycle maintenance
+## Visual and accessibility contract
 
-Update this document when any downstream behavior changes:
+- Provide one primary Mermaid diagram with accurate `accTitle` and `accDescr`.
+- Use diagrams for meaningful sequence, state, dependency, hierarchy, or mapping—not decoration.
+- Keep Mermaid local, renderable, and understandable through the text fallback.
+- Use screenshots only for materially useful visual state. Require meaningful alt text, a caption, a resolvable local asset, and redaction of secrets or personal data.
 
-- deployment mechanics
-- operations and support procedures
-- monitoring and runbooks
-- database contracts
-- worker behavior
-- AI behavior and retry policies
-- public user journeys
-- regression checks
-- security boundaries and dependencies
+## Links and History
 
+- Use repository-relative canonical Markdown links and exact heading fragments.
+- Add important current guides to [README.md](README.md) and a focused **Related docs** section.
+- `updates/`, `reports/`, `archive/`, and `ios/` map to the four History groups. Search excludes History by default.
+- Link historical evidence to the current operating contract; do not misclassify current instructions as History.
+
+## Safety review
+
+- [ ] Prerequisites, scope, exact commands, warnings, success signals, diagnostics, and rollback match across audiences.
+- [ ] Metadata, paths, routes, order, status, links, and History placement match the contract.
+- [ ] Diagram accessibility and screenshot alt/caption rules pass.
+- [ ] Approval names a human and matches the current source hash.
+- [ ] No credentials, local environment values, private data, or secret-bearing output is present.
+- [ ] Every publication command passes.
+
+## Related docs
+
+- [Repository contribution rules](AGENTS.md)
+- [GitHub Pages wiki publishing](GITHUB_WIKI_AUTOMATION.md)
+- [Documentation index](README.md)

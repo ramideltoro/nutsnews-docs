@@ -1,8 +1,10 @@
 ---
 title: Documentation Style Guide (Simple)
+description: A plain-language guide to creating matching and safe Simple and Technical wiki articles.
 wiki:
   source_route: /technical/documentation-style-guide/
   simple_route: /simple/documentation-style-guide/
+  slug: documentation-style-guide
   primary_diagram:
     file: diagrams/DOCUMENTATION_STYLE_GUIDE.mmd
     accTitle: "Documentation style guide workflow"
@@ -10,88 +12,137 @@ wiki:
   status: active
   collection: start-here
   section: contributing
+  order: 37
   approval:
     state: approved
     publishing: allowed
     reviewed_by: "ramideltoro"
-    reviewed_on: "2026-07-28T20:10:06.000Z"
-    technical_source_hash: a9d8c4fd61750c18f8c0aa3c0cc7de13b12a7758965798725db299fb1aa1caa6
+    reviewed_on: "2026-07-28T22:50:31.364Z"
+    technical_source_hash: a6928f078a0e14b28290ed7ff6c09ad655ac183e523f80b764d7e51e72793a78
 ---
 
 # Documentation Style Guide
 
-## Goal
+Use this guide when writing the Simple version of a NutsNews Wiki article or reviewing it against the Technical version.
 
-Write docs so a reader can answer five things fast:
+## “Simple” still means complete
 
-1. What is this?
-2. When should I use it?
-3. What do I do next?
-4. How do I confirm it worked?
-5. Where should I go if it fails?
+The Simple and Technical articles must agree about:
 
-## Recommended structure
+- what the system does
+- who may perform an action
+- exact commands, values, URLs, and limits
+- warnings and stop conditions
+- how to check success
+- what to do when it fails
+- how to roll back safely
 
-Use this order for most docs:
+Use shorter sentences and explain technical words. Do not remove a fact or safety step just because it is complicated.
 
-```text
-# Clear title
+## The files that belong together
 
-One-sentence summary.
+One original Technical source has:
 
-## When to use this
-## What it covers
-## Required setup
-## Steps
-## Verify
-## Troubleshooting
-## Related docs
+- `audiences/simple/<source>.md`
+- `audiences/technical/<source>.md`
+- `diagrams/<source-without-md>.mmd`
+
+Update all four tracked files together. Generated site files, reports, caches, and inventory files are not hand-edited sources.
+
+## Where a document belongs
+
+- Current guides usually stay at the repository root.
+- `updates/` appears in History as Updates.
+- `reports/` appears as Reports.
+- `archive/` appears as Archives.
+- `ios/` appears as Classified notes.
+
+History is not shown in search unless the reader enables **Include History**.
+
+## New-document example
+
+Create a valid blocked scaffold:
+
+```bash
+npm run docs:new -- CACHE_INVALIDATION_GUIDE.md --collection platform-and-data --section core-platform
+npm run docs:prepare -- CACHE_INVALIDATION_GUIDE.md --force
 ```
 
-You do not need every section in every doc. Use the minimum needed.
+The source uses a numeric unused order and metadata like this:
 
-## Plain language
+```yaml
+title: "Cache Invalidation Guide (Technical)"
+description: "How NutsNews invalidates cached reader content safely."
+wiki:
+  source_route: "/technical/cache-invalidation-guide"
+  simple_route: "/simple/cache-invalidation-guide"
+  slug: "cache-invalidation-guide"
+  primary_diagram:
+    file: "diagrams/CACHE_INVALIDATION_GUIDE.mmd"
+    accTitle: "Cache invalidation flow"
+    accDescr: "An operator verifies scope, purges the selected cache, checks the reader response, and rolls back or escalates when verification fails."
+  status: draft
+  collection: platform-and-data
+  section: core-platform
+  order: 228
+  approval:
+    state: unreviewed
+    publishing: blocked
+    reviewed_by: pending
+    reviewed_on: pending
+    technical_source_hash: pending
+```
 
-Use direct language:
+Replace every `TODO`. Check the Technical source, Simple article, Technical mirror, diagram, commands, warnings, links, verification, and rollback.
 
-- “Run this command”
-- “Check this dashboard”
-- “The Worker saves accepted articles”
-- “If this fails, check the logs”
+After a human reviews the current bundle:
 
-Avoid:
+```bash
+npm run docs:approve -- CACHE_INVALIDATION_GUIDE.md --reviewed-by "<human-reviewer>" --confirm-human-review
+```
 
-- Long background before the action
-- Repeating the same idea in multiple places
-- Dense paragraphs when a table is clearer
-- Internal shorthand your future readers might not know
+Then run:
 
-## Links
+```bash
+npm run wiki:prepare
+npm run validate:content
+npm run validate:links
+npm run validate:mermaid
+npm run test:content-routes
+npm run build
+```
 
-Every important doc should be reachable from [README.md](README.md).
+## When an old approval becomes stale
 
-When adding a new doc:
+Changing the original Technical source makes its old approval invalid.
 
-1. Add it with the correct repo naming pattern.
-2. Put it in the right category in `README.md`.
-3. Add related-doc links near the end if useful.
-4. Move one-off update notes to `docs/updates/` or `docs/archive/`.
+1. Update both audience copies and the diagram.
+2. Keep every command, warning, success check, failure step, and rollback.
+3. Ask a human to review the current files.
+4. Run `docs:approve` again.
+5. Rerun all checks. Never edit only the hash or skip a failing gate.
 
-## Naming
+## Diagrams, screenshots, and links
 
-Use clear uppercase names for long-lived docs:
+- Every article needs one useful Mermaid diagram with a clear `accTitle` and `accDescr`.
+- Use screenshots only when they make a control or visual state easier to find.
+- Every image needs useful alt text, a caption, and a local file. Remove secrets and personal data from images.
+- Link to original Markdown files with clear link text and exact heading fragments.
+- Add useful current guides to [README.md](README.md), and link History records back to the current guide.
 
-- `DEPLOYMENT_CHECKLIST.md`
-- `WEB_OFFLINE_E2E_REGRESSION_TEST.md`
-- `FREE_TIER_GUARDRAILS.md`
+## Before publishing
 
-Use archive folders for temporary notes:
+- [ ] Simple and Technical facts match.
+- [ ] No command, warning, check, or rollback is missing.
+- [ ] Metadata and History placement are valid.
+- [ ] Diagram text and any screenshot text are accessible.
+- [ ] Human approval is current.
+- [ ] Every required command passes.
 
-- `docs/updates/`
-- `docs/archive/`
+Documentation-only work may go directly to `main` after validation. Any site-code or mixed change follows the pull-request policy in [AGENTS.md](AGENTS.md).
 
-## Keep docs current
+## Related docs
 
-Update docs when changes affect deployment, operations, monitoring, data flows, worker behavior, AI behavior, user flows, regression tests, security, or dependencies.
-Move short-lived notes to updates or archive locations.
-
+- [Repository contribution rules](AGENTS.md)
+- [GitHub Pages wiki publishing](GITHUB_WIKI_AUTOMATION.md)
+- [Documentation index](README.md)

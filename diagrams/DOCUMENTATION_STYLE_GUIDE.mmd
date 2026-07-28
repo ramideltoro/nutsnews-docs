@@ -5,15 +5,20 @@ title: Documentation style guide content workflow
 flowchart TB
   accTitle: Documentation Style Guide
   accDescr {
-    Use this guide when adding or updating NutsNews documentation.
+    A new or changed canonical Technical source is reconciled with its Simple mirror, Technical mirror, accessible diagram, metadata, links, images, and History placement. Human approval follows the complete review, and any stale change returns the bundle to review before validation and delivery.
   }
-  A["Start with technical source: DOCUMENTATION_STYLE_GUIDE.md"] --> B["Normalize required frontmatter and section order"]
-  B --> C["Create/refresh technical audience route copy"]
-  B --> D["Create/refresh simple audience route copy"]
-  C --> E["Draft primary Mermaid overview"]
-  D --> E
-  E --> F["Run link checks and validation commands"]
-  F --> G{"Content equivalence"}
-  G -->|Mismatch| B
-  G -->|Verified| H["Request human review + approval metadata update"]
-  H --> I["Publish to /technical/documentation-style-guide and /simple/documentation-style-guide"]
+  request["New or changed canonical source"] --> scaffold{"New document?"}
+  scaffold -->|Yes| newdoc["Run docs:new, then docs:prepare --force"]
+  scaffold -->|No| update["Update the existing source"]
+  newdoc --> bundle["Reconcile Simple mirror, Technical mirror, and diagram"]
+  update --> bundle
+  bundle --> safety["Preserve facts, commands, cautions, verification, and rollback"]
+  safety --> assets["Check metadata, related links, images, accessibility, and History"]
+  assets --> review["Human reviews the complete current bundle"]
+  review --> approve["Run docs:approve"]
+  approve --> validate["Run complete content, link, Mermaid, route, and build gates"]
+  validate --> current{"Approval still current?"}
+  current -->|No| bundle
+  current -->|Yes| deliver{"Documentation only?"}
+  deliver -->|Yes| main["Push validated docs directly to main"]
+  deliver -->|No or mixed| pr["Use checked and approved pull request"]
