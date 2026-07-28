@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 3bccade5164d3d10bab414c52376d543662f2e1eb3ec1993fd7461877b92f258
+---
 # NutsNews iOS iPad Landscape Compact Card Update
 
 This update changes article cards only on iPad in landscape mode.

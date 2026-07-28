@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 9cd1169a180d150a2130d4b4917202e1d6c2ef3d86b39cc0ddeb2bedbb6189d0
+---
 # NutsNews Database Resiliency
 
 Last verified: 2026-07-26

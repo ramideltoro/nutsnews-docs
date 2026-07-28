@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 99b19629bb0dfd6cfc8f56f953c0937b322f8365a3edb335f531091f7aef1301
+---
 # CodeQL Security Scan
 
 NutsNews uses GitHub CodeQL for security scanning.

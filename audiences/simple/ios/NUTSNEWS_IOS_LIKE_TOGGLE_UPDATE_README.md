@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: ios
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 76dd9cb5bf931f5e4fcf7535d9c527e8307f18069d931e2b485660bc152d8f32
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 356d39f745a223bbcd2277bee7a1e302a45d5da1f86130e9414e6335b490f889
 ---
 
 # NutsNews iOS Like Toggle Update

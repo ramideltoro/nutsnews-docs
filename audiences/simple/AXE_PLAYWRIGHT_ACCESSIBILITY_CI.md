@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 5694d5e3264e36b7f2f4a0351d314466bba15047a4a4c839b0a5615d2dbdb6d0
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 0be2ed7ac88e1e5f12ffa6c1db6443fb9defdc658239cb03269a43d517f10978
 ---
 
 # axe Accessibility CI with Playwright

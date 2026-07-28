@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: d5935959c14e8ab16110175d182981c0e5cf03cf6b4dde8161518b1ae9b030b0
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: d70c25ea7629738c9c3fae85c15bcb8698d05fb9f758c16206e68b9e7e5b49b1
 ---
 
 # NutsNews Web Offline E2E Page Locator Fix

@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 2469852a23272540576f7b05fc05c73de214854ac6e752e43c2d63b8fb2a5ff9
+---
 # Controller and Shard Operations
 
 Architecture status: this document describes the current legacy Cloudflare

@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: d0cb89ef836663df8e048b3d6987fe7c1886424679f9778c89866f0e208c6edd
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: c5be4c9ead544eafb0ae3a34152a2e9b016d2721ec54256935af9b2955b26c91
 ---
 
 # Public Performance Budgets

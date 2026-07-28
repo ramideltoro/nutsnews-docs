@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 0141ab9bbaa5e029f55ef58aad8cf6ad85982640d91fb1ed9954a1130379a201
+---
 # NutsNews iOS iPad Story Fullscreen Update
 
 This update changes story presentation only on iPad.

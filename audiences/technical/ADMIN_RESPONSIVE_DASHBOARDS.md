@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: admin-experience
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: d74cc63eaeb4fabd3d58b02a546812589d55dce964fbf2ae4c0d4bdfa6822252
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 21ddd06f37b29390cc470a72b803c3cc668dea168144a6bf6d29c415826e4a23
 ---
 
 # Responsive Admin Dashboards

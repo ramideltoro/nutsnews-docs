@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 79f3e1cbee4ab270e20d3f8604af4224d1865f57b783a0f78558772000e0ae3a
+---
 # NutsNews GitHub Actions Automation
 
 This update adds the missing GitHub Actions around build safety, operations, backups, feed quality, translations, image coverage, links, sitemap/robots, and release notes.

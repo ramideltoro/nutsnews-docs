@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: c6a171b742c6956179be11a47b7d883b3096bdb720d1b19ea09d0b64fa1b60cb
+---
 # NutsNews Web Offline E2E Fix
 
 This patch updates the mocked public web flow test so it no longer assumes the mock article title is globally unique on the homepage.

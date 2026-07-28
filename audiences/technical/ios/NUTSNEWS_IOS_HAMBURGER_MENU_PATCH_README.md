@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: ios
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 92fad7af69a76f406a0cd6371d8a236bc78ad343fb899ffcc1b7ca85a5ed568c
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: ac1294876bf54bf20918a47e619eb8e77c0a8780390557a56c0baf2633717f12
 ---
 
 # NutsNews iOS Hamburger Menu Patch

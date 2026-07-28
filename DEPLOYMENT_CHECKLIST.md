@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: b2915882d6ecd19fdb8df477ed6068e5d4170f5cc985067af91b70449522e72a
+---
 # Deployment Checklist
 
 This checklist explains how to safely deploy NutsNews across the web app, Worker shards, controller Worker, Cloudflare cache, and post-deploy verification.

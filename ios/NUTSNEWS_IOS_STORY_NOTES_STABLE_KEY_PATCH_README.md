@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 82c961c34524c66dfb299f5e5d0ac14500d00ce84f47ae1bc93156c248f4a80e
+---
 # NutsNews iOS — Story Notes Stable Key Patch
 
 This patch fixes story notes so a note is attached to the same article no matter where the article is opened from.

@@ -11,9 +11,11 @@ wiki:
   collection: ai-and-automation
   section: Automation & Workers
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 57753b86d8b561feb288b80cd31f05d5ff3995c26a81be7084be1ddf063316c5
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: adb1427bdd0d2ffea7f7e4596da7ec458c9b6b1b6c73729ff89c1ed923d40549
 ---
 
 # Dependency Update Routine

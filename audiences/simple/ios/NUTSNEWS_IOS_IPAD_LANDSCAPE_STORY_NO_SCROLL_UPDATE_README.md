@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: ios
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 43ace46930aee0add7271bff8266edbee7b8f417e34626f975e40a9f5ba69a7c
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: b6d26fffef600908f6d9f940bd1f6d2d3dbbaa9adf0d57c66108aadd63e4fcb5
 ---
 
 # NutsNews iOS iPad Landscape Story No-Scroll Update

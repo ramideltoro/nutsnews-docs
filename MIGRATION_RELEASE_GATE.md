@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: c25b9892d13fc5d9afd58a421f9b6a15b0e5c656e35e61aa774f8fd8b309f4fd
+---
 # Migration Release Gate
 
 This runbook defines the database release contract introduced by `nutsnews#109`.

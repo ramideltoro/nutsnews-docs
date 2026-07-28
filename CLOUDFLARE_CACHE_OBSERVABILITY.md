@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 25547f7419409b673c910636892d2999ab303cc870e8f97040c1103e29f0f406
+---
 # Cloudflare Cache Observability
 
 Issue #91 adds a dedicated cache observability layer for NutsNews public routes.

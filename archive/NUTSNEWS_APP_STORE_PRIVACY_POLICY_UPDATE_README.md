@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 86dd90ed0de556beabf10c9915ce18f4efdf74e4ab3a82254f1f237d91387047
+---
 # NutsNews App Store Privacy Policy Update
 
 This update strengthens the `/privacy` page for App Store review by matching the current iOS app behavior more clearly.

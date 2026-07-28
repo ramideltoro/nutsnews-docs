@@ -11,27 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 0f6abd7976c53553c242b918a76da22010c55e372ed2ca09f768cb76c26d423b
----
-
----
-title: Fluid Active CPU Reduction
-wiki:
-  source_route: /technical/fluid-active-cpu-reduction/
-  simple_route: /simple/fluid-active-cpu-reduction/
-  primary_diagram:
-    file: diagrams/FLUID_ACTIVE_CPU_REDUCTION.mmd
-    accTitle: "Fluid active CPU reduction flow"
-    accDescr: "Homepage, feed, and middleware paths were reduced to fewer requests and longer cache windows to cut avoidable public-server CPU usage."
-  status: active
-  collection: platform-and-data
-  section: core-platform
-  approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 0f6abd7976c53553c242b918a76da22010c55e372ed2ca09f768cb76c26d423b
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 45aa2a8c16a7861d96c8492b5db33cbdbcc0399b74f27efa19a79e2b261b53a8
 ---
 
 # Fluid Active CPU Reduction

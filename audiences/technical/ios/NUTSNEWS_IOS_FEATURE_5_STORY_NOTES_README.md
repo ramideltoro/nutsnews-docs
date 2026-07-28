@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: ios
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: e9021bde5b3e2597118e3a9d9772dbf1b254a61f8b9c8f67b98a42392d61aba5
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 8ef5220d5d05103d6249f24d1a0a073c8b04e7b045ee90ee3bd013579f3b4d7a
 ---
 
 # NutsNews iOS Feature 5 — Story Notes

@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: ios
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 63bc74a8078b5f0fd0a8e449182418ff43f11c17a39cd80978872c8a73aea8b1
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: f89aad5e9ab5e5021dc26bf5094298c6ca5b9de45af58c7f5575f6674af95378
 ---
 
 # NutsNews iOS Cache Update

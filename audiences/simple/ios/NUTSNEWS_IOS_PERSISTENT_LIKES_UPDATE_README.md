@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: ios
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: ba772d697dca163e6da20f43afc4baae0371bd7612c35d6b3e95c2961d0ff28a
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 85b93d68c0e8a85dfd30ec9b40bba302f671ecf98cd0414679d03a3bb1e85893
 ---
 
 # NutsNews iOS Persistent Likes Update

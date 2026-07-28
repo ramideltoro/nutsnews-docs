@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: ac1294876bf54bf20918a47e619eb8e77c0a8780390557a56c0baf2633717f12
+---
 # NutsNews iOS Hamburger Menu Patch
 
 This patch moves the main header actions into one hamburger menu on the top left.

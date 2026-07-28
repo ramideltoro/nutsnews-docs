@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: Operations & Monitoring
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 7b5b63bdee41aaff36bfc4dc58b0a60e811dbceb07f1e93018fd19e053a81df2
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 533d56ec37549abbef61fd8a34cf5b24bcca41e53801a703a334554f97d1691a
 ---
 
 # Grafana Cloud Backup Monitoring

@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 530e1f9109d20f43e7029a46e22bfecae2f216de85271ba41307fde8a00f5fd1
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 791f1650d23d48de6b69c965bedb558650ef4349876e160ad7cbfbed93f425da
 ---
 
 # NutsNews Worker Offline E2E Fix

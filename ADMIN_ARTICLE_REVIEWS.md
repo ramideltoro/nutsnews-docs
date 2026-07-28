@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: admin-experience
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: c7b501b98926aa612c50ab6d8e81b8582d40a9f9d9c1557de8b7ec696d15027a
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: f99572dda6b45b52f9c0586312505d5565129776472d5e6cae36c0bbfe92a2d8
 ---
 
 # Admin Article Review Dashboard

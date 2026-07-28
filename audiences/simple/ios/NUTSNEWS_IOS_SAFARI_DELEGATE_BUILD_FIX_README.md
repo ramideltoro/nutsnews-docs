@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: ios
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: d6e510f2634ca2f972cc4ac52c404043f4d06a617e8e108c210399d93ce6c290
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: b6a9fb899b3250418b63b618ee44303f424540944dd8aa1bcfa8efed90555edd
 ---
 
 # NutsNews iOS Safari Delegate Build Fix

@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: contributing
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: bc950f7e714c7b648a71ee5c66f791638b1d6dd167eaa7be34061b88753b6326
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 677dde95bad57c958c952bba026751f4b76411e54ac77e593541f73a108fa640
 ---
 
 # GitHub Pages publishing for the NutsNews wiki

@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 85b93d68c0e8a85dfd30ec9b40bba302f671ecf98cd0414679d03a3bb1e85893
+---
 # NutsNews iOS Persistent Likes Update
 
 This update makes liked stories persist and stay synchronized between the home feed and story page.

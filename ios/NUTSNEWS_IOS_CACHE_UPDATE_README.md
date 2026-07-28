@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: f89aad5e9ab5e5021dc26bf5094298c6ca5b9de45af58c7f5575f6674af95378
+---
 # NutsNews iOS Cache Update
 
 This bundle adds a 15-minute on-device disk cache for `/api/articles` responses.

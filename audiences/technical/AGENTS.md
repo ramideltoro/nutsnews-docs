@@ -7,9 +7,11 @@ wiki:
   status: active
   collection: start-here
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 5f8e8d6ce9d9ebfef4f1bd6f4f9d9f3b8e4b5db3
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 27bc875fa80fa0dee4b2d09a3db0f8d90e528904723e025f645d4fc5a485a617
 ---
 
 # AGENTS.md (Technical)

@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 2097670d0666815e15274a380371787cc677a005195d662042e45abc49f9195a
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 026d13e07bbea31558ee1a299a6d7abf29183aff3cd00e15e00fae6ee80297ad
 ---
 
 # Cloudflare Turnstile Contact Form Protection

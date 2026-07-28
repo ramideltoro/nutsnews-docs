@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: ios
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 2876bbed7f2a70de81c84dec0772c243ffd14325608c54be80e05fbad2f0a8bd
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: be15b0b4eb28a72a8603f8084406df601cc71efe38a7b85f90dd5d202427842d
 ---
 
 # NutsNews iOS Image Resolution Troubleshooting Update

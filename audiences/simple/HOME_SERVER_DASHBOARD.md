@@ -11,9 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 09ad7a75aaaca66222a6d14af00a5369656c67cbc065ac5e6eea80b18a469f45
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: ec0ae70da17c2bc6fcb32445cefce248e5d2c6712df09d7a1fded452d7327f0a
 ---
 
 # Home Server Admin Dashboard

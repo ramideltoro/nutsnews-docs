@@ -1,3 +1,12 @@
+---
+wiki:
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 1c6a04f3fae3abcae6adaf0bdf68678e98915435e6180ce3e663331b5cbd0f82
+---
 # NutsNews Cloudflare Turnstile Update
 
 This bundle adds Cloudflare Turnstile to the NutsNews contact form.

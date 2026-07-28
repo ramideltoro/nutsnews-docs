@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: ios
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 2d186a304dde4819f0e18d472ad2acc2c5b11df938ec1892c3cb2f92fa9fae5c
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 2b2dc77cac62533740739c2d169f2f549a9be8747deafff66833300f430e2c65
 ---
 
 # NutsNews iOS New Themes Update

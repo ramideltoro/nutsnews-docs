@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 6957ab34b6379e468e2dbfac3b9be13866ae57d51f644edd431496bf03255b8c
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 158fc130329086ca34f699501d85dae842b800a9b68ee1b48a2ffe590b49b335
 ---
 
 # NutsNews Hydration Language Fix

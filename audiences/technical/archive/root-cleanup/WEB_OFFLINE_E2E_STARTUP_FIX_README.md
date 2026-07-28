@@ -11,9 +11,11 @@ wiki:
   collection: start-here
   section: overview
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 6fa4b275ce40a1edf5af281caf6effad9dbc5a684a9ff900228476d1fa5c1373
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 430a39729180f154352f29e426350e372e000abfaacfb0b60e6e29bb16545eca
 ---
 
 # NutsNews Web Offline E2E Startup Fix

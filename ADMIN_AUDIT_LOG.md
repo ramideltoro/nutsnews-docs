@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: admin-experience
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 925a95e7c1b2d9d5cf27fc47a9357a8715e12f8141ed3688d528fc3b50e35de6
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 1ccbba406de3ec20a89b332e5b6c11f2c749af18f585c2200525ff92f7057cfe
 ---
 
 # NutsNews Admin Audit Log

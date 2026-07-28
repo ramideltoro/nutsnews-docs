@@ -11,9 +11,11 @@ wiki:
   collection: product-and-reader-experience
   section: ios
   approval:
-    reviewed_by: pending
-    reviewed_on: pending
-    technical_source_hash: 2802dd1fa138c7a771b429a73d22b94472507c7482696bf822a2ed5ee8c22e71
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-28T20:10:06.000Z"
+    technical_source_hash: 1069e53e36d4721afbafe9cda4355deb20745846fde2312bf6d686c3580ce723
 ---
 
 # NutsNews iOS Feature 3 — Full Archive Search
