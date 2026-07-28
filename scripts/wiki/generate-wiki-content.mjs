@@ -78,9 +78,20 @@ function isMarkdownReference(rawHref) {
   return /\.md(\?|#|$)/i.test(rawHref);
 }
 
+function markdownToPlainText(value) {
+  return value
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/<((?:https?:\/\/|mailto:)[^>]+)>/gi, '$1')
+    .replace(/<\/?[^>]+>/g, '')
+    .replace(/`+/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function deriveDescription(frontmatter, markdownContent, simpleFrontmatter, maxLength = 170) {
   if (typeof frontmatter?.description === 'string' && frontmatter.description.trim()) {
-    const explicit = frontmatter.description.trim();
+    const explicit = markdownToPlainText(frontmatter.description);
     return explicit.length > maxLength ? `${explicit.slice(0, maxLength - 1)}…` : explicit;
   }
 
@@ -91,9 +102,9 @@ function deriveDescription(frontmatter, markdownContent, simpleFrontmatter, maxL
     .filter(Boolean)
     .filter((line) => !line.startsWith('#') && !line.startsWith('![') && !line.startsWith('['));
 
-  const first = lines[0]
+  const first = markdownToPlainText(lines[0]
     || simpleFrontmatter?.description
-    || wikiContract.defaults.description;
+    || wikiContract.defaults.description);
   return first.length > maxLength ? `${first.slice(0, maxLength - 1)}…` : first;
 }
 

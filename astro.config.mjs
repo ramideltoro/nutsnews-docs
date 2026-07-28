@@ -1,5 +1,7 @@
 import { defineConfig } from 'astro/config';
+import { unified } from '@astrojs/markdown-remark';
 import starlight from '@astrojs/starlight';
+import { rehypeWikiArticle } from './scripts/wiki/rehype-wiki-article.mjs';
 
 function normalizeBase(value) {
   const trimmed = value.trim();
@@ -23,6 +25,11 @@ export default defineConfig({
   base,
   output: 'static',
   outDir: '_site',
+  markdown: {
+    processor: unified({
+      rehypePlugins: [rehypeWikiArticle],
+    }),
+  },
   integrations: [
     starlight({
       title: 'NutsNews Wiki',
@@ -36,7 +43,10 @@ export default defineConfig({
       components: {
         Head: './src/components/Head.astro',
         Header: './src/components/Header.astro',
+        MarkdownContent: './src/components/ArticleBody.astro',
         MobileMenuToggle: './src/components/MobileMenuToggle.astro',
+        PageTitle: './src/components/ArticleHeader.astro',
+        Pagination: './src/components/ArticlePagination.astro',
         Sidebar: './src/components/CollectionRail.astro',
       },
       sidebar: [

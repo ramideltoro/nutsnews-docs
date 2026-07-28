@@ -188,6 +188,44 @@ body {
   text-underline-offset: 0.18em;
 }
 
+.sl-markdown-content[data-article-body] {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.sl-markdown-content[data-article-body] > h1:first-child,
+.sl-markdown-content[data-article-body] > .sl-heading-wrapper.level-h1:first-child {
+  display: none;
+}
+
+.sl-markdown-content[data-article-body] :is(pre, table) {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+.sl-markdown-content[data-article-body] table :is(th, td) {
+  min-width: min(10rem, 65vw);
+  word-break: normal;
+}
+
+.sl-markdown-content[data-article-body] :is(img, picture, video, canvas, svg, iframe) {
+  max-width: 100%;
+  height: auto;
+}
+
+.sl-markdown-content[data-article-body] :is(h2, h3, h4, h5, h6) {
+  scroll-margin-top: calc(var(--sl-nav-height) + var(--sl-mobile-toc-height) + var(--wiki-space-5));
+}
+
+.main-pane,
+main,
+.content-panel,
+.sl-container {
+  min-width: 0;
+}
+
 @media (max-width: 50rem) {
   :root {
     --wiki-content-gutter: var(--wiki-space-4);
