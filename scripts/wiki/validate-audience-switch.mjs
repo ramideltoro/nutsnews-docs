@@ -62,8 +62,9 @@ async function run() {
   assert.match(header, /data-target-audience="simple"/);
   assert.match(header, /data-target-audience="technical"/);
   assert.match(header, /aria-current=/);
-  assert.match(header, /localStorage\.setItem\(key, value\)/);
-  assert.match(header, /target\.hash = location\.hash/);
+  assert.match(header, /from ['"]\.\.\/lib\/audience-routing\.mjs['"]/);
+  assert.match(header, /persistAudiencePreference\(localStorage, key, value\)/);
+  assert.match(header, /destinationWithCurrentFragment\(\{/);
   assert.match(header, /if \(explicitAudience\) storeAudience\(explicitAudience\)/);
   assert.doesNotMatch(header, /location\.(?:assign|replace)\(/);
   assert.doesNotMatch(header, /<button[^>]*data-audience-control/);

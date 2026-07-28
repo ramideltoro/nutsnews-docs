@@ -189,6 +189,11 @@ async function validateProductionSourceLinks(inventory, errors) {
 async function validateGeneratedLinks(errors) {
   const docs = await walkMarkdown(docsRoot);
   const routeSet = new Set(docs.map(routeFromGeneratedPath));
+  for (const audience of wikiContract.audiences) {
+    for (const item of wikiContract.navigation.rail) {
+      routeSet.add(normalizeRoute(`/${audience}/collections/${item.id}`));
+    }
+  }
   let checked = 0;
 
   assert.equal(docs.length, 454, 'expected 454 generated audience documents');

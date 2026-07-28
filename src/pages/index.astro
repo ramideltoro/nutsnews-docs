@@ -78,6 +78,13 @@ const canonicalPath = base === '/' ? '/' : `${basePrefix}/`;
     </main>
 
     <script>
+      import {
+        persistAudiencePreference,
+        readAudiencePreference,
+        resolvedAudienceUrl,
+        selectAudience,
+      } from '../lib/audience-routing.mjs';
+
       const resolver = document.querySelector('[data-root-resolver]');
 
       if (resolver instanceof HTMLElement) {
@@ -87,34 +94,19 @@ const canonicalPath = base === '/' ? '/' : `${basePrefix}/`;
         const fallback = resolver.dataset.defaultAudience;
         const current = new URL(location.href);
         const explicit = queryParameter ? current.searchParams.get(queryParameter) : null;
-        let stored = null;
-
-        try {
-          stored = key ? localStorage.getItem(key) : null;
-        } catch {
-          // Storage is optional; the Simple default remains deterministic.
-        }
-
-        const audience = allowed.includes(explicit)
-          ? explicit
-          : allowed.includes(stored)
-            ? stored
-            : fallback;
+        const stored = readAudiencePreference(localStorage, key);
+        const audience = selectAudience({ explicit, stored, fallback, allowed });
         const targetLink = resolver.querySelector(`[data-audience-destination="${audience}"]`);
 
         if (targetLink instanceof HTMLAnchorElement) {
-          const target = new URL(targetLink.href, location.href);
-          if (queryParameter) current.searchParams.delete(queryParameter);
-          target.search = current.searchParams.toString();
-          target.hash = current.hash;
+          const targetHref = resolvedAudienceUrl({
+            currentHref: current.href,
+            destinationHref: targetLink.href,
+            queryParameter,
+          });
+          persistAudiencePreference(localStorage, key, audience, allowed);
 
-          try {
-            if (key && allowed.includes(audience)) localStorage.setItem(key, audience);
-          } catch {
-            // Redirects and normal links do not depend on storage.
-          }
-
-          if (target.href !== current.href) location.replace(target.href);
+          if (targetHref !== current.href) location.replace(targetHref);
         }
       }
     </script>
