@@ -44,6 +44,14 @@ endings, so approval metadata and LF/CRLF conversions do not stale content;
 any substantive Technical source change does. Draft, blocked, missing, or
 stale approval fails CI and the production build.
 
+For a new document, run
+`npm run docs:new -- <canonical-source.md> --collection <collection> --section <section>`.
+The command deterministically creates the canonical expert scaffold, blocked
+Simple draft, tracked Technical mirror, accessible Mermaid diagram, and review
+manifest. It rejects unsafe, duplicate, route-colliding, or unclassified paths
+and refuses to overwrite any target. On success it prints the exact
+`docs:prepare`, `docs:approve`, and approval-validation commands to run next.
+
 ## Frontmatter and precedence
 
 Generated expert frontmatter always contains `title`, `description`, `slug`,

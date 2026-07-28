@@ -7,6 +7,7 @@ import {
   classifySourcePath,
   normalizeSourcePath,
   simplePathFromSource,
+  technicalMirrorPathFromSource,
 } from './wiki-contract.mjs';
 import {
   approvalErrors,
@@ -140,7 +141,7 @@ export async function approveWikiSource({
   }
   classifySourcePath(sourcePath);
   const simplePath = simplePathFromSource(sourcePath);
-  const technicalMirrorPath = `audiences/technical/${sourcePath}`;
+  const technicalMirrorPath = technicalMirrorPathFromSource(sourcePath);
   const reviewPath = simplePath.replace(/\.md$/i, '.review.json');
   const sourceTarget = path.join(repoRoot, sourcePath);
   const simpleTarget = path.join(repoRoot, simplePath);

@@ -3,6 +3,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
 import { parseMarkdownFrontmatter } from './parse-markdown.mjs';
+import { technicalMirrorPathFromSource } from './wiki-contract.mjs';
 import {
   approvalErrors,
   expertSourceHash,
@@ -16,7 +17,7 @@ assert.equal(inventory.entries.length, 227, 'approval gate requires the complete
 
 let reviewManifestCount = 0;
 for (const entry of inventory.entries) {
-  const technicalMirrorPath = `audiences/technical/${entry.source.path}`;
+  const technicalMirrorPath = technicalMirrorPathFromSource(entry.source.path);
   const [rawSource, rawSimple, rawTechnicalMirror] = await Promise.all([
     fs.readFile(path.join(repoRoot, entry.source.path), 'utf8'),
     fs.readFile(path.join(repoRoot, entry.simple.sourcePath), 'utf8'),

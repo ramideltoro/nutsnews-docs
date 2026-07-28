@@ -50,6 +50,9 @@ jobs:
       - name: Test human approval and freshness gate
         run: npm run test:wiki-approvals
 
+      - name: Test new-document scaffolding
+        run: npm run test:docs-new
+
       - name: Validate source contracts
         run: npm run validate:contracts
 
