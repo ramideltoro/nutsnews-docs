@@ -1,8 +1,26 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
+function normalizeBase(value) {
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === '/') {
+    return '/';
+  }
+
+  return `/${trimmed.replace(/^\/+|\/+$/g, '')}`;
+}
+
+const site = process.env.WIKI_SITE_URL?.trim() || 'https://wiki.nutsnews.com';
+const base = normalizeBase(process.env.WIKI_BASE_PATH || '/');
+const siteUrl = new URL(site);
+
+if (!['http:', 'https:'].includes(siteUrl.protocol)) {
+  throw new Error('WIKI_SITE_URL must use http or https');
+}
+
 export default defineConfig({
-  site: 'https://wiki.nutsnews.com',
+  site: siteUrl.toString(),
+  base,
   output: 'static',
   outDir: '_site',
   integrations: [
