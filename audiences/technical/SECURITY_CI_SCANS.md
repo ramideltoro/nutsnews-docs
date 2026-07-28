@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/security-ci-scans/
   simple_route: /simple/security-ci-scans/
   primary_diagram:
-    file: diagrams/SECURITY_CI_SCANS.md
+    file: diagrams/SECURITY_CI_SCANS.mmd
     accTitle: "Security CI Scans diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

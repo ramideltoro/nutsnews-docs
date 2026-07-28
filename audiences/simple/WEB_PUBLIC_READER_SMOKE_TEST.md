@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/web-public-reader-smoke-test/
   simple_route: /simple/web-public-reader-smoke-test/
   primary_diagram:
-    file: diagrams/WEB_PUBLIC_READER_SMOKE_TEST.md
+    file: diagrams/WEB_PUBLIC_READER_SMOKE_TEST.mmd
     accTitle: "Web Public Reader Smoke Test diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

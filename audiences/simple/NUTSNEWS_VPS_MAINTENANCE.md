@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/nutsnews-vps-maintenance/
   simple_route: /simple/nutsnews-vps-maintenance/
   primary_diagram:
-    file: diagrams/NUTSNEWS_VPS_MAINTENANCE.md
+    file: diagrams/NUTSNEWS_VPS_MAINTENANCE.mmd
     accTitle: "NutsNews VPS Maintenance diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

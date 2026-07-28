@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/security-hardening/
   simple_route: /simple/security-hardening/
   primary_diagram:
-    file: diagrams/SECURITY_HARDENING.md
+    file: diagrams/SECURITY_HARDENING.mmd
     accTitle: "Security Hardening diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

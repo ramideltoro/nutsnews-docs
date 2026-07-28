@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/nutsnews-db-backups/
   simple_route: /simple/nutsnews-db-backups/
   primary_diagram:
-    file: diagrams/NUTSNEWS_DB_BACKUPS.md
+    file: diagrams/NUTSNEWS_DB_BACKUPS.mmd
     accTitle: "NutsNews Supabase Backup Automation diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

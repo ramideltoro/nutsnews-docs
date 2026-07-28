@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/production-readiness-dashboard/
   simple_route: /simple/production-readiness-dashboard/
   primary_diagram:
-    file: diagrams/PRODUCTION_READINESS_DASHBOARD.md
+    file: diagrams/PRODUCTION_READINESS_DASHBOARD.mmd
     accTitle: "Production Readiness Dashboard diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/grafana-backup-monitoring/
   simple_route: /simple/grafana-backup-monitoring/
   primary_diagram:
-    file: diagrams/GRAFANA_BACKUP_MONITORING.md
+    file: diagrams/GRAFANA_BACKUP_MONITORING.mmd
     accTitle: "Grafana Cloud Backup Monitoring diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

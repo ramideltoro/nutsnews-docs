@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/worker-offline-e2e-regression-test/
   simple_route: /simple/worker-offline-e2e-regression-test/
   primary_diagram:
-    file: diagrams/WORKER_OFFLINE_E2E_REGRESSION_TEST.md
+    file: diagrams/WORKER_OFFLINE_E2E_REGRESSION_TEST.mmd
     accTitle: "NutsNews Worker Fully Offline E2E Regression Test diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/nutsnews-vps-service-foundation/
   simple_route: /simple/nutsnews-vps-service-foundation/
   primary_diagram:
-    file: diagrams/NUTSNEWS_VPS_SERVICE_FOUNDATION.md
+    file: diagrams/NUTSNEWS_VPS_SERVICE_FOUNDATION.mmd
     accTitle: "NutsNews VPS Service Foundation diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/nutsnews-vps-production-runtime-500-incident/
   simple_route: /simple/nutsnews-vps-production-runtime-500-incident/
   primary_diagram:
-    file: diagrams/NUTSNEWS_VPS_PRODUCTION_RUNTIME_500_INCIDENT.md
+    file: diagrams/NUTSNEWS_VPS_PRODUCTION_RUNTIME_500_INCIDENT.mmd
     accTitle: "VPS production runtime 500 incident diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

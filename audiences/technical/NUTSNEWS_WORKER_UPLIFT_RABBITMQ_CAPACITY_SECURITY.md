@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/nutsnews-worker-uplift-rabbitmq-capacity-security/
   simple_route: /simple/nutsnews-worker-uplift-rabbitmq-capacity-security/
   primary_diagram:
-    file: diagrams/NUTSNEWS_WORKER_UPLIFT_RABBITMQ_CAPACITY_SECURITY.md
+    file: diagrams/NUTSNEWS_WORKER_UPLIFT_RABBITMQ_CAPACITY_SECURITY.mmd
     accTitle: "NutsNews Worker-Uplift RabbitMQ Capacity And Security diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

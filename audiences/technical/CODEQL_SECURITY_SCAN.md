@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/codeql-security-scan/
   simple_route: /simple/codeql-security-scan/
   primary_diagram:
-    file: diagrams/CODEQL_SECURITY_SCAN.md
+    file: diagrams/CODEQL_SECURITY_SCAN.mmd
     accTitle: "CodeQL Security Scan diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

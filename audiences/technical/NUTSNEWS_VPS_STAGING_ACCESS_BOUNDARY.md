@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/nutsnews-vps-staging-access-boundary/
   simple_route: /simple/nutsnews-vps-staging-access-boundary/
   primary_diagram:
-    file: diagrams/NUTSNEWS_VPS_STAGING_ACCESS_BOUNDARY.md
+    file: diagrams/NUTSNEWS_VPS_STAGING_ACCESS_BOUNDARY.mmd
     accTitle: "NutsNews VPS Staging Access And Credential Boundary diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active

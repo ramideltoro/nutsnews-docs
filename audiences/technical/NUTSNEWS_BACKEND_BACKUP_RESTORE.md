@@ -4,7 +4,7 @@ wiki:
   source_route: /technical/nutsnews-backend-backup-restore/
   simple_route: /simple/nutsnews-backend-backup-restore/
   primary_diagram:
-    file: diagrams/NUTSNEWS_BACKEND_BACKUP_RESTORE.md
+    file: diagrams/NUTSNEWS_BACKEND_BACKUP_RESTORE.mmd
     accTitle: "NutsNews Backend Backup And Restore Baseline diagram"
     accDescr: "Document flow and operational checkpoints for this topic."
   status: active
