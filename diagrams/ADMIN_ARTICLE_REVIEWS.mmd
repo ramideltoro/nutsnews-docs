@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: Admin Article Reviews
+  accDescr {
+    This document explains the NutsNews article review dashboard created for GitHub issue #18 and expanded for AI prompt/model auditability in issue #98.
+  }
   A[Change prompt or model] --> B[Assign prompt_version and model_version]
   B --> C[Deploy writer to staging or limited production shard]
   C --> D[Review /admin/articles Versions]

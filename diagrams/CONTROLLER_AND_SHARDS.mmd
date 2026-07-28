@@ -1,4 +1,8 @@
 flowchart LR
+  accTitle: Controller and Shard Operations
+  accDescr {
+    Architecture status: this document describes the current legacy Cloudflare
+  }
   A["Cron / scheduled controller run"] --> B["Controller selects shard index"]
   B --> C["POST shard URL with limit and review bound"]
   C --> D["Shard fetches RSS feeds"]

@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: NutsNews Free-Tier Guardrails
+  accDescr {
+    Issue #116 adds a dedicated admin dashboard at /admin/guardrails for cost forecasting and free-tier risk monitoring.
+  }
   METRICS["Usage and billing metrics"] --> NORMALIZE["Normalize per service limits"]
   NORMALIZE --> GUARDRAILS["Compare against warning/danger thresholds"]
   GUARDRAILS --> ALERT["Publish /admin/guardrails state"]

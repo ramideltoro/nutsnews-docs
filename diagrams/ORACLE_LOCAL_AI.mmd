@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: Oracle Local AI Provider
+  accDescr {
+    > **Current production note:** NutsNews currently uses the home-server local AI setup documented in Home Server Local AI Provider. This Oracle document remains as an alternative r…
+  }
   A["Worker config supports AI_PROVIDER=openai|local"] --> B["AI_PROVIDER=local"]
   B --> C["Point LOCAL_AI_URL to Cloudflare Tunnel endpoint"]
   C --> D["Set LOCAL_AI_API_KEY secret binding"]

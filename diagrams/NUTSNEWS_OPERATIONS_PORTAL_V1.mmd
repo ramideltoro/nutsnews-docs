@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: NutsNews Operations Portal v1
+  accDescr {
+    This explains the first real Ops Portal layer for the NutsNews VPS: a read-only amber dashboard, a local status collector, opt-in email alerts/reports, encrypted backup status, ma…
+  }
   A[Protected infra apply] --> B[Collector timer and status service refresh]
   B --> C[Publish status.json from local reads]
   C --> D{Google OAuth configured?}

@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: NutsNews Protected Ansible Apply Workflow
+  accDescr {
+    This explains the first protected GitHub Actions workflow that can run the Ansible VPS baseline against vps.nutsnews.com. It is a production mutation path, so it wears a seatbelt,…
+  }
   A[workflow_dispatch triggered] --> B{Run mode}
   B -->|check| C[Dry-run Ansible against VPS]
   B -->|apply| D[Require confirmation text and Environment approval]

@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: NutsNews Backend Service Baseline
+  accDescr {
+    This documents the read-only service baseline attestation for ramideltoro/nutsnews-backend and 65.75.201.18.
+  }
   A[Run SSH attestation on backend host] --> B[Capture public listeners and failed systemd units]
   B --> C[Load docs/backend-service-baseline.json]
   C --> D[Validate no public services outside approved policy]

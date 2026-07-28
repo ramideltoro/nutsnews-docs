@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: NutsNews Infra Operations Platform
+  accDescr {
+    This explains how the NutsNews infrastructure repo is supposed to make one small VPS behave like a boringly reliable production platform, which is the dream. Boring infrastructure…
+  }
   A[Infrastructure repo changes] --> B[Change review and scan gates]
   B --> C{Safety gates pass?}
   C -->|no| D[Fix issues and repeat review]

@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: Home Server Local AI Provider
+  accDescr {
+    NutsNews can now review candidate RSS articles using a home-server local AI stack instead of sending every candidate directly to OpenAI.
+  }
   A["Cloudflare Worker Shard"] -->|x-nutsnews-ai-key + request| B["Cloudflare Worker AI gateway"]
   B -->|AI_PROVIDER=local| C["Cloudflare Tunnel `ai.nutsnews.com`"]
   C -->|localhost:8788| D["Home server local-ai service"]

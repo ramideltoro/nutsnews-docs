@@ -1,4 +1,8 @@
 flowchart LR
+  accTitle: Deployment Checklist
+  accDescr {
+    This checklist explains how to safely deploy NutsNews across the web app, Worker shards, controller Worker, Cloudflare cache, and post-deploy verification.
+  }
   PR["Change in source repo"] --> RC["Review candidate and run tests"]
   RC -->|Green| MERGE["Merge to main"]
   MERGE --> BUILD["Release build + image publish"]

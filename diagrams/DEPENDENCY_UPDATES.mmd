@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: Dependency Update Routine
+  accDescr {
+    This document defines the repeatable dependency update process for NutsNews.
+  }
   A["Run dependency_update_routine.sh check/update"] --> B["npm ci across web/ worker/ controller/"]
   B --> C["Capture npm outdated and npm audit"]
   C --> D["Run validation checks"]

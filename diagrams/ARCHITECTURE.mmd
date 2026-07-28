@@ -3,6 +3,10 @@ title: NutsNews architecture and worker-uplift target
 ---
 
 flowchart TD
+  accTitle: Architecture
+  accDescr {
+    This is the current NutsNews architecture and the approved worker-uplift target
+  }
   subgraph Current["Current production"]
     rss["RSS / Atom sources"] --> controller["Cloudflare legacy controller+shards"]
     controller --> supabase["Supabase primary"]
@@ -29,4 +33,3 @@ flowchart TD
   web --> operators["Operators and admins"]
   operators --> observability["Backend Alloy + Grafana"]
   observability --> pg
-

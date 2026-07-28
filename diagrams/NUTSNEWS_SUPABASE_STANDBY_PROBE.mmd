@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: NutsNews Supabase Standby Restricted Probe
+  accDescr {
+    This is the shared operations guide for proving Supabase standby credential and
+  }
   A["Workflow trigger (main)"] --> B["verify-supabase-standby-readiness confirmation"]
   B --> C["Protected supabase-standby environment gate"]
   C --> D["Validate required secrets and variables"]

@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: NutsNews Worker Local AI Lock
+  accDescr {
+    The public web repo does not deploy the ingestion Workers. Worker shard deployment lives in ramideltoro/nutsnews-worker.
+  }
   A["Public web repo updates worker docs"] --> B["Worker repo (`nutsnews-worker`) owns shard deploys"]
   B --> C["Local-AI lock validation"]
   C --> D["Require AI_PROVIDER=local"]

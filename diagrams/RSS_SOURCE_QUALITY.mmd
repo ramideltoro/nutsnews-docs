@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: RSS Source Quality Scoring
+  accDescr {
+    Issue #3 adds source quality scoring so NutsNews can rank RSS feeds by useful output instead of keeping every source active forever.
+  }
   A[Source added/imported] --> B{Is URL news.google.com?}
   B -->|Yes| C[Allowed only when is_active=false]
   B -->|No| D[Evaluate quality score and trust tier]

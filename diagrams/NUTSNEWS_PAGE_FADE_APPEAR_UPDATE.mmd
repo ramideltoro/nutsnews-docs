@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: NutsNews Page Fade Appear Update
+  accDescr {
+    Adds a subtle page-level fade/slide/soft-blur entrance animation when moving to public pages on NutsNews.
+  }
   A[Navigate to public page] --> B[Apply fade/slide/soft-blur entrance]
   B --> C{prefers-reduced-motion is enabled?}
   C -->|Yes| D[Skip animation and show page directly]

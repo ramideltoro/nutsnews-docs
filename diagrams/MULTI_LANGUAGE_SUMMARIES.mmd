@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: Multi-language summaries
+  accDescr {
+    Issue #26 adds a future-ready language layer for NutsNews summaries.
+  }
   A[Article accepted in worker] --> B[Persist base English article row]
   B --> C[Create translation tasks per enabled language]
   C --> D[Try local AI /translate]

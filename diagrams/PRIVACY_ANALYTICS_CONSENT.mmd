@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: Privacy Analytics And Consent
+  accDescr {
+    Related issue: ramideltoro/nutsnews#114
+  }
   R[Reader opens app] --> A[Privacy controls]
   R --> B[RuntimeConfig fetched]
   A --> C[Store nutsnews.web.analytics-consent]

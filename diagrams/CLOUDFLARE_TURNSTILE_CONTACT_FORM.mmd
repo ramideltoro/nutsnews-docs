@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: Cloudflare Turnstile Contact Form Protection
+  accDescr {
+    This update protects the public NutsNews contact form with Cloudflare Turnstile.
+  }
   U[Visitor opens /contact] --> W[Turnstile widget renders]
   W -->|token generated| C[Client submits contact form + turnstileToken]
   C --> A[POST /api/contact]

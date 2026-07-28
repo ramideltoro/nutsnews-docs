@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: NutsNews Public Page Translation Update
+  accDescr {
+    This update extends the existing web language preference beyond the home feed.
+  }
   A[User changes language in Settings] --> B[Emit nutsnews:language-change]
   B --> C[useSelectedLanguage captures new selection]
   C --> D[Store selected value in localStorage `nutsnews.web.language`]

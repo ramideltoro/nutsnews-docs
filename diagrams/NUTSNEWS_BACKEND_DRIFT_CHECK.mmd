@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: NutsNews Backend Drift Check
+  accDescr {
+    This documents the read-only drift check for ramideltoro/nutsnews-backend.
+  }
   A[Run drift check job] --> B[Collect live backend host/service snapshot]
   B --> C[Load repo baseline snapshot]
   C --> D[Compare package, config, and service deltas]

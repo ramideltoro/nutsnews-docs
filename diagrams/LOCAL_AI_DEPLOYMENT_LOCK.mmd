@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: Local AI Deployment Lock
+  accDescr {
+    NutsNews Worker shards must use the home-server local AI provider first.
+  }
   A["Prepare `worker/.env.deploy.local`"] --> B["Set local AI vars + Secrets Store binding"]
   B --> C["Run `npm run generate:wrangler`"]
   C -->|missing AI config| D["BLOCK shard deployment"]

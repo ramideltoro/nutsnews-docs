@@ -1,4 +1,8 @@
 flowchart TD
+  accTitle: NutsNews feed visibility fade fix
+  accDescr {
+    This patch fixes an issue where the home page banner could appear while the article feed stayed hidden after the page fade animation update.
+  }
   A[Home page loads] --> B[CSS previously applied fade animation]
   B --> C[Feed stays in hidden state during/after transition]
   C --> D[Remove fade on .modern-home-shell and .public-themed-page]
