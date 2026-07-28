@@ -25,12 +25,14 @@ permissions:
 
 concurrency:
   group: wiki-pages-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   validate:
     name: Validate wiki sources
     runs-on: ubuntu-latest
+    outputs:
+      validated_sha: ${{ steps.v1_ready.outputs.sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -63,6 +65,9 @@ jobs:
 
       - name: Test workflow quality contract
         run: npm run test:workflow
+
+      - name: Test Pages artifact contract
+        run: npm run test:pages-artifact
 
       - name: Validate source contracts
         run: npm run validate:contracts
@@ -136,14 +141,23 @@ jobs:
           if-no-files-found: ignore
           include-hidden-files: false
 
+      - name: Mark v1-ready commit
+        id: v1_ready
+        run: echo "sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+
   build:
     name: Build wiki pages
     if: github.event_name != 'pull_request'
     needs: [validate]
     runs-on: ubuntu-latest
+    env:
+      WIKI_SITE_URL: https://ramideltoro.github.io
+      WIKI_BASE_PATH: /nutsnews-docs
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.validate.outputs.validated_sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -154,6 +168,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify exact validated commit
+        env:
+          VALIDATED_SHA: ${{ needs.validate.outputs.validated_sha }}
+        run: |
+          test "$GITHUB_SHA" = "$VALIDATED_SHA"
+          test "$(git rev-parse HEAD)" = "$VALIDATED_SHA"
+
       - name: Configure Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
 
@@ -163,6 +184,11 @@ jobs:
       - name: Build with Astro
         run: npm run build
 
+      - name: Stamp exact validated commit
+        env:
+          VALIDATED_SHA: ${{ needs.validate.outputs.validated_sha }}
+        run: npm run wiki:release:stamp -- --sha="$VALIDATED_SHA"
+
       - name: Capture build duration
         run: |
           echo "WIKI_BUILD_DURATION_SECONDS=$(( $(date +%s) - WIKI_BUILD_START_SECONDS ))" >> "$GITHUB_ENV"
@@ -171,6 +197,11 @@ jobs:
         env:
           WIKI_BUILD_DURATION_SECONDS: ${{ env.WIKI_BUILD_DURATION_SECONDS }}
         run: node scripts/wiki/validate-wiki-budgets.mjs --build-duration="$WIKI_BUILD_DURATION_SECONDS"
+
+      - name: Validate immutable Pages artifact
+        env:
+          VALIDATED_SHA: ${{ needs.validate.outputs.validated_sha }}
+        run: npm run validate:pages-artifact -- --sha="$VALIDATED_SHA"
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0

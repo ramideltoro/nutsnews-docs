@@ -21,6 +21,7 @@ const requiredCommands = [
   'npm run test:docs-new',
   'npm run test:content-contract',
   'npm run test:workflow',
+  'npm run test:pages-artifact',
   'npm run validate:contracts',
   'node scripts/wiki/validate-doc-paths.mjs',
   'npm run wiki:prepare',
@@ -43,6 +44,8 @@ const requiredCommands = [
   'npm run validate:article',
   'npm run validate:shell',
   'npm run test:browser',
+  'npm run wiki:release:stamp',
+  'npm run validate:pages-artifact',
 ];
 
 export function validateWorkflow(source) {
@@ -69,6 +72,35 @@ export function validateWorkflow(source) {
   const globalPermissions = source.match(/^permissions:\n((?: {2}.+\n)+)\nconcurrency:/m)?.[1] || '';
   if (globalPermissions.trim() !== 'contents: read') {
     errors.push('global permissions must be limited to contents: read');
+  }
+
+  if (!/concurrency:\n\s{2}group: wiki-pages-\$\{\{ github\.ref \}\}\n\s{2}cancel-in-progress: true/.test(source)) {
+    errors.push('superseded runs must be cancelled within the same ref');
+  }
+
+  const validateJob = source.match(/^  validate:\n([\s\S]*?)(?=^  build:)/m)?.[1] || '';
+  if (!/outputs:\n\s{6}validated_sha: \$\{\{ steps\.v1_ready\.outputs\.sha \}\}/.test(validateJob)) {
+    errors.push('validation must expose the v1-ready commit SHA');
+  }
+  if (!/name: Mark v1-ready commit\n\s+id: v1_ready\n\s+run: echo "sha=\$GITHUB_SHA"/.test(validateJob)) {
+    errors.push('the v1-ready marker must be emitted only after validation');
+  }
+
+  const buildJob = source.match(/^  build:\n([\s\S]*?)(?=^  deploy:)/m)?.[1] || '';
+  if (!/needs: \[validate\]/.test(buildJob)) {
+    errors.push('the Pages build must depend on complete validation');
+  }
+  if (!/ref: \$\{\{ needs\.validate\.outputs\.validated_sha \}\}/.test(buildJob)) {
+    errors.push('the Pages build must check out the exact validated SHA');
+  }
+  if (!/WIKI_SITE_URL: https:\/\/ramideltoro\.github\.io/.test(buildJob)
+      || !/WIKI_BASE_PATH: \/nutsnews-docs/.test(buildJob)) {
+    errors.push('the pre-cutover artifact must target the default project Pages URL');
+  }
+  const artifactValidation = buildJob.indexOf('npm run validate:pages-artifact');
+  const artifactUpload = buildJob.indexOf('actions/upload-pages-artifact@');
+  if (artifactValidation < 0 || artifactUpload < 0 || artifactValidation > artifactUpload) {
+    errors.push('the final Pages artifact must be validated before upload');
   }
 
   const deployJob = source.match(/^  deploy:\n([\s\S]+)$/m)?.[1] || '';
@@ -143,5 +175,21 @@ test('broad failure-artifact fixture is rejected', async () => {
   );
   assert.ok(
     validateWorkflow(broken).some((error) => error.includes('two approved output directories')),
+  );
+});
+
+test('validation-bypass fixture cannot publish', async () => {
+  const source = await fs.readFile(workflowPath, 'utf8');
+  const broken = source.replace('    needs: [validate]', '    needs: []');
+  assert.ok(
+    validateWorkflow(broken).some((error) => error.includes('must depend on complete validation')),
+  );
+});
+
+test('superseded-run fixture is rejected', async () => {
+  const source = await fs.readFile(workflowPath, 'utf8');
+  const broken = source.replace('  cancel-in-progress: true', '  cancel-in-progress: false');
+  assert.ok(
+    validateWorkflow(broken).some((error) => error.includes('superseded runs must be cancelled')),
   );
 });
