@@ -53,6 +53,9 @@ jobs:
       - name: Test new-document scaffolding
         run: npm run test:docs-new
 
+      - name: Test complete content contract
+        run: npm run test:content-contract
+
       - name: Validate source contracts
         run: npm run validate:contracts
 
@@ -64,6 +67,9 @@ jobs:
 
       - name: Validate human approval freshness
         run: node scripts/wiki/validate-wiki-approvals.mjs
+
+      - name: Validate complete content contract
+        run: npm run validate:content
 
       - name: Validate internal links
         run: npm run validate:links
