@@ -1,15 +1,27 @@
+import assert from 'node:assert/strict';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import {
   deriveAudienceRoute,
+  deriveCollection,
+  deriveDiagramPath,
+  deriveOrder,
+  deriveSection,
   deriveSlugFromSource,
+  deriveStatus,
+  diagramPathFromSource,
   normalizeRoute,
+  publishedRoute,
+  simplePathFromSource,
   wikiContract,
+  wikiContractFixtures,
+  wikiContractSnapshot,
 } from './wiki-contract.mjs';
 import { parseMarkdownFrontmatter } from './parse-markdown.mjs';
 
 const repoRoot = process.cwd();
 const expectedSourceCount = 227;
+const humanContractPath = path.join(repoRoot, 'scripts', 'wiki', 'WIKI_CONTRACT.md');
 
 async function walkMarkdownFiles(rootDir, relativeRoot = '') {
   const absolute = path.join(rootDir, relativeRoot);
@@ -27,7 +39,11 @@ async function walkMarkdownFiles(rootDir, relativeRoot = '') {
       continue;
     }
 
-    if (entry.isFile() && entry.name.endsWith(wikiContract.markdown.fileExtension) && !wikiContract.exclusions.ignoreFiles.has(entry.name)) {
+    if (
+      entry.isFile()
+      && entry.name.endsWith(wikiContract.markdown.fileExtension)
+      && !wikiContract.exclusions.ignoreFiles.has(entry.name)
+    ) {
       out.push(nextRelative);
     }
   }
@@ -35,20 +51,153 @@ async function walkMarkdownFiles(rootDir, relativeRoot = '') {
   return out;
 }
 
+function sourceAreaFor(sourcePath) {
+  const normalized = sourcePath.replace(/\\/g, '/');
+  const nestedArea = wikiContract.paths.sourceAreas.find(
+    (area) => area.prefix && normalized.startsWith(`${area.prefix}/`),
+  );
+  return nestedArea?.id || 'root';
+}
+
+function recordAssertion(errors, label, callback) {
+  try {
+    callback();
+  } catch (error) {
+    errors.push(`${label}: ${error.message}`);
+  }
+}
+
+async function validateContractDefinition(errors) {
+  const expectedFields = ['title', 'description', 'slug', 'collection', 'section', 'status', 'order'];
+  const sourceAreaIds = wikiContract.paths.sourceAreas.map((area) => area.id).sort();
+  const fixtureAreaIds = wikiContractFixtures.map((fixture) => fixture.area).sort();
+
+  recordAssertion(errors, 'expert frontmatter fields', () => {
+    assert.deepEqual(wikiContract.frontmatter.expertFields, expectedFields);
+    assert.deepEqual(wikiContract.frontmatter.requiredOutputFields, expectedFields);
+  });
+
+  recordAssertion(errors, 'source area fixture coverage', () => {
+    assert.deepEqual(fixtureAreaIds, sourceAreaIds);
+    assert.ok(wikiContractFixtures.some((fixture) => !fixture.source.includes('/')));
+    assert.ok(wikiContractFixtures.some((fixture) => fixture.source.includes('/')));
+  });
+
+  for (const fixture of wikiContractFixtures) {
+    recordAssertion(errors, `${fixture.area} contract fixture`, () => {
+      assert.equal(deriveSlugFromSource(fixture.source), fixture.slug);
+      assert.equal(simplePathFromSource(fixture.source), fixture.simplePath);
+      assert.equal(diagramPathFromSource(fixture.source), fixture.diagramPath);
+      assert.equal(deriveAudienceRoute('technical', fixture.source), fixture.technicalRoute);
+      assert.equal(deriveAudienceRoute('simple', fixture.source), fixture.simpleRoute);
+      assert.equal(publishedRoute(fixture.technicalRoute), `${fixture.technicalRoute}/`);
+      assert.equal(publishedRoute(fixture.simpleRoute), `${fixture.simpleRoute}/`);
+    });
+  }
+
+  const precedenceFixture = {
+    slug: 'flat-slug',
+    source_route: '/technical/flat-route/',
+    simple_route: '/simple/flat-route/',
+    primary_diagram: 'diagrams/FLAT.mmd',
+    collection: 'start-here',
+    section: 'overview',
+    status: 'active',
+    order: 1,
+    wiki: {
+      slug: 'nested-slug',
+      source_route: '/technical/nested-route/',
+      simple_route: '/simple/nested-route/',
+      primary_diagram: { file: 'diagrams/NESTED.mmd' },
+      collection: 'platform-and-data',
+      section: 'core-platform',
+      status: 'draft',
+      order: 7,
+    },
+  };
+
+  recordAssertion(errors, 'frontmatter precedence fixture', () => {
+    assert.equal(deriveSlugFromSource('FIXTURE.md', precedenceFixture), 'nested-slug');
+    assert.equal(
+      deriveAudienceRoute('technical', 'FIXTURE.md', precedenceFixture),
+      '/technical/nested-route',
+    );
+    assert.equal(
+      deriveAudienceRoute('simple', 'FIXTURE.md', precedenceFixture),
+      '/simple/nested-route',
+    );
+    assert.equal(deriveDiagramPath(precedenceFixture, 'FIXTURE.md'), 'diagrams/NESTED.mmd');
+    assert.equal(deriveCollection(precedenceFixture), 'platform-and-data');
+    assert.equal(deriveSection(precedenceFixture), 'core-platform');
+    assert.equal(deriveStatus(precedenceFixture), 'draft');
+    assert.equal(deriveOrder(precedenceFixture), 7);
+  });
+
+  recordAssertion(errors, 'root resolver contract', () => {
+    assert.equal(wikiContract.route.root, '/');
+    assert.equal(wikiContract.route.landingAudience, 'simple');
+    assert.deepEqual(
+      wikiContract.route.resolver.precedence,
+      ['explicit-choice', 'stored-preference', 'landing-audience'],
+    );
+    assert.equal(
+      wikiContract.route.resolver.destinations[wikiContract.route.landingAudience],
+      '/simple/',
+    );
+  });
+
+  recordAssertion(errors, 'navigation collection contract', () => {
+    const ids = wikiContract.navigation.collections.map((collection) => collection.id);
+    assert.equal(new Set(ids).size, ids.length);
+    assert.ok(ids.includes(wikiContract.defaults.collection));
+    for (const collection of wikiContract.navigation.collections) {
+      assert.ok(collection.label);
+      assert.ok(Number.isInteger(collection.order));
+      assert.ok(collection.sections.length > 0);
+    }
+  });
+
+  recordAssertion(errors, 'status contract', () => {
+    assert.equal(new Set(wikiContract.statusValues).size, wikiContract.statusValues.length);
+    assert.ok(wikiContract.statusValues.includes(wikiContract.defaults.status));
+  });
+
+  try {
+    const humanContract = await fs.readFile(humanContractPath, 'utf8');
+    const match = humanContract.match(
+      /<!-- wiki-contract:start -->\s*```json\s*([\s\S]*?)\s*```\s*<!-- wiki-contract:end -->/,
+    );
+    assert.ok(match, 'missing machine-checked contract block');
+    assert.deepEqual(JSON.parse(match[1]), wikiContractSnapshot());
+  } catch (error) {
+    errors.push(`human contract mismatch: ${error.message}`);
+  }
+}
+
 async function run() {
-  const sourcePaths = (await walkMarkdownFiles(repoRoot)).filter((p) => p !== 'index.md' && !p.startsWith('audiences/'));
+  const sourcePaths = (await walkMarkdownFiles(repoRoot))
+    .filter((sourcePath) => sourcePath !== 'index.md' && !sourcePath.startsWith('audiences/'))
+    .sort((left, right) => left.localeCompare(right));
   const errors = [];
   const warnings = [];
   const routeMap = new Map();
   const slugMap = new Map();
+  const sourceAreaCounts = new Map(wikiContract.paths.sourceAreas.map((area) => [area.id, 0]));
+  const collections = new Map(
+    wikiContract.navigation.collections.map((collection) => [collection.id, collection]),
+  );
+
+  await validateContractDefinition(errors);
 
   for (const sourcePath of sourcePaths) {
     const sourceRaw = await fs.readFile(path.join(repoRoot, sourcePath), 'utf8');
     const sourceParsed = parseMarkdownFrontmatter(sourceRaw);
     const sourceData = sourceParsed.data || {};
+    const area = sourceAreaFor(sourcePath);
+    sourceAreaCounts.set(area, (sourceAreaCounts.get(area) || 0) + 1);
 
     const technicalRoute = deriveAudienceRoute('technical', sourcePath, sourceData);
-    const requiredSimplePath = path.join(wikiContract.paths.simpleSourceRoot, sourcePath);
+    const requiredSimplePath = simplePathFromSource(sourcePath);
     let simpleData = {};
 
     try {
@@ -59,58 +208,95 @@ async function run() {
       errors.push(`missing simple mirror: ${requiredSimplePath}`);
     }
 
-    const simpleRoute = deriveAudienceRoute('simple', sourcePath, simpleData);
+    const simpleRoute = deriveAudienceRoute('simple', sourcePath, sourceData);
     const technicalRouteNorm = normalizeRoute(technicalRoute);
     const simpleRouteNorm = normalizeRoute(simpleRoute);
-    const slug = deriveSlugFromSource(sourcePath);
+    const slug = deriveSlugFromSource(sourcePath, sourceData);
+    const collection = deriveCollection(sourceData);
+    const section = deriveSection(sourceData);
+    const status = deriveStatus(sourceData);
+    const order = deriveOrder(sourceData, sourcePaths.indexOf(sourcePath) + 1);
+    const diagram = deriveDiagramPath(sourceData, sourcePath);
+
+    if (!technicalRouteNorm?.startsWith(wikiContract.route.technicalPrefix)) {
+      errors.push(`technical route outside namespace for ${sourcePath}: ${technicalRouteNorm}`);
+    }
+
+    if (!simpleRouteNorm?.startsWith(wikiContract.route.simplePrefix)) {
+      errors.push(`simple route outside namespace for ${sourcePath}: ${simpleRouteNorm}`);
+    }
+
+    if (!publishedRoute(technicalRouteNorm).endsWith('/')) {
+      errors.push(`technical public route lacks trailing slash for ${sourcePath}`);
+    }
+
+    if (!publishedRoute(simpleRouteNorm).endsWith('/')) {
+      errors.push(`simple public route lacks trailing slash for ${sourcePath}`);
+    }
+
+    if (!diagram.startsWith(`${wikiContract.paths.diagramRoot}/`)) {
+      errors.push(`diagram outside contract root for ${sourcePath}: ${diagram}`);
+    }
 
     if (routeMap.has(technicalRouteNorm)) {
-      errors.push(`duplicate technical route ${technicalRouteNorm} for ${sourcePath} and ${routeMap.get(technicalRouteNorm)}`);
+      errors.push(
+        `duplicate technical route ${technicalRouteNorm} for ${sourcePath} and ${routeMap.get(technicalRouteNorm)}`,
+      );
     } else {
       routeMap.set(technicalRouteNorm, sourcePath);
     }
 
     if (routeMap.has(simpleRouteNorm)) {
-      errors.push(`duplicate simple route ${simpleRouteNorm} for ${sourcePath} and ${routeMap.get(simpleRouteNorm)}`);
+      errors.push(
+        `duplicate simple route ${simpleRouteNorm} for ${sourcePath} and ${routeMap.get(simpleRouteNorm)}`,
+      );
     } else {
       routeMap.set(simpleRouteNorm, sourcePath);
     }
 
     if (slugMap.has(slug) && slugMap.get(slug) !== sourcePath) {
-      warnings.push(`duplicate slug ${slug} from ${sourcePath} and ${slugMap.get(slug)}`);
+      errors.push(`duplicate slug ${slug} from ${sourcePath} and ${slugMap.get(slug)}`);
     } else {
       slugMap.set(slug, sourcePath);
     }
 
-    const titleData = sourceData.title || simpleData.title;
-    const descriptionData = sourceData.description || simpleData.description;
-    const collectionData = sourceData.wiki?.collection || sourceData.collection || simpleData.wiki?.collection || simpleData.collection;
-    const sectionData = sourceData.wiki?.section || sourceData.section || simpleData.wiki?.section || simpleData.section;
-    const statusData = sourceData.wiki?.status || sourceData.status || simpleData.wiki?.status || simpleData.status;
-    const orderData = sourceData.wiki?.order ?? sourceData.order ?? simpleData.wiki?.order ?? simpleData.order;
-
-    if (!titleData) {
+    if (!sourceData.title && !simpleData.title) {
       errors.push(`missing title in both source and simple docs for ${sourcePath}`);
     }
 
-    if (!descriptionData) {
-      warnings.push(`missing source description in ${sourcePath}`);
+    if (!sourceData.description && !sourceParsed.content.trim()) {
+      warnings.push(`missing source description and prose in ${sourcePath}`);
     }
 
-    if (!collectionData) {
-      warnings.push(`missing wiki.collection in ${sourcePath}`);
+    const collectionContract = collections.get(collection);
+    if (!collectionContract) {
+      errors.push(`unknown navigation collection ${collection} in ${sourcePath}`);
+    } else if (!collectionContract.sections.includes(section)) {
+      errors.push(`section ${section} is not in collection ${collection} for ${sourcePath}`);
     }
 
-    if (!sectionData) {
-      warnings.push(`missing wiki.section in ${sourcePath}`);
+    const explicitStatus = sourceData.wiki?.status ?? sourceData.status;
+    if (explicitStatus && !wikiContract.statusValues.includes(explicitStatus)) {
+      errors.push(`invalid wiki status ${explicitStatus} in ${sourcePath}`);
     }
 
-    if (!statusData) {
-      warnings.push(`missing wiki.status in ${sourcePath}`);
+    const explicitOrder = sourceData.wiki?.order ?? sourceData.order;
+    if (explicitOrder !== undefined && !Number.isFinite(Number.parseInt(explicitOrder, 10))) {
+      errors.push(`invalid wiki order ${explicitOrder} in ${sourcePath}`);
     }
 
-    if (!orderData && orderData !== 0) {
-      warnings.push(`missing wiki.order in ${sourcePath}`);
+    if (!wikiContract.statusValues.includes(status)) {
+      errors.push(`derived invalid wiki status ${status} in ${sourcePath}`);
+    }
+
+    if (!Number.isInteger(order)) {
+      errors.push(`derived non-integer wiki order ${order} in ${sourcePath}`);
+    }
+  }
+
+  for (const [area, count] of sourceAreaCounts) {
+    if (count === 0) {
+      errors.push(`source area has no canonical fixtures or documents: ${area}`);
     }
   }
 
@@ -139,7 +325,9 @@ async function run() {
     process.exit(1);
   }
 
-  console.log(`Contract validation passed for ${sourcePaths.length} source documents.`);
+  console.log(
+    `Contract validation passed for ${sourcePaths.length} source documents across ${sourceAreaCounts.size} source areas.`,
+  );
 }
 
 run().catch((error) => {

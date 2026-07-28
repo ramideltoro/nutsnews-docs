@@ -1,10 +1,15 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import {
-  diagramPathFromSource,
   deriveAudienceRoute,
+  deriveCollection,
+  deriveDiagramPath,
+  deriveOrder,
+  deriveSection,
   deriveSlugFromSource,
+  deriveStatus,
   normalizeRoute,
+  simplePathFromSource,
   wikiContract,
 } from './wiki-contract.mjs';
 import { parseMarkdownFrontmatter } from './parse-markdown.mjs';
@@ -70,47 +75,22 @@ function isMarkdownReference(rawHref) {
   return /\.md(\?|#|$)/i.test(rawHref);
 }
 
-function deriveSection(frontmatter) {
-  return frontmatter?.wiki?.section || frontmatter?.section || wikiContract.defaultSection;
-}
-
-function deriveCollection(frontmatter) {
-  return frontmatter?.wiki?.collection || frontmatter?.collection || wikiContract.defaultCollection;
-}
-
-function deriveStatus(frontmatter) {
-  const status = frontmatter?.wiki?.status || frontmatter?.status || wikiContract.defaults.status;
-  return wikiContract.statusValues.includes(status) ? status : wikiContract.defaults.status;
-}
-
-function deriveOrder(frontmatter, fallback) {
-  const rawOrder = frontmatter?.wiki?.order ?? frontmatter?.order;
-  const parsed = Number.parseInt(rawOrder, 10);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-function deriveDiagram(frontmatter, sourcePath) {
-  const configured = frontmatter?.wiki?.primary_diagram;
-  if (typeof configured === 'string' && configured.trim()) {
-    return configured.trim();
+function deriveDescription(frontmatter, markdownContent, simpleFrontmatter, maxLength = 170) {
+  if (typeof frontmatter?.description === 'string' && frontmatter.description.trim()) {
+    const explicit = frontmatter.description.trim();
+    return explicit.length > maxLength ? `${explicit.slice(0, maxLength - 1)}…` : explicit;
   }
 
-  if (configured && typeof configured === 'object' && configured.file) {
-    return configured.file;
-  }
-
-  return diagramPathFromSource(sourcePath);
-}
-
-function deriveDescription(frontmatter, markdownContent, maxLength = 170) {
-  const contentSource = markdownContent || frontmatter?.description || '';
+  const contentSource = markdownContent || '';
   const lines = contentSource
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean)
     .filter((line) => !line.startsWith('#') && !line.startsWith('![') && !line.startsWith('['));
 
-  const first = lines[0] || frontmatter?.description || 'NutsNews documentation page.';
+  const first = lines[0]
+    || simpleFrontmatter?.description
+    || wikiContract.defaults.description;
   return first.length > maxLength ? `${first.slice(0, maxLength - 1)}…` : first;
 }
 
@@ -316,9 +296,9 @@ function routeToGeneratedPath(audience, route) {
 }
 
 async function buildSourceInventory() {
-  const sourcePaths = (await walkMarkdown(path.join(repoRoot))).filter(
-    (item) => item !== 'index.md' && !item.startsWith('audiences/'),
-  );
+  const sourcePaths = (await walkMarkdown(path.join(repoRoot)))
+    .filter((item) => item !== 'index.md' && !item.startsWith('audiences/'))
+    .sort((left, right) => left.localeCompare(right));
   const errors = [];
   const warnings = [];
   const seenRoutes = new Map();
@@ -333,7 +313,7 @@ async function buildSourceInventory() {
     const sourceBody = sourceParsed.content || '';
 
     const technicalRoute = deriveAudienceRoute('technical', sourcePath, sourceData);
-    const simpleSourcePath = path.join(wikiContract.paths.simpleSourceRoot, sourcePath);
+    const simpleSourcePath = simplePathFromSource(sourcePath);
     const simpleExists = await fileExists(simpleSourcePath);
     if (!simpleExists) {
       errors.push(`missing simple mirror: audiences/simple/${sourcePath}`);
@@ -344,7 +324,7 @@ async function buildSourceInventory() {
     const simpleParsed = parseMarkdownFrontmatter(simpleRaw);
     const simpleData = simpleParsed.data || {};
 
-    const simpleRoute = deriveAudienceRoute('simple', sourcePath, simpleData);
+    const simpleRoute = deriveAudienceRoute('simple', sourcePath, sourceData);
 
     if (seenRoutes.has(normalizeRoute(technicalRoute))) {
       errors.push(`duplicate technical route: ${technicalRoute}`);
@@ -355,7 +335,7 @@ async function buildSourceInventory() {
     seenRoutes.set(normalizeRoute(technicalRoute), sourcePath);
     seenRoutes.set(normalizeRoute(simpleRoute), sourcePath);
 
-    const slug = deriveSlugFromSource(sourcePath);
+    const slug = deriveSlugFromSource(sourcePath, sourceData);
     if (seenSlugs.has(slug) && seenSlugs.get(slug) !== sourcePath) {
       warnings.push(`duplicate slug: ${slug}`);
     } else {
@@ -366,7 +346,7 @@ async function buildSourceInventory() {
       errors.push(`missing title in both source and simple docs: ${sourcePath}`);
     }
 
-    const diagram = deriveDiagram(sourceData, sourcePath);
+    const diagram = deriveDiagramPath(sourceData, sourcePath);
     let diagramExists = await fileExists(diagram);
     let diagramPath = diagram;
 
@@ -384,8 +364,8 @@ async function buildSourceInventory() {
     entries.push({
       source: {
         path: toPosix(sourcePath),
-        title: sourceData.title || simpleData.title || 'NutsNews documentation',
-        description: deriveDescription(sourceData, sourceBody, 180),
+        title: sourceData.title || simpleData.title || wikiContract.defaults.title,
+        description: deriveDescription(sourceData, sourceBody, simpleData, 180),
         slug,
         collection: deriveCollection(sourceData),
         section: deriveSection(sourceData),
