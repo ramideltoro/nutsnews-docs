@@ -36,6 +36,7 @@ export default defineConfig({
       components: {
         Head: './src/components/Head.astro',
         Header: './src/components/Header.astro',
+        MobileMenuToggle: './src/components/MobileMenuToggle.astro',
         Sidebar: './src/components/CollectionRail.astro',
       },
       sidebar: [

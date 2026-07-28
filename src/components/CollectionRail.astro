@@ -1,4 +1,5 @@
 ---
+import { getCollection } from 'astro:content';
 import { wikiContract } from '../../scripts/wiki/wiki-contract.mjs';
 
 const { data } = Astro.locals.starlightRoute.entry;
@@ -6,46 +7,126 @@ const pathname = Astro.url.pathname;
 const audience = data.audience
   || (pathname === '/technical/' || pathname.startsWith('/technical/') ? 'technical' : 'simple');
 const activeSection = data.section || wikiContract.defaults.section;
+const activeRoute = data.generated_for || pathname.replace(/\/+$/, '');
 const base = import.meta.env.BASE_URL || '/';
 const basePrefix = base === '/' ? '' : `/${base.replace(/^\/+|\/+$/g, '')}`;
+const sectionConfig = wikiContract.navigation.rail.find((item) => item.id === activeSection);
+const sectionEntries = (await getCollection('docs'))
+  .filter((entry) =>
+    entry.data.audience === audience
+    && entry.data.section === activeSection
+    && entry.data.status !== 'obsolete')
+  .sort((left, right) =>
+    left.data.order - right.data.order || left.data.title.localeCompare(right.data.title));
+const historicalRoots = [
+  { id: 'updates', label: 'Updates' },
+  { id: 'archive', label: 'Archive' },
+  { id: 'reports', label: 'Reports' },
+  { id: 'ios', label: 'iOS notes' },
+];
+const sourceRoot = (entry) => {
+  const [root] = entry.data.source_path.split('/');
+  return entry.data.source_path.includes('/') ? root : 'root';
+};
+const currentEntries = sectionEntries.filter(
+  (entry) => !historicalRoots.some((group) => group.id === sourceRoot(entry)),
+);
+const historyGroups = historicalRoots
+  .map((group) => ({
+    ...group,
+    entries: sectionEntries.filter((entry) => sourceRoot(entry) === group.id),
+  }))
+  .filter((group) => group.entries.length > 0);
+const withBase = (route) => `${basePrefix}${route.startsWith('/') ? route : `/${route}`}`;
 ---
 
-<nav class="collection-rail" aria-label="Wiki collections" data-collection-rail>
-  <div class="rail-heading">
-    <span class="rail-title">Collections</span>
-    <button
-      class="rail-toggle"
-      type="button"
-      aria-expanded="true"
-      aria-controls="collection-rail-list"
-      data-collection-rail-toggle
-    >
-      <span aria-hidden="true">‹</span>
-      <span class="sr-only">Collapse collection rail</span>
-    </button>
-  </div>
-  <ul id="collection-rail-list">
-    {wikiContract.navigation.rail.map((item) => (
-      <li>
-        <a
-          href={`${basePrefix}/${audience}/collections/${item.id}/`}
-          aria-current={activeSection === item.id ? 'page' : undefined}
-          data-collection={item.id}
-        >
-          <span class="rail-mark" aria-hidden="true">{item.order + 1}</span>
-          <span class="rail-label">{item.label}</span>
-        </a>
-      </li>
-    ))}
-  </ul>
-</nav>
+<div class="sidebar-navigation" data-sidebar-navigation>
+  <nav class="collection-rail" aria-label="Wiki collections" data-collection-rail>
+    <div class="rail-heading">
+      <span class="rail-title">Collections</span>
+      <button
+        class="rail-toggle"
+        type="button"
+        aria-expanded="true"
+        aria-controls="collection-rail-list contextual-navigation"
+        data-collection-rail-toggle
+      >
+        <span aria-hidden="true">‹</span>
+        <span class="sr-only">Collapse collection rail</span>
+      </button>
+    </div>
+    <ul id="collection-rail-list">
+      {wikiContract.navigation.rail.map((item) => (
+        <li>
+          <a
+            href={`${basePrefix}/${audience}/collections/${item.id}/`}
+            aria-current={activeSection === item.id ? 'page' : undefined}
+            data-collection={item.id}
+          >
+            <span class="rail-mark" aria-hidden="true">{item.order + 1}</span>
+            <span class="rail-label">{item.label}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </nav>
+
+  <nav
+    id="contextual-navigation"
+    class="contextual-navigation"
+    aria-labelledby="contextual-navigation-title"
+  >
+    <h2 id="contextual-navigation-title">{sectionConfig?.label || 'Articles'}</h2>
+    {currentEntries.length > 0 && (
+      <ul class="article-links">
+        {currentEntries.map((entry) => (
+          <li>
+            <a
+              href={`${withBase(entry.data.generated_for)}/`}
+              aria-current={activeRoute === entry.data.generated_for ? 'page' : undefined}
+            >
+              {entry.data.title}
+            </a>
+          </li>
+        ))}
+      </ul>
+    )}
+
+    {historyGroups.length > 0 && (
+      <section class="history-navigation" aria-labelledby="history-navigation-title">
+        <h3 id="history-navigation-title">History</h3>
+        {historyGroups.map((group) => (
+          <details data-history-group={group.id}>
+            <summary>
+              <span>{group.label}</span>
+              <span class="history-count">{group.entries.length}</span>
+            </summary>
+            <ul class="article-links">
+              {group.entries.map((entry) => (
+                <li>
+                  <a
+                    href={`${withBase(entry.data.generated_for)}/`}
+                    aria-current={activeRoute === entry.data.generated_for ? 'page' : undefined}
+                  >
+                    {entry.data.title}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </details>
+        ))}
+      </section>
+    )}
+  </nav>
+</div>
 
 <script>
   const rail = document.querySelector('[data-collection-rail]');
+  const sidebar = rail?.closest('[data-sidebar-navigation]');
   const toggle = rail?.querySelector('[data-collection-rail-toggle]');
 
   toggle?.addEventListener('click', () => {
-    const collapsed = rail?.toggleAttribute('data-collapsed');
+    const collapsed = sidebar?.toggleAttribute('data-collapsed');
     document.documentElement.toggleAttribute('data-collection-rail-collapsed', Boolean(collapsed));
     toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
     const label = toggle.querySelector('.sr-only');
@@ -57,11 +138,16 @@ const basePrefix = base === '/' ? '' : `/${base.replace(/^\/+|\/+$/g, '')}`;
 
 <style>
   @layer starlight.core {
-    .collection-rail {
+    .sidebar-navigation {
+      display: grid;
+      gap: var(--wiki-space-5);
+      color: var(--wiki-color-text);
+    }
+
+    .collection-rail,
+    .contextual-navigation {
       display: grid;
       gap: var(--wiki-space-3);
-      padding-block: var(--wiki-space-4);
-      color: var(--wiki-color-text);
     }
 
     .rail-heading {
@@ -72,7 +158,10 @@ const basePrefix = base === '/' ? '' : `/${base.replace(/^\/+|\/+$/g, '')}`;
       padding-inline: var(--wiki-space-2);
     }
 
-    .rail-title {
+    .rail-title,
+    .contextual-navigation h2,
+    .history-navigation h3 {
+      margin: 0;
       color: var(--wiki-color-text-muted);
       font-size: var(--wiki-type-xs);
       font-weight: 750;
@@ -112,6 +201,7 @@ const basePrefix = base === '/' ? '' : `/${base.replace(/^\/+|\/+$/g, '')}`;
       color: var(--wiki-color-text-muted);
       font-size: var(--wiki-type-sm);
       font-weight: 650;
+      line-height: 1.35;
       text-decoration: none;
     }
 
@@ -121,10 +211,16 @@ const basePrefix = base === '/' ? '' : `/${base.replace(/^\/+|\/+$/g, '')}`;
       background: var(--wiki-color-surface-raised);
     }
 
-    a[aria-current="page"] {
+    .collection-rail a[aria-current="page"] {
       border-color: var(--wiki-color-control);
       color: var(--wiki-color-control-text);
       background: var(--wiki-color-control);
+    }
+
+    .contextual-navigation a[aria-current="page"] {
+      border-inline-start-color: var(--wiki-color-control);
+      color: var(--wiki-color-link);
+      background: var(--wiki-color-surface-raised);
     }
 
     .rail-mark {
@@ -138,8 +234,67 @@ const basePrefix = base === '/' ? '' : `/${base.replace(/^\/+|\/+$/g, '')}`;
       font-size: var(--wiki-type-xs);
     }
 
+    .contextual-navigation {
+      padding-block: var(--wiki-space-4);
+      border-top: 1px solid var(--wiki-color-border);
+    }
+
+    .article-links {
+      max-height: 45vh;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-gutter: stable;
+    }
+
+    .article-links a {
+      align-items: flex-start;
+      padding-block: var(--wiki-space-2);
+      font-size: var(--wiki-type-xs);
+    }
+
+    .history-navigation {
+      display: grid;
+      gap: var(--wiki-space-2);
+      padding-top: var(--wiki-space-3);
+      border-top: 1px solid var(--wiki-color-border);
+    }
+
+    details {
+      border: 1px solid var(--wiki-color-border);
+      border-radius: var(--wiki-radius-sm);
+      background: var(--wiki-color-surface);
+    }
+
+    summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--wiki-space-2);
+      min-height: var(--wiki-touch-target);
+      padding: var(--wiki-space-2) var(--wiki-space-3);
+      color: var(--wiki-color-text);
+      font-size: var(--wiki-type-xs);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .history-count {
+      min-width: 1.75rem;
+      padding: var(--wiki-space-1);
+      border-radius: 999px;
+      color: var(--wiki-color-control-text);
+      background: var(--wiki-color-control);
+      text-align: center;
+    }
+
+    details .article-links {
+      max-height: 16rem;
+      padding: 0 var(--wiki-space-1) var(--wiki-space-2);
+    }
+
     [data-collapsed] .rail-title,
-    [data-collapsed] .rail-label {
+    [data-collapsed] .rail-label,
+    [data-collapsed] .contextual-navigation {
       position: absolute;
       width: 1px;
       height: 1px;
@@ -150,13 +305,27 @@ const basePrefix = base === '/' ? '' : `/${base.replace(/^\/+|\/+$/g, '')}`;
     }
 
     [data-collapsed] .rail-heading,
-    [data-collapsed] a {
+    [data-collapsed] .collection-rail a {
       justify-content: center;
       padding-inline: var(--wiki-space-1);
     }
 
     :global(html[data-collection-rail-collapsed]) {
       --sl-sidebar-width: 5rem;
+    }
+
+    @media (max-width: 50rem) {
+      .sidebar-navigation {
+        gap: var(--wiki-space-4);
+      }
+
+      .rail-toggle {
+        display: none;
+      }
+
+      .article-links {
+        max-height: none;
+      }
     }
   }
 </style>
