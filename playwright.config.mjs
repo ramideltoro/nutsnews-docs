@@ -1,6 +1,8 @@
 import { defineConfig } from '@playwright/test';
 
 const baseURL = 'http://127.0.0.1:4321';
+const webServerCommand = process.env.WIKI_PLAYWRIGHT_SERVER_COMMAND
+  || 'npm run build && npm run preview -- --host 127.0.0.1 --port 4321';
 
 export default defineConfig({
   testDir: './tests/wiki',
@@ -32,7 +34,7 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   webServer: {
-    command: 'npm run build && npm run preview -- --host 127.0.0.1 --port 4321',
+    command: webServerCommand,
     url: `${baseURL}/simple/project/`,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,

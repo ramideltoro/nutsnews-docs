@@ -12,15 +12,16 @@ on:
       - "package.json"
       - "package-lock.json"
       - "astro.config.mjs"
+      - "playwright.config.mjs"
+      - "public/**"
       - "src/**"
       - "scripts/wiki/**"
+      - "tests/wiki/**"
       - ".github/workflows/wiki-pages.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: wiki-pages-${{ github.ref }}
@@ -32,10 +33,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22.12
           cache: npm
@@ -60,6 +61,9 @@ jobs:
       - name: Test complete content contract
         run: npm run test:content-contract
 
+      - name: Test workflow quality contract
+        run: npm run test:workflow
+
       - name: Validate source contracts
         run: npm run validate:contracts
 
@@ -78,12 +82,51 @@ jobs:
       - name: Test content loading and audience routes
         run: npm run test:content-routes
 
+      - name: Validate internal links
+        run: npm run validate:links
+
+      - name: Validate secret safety with blocked fixture
+        run: node scripts/wiki/validate-wiki-secrets.mjs --smoke-test
+
+      - name: Validate mermaid diagrams
+        run: npm run validate:mermaid
+
+      - name: Start quality build timer
+        run: echo "WIKI_BUILD_START_SECONDS=$(date +%s)" >> "$GITHUB_ENV"
+
+      - name: Build production wiki
+        run: npm run build
+
+      - name: Capture quality build duration
+        run: |
+          echo "WIKI_BUILD_DURATION_SECONDS=$(( $(date +%s) - WIKI_BUILD_START_SECONDS ))" >> "$GITHUB_ENV"
+
+      - name: Enforce quality build budgets
+        env:
+          WIKI_BUILD_DURATION_SECONDS: ${{ env.WIKI_BUILD_DURATION_SECONDS }}
+        run: node scripts/wiki/validate-wiki-budgets.mjs --build-duration="$WIKI_BUILD_DURATION_SECONDS"
+
+      - name: Validate built wiki surfaces
+        run: |
+          npm run validate:inventory
+          npm run validate:brand
+          npm run validate:resolver
+          npm run validate:source-metadata
+          npm run validate:routing
+          node scripts/wiki/validate-audience-routes.mjs
+          npm run validate:search
+          npm run validate:audience-switch
+          npm run validate:article
+          npm run validate:shell
+
       - name: Test browser journeys, accessibility, and visual baselines
+        env:
+          WIKI_PLAYWRIGHT_SERVER_COMMAND: npm run preview -- --host 127.0.0.1 --port 4321
         run: npm run test:browser
 
       - name: Upload browser failure artifacts
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: wiki-browser-failures
           path: |
@@ -91,15 +134,7 @@ jobs:
             test-results/wiki/
           retention-days: 7
           if-no-files-found: ignore
-
-      - name: Validate internal links
-        run: npm run validate:links
-
-      - name: Validate secret safety
-        run: node scripts/wiki/validate-wiki-secrets.mjs
-
-      - name: Validate mermaid diagrams
-        run: npm run validate:mermaid
+          include-hidden-files: false
 
   build:
     name: Build wiki pages
@@ -108,10 +143,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22.12
           cache: npm
@@ -120,25 +155,25 @@ jobs:
         run: npm ci
 
       - name: Configure Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
 
       - name: Start build timer
-        run: echo "WIKI_BUILD_START_SECONDS=$(date +%s)" >> $GITHUB_ENV
+        run: echo "WIKI_BUILD_START_SECONDS=$(date +%s)" >> "$GITHUB_ENV"
 
       - name: Build with Astro
         run: npm run build
 
       - name: Capture build duration
         run: |
-          echo "WIKI_BUILD_DURATION_SECONDS=$(( $(date +%s) - $WIKI_BUILD_START_SECONDS ))" >> $GITHUB_ENV
+          echo "WIKI_BUILD_DURATION_SECONDS=$(( $(date +%s) - WIKI_BUILD_START_SECONDS ))" >> "$GITHUB_ENV"
 
       - name: Enforce wiki build budgets
         env:
           WIKI_BUILD_DURATION_SECONDS: ${{ env.WIKI_BUILD_DURATION_SECONDS }}
-        run: node scripts/wiki/validate-wiki-budgets.mjs --build-duration=$WIKI_BUILD_DURATION_SECONDS
+        run: node scripts/wiki/validate-wiki-budgets.mjs --build-duration="$WIKI_BUILD_DURATION_SECONDS"
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: _site
 
@@ -146,10 +181,13 @@ jobs:
     name: Deploy wiki pages
     needs: [build]
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
