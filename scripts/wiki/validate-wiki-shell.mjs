@@ -50,7 +50,7 @@ async function run() {
   assert.match(rail, /aria-labelledby="contextual-navigation-title"/);
   assert.match(rail, /getCollection\('docs'\)/);
   assert.match(rail, /data-history-group=/);
-  assert.doesNotMatch(rail, /<details[^>]*\sopen(?:\s|>|=)/);
+  assert.match(rail, /open=\{group\.entries\.some/);
   assert.match(rail, /data-collection-rail-collapsed/);
   assert.match(rail, /var\(--wiki-/);
   assert.doesNotMatch(rail, /tabindex=["']?[1-9]/i);

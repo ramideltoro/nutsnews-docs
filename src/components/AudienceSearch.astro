@@ -1,5 +1,6 @@
 ---
 import project from 'virtual:starlight/project-context';
+import { wikiContract } from '../../scripts/wiki/wiki-contract.mjs';
 
 const { data } = Astro.locals.starlightRoute.entry;
 const audience = data.audience === 'technical' ? 'technical' : 'simple';
@@ -16,6 +17,8 @@ const dataAttributes: DOMStringMap = {
   'data-audience': audience,
   'data-audience-label': audienceLabel,
   'data-base-url': import.meta.env.BASE_URL,
+  'data-history-filter-key': wikiContract.history.searchFilter.key,
+  'data-history-current-value': wikiContract.history.searchFilter.currentValue,
   'data-translations': JSON.stringify(pagefindTranslations),
 };
 if (project.trailingSlash === 'never') dataAttributes['data-strip-trailing-slash'] = '';
@@ -61,6 +64,13 @@ if (project.trailingSlash === 'never') dataAttributes['data-strip-trailing-slash
           <p class="search-dev-note">Search is available in the production preview and deployed wiki.</p>
         ) : (
           <div class="search-container">
+            <div class="search-options">
+              <label class="history-toggle">
+                <input type="checkbox" data-include-history />
+                <span>Include History</span>
+              </label>
+              <span>Search current pages by default.</span>
+            </div>
             <label class="search-input-label" for="nutsnews-search-input">
               Search {audienceLabel} wiki
             </label>
@@ -101,6 +111,7 @@ if (project.trailingSlash === 'never') dataAttributes['data-strip-trailing-slash
       const dialog = this.querySelector<HTMLDialogElement>('dialog');
       const dialogFrame = this.querySelector<HTMLElement>('.dialog-frame');
       const status = this.querySelector<HTMLElement>('[data-search-status]');
+      const historyToggle = this.querySelector<HTMLInputElement>('[data-include-history]');
 
       if (!openButton || !closeButton || !dialog || !dialogFrame) return;
 
@@ -176,11 +187,24 @@ if (project.trailingSlash === 'never') dataAttributes['data-strip-trailing-slash
               }));
             },
           });
-          pagefind.triggerFilters({ audience: [audience] });
+          const historyFilterKey = this.dataset.historyFilterKey || 'history';
+          const historyCurrentValue = this.dataset.historyCurrentValue || 'current';
+          const applyFilters = () => {
+            const historyFilter = historyToggle?.checked
+              ? {}
+              : { [historyFilterKey]: [historyCurrentValue] };
+            pagefind.triggerFilters({ audience: [audience], ...historyFilter });
+            if (status) {
+              status.textContent = historyToggle?.checked
+                ? `${audienceLabel} search now includes History.`
+                : `${audienceLabel} search is limited to current pages.`;
+            }
+          };
+          historyToggle?.addEventListener('change', applyFilters);
+          applyFilters();
 
           const input = this.querySelector<HTMLInputElement>('.pagefind-ui__search-input');
           if (input) input.id = 'nutsnews-search-input';
-          if (status) status.textContent = `${audienceLabel} search ready.`;
           if (dialog.open) input?.focus();
         });
       });
@@ -320,6 +344,38 @@ if (project.trailingSlash === 'never') dataAttributes['data-strip-trailing-slash
       margin-bottom: var(--wiki-space-2);
       font-size: var(--wiki-type-sm);
       font-weight: 700;
+    }
+
+    .search-options {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--wiki-space-2) var(--wiki-space-4);
+      margin-bottom: var(--wiki-space-4);
+      padding: var(--wiki-space-3);
+      border: 1px solid var(--wiki-color-border);
+      border-radius: var(--wiki-radius-sm);
+      color: var(--wiki-color-text-muted);
+      background: var(--wiki-color-surface-raised);
+      font-size: var(--wiki-type-xs);
+    }
+
+    .history-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--wiki-space-2);
+      min-height: var(--wiki-touch-target);
+      color: var(--wiki-color-text);
+      font-size: var(--wiki-type-sm);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .history-toggle input {
+      width: 1.25rem;
+      height: 1.25rem;
+      accent-color: var(--wiki-color-control);
     }
 
     .search-dev-note {

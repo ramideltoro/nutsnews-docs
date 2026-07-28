@@ -56,12 +56,17 @@ block. Documents without collection or section metadata use `start-here` and
 `overview`. The seven-item collection rail maps directly to the seven accepted
 section values. Status must be `active`, `draft`, `deprecated`, or `obsolete`.
 
+History groups canonical sources from `updates/`, `reports/`, `archive/`, and
+`ios/` as Updates, Reports, Archives, and Classified notes. These pages stay
+directly browsable. Static search always keeps the active audience filter;
+History is excluded by default and can be included with an explicit control.
+
 ## Machine-checked contract
 
 <!-- wiki-contract:start -->
 ```json
 {
-  "version": "1.3.0",
+  "version": "1.4.0",
   "audiences": [
     "simple",
     "technical"
@@ -213,6 +218,32 @@ section values. Status must be `active`, `draft`, `deprecated`, or `obsolete`.
       "order": 6
     }
   ],
+  "history": {
+    "groups": [
+      {
+        "id": "updates",
+        "label": "Updates"
+      },
+      {
+        "id": "reports",
+        "label": "Reports"
+      },
+      {
+        "id": "archive",
+        "label": "Archives"
+      },
+      {
+        "id": "ios",
+        "label": "Classified notes"
+      }
+    ],
+    "searchFilter": {
+      "key": "history",
+      "currentValue": "current",
+      "historicalValue": "historical",
+      "defaultIncludeHistory": false
+    }
+  },
   "defaults": {
     "title": "NutsNews documentation",
     "description": "NutsNews documentation page.",

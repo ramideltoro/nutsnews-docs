@@ -18,8 +18,8 @@ function lineCount(source) {
   return source.split(/\r?\n/).length;
 }
 
-function detailsTagIsClosed(html) {
-  return !/<details[^>]*\sopen(?:\s|>|=)/.test(html);
+function openDetailsCount(html) {
+  return [...html.matchAll(/<details[^>]*\sopen(?:\s|>|=)/g)].length;
 }
 
 function assertPattern(value, pattern, message) {
@@ -106,8 +106,13 @@ async function run() {
       /<footer[^>]*class="[^"]*\bsl-flex\b[^"]*"/,
       'Article fixture is missing the footer landmark.',
     );
-    assert.ok(detailsTagIsClosed(html), 'Article fixtures must not force disclosure widgets open.');
   }
+  assert.equal(openDetailsCount(longHtml), 0, 'Current article History groups must start closed.');
+  assert.equal(
+    openDetailsCount(shortHtml),
+    1,
+    'A historical article must open only its containing History group.',
+  );
 
   assertPattern(
     longHtml,

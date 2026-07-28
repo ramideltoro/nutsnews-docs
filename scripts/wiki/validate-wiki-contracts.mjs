@@ -11,6 +11,8 @@ import {
   deriveSlugFromSource,
   deriveStatus,
   diagramPathFromSource,
+  historyGroupForSource,
+  isHistoricalSourcePath,
   normalizeRoute,
   publishedRoute,
   simplePathFromSource,
@@ -172,6 +174,23 @@ async function validateContractDefinition(errors) {
       wikiContract.route.resolver.destinations[wikiContract.route.landingAudience],
       '/simple/',
     );
+  });
+
+  recordAssertion(errors, 'History classification and search contract', () => {
+    assert.deepEqual(
+      wikiContract.history.groups.map(({ id, label }) => ({ id, label })),
+      [
+        { id: 'updates', label: 'Updates' },
+        { id: 'reports', label: 'Reports' },
+        { id: 'archive', label: 'Archives' },
+        { id: 'ios', label: 'Classified notes' },
+      ],
+    );
+    assert.equal(historyGroupForSource('updates/RELEASE.md')?.id, 'updates');
+    assert.equal(isHistoricalSourcePath('archive/ROOT_CLEANUP.md'), true);
+    assert.equal(isHistoricalSourcePath('PROJECT.md'), false);
+    assert.equal(isHistoricalSourcePath('virtual:collections/overview'), false);
+    assert.equal(wikiContract.history.searchFilter.defaultIncludeHistory, false);
   });
 
   recordAssertion(errors, 'navigation collection contract', () => {
