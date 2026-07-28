@@ -19,6 +19,21 @@ source area. Paths are repository-relative, may not traverse above the
 repository, and keep their `.md` extension until a slug or diagram path is
 derived.
 
+## Author-time draft preparation
+
+Run `npm run docs:prepare -- <canonical-source.md>` to draft the matching
+Simple Markdown, primary Mermaid diagram, diagram accessibility text, and
+adjacent `.review.json` manifest. The command uses the official OpenAI SDK and
+Responses API only at author time. It reads `OPENAI_API_KEY` only from the
+process environment, pins `gpt-5.4-mini-2026-03-17`, requests strict structured
+output with `store: false`, and never adds an AI dependency to the built wiki.
+
+Every generated bundle is marked `unreviewed` with publishing `blocked`. A
+human must resolve its review notes and approve it before publication. The
+command validates Mermaid locally and retries an invalid diagram once. It
+checks all target paths before the API request and refuses to replace any
+existing artifact unless the author explicitly adds `--force`.
+
 ## Frontmatter and precedence
 
 Generated expert frontmatter always contains `title`, `description`, `slug`,
