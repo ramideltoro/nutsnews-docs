@@ -24,7 +24,7 @@ flowchart TD
   B --> R["Allowed labels only: environment, host, service, version, queue, outcome"]
   C --> S["Forbidden payload fields excluded"]
 
-  T["Rollback switches"] --> U["Disable metrics", "Disable logs", "Disable traces", "Disable exemplars"]
+  T["Rollback switches"] --> U["Disable metrics / logs / traces / exemplars"]
   R --> T
   S --> T
 

@@ -11,7 +11,7 @@ flowchart TD
   J --> K["AI decisions stay local-first"]
   K --> L["Admin telemetry + Worker response confirm source"]
   L --> M["Public API health check"]
-  M --> N["`/api/articles?limit=5` returns 200 + JSON"]
+  M --> N["Articles API health request returns 200 + JSON"]
   N --> O["Lock effectiveness verified"]
   P["Reference artifacts"] --> Q["`docs/LOCAL_AI_DEPLOYMENT_LOCK.md`"]
   P --> R["`docs/HOME_SERVER_LOCAL_AI.md`"]

@@ -1,8 +1,8 @@
 flowchart TD
-  A[Admin user opens protected dashboard] --> B[Route within /admin/...]
-  B --> C{admin/(protected) layout}
-  C --> D[Wrap page content in <div class="admin-responsive-shell">]
-  D --> E[Apply scoped responsive CSS in web/app/globals.css]
+  A["Admin user opens protected dashboard"] --> B["Route within /admin/..."]
+  B --> C{"admin/(protected) layout"}
+  C --> D["Wrap page content in admin-responsive-shell"]
+  D --> E["Apply scoped responsive CSS in web/app/globals.css"]
   E --> F{Layout decision}
   F --> G[Compact page paddings and card radii]
   F --> H[Clamp heading sizes]

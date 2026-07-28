@@ -1,7 +1,7 @@
 flowchart LR
-  auth[Auth.js denied or error flow] --> page[/admin/access-denied]
+  auth[Auth.js denied or error flow] --> page["/admin/access-denied"]
   page --> map[Allowlisted generic message]
-  map --> login[/admin/login]
+  map --> login["/admin/login"]
   page --> boundary[Browser revalidation + CDN no-store + noindex]
   approved[Future approved app merge] --> image[Main-only immutable GHCR image]
   image --> gate[Matching Vercel Production deployment]
