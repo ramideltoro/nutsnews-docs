@@ -42,3 +42,4 @@ src/content/docs/**
 *.seed
 *.swp
 *.swo
+scripts/wiki/wiki-inventory.generated.json
