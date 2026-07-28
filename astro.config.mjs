@@ -25,6 +25,7 @@ export default defineConfig({
   base,
   output: 'static',
   outDir: '_site',
+  trailingSlash: 'always',
   markdown: {
     processor: unified({
       rehypePlugins: [rehypeWikiArticle],
@@ -34,6 +35,7 @@ export default defineConfig({
     starlight({
       title: 'NutsNews Wiki',
       description: 'NutsNews technical and reader documentation',
+      disable404Route: true,
       logo: {
         src: './src/assets/nutsnews-logo.png',
         alt: 'NutsNews chestnut logo',

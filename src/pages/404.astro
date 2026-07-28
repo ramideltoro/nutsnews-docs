@@ -1,0 +1,399 @@
+---
+import logo from '../assets/nutsnews-logo.png';
+import { wikiContract } from '../../scripts/wiki/wiki-contract.mjs';
+import '../styles/wiki.css';
+
+const base = import.meta.env.BASE_URL || '/';
+const basePrefix = base === '/' ? '' : `/${base.replace(/^\/+|\/+$/g, '')}`;
+const withBase = (route) => `${basePrefix}${route.startsWith('/') ? route : `/${route}`}`;
+const simpleRoot = withBase(wikiContract.route.resolver.destinations.simple);
+const technicalRoot = withBase(wikiContract.route.resolver.destinations.technical);
+const historyRoot = withBase('/simple/collections/overview/');
+---
+
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Page not found | NutsNews Wiki</title>
+    <meta
+      name="description"
+      content="Recover from a missing NutsNews Wiki route with audience links and local search."
+    />
+    <meta name="robots" content="noindex" />
+    <link rel="icon" type="image/png" href={logo.src} />
+  </head>
+  <body>
+    <main
+      class="not-found-shell"
+      data-not-found-page
+      data-base-url={base}
+      data-preference-key={wikiContract.route.resolver.preferenceKey}
+    >
+      <div class="not-found-card">
+        <header>
+          <a class="not-found-brand" href={base} aria-label="NutsNews Wiki home">
+            <img src={logo.src} alt="" width="640" height="517" />
+            <span>NutsNews Wiki</span>
+          </a>
+          <p class="error-code">404 · Route not found</p>
+          <h1>That page isn’t here.</h1>
+          <p class="lede">
+            The address may be old or mistyped. Search the current wiki, choose an
+            audience, or browse History.
+          </p>
+        </header>
+
+        <section class="search-recovery" aria-labelledby="recovery-search-title">
+          <div class="search-heading">
+            <div>
+              <p class="section-kicker">Local static search</p>
+              <h2 id="recovery-search-title">Find another page</h2>
+            </div>
+            <div class="search-audience" role="group" aria-label="Search audience">
+              <button type="button" data-search-audience="simple" aria-pressed="true">
+                Simple
+              </button>
+              <button type="button" data-search-audience="technical" aria-pressed="false">
+                Technical
+              </button>
+            </div>
+          </div>
+          <label for="not-found-search-input">Search Simple wiki</label>
+          <div id="not-found-search"></div>
+          <p class="search-status" data-search-status aria-live="polite">
+            Loading local search.
+          </p>
+          <noscript>
+            <p class="no-script-note">
+              Search needs JavaScript. The audience and History links below work without it.
+            </p>
+          </noscript>
+        </section>
+
+        <nav class="recovery-links" aria-label="Page recovery">
+          <a href={simpleRoot} data-recovery-audience="simple">
+            <span>Plain-language guides</span>
+            <strong>Open Simple</strong>
+          </a>
+          <a href={technicalRoot} data-recovery-audience="technical">
+            <span>Implementation detail</span>
+            <strong>Open Technical</strong>
+          </a>
+          <a href={historyRoot}>
+            <span>Updates and archives</span>
+            <strong>Browse History</strong>
+          </a>
+        </nav>
+      </div>
+    </main>
+
+    <script>
+      import { PagefindUI } from '@pagefind/default-ui';
+
+      const page = document.querySelector<HTMLElement>('[data-not-found-page]');
+      const status = page?.querySelector<HTMLElement>('[data-search-status]');
+      const audienceButtons = [
+        ...(page?.querySelectorAll<HTMLButtonElement>('[data-search-audience]') || []),
+      ];
+      const recoveryLinks = [
+        ...(page?.querySelectorAll<HTMLAnchorElement>('[data-recovery-audience]') || []),
+      ];
+
+      if (page) {
+        const baseUrl = page.dataset.baseUrl || '/';
+        const preferenceKey = page.dataset.preferenceKey;
+        const queryAudience = new URL(location.href).searchParams.get('audience');
+        let storedAudience = '';
+        try {
+          storedAudience = preferenceKey ? localStorage.getItem(preferenceKey) || '' : '';
+        } catch {
+          // Audience recovery works without storage.
+        }
+        let audience = ['simple', 'technical'].includes(queryAudience || '')
+          ? queryAudience
+          : ['simple', 'technical'].includes(storedAudience)
+            ? storedAudience
+            : 'simple';
+
+        const pagefind = new PagefindUI({
+          element: '#not-found-search',
+          baseUrl,
+          bundlePath: `${baseUrl.replace(/\/$/, '')}/pagefind/`,
+          showEmptyFilters: false,
+          showImages: false,
+          showSubResults: true,
+          translations: { placeholder: `Search ${audience === 'simple' ? 'Simple' : 'Technical'} wiki` },
+        });
+
+        const applyAudience = (nextAudience: string) => {
+          audience = nextAudience;
+          pagefind.triggerFilters({
+            audience: [audience],
+            history: ['current'],
+          });
+          for (const button of audienceButtons) {
+            button.setAttribute(
+              'aria-pressed',
+              `${button.dataset.searchAudience === audience}`,
+            );
+          }
+          const input = page.querySelector<HTMLInputElement>('.pagefind-ui__search-input');
+          const audienceLabel = audience === 'simple' ? 'Simple' : 'Technical';
+          if (input) {
+            input.id = 'not-found-search-input';
+            input.placeholder = `Search ${audienceLabel} wiki`;
+          }
+          const label = page.querySelector<HTMLLabelElement>('label[for="not-found-search-input"]');
+          if (label) label.textContent = `Search ${audienceLabel} wiki`;
+          if (status) status.textContent = `Search is limited to current ${audienceLabel} pages.`;
+          try {
+            if (preferenceKey) localStorage.setItem(preferenceKey, audience);
+          } catch {
+            // Filtering does not depend on storage.
+          }
+        };
+
+        for (const button of audienceButtons) {
+          button.addEventListener('click', () => {
+            const nextAudience = button.dataset.searchAudience;
+            if (nextAudience === 'simple' || nextAudience === 'technical') {
+              applyAudience(nextAudience);
+              page.querySelector<HTMLInputElement>('.pagefind-ui__search-input')?.focus();
+            }
+          });
+        }
+        for (const link of recoveryLinks) {
+          link.addEventListener('click', () => {
+            try {
+              if (preferenceKey && link.dataset.recoveryAudience) {
+                localStorage.setItem(preferenceKey, link.dataset.recoveryAudience);
+              }
+            } catch {
+              // Normal recovery links remain functional.
+            }
+          });
+        }
+        applyAudience(audience);
+      }
+    </script>
+  </body>
+</html>
+
+<style>
+  .not-found-shell {
+    display: grid;
+    min-height: 100vh;
+    min-height: 100svh;
+    place-items: center;
+    padding: var(--wiki-space-5);
+    background:
+      radial-gradient(circle at 14% 10%, rgb(217 134 23 / 18%), transparent 28rem),
+      radial-gradient(circle at 88% 90%, rgb(246 189 90 / 10%), transparent 30rem),
+      var(--wiki-color-canvas);
+  }
+
+  .not-found-card {
+    display: grid;
+    gap: var(--wiki-space-6);
+    width: min(100%, 64rem);
+    padding: clamp(1.25rem, 5vw, 3.5rem);
+    border: 1px solid var(--wiki-color-border);
+    border-radius: var(--wiki-radius-lg);
+    color: var(--wiki-color-text);
+    background: color-mix(in srgb, var(--wiki-color-surface) 95%, transparent);
+    box-shadow: 0 1.5rem 5rem rgb(0 0 0 / 24%);
+  }
+
+  header {
+    display: grid;
+    gap: var(--wiki-space-3);
+  }
+
+  .not-found-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--wiki-space-3);
+    width: fit-content;
+    color: var(--wiki-color-text);
+    font-family: var(--wiki-font-display);
+    font-size: var(--wiki-type-xl);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .not-found-brand img {
+    width: 3rem;
+    height: 2.5rem;
+    object-fit: contain;
+  }
+
+  .error-code,
+  .section-kicker {
+    margin: 0;
+    color: var(--wiki-color-link);
+    font-size: var(--wiki-type-xs);
+    font-weight: 750;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    max-width: 14ch;
+    margin: 0;
+    color: var(--wiki-color-text);
+    font-family: var(--wiki-font-display);
+    font-size: var(--wiki-type-display);
+    line-height: var(--wiki-leading-tight);
+  }
+
+  .lede {
+    max-width: 62ch;
+    margin: 0;
+    color: var(--wiki-color-text-muted);
+    font-size: var(--wiki-type-lg);
+    line-height: var(--wiki-leading-body);
+  }
+
+  .search-recovery {
+    display: grid;
+    gap: var(--wiki-space-3);
+    padding: var(--wiki-space-5);
+    border: 1px solid var(--wiki-color-border);
+    border-radius: var(--wiki-radius-md);
+    background: var(--wiki-color-surface-raised);
+  }
+
+  .search-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--wiki-space-4);
+  }
+
+  h2 {
+    margin: var(--wiki-space-1) 0 0;
+    color: var(--wiki-color-text);
+    font-size: var(--wiki-type-xl);
+  }
+
+  .search-audience {
+    display: inline-flex;
+    border: 1px solid var(--wiki-color-control);
+    border-radius: var(--wiki-radius-sm);
+    overflow: hidden;
+  }
+
+  .search-audience button {
+    min-height: var(--wiki-touch-target);
+    border: 0;
+    padding-inline: var(--wiki-space-3);
+    color: var(--wiki-color-link);
+    background: transparent;
+    font: inherit;
+    font-size: var(--wiki-type-sm);
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .search-audience button + button {
+    border-inline-start: 1px solid var(--wiki-color-control);
+  }
+
+  .search-audience button[aria-pressed='true'] {
+    color: var(--wiki-color-control-text);
+    background: var(--wiki-color-control);
+  }
+
+  .search-recovery > label {
+    font-size: var(--wiki-type-sm);
+    font-weight: 700;
+  }
+
+  #not-found-search {
+    --pagefind-ui-primary: var(--wiki-color-link);
+    --pagefind-ui-text: var(--wiki-color-text);
+    --pagefind-ui-background: var(--wiki-color-surface);
+    --pagefind-ui-border: var(--wiki-color-border);
+    --pagefind-ui-tag: var(--wiki-color-surface-raised);
+    --pagefind-ui-font: var(--wiki-font-sans);
+  }
+
+  :global(#not-found-search .pagefind-ui__filter-panel) {
+    display: none;
+  }
+
+  :global(#not-found-search .pagefind-ui__search-clear) {
+    min-height: var(--wiki-touch-target);
+  }
+
+  .search-status,
+  .no-script-note {
+    margin: 0;
+    color: var(--wiki-color-text-muted);
+    font-size: var(--wiki-type-xs);
+  }
+
+  .recovery-links {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--wiki-space-3);
+  }
+
+  .recovery-links a {
+    display: grid;
+    gap: var(--wiki-space-2);
+    min-width: 0;
+    min-height: calc(var(--wiki-touch-target) * 2);
+    border: 1px solid var(--wiki-color-border);
+    border-radius: var(--wiki-radius-md);
+    padding: var(--wiki-space-4);
+    color: var(--wiki-color-text);
+    background: var(--wiki-color-surface-raised);
+    text-decoration: none;
+  }
+
+  .recovery-links a:hover {
+    border-color: var(--wiki-color-link);
+  }
+
+  .recovery-links span {
+    color: var(--wiki-color-text-muted);
+    font-size: var(--wiki-type-xs);
+  }
+
+  .recovery-links strong {
+    color: var(--wiki-color-link);
+  }
+
+  :is(a, button, input):focus-visible {
+    outline: var(--wiki-focus-ring-width) solid var(--wiki-color-focus);
+    outline-offset: var(--wiki-focus-ring-offset);
+  }
+
+  @media (max-width: 50rem) {
+    .search-heading {
+      flex-direction: column;
+    }
+
+    .recovery-links {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 30rem) {
+    .not-found-shell {
+      padding: var(--wiki-space-3);
+    }
+
+    .not-found-card,
+    .search-recovery {
+      padding: var(--wiki-space-4);
+    }
+  }
+</style>
+
+<style is:global>
+  @import url('@pagefind/default-ui/css/ui.css');
+</style>

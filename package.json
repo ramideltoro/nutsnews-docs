@@ -23,6 +23,7 @@
     "validate:audience-switch": "node scripts/wiki/validate-audience-switch.mjs",
     "validate:search": "node scripts/wiki/validate-pagefind-search.mjs",
     "validate:source-metadata": "node scripts/wiki/validate-source-metadata.mjs",
+    "validate:routing": "node scripts/wiki/validate-static-routing.mjs",
     "validate:shell": "node scripts/wiki/validate-wiki-shell.mjs"
   },
   "dependencies": {
