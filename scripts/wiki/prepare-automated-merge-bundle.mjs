@@ -13,6 +13,8 @@ import {
   technicalMirrorPathFromSource,
 } from './wiki-contract.mjs';
 
+const AUTOMATED_WIKI_ORDER_FLOOR = 1_000_000;
+
 function sha256(content) {
   return createHash('sha256').update(content).digest('hex');
 }
@@ -55,8 +57,7 @@ async function nextGlobalWikiOrder(repoRoot) {
     .map((entry) => entry.source)
     .filter((source) => Number.isSafeInteger(source.order))
     .map((source) => source.order);
-  const prospectiveFallbackMaximum = inventory.entries.length + 1;
-  return Math.max(prospectiveFallbackMaximum, ...orders) + 1;
+  return Math.max(AUTOMATED_WIKI_ORDER_FLOOR, ...orders) + 1;
 }
 
 export async function prepareAutomatedMergeBundle({
