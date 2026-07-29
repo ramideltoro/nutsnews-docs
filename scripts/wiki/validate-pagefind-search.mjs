@@ -3,8 +3,14 @@ import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import {
+  isHistoricalSourcePath,
+  wikiContract,
+} from './wiki-contract.mjs';
+
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const outputRoot = path.join(repoRoot, '_site');
+const inventoryPath = path.join(repoRoot, 'scripts/wiki/wiki-inventory.generated.json');
 
 async function walk(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -26,11 +32,12 @@ function filterValue(html, name) {
   return match?.[1];
 }
 
-const [headSource, searchSource, articleHeaderSource, collectionRailSource] = await Promise.all([
+const [headSource, searchSource, articleHeaderSource, collectionRailSource, inventory] = await Promise.all([
   readFile(path.join(repoRoot, 'src/components/Head.astro'), 'utf8'),
   readFile(path.join(repoRoot, 'src/components/AudienceSearch.astro'), 'utf8'),
   readFile(path.join(repoRoot, 'src/components/ArticleHeader.astro'), 'utf8'),
   readFile(path.join(repoRoot, 'src/components/CollectionRail.astro'), 'utf8'),
+  readFile(inventoryPath, 'utf8').then(JSON.parse),
 ]);
 
 for (const name of ['audience', 'collection', 'section', 'status', 'history']) {
@@ -100,10 +107,19 @@ assert.match(
 
 let indexedPages = 0;
 const historyCounts = { current: 0, historical: 0 };
-for (const audience of ['simple', 'technical']) {
+const historicalSources = inventory.entries.filter(
+  (entry) => isHistoricalSourcePath(entry.source.path),
+).length;
+const collectionPages = wikiContract.navigation.rail.length;
+const expectedPagesPerAudience = inventory.entries.length + collectionPages;
+for (const audience of wikiContract.audiences) {
   const files = (await walk(path.join(outputRoot, audience)))
     .filter((file) => path.basename(file) === 'index.html');
-  assert.equal(files.length, 234, `${audience} must publish 234 searchable pages`);
+  assert.equal(
+    files.length,
+    expectedPagesPerAudience,
+    `${audience} must publish one searchable page per source plus collection pages`,
+  );
 
   for (const file of files) {
     const html = await readFile(file, 'utf8');
@@ -124,7 +140,12 @@ for (const audience of ['simple', 'technical']) {
 }
 assert.deepEqual(
   historyCounts,
-  { current: 260, historical: 208 },
+  {
+    current: (
+      inventory.entries.length - historicalSources + collectionPages
+    ) * wikiContract.audiences.length,
+    historical: historicalSources * wikiContract.audiences.length,
+  },
   'Pagefind history classification must cover current and historical pages',
 );
 
