@@ -66,6 +66,9 @@ jobs:
       - name: Test workflow quality contract
         run: npm run test:workflow
 
+      - name: Test automated merge documentation
+        run: npm run test:merge-docs
+
       - name: Test Pages artifact contract
         run: npm run test:pages-artifact
 
