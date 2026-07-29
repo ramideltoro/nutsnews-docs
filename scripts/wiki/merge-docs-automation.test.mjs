@@ -16,7 +16,9 @@ import {
   MAX_AUTOMATION_ATTEMPTS,
   retryIsBlocked,
 } from './discover-nutsnews-merges.mjs';
+import { importAutomatedMergeBundle } from './import-automated-merge-bundle.mjs';
 import { parseMarkdownFrontmatter } from './parse-markdown.mjs';
+import { prepareAutomatedMergeBundle } from './prepare-automated-merge-bundle.mjs';
 import { recordMergeFailure } from './record-nutsnews-merge-failure.mjs';
 import {
   approvalErrors,
@@ -34,6 +36,49 @@ async function write(root, relative, content) {
   const target = path.join(root, relative);
   await fs.mkdir(path.dirname(target), { recursive: true });
   await fs.writeFile(target, content, 'utf8');
+}
+
+async function isolatedBundleFixture(t, label) {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), `nutsnews-isolated-${label}-`));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const repository = 'ramideltoro/nutsnews-backend';
+  const sourcePath = mergeLogPathForRepository(repository);
+  const simplePath = `audiences/simple/${sourcePath}`;
+  const technicalPath = `audiences/technical/${sourcePath}`;
+  const diagramPath = 'diagrams/updates/AUTOMATED_NUTSNEWS_BACKEND_MERGE_LOG.mmd';
+  const reviewPath = simplePath.replace(/\.md$/i, '.review.json');
+  const eventPath = path.join(root, 'event.json');
+  const contextPath = path.join(root, 'context.json');
+  const workspace = path.join(root, '_automation-work/agent');
+  const manifestFile = path.join(root, '_automation-work/trusted-bundle.json');
+  await Promise.all([
+    write(root, sourcePath, sourceMarkdown('Original canonical')),
+    write(root, simplePath, sourceMarkdown('Original simple')),
+    write(root, technicalPath, sourceMarkdown('Original technical')),
+    write(root, diagramPath, 'flowchart LR\n  accTitle: Existing flow\n  A --> B\n'),
+    write(root, reviewPath, '{}\n'),
+    write(root, 'scripts/wiki/prompts/automated-merge-docs.md', 'Trusted fixture prompt.\n'),
+    write(root, 'event.json', `${JSON.stringify({
+      repository,
+      pull_numbers: [42],
+      head_sha: 'a'.repeat(40),
+    })}\n`),
+    write(root, 'context.json', '{"pulls":[]}\n'),
+  ]);
+  const manifest = await prepareAutomatedMergeBundle({
+    repoRoot: root,
+    eventFile: eventPath,
+    contextFile: contextPath,
+    workspace,
+    manifestFile,
+  });
+  return {
+    root,
+    sourcePath,
+    workspace,
+    manifest,
+    manifestFile,
+  };
 }
 
 test('merge discovery aggregates every pending pull request in cursor order', () => {
@@ -244,6 +289,106 @@ test('change boundary requires the repository log and exact merge references', a
   });
   assert.match(rejected.errors.join(' '), /missing pull request link/);
   assert.match(rejected.errors.join(' '), /missing merge commit/);
+});
+
+test('isolated merge bundle imports only the exact five-artifact allowlist', async (t) => {
+  const fixture = await isolatedBundleFixture(t, 'import');
+  const requiredArtifacts = fixture.manifest.artifacts.filter((artifact) => artifact.required_change);
+  assert.equal(requiredArtifacts.length, 4);
+  for (const artifact of requiredArtifacts) {
+    await fs.appendFile(
+      path.join(fixture.workspace, artifact.workspace_path),
+      '\nDocumented from bounded merge evidence.\n',
+      'utf8',
+    );
+  }
+  const importedSource = await importAutomatedMergeBundle({
+    repoRoot: fixture.root,
+    manifestFile: fixture.manifestFile,
+  });
+  assert.equal(importedSource, fixture.sourcePath);
+  assert.match(
+    await fs.readFile(path.join(fixture.root, fixture.sourcePath), 'utf8'),
+    /Documented from bounded merge evidence/,
+  );
+});
+
+test('isolated merge bundle creates a complete target when a repository has no log', async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'nutsnews-isolated-new-log-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const repository = 'ramideltoro/nutsnews-new-service';
+  const sourcePath = mergeLogPathForRepository(repository);
+  const eventFile = path.join(root, 'event.json');
+  const contextFile = path.join(root, 'context.json');
+  const workspace = path.join(root, '_automation-work/agent');
+  const manifestFile = path.join(root, '_automation-work/trusted-bundle.json');
+  await Promise.all([
+    write(root, 'scripts/wiki/wiki-inventory.generated.json', '{"entries":[]}\n'),
+    write(root, 'scripts/wiki/prompts/automated-merge-docs.md', 'Trusted fixture prompt.\n'),
+    write(root, 'event.json', `${JSON.stringify({
+      repository,
+      pull_numbers: [7],
+      head_sha: 'b'.repeat(40),
+    })}\n`),
+    write(root, 'context.json', '{"pulls":[]}\n'),
+  ]);
+
+  const manifest = await prepareAutomatedMergeBundle({
+    repoRoot: root,
+    eventFile,
+    contextFile,
+    workspace,
+    manifestFile,
+  });
+  assert.equal(manifest.source_path, sourcePath);
+  assert.equal(manifest.artifacts.length, 5);
+  for (const artifact of manifest.artifacts) {
+    assert.equal((await fs.lstat(path.join(root, artifact.repository_path))).isFile(), true);
+    assert.equal((await fs.lstat(path.join(workspace, artifact.workspace_path))).isFile(), true);
+  }
+});
+
+test('isolated merge bundle rejects unchanged, symlinked, and unexpected artifacts', async (t) => {
+  const unchanged = await isolatedBundleFixture(t, 'unchanged');
+  await assert.rejects(
+    importAutomatedMergeBundle({
+      repoRoot: unchanged.root,
+      manifestFile: unchanged.manifestFile,
+    }),
+    /did not update required artifact/,
+  );
+
+  const symlinked = await isolatedBundleFixture(t, 'symlink');
+  for (const artifact of symlinked.manifest.artifacts.filter((item) => item.required_change)) {
+    const target = path.join(symlinked.workspace, artifact.workspace_path);
+    await fs.appendFile(target, '\nDocumented from bounded merge evidence.\n', 'utf8');
+  }
+  const symlinkArtifact = symlinked.manifest.artifacts.find((artifact) => artifact.required_change);
+  const symlinkTarget = path.join(symlinked.workspace, symlinkArtifact.workspace_path);
+  await fs.rm(symlinkTarget);
+  await fs.symlink(path.join(symlinked.workspace, 'merge-event.json'), symlinkTarget);
+  await assert.rejects(
+    importAutomatedMergeBundle({
+      repoRoot: symlinked.root,
+      manifestFile: symlinked.manifestFile,
+    }),
+    /must be a regular file/,
+  );
+
+  const unexpected = await isolatedBundleFixture(t, 'unexpected');
+  unexpected.manifest.artifacts.at(-1).repository_path = 'package.json';
+  await fs.writeFile(
+    unexpected.manifestFile,
+    `${JSON.stringify(unexpected.manifest, null, 2)}\n`,
+    'utf8',
+  );
+  await assert.rejects(
+    importAutomatedMergeBundle({
+      repoRoot: unexpected.root,
+      manifestFile: unexpected.manifestFile,
+    }),
+    /unexpected repository path/,
+  );
 });
 
 test('identical failed merge batches stop after the bounded retry limit', async (t) => {

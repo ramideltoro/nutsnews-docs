@@ -6,7 +6,8 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
-const MAX_PATCH_CHARACTERS = 240_000;
+const MAX_PATCH_CHARACTERS = 60_000;
+const MAX_BODY_CHARACTERS = 8_000;
 
 async function ghJson(endpoint, { paginate = false } = {}) {
   const args = ['api'];
@@ -64,7 +65,7 @@ export async function prepareMergeDocContext({
     pulls.push({
       number: pull.number,
       title: pull.title,
-      body: pull.body || '',
+      body: `${pull.body || ''}`.slice(0, MAX_BODY_CHARACTERS),
       html_url: pull.html_url,
       merged_at: pull.merged_at,
       merge_commit_sha: pull.merge_commit_sha,

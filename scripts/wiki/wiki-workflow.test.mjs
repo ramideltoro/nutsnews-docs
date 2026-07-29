@@ -175,22 +175,36 @@ export function validateMergeWorkflow(source) {
     errors.push('Codex must not receive a GitHub write token');
   }
   for (const setting of [
+    'working-directory: _automation-work/agent',
     'sandbox: workspace-write',
+    'model: gpt-5.6-terra',
+    'effort: low',
     'safety-strategy: drop-sudo',
     'allow-users: ramideltoro',
     'allow-bots: true',
   ]) {
     if (!codexStep.includes(setting)) errors.push(`Codex safety setting is missing: ${setting}`);
   }
-  if ((source.match(/persist-credentials: false/g) || []).length < 2) {
-    errors.push('both documentation and source checkouts must drop persisted credentials');
+  if ((source.match(/persist-credentials: false/g) || []).length !== 2) {
+    errors.push('both documentation checkouts must drop persisted credentials');
+  }
+  if (/repository: \$\{\{ steps\.event\.outputs\.repository \}\}/.test(source)) {
+    errors.push('the merged source repository must not be checked out for Codex');
+  }
+  const documentJob = source.match(
+    /\n  document:\n([\s\S]*?)(?=\n  [a-z][a-z0-9_-]+:\n|\s*$)/,
+  )?.[1] || '';
+  if (!/timeout-minutes: 20/.test(documentJob)) {
+    errors.push('merge documentation must have a bounded job timeout');
   }
   if (!/max-parallel: 1/.test(source) || !/cancel-in-progress: false/.test(source)) {
     errors.push('merge documentation must serialize repositories and workflow runs');
   }
   const orderedSteps = [
     'Prepare bounded merge evidence',
+    'Prepare isolated documentation bundle',
     'Generate complete wiki documentation',
+    'Import isolated documentation bundle',
     'Enforce automated documentation change boundary',
     'Record immutable automated provenance',
     'Validate generated documentation',
