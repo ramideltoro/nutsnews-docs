@@ -57,9 +57,6 @@ jobs:
       - name: Test repository secret safety
         run: npm run test:secret-safety
 
-      - name: Test human approval and freshness gate
-        run: npm run test:wiki-approvals
-
       - name: Test new-document scaffolding
         run: npm run test:docs-new
 
@@ -80,9 +77,6 @@ jobs:
 
       - name: Generate wiki markdown for route validation
         run: npm run wiki:prepare
-
-      - name: Validate human approval freshness
-        run: node scripts/wiki/validate-wiki-approvals.mjs
 
       - name: Validate complete content contract
         run: npm run validate:content

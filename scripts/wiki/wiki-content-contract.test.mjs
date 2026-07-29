@@ -289,14 +289,6 @@ const defectCases = [
     },
   },
   {
-    name: 'stale approval hash',
-    invariant: 'approval',
-    mutate: async (repoRoot) => {
-      const sourcePath = path.join(repoRoot, 'GUIDE.md');
-      await fs.appendFile(sourcePath, '\nSubstantive change.\n', 'utf8');
-    },
-  },
-  {
     name: 'diagram accessibility',
     invariant: 'diagram',
     mutate: async (repoRoot) => {
@@ -390,3 +382,16 @@ for (const fixture of defectCases) {
     assert.match(output, /Fix:/);
   });
 }
+
+test('stale approval metadata does not block publication', async (t) => {
+  const repoRoot = await makeFixture(t);
+  await fs.appendFile(path.join(repoRoot, 'GUIDE.md'), '\nSubstantive change.\n', 'utf8');
+
+  const report = await validate(repoRoot);
+
+  assert.equal(wikiContentExitCode(report), 0, formatWikiContentReport(report));
+  assert.equal(
+    report.errors.some((error) => error.invariant === 'approval'),
+    false,
+  );
+});

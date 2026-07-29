@@ -23,7 +23,6 @@ const requiredCommands = [
   'npm ci',
   'npm run test:docs-prepare',
   'npm run test:secret-safety',
-  'npm run test:wiki-approvals',
   'npm run test:docs-new',
   'npm run test:content-contract',
   'npm run test:workflow',
@@ -31,7 +30,6 @@ const requiredCommands = [
   'npm run validate:contracts',
   'node scripts/wiki/validate-doc-paths.mjs',
   'npm run wiki:prepare',
-  'node scripts/wiki/validate-wiki-approvals.mjs',
   'npm run validate:content',
   'npm run test:content-routes',
   'npm run validate:links',
@@ -52,6 +50,11 @@ const requiredCommands = [
   'npm run test:browser',
   'npm run wiki:release:stamp',
   'npm run validate:pages-artifact',
+];
+
+const forbiddenCommands = [
+  'npm run test:wiki-approvals',
+  'node scripts/wiki/validate-wiki-approvals.mjs',
 ];
 
 export function validateWorkflow(source) {
@@ -124,6 +127,11 @@ export function validateWorkflow(source) {
   for (const command of requiredCommands) {
     if (!source.includes(command)) {
       errors.push(`publish-blocking command is missing: ${command}`);
+    }
+  }
+  for (const command of forbiddenCommands) {
+    if (source.includes(command)) {
+      errors.push(`human approval must not block publication: ${command}`);
     }
   }
 

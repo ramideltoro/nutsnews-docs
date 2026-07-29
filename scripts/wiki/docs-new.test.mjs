@@ -30,7 +30,7 @@ async function artifactContents(repoRoot, paths) {
   );
 }
 
-test('root scaffolds are deterministic, complete, accessible, and publication-blocked', async (t) => {
+test('root scaffolds are deterministic, complete, accessible, and publishable', async (t) => {
   const firstRoot = await fixtureRepo(t);
   const secondRoot = await fixtureRepo(t);
   const options = {
@@ -51,8 +51,8 @@ test('root scaffolds are deterministic, complete, accessible, and publication-bl
     review: 'audiences/simple/NEW_API_GUIDE.review.json',
   });
   assert.equal(first.state, 'unreviewed');
-  assert.equal(first.publishing, 'blocked');
-  assert.equal(first.nextCommands.length, 3);
+  assert.equal(first.publishing, 'allowed');
+  assert.equal(first.nextCommands.length, 2);
   const firstArtifacts = await artifactContents(firstRoot, first.paths);
   const secondArtifacts = await artifactContents(secondRoot, second.paths);
   assert.deepEqual(firstArtifacts, secondArtifacts);
@@ -72,14 +72,14 @@ test('root scaffolds are deterministic, complete, accessible, and publication-bl
     technicalMirror.data.wiki.approval,
   ]) {
     assert.equal(approval.state, 'unreviewed');
-    assert.equal(approval.publishing, 'blocked');
+    assert.equal(approval.publishing, 'allowed');
     assert.equal(approval.reviewed_by, 'pending');
     assert.match(approvalErrors(approval, first.sourceHash).join(' '), /state must be approved/);
   }
   await validateMermaidDraft(firstArtifacts.diagram);
   const review = JSON.parse(firstArtifacts.review);
   assert.equal(review.state, 'unreviewed');
-  assert.equal(review.publishing, 'blocked');
+  assert.equal(review.publishing, 'allowed');
   assert.deepEqual(review.next_commands, first.nextCommands);
 });
 
@@ -105,7 +105,7 @@ test('nested scaffolds derive stable nested paths, routes, and shell-safe next c
   assert.equal(source.data.wiki.source_route, '/technical/archive/new-reader-guide');
   assert.equal(source.data.wiki.simple_route, '/simple/archive/new-reader-guide');
   assert.match(result.nextCommands[0], /'archive\/New Reader Guide\.md'/);
-  assert.match(result.nextCommands[1], /--confirm-human-review$/);
+  assert.equal(result.nextCommands[1], 'npm run validate:content');
 });
 
 test('existing targets are preserved and no partial scaffold is created', async (t) => {

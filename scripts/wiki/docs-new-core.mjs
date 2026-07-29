@@ -100,7 +100,7 @@ function expertBody(title) {
   return [
     `# ${title}`,
     '',
-    '> Draft scaffold: replace every TODO and verify all claims before human approval.',
+    '> Draft scaffold: replace every TODO and verify all claims before publishing.',
     '',
     '## Purpose',
     '',
@@ -132,7 +132,7 @@ function simpleBody(title) {
   return [
     `# ${title}`,
     '',
-    '> Unreviewed Simple draft: this page is blocked from publishing until human approval.',
+    '> Unreviewed Simple draft: verify its claims before publishing.',
     '',
     '## What this is',
     '',
@@ -158,9 +158,9 @@ function diagramSource(title, accessibilityTitle, accessibilityDescription) {
     '  }',
     '  expert["Expert source"] --> simple["Simple draft"]',
     '  expert --> diagram["Primary diagram"]',
-    '  simple --> review["Human review"]',
-    '  diagram --> review',
-    '  review --> approved["Approved wiki page"]',
+    '  simple --> checks["Automated quality checks"]',
+    '  diagram --> checks',
+    '  checks --> published["Published wiki page"]',
     '',
   ].join('\n');
 }
@@ -174,8 +174,7 @@ function nextCommands(sourcePath) {
   const quotedPath = shellQuote(sourcePath);
   return [
     `npm run docs:prepare -- ${quotedPath} --force`,
-    `npm run docs:approve -- ${quotedPath} --reviewed-by "<human-reviewer>" --confirm-human-review`,
-    'npm run validate:approvals',
+    'npm run validate:content',
   ];
 }
 
@@ -322,10 +321,10 @@ export async function createWikiScaffold({
   const technicalRoute = deriveAudienceRoute('technical', sourcePath, sourceData);
   const simpleRoute = deriveAudienceRoute('simple', sourcePath, sourceData);
   const accessibilityTitle = `${title} authoring flow`;
-  const accessibilityDescription = `The expert source and primary diagram feed a Simple draft that waits for human review before approval.`;
+  const accessibilityDescription = `The expert source and primary diagram feed a Simple draft that passes automated quality checks before publication.`;
   const placeholderApproval = {
     state: approvalContract.unreviewedState,
-    publishing: approvalContract.blockedPublishing,
+    publishing: approvalContract.allowedPublishing,
     reviewed_by: approvalContract.pendingReviewer,
     reviewed_on: 'pending',
     technical_source_hash: 'pending',
@@ -389,7 +388,7 @@ export async function createWikiScaffold({
     review_notes: [
       'Replace every TODO marker.',
       'Verify facts, links, commands, warnings, and operational status.',
-      'Review the Simple draft and primary diagram before approval.',
+      'Review the Simple draft and primary diagram for accuracy.',
     ],
     next_commands: commands,
   };

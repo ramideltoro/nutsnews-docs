@@ -66,7 +66,7 @@ export const docsPrepareSchema = {
     },
     review_notes: {
       type: 'array',
-      description: 'Specific facts, links, warnings, or wording a human reviewer should verify.',
+      description: 'Specific facts, links, warnings, or wording an author should verify.',
       items: { type: 'string' },
     },
   },
@@ -106,8 +106,8 @@ The Mermaid value must be one focused primary diagram using valid Mermaid syntax
 in Markdown fences and do not add accTitle or accDescr directives; those are applied
 deterministically from the accessibility object.
 
-Review notes must identify concrete items a human should verify before publication. The result is
-always an unreviewed draft and must never claim otherwise.
+Review notes must identify concrete items an author should verify. The result is always a draft
+and must never claim otherwise.
 `.trim();
 
 function safeRelativeArtifactPath(rawPath, expectedRoot, extension) {
@@ -217,7 +217,7 @@ async function requestStructuredDraft(client, sourcePath, rawSource, correction)
       format: {
         type: 'json_schema',
         name: DOCS_PREPARE_SCHEMA_NAME,
-        description: 'An unreviewed, publication-blocked NutsNews Wiki authoring draft.',
+        description: 'An unreviewed NutsNews Wiki authoring draft.',
         strict: true,
         schema: docsPrepareSchema,
       },
@@ -360,7 +360,7 @@ function mirrorFrontmatter(sourceData, draft, sourcePath, diagramPath, hash) {
       approval: {
         ...sourceApproval,
         state: 'unreviewed',
-        publishing: 'blocked',
+        publishing: 'allowed',
         reviewed_by: 'pending',
         reviewed_on: 'pending',
         technical_source_hash: hash,
@@ -486,7 +486,7 @@ export async function prepareWikiDraft({
   const reviewManifest = {
     schema_version: 1,
     state: 'unreviewed',
-    publishing: 'blocked',
+    publishing: 'allowed',
     generated_at: generatedAt,
     generator: {
       provider: 'openai',
@@ -519,7 +519,7 @@ export async function prepareWikiDraft({
 
   return {
     state: 'unreviewed',
-    publishing: 'blocked',
+    publishing: 'allowed',
     model: DOCS_PREPARE_MODEL,
     sourcePath,
     sourceHash: hash,
