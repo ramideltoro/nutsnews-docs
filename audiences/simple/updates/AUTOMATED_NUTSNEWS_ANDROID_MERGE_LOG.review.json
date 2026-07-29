@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "state": "automated",
+  "publishing": "allowed",
+  "source": {
+    "path": "updates/AUTOMATED_NUTSNEWS_ANDROID_MERGE_LOG.md",
+    "sha256": "e26daf592ffa19b628f64878d4e343d8a73785f16bff4b4b2eb4abd2b74d9eba"
+  },
+  "artifacts": {
+    "canonical_expert": "updates/AUTOMATED_NUTSNEWS_ANDROID_MERGE_LOG.md",
+    "simple_markdown": "audiences/simple/updates/AUTOMATED_NUTSNEWS_ANDROID_MERGE_LOG.md",
+    "technical_mirror": "audiences/technical/updates/AUTOMATED_NUTSNEWS_ANDROID_MERGE_LOG.md",
+    "primary_diagram": "diagrams/updates/AUTOMATED_NUTSNEWS_ANDROID_MERGE_LOG.mmd",
+    "review_manifest": "audiences/simple/updates/AUTOMATED_NUTSNEWS_ANDROID_MERGE_LOG.review.json"
+  },
+  "accessibility": {
+    "title": "Android Play metadata commit behavior after merges 139 and 140",
+    "description": "The metadata publisher commits an edit with the in-review guard. A successful response completes the commit; a rejected response reports its structured Play error when available."
+  },
+  "review_notes": [
+    "This bundle is unreviewed and must not be represented as human-reviewed.",
+    "The record covers merged pull requests 140 and 139 for ramideltoro/nutsnews-android.",
+    "Deployment, migration, configuration beyond the existing review mode, compatibility beyond reported Play behavior, security, and rollback are not established by these merges."
+  ],
+  "next_commands": [],
+  "approval": {
+    "state": "automated",
+    "publishing": "allowed",
+    "reviewed_by": "codex-merge-docs",
+    "reviewed_on": "2026-07-29T13:15:32.792Z",
+    "technical_source_hash": "e26daf592ffa19b628f64878d4e343d8a73785f16bff4b4b2eb4abd2b74d9eba",
+    "automation": {
+      "source_repository": "ramideltoro/nutsnews-android",
+      "pull_requests": "139,140",
+      "merge_commit": "411c4d1b3d0a3f6cfb0966c459a61665aaa5d492",
+      "workflow_run": "30455045680"
+    }
+  }
+}

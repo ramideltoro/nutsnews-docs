@@ -8,9 +8,9 @@
       "lastMergeCommit": "d339f40a6c29b41d18d5d977575274345c73941b"
     },
     "ramideltoro/nutsnews-android": {
-      "lastMergedAt": "2026-07-28T21:45:34Z",
-      "lastPullNumber": 138,
-      "lastMergeCommit": "4f82d41a903d18e57409c3d7b429bb77cae626d3"
+      "lastMergedAt": "2026-07-29T11:05:32Z",
+      "lastPullNumber": 140,
+      "lastMergeCommit": "411c4d1b3d0a3f6cfb0966c459a61665aaa5d492"
     },
     "ramideltoro/nutsnews-backend": {
       "lastMergedAt": "2026-07-29T10:51:16Z",
@@ -83,18 +83,5 @@
       "lastMergeCommit": "43e7883554e250b2297d40266374cb4ff87d141c"
     }
   },
-  "failures": {
-    "ramideltoro/nutsnews-android": {
-      "headSha": "411c4d1b3d0a3f6cfb0966c459a61665aaa5d492",
-      "pullNumbers": [
-        139,
-        140
-      ],
-      "attempts": 1,
-      "blocked": false,
-      "lastFailedAt": "2026-07-29T11:25:07.968Z",
-      "workflowRun": "30447354125",
-      "runUrl": "https://github.com/ramideltoro/nutsnews-docs/actions/runs/30447354125"
-    }
-  }
+  "failures": {}
 }
