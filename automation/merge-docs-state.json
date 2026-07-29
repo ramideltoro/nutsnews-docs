@@ -83,5 +83,18 @@
       "lastMergeCommit": "43e7883554e250b2297d40266374cb4ff87d141c"
     }
   },
-  "failures": {}
+  "failures": {
+    "ramideltoro/nutsnews-android": {
+      "headSha": "411c4d1b3d0a3f6cfb0966c459a61665aaa5d492",
+      "pullNumbers": [
+        139,
+        140
+      ],
+      "attempts": 1,
+      "blocked": false,
+      "lastFailedAt": "2026-07-29T11:25:07.968Z",
+      "workflowRun": "30447354125",
+      "runUrl": "https://github.com/ramideltoro/nutsnews-docs/actions/runs/30447354125"
+    }
+  }
 }
