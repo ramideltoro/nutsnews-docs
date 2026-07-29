@@ -1,14 +1,14 @@
 ---
 title: "Automated NutsNews Merge Log"
-description: "Merge record for reviewed staging-evidence helpers used by the Vercel production-release workflow."
+description: "Automated record of merged NutsNews product changes."
 wiki:
   source_route: "/technical/updates/automated-nutsnews-merge-log"
   simple_route: "/simple/updates/automated-nutsnews-merge-log"
   slug: "updates/automated-nutsnews-merge-log"
   primary_diagram:
     file: "diagrams/updates/AUTOMATED_NUTSNEWS_MERGE_LOG.mmd"
-    accTitle: "Reviewed staging-evidence verification flow"
-    accDescr: "The Vercel production-release workflow exports the reviewed verifier to temporary storage, supplies the checked-out app contract path, and verifies the canonical qualified report before staging a production candidate."
+    accTitle: "Privacy selection and responsive navigation flow"
+    accDescr: "Readers choose an Android or iOS privacy policy at the privacy selector. On narrow screens, a top-left menu provides the public navigation links; the desktop footer keeps those links."
   status: draft
   collection: platform-and-data
   section: core-platform
@@ -17,19 +17,29 @@ wiki:
     state: automated
     publishing: allowed
     reviewed_by: "codex-merge-docs"
-    reviewed_on: "2026-07-29T05:44:15.162Z"
-    technical_source_hash: 6b3808c3abac20968c73c27126eaf719dc84cc2303bb0b5a11e42a039182275b
+    reviewed_on: "2026-07-29T20:39:48.176Z"
+    technical_source_hash: 722af9fb732cc44a7541972d3a469f78cdc76063777be15b85d6b48ddb7c1829
     automation:
       source_repository: "ramideltoro/nutsnews"
-      pull_requests: "536,537,538"
-      merge_commit: d339f40a6c29b41d18d5d977575274345c73941b
-      workflow_run: "30425862591"
+      pull_requests: "539"
+      merge_commit: 75890e1107d8b3cb709f5c7ac363ce91917a5281
+      workflow_run: "30489054881"
 ---
 # Automated NutsNews Merge Log
 
-This log records the already-merged changes to the staging qualification evidence check that precedes Vercel production-candidate staging. Approval remains unreviewed; this record does not claim human review.
+This log records already-merged changes from supplied merge evidence. Approval metadata is automated and does not claim human review.
 
 ## Merge entries
+
+### 2026-07-29 — ramideltoro/nutsnews [PR #539](https://github.com/ramideltoro/nutsnews/pull/539) — merge commit `75890e1107d8b3cb709f5c7ac363ce91917a5281`
+
+PR #539 makes `/privacy` a privacy-policy selector and moves the existing localized website/iOS policy to `/privacy/ios`. The iOS policy wording is described as unchanged by the supplied evidence. The selector offers Android and iOS policy cards; the Android card targets `https://www.nutsnews.com/privacy/android`, and the iOS card targets `/privacy/ios`. Sitemap and smoke/accessibility coverage include `/privacy`, `/privacy/android`, and `/privacy/ios`.
+
+For readers, `/privacy` now starts with a platform choice rather than the full iOS policy. On viewports below the existing 720px breakpoint, Apps, Saved, About, Contact, and Privacy move from the footer into a fixed top-left hamburger menu. At desktop widths, the footer retains those links and the mobile menu is hidden.
+
+The new `MobileSiteNavigation` component owns the menu state. Its toggle exposes `aria-expanded` and `aria-controls`; opening the menu renders a labelled navigation panel. Escape closes the panel and returns focus to the toggle, an outside pointer action closes it, and selecting a navigation link closes it. The changed component and browser coverage also exercise keyboard navigation. The menu is positioned with top/left safe-area insets, and the panel can scroll within its maximum viewport height.
+
+This merge establishes public-route and interface behavior only. It does not establish a deployment result or procedure, a migration, configuration requirements, a compatibility promise beyond the documented routes and responsive behavior, a security-policy change, changed secrets or access policy, a new external dependency, or a rollback procedure.
 
 ### 2026-07-29 — ramideltoro/nutsnews [PR #538](https://github.com/ramideltoro/nutsnews/pull/538) — merge commit `d339f40a6c29b41d18d5d977575274345c73941b`
 
@@ -57,4 +67,4 @@ This merge establishes no migration, compatibility commitment, security change, 
 
 ## Combined safety boundary
 
-Together, these changes affect the Vercel production-release staging-evidence verification path: the reviewed verifier is exported to temporary storage, receives the exact checked-out operation-contract path, and reads the canonical qualified report. The supplied evidence does not establish production deployment success, a change to secret values or access policy, a new external dependency, or an operator rollback command.
+PR #539 establishes the documented privacy-route and responsive-navigation behavior. PRs #536–#538 establish the documented staging-evidence verification behavior. The supplied evidence does not establish successful production deployment, changed secret values or access policy, a new external dependency, or an operator rollback command.
