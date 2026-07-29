@@ -17,8 +17,8 @@ wiki:
     state: approved
     publishing: allowed
     reviewed_by: "ramideltoro"
-    reviewed_on: "2026-07-28T22:50:31.364Z"
-    technical_source_hash: a6928f078a0e14b28290ed7ff6c09ad655ac183e523f80b764d7e51e72793a78
+    reviewed_on: "2026-07-29T04:08:08.257Z"
+    technical_source_hash: 01c303443caa804a613dfd40492fd1ec3bb179e7a2bc836af1ca3869105696b0
 ---
 
 # Documentation Style Guide
@@ -95,7 +95,7 @@ wiki:
 
 Replace every `TODO`. Check the Technical source, Simple article, Technical mirror, diagram, commands, warnings, links, verification, and rollback.
 
-After a human reviews the current bundle:
+For manual work, after a human reviews the current bundle:
 
 ```bash
 npm run docs:approve -- CACHE_INVALIDATION_GUIDE.md --reviewed-by "<human-reviewer>" --confirm-human-review
@@ -112,14 +112,16 @@ npm run test:content-routes
 npm run build
 ```
 
+The merge-documentation workflow is the only automatic exception. Codex receives no GitHub write token. A separate safety step restricts paths, records the source repository, PR, merge commit, run, and source hash, and requires all the same checks. Do not run `docs:auto-approve` manually.
+
 ## When an old approval becomes stale
 
 Changing the original Technical source makes its old approval invalid.
 
 1. Update both audience copies and the diagram.
 2. Keep every command, warning, success check, failure step, and rollback.
-3. Ask a human to review the current files.
-4. Run `docs:approve` again.
+3. For manual work, ask a human to review the current files.
+4. Run `docs:approve` again. The trusted merge workflow records separate automated provenance.
 5. Rerun all checks. Never edit only the hash or skip a failing gate.
 
 ## Diagrams, screenshots, and links
@@ -136,7 +138,7 @@ Changing the original Technical source makes its old approval invalid.
 - [ ] No command, warning, check, or rollback is missing.
 - [ ] Metadata and History placement are valid.
 - [ ] Diagram text and any screenshot text are accessible.
-- [ ] Human approval is current.
+- [ ] Human approval or trusted merge provenance is current.
 - [ ] Every required command passes.
 
 Documentation-only work may go directly to `main` after validation. Any site-code or mixed change follows the pull-request policy in [AGENTS.md](AGENTS.md).

@@ -47,7 +47,8 @@ const historyGroups = [
 const expertFields = ['title', 'description', 'slug', 'collection', 'section', 'status', 'order'];
 
 export const wikiContract = {
-  version: '1.4.0',
+  version: '1.5.0',
+  baselineSourceCount: 227,
   audiences: ['simple', 'technical'],
   route: {
     root: '/',
@@ -102,6 +103,8 @@ export const wikiContract = {
       'scripts',
       'src',
       'diagrams',
+      'audiences',
+      'automation',
     ]),
   },
   frontmatter: {
@@ -393,6 +396,7 @@ export function deriveOrder(frontmatter = {}, fallback = wikiContract.defaults.o
 export function wikiContractSnapshot() {
   return {
     version: wikiContract.version,
+    baselineSourceCount: wikiContract.baselineSourceCount,
     audiences: wikiContract.audiences,
     sourceAreas: wikiContract.paths.sourceAreas,
     pathPatterns: {

@@ -48,8 +48,8 @@ function assertValid(snapshot) {
   for (const audience of ['simple', 'technical']) {
     assert.equal(
       snapshot.entries.filter((entry) => entry[audience].html).length,
-      227,
-      `${audience} must load root and nested content`,
+      snapshot.entries.length,
+      `${audience} must load every root and nested content entry`,
     );
   }
 }

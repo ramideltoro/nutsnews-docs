@@ -13,8 +13,8 @@ wiki:
     state: approved
     publishing: allowed
     reviewed_by: "ramideltoro"
-    reviewed_on: "2026-07-28T22:39:38.524Z"
-    technical_source_hash: 12f023586ae81d7be116edbb0b1bb12a502add3efdd703038a035c22c0ed105b
+    reviewed_on: "2026-07-29T04:08:08.086Z"
+    technical_source_hash: 96e85d5e0b029d83352b5c00319b3e3d1060bd23901701fc5de6d67e7c3c73af
   slug: agents
 ---
 
@@ -39,6 +39,7 @@ This technical article is for engineers, platform operators, and maintainers who
 ## Change policy
 
 - A documentation-only change may be validated, committed, and pushed directly to `main` under repository policy.
+- The pinned `automated-merge-docs` workflow is the only bot exception: it may publish a complete documentation-only bundle for an already-merged NutsNews pull request after provenance, path-boundary, content, link, Mermaid, secret, and build gates pass.
 - A site-code, tooling, test, dependency, configuration, or workflow change requires a branch, a normal ready-to-merge pull request, passing checks, and explicit merge approval.
 - A mixed documentation and site-code change follows the pull-request policy.
 - Preserve existing work and operational boundaries unless the task explicitly supersedes them.
@@ -46,7 +47,8 @@ This technical article is for engineers, platform operators, and maintainers who
 ## Required document bundle
 
 - The canonical source is authoritative, but its Simple mirror, Technical mirror, and accessible Mermaid diagram must all describe the current source.
-- A meaningful Technical source edit makes the prior approval stale. Publication requires a human-reviewed Simple mirror and a current approval hash; automation, bots, and model identities cannot approve.
+- A meaningful Technical source edit makes the prior approval stale. Manual publication requires human review. Merge-triggered publication may instead use `state: automated` only when the trusted workflow records the source repository, every merged PR, the merge SHA, workflow run, and current Technical-source hash after Codex exits.
+- Codex cannot grant itself write access, commit, push, or bypass a gate. The post-agent workflow rejects prohibited paths and records automated provenance deterministically.
 - Never remove or bypass approval, diagram, inventory, link, route, accessibility, secret, or build gates to publish a change.
 
 ## Exact commands
@@ -66,6 +68,8 @@ After a human reviews the Technical source, Simple mirror, Technical mirror, and
 npm run docs:approve -- <canonical-source.md> --reviewed-by "<human-reviewer>" --confirm-human-review
 ```
 
+`docs:auto-approve` is reserved for `.github/workflows/automated-merge-docs.yml`. Do not run it as a substitute for human review during normal authoring.
+
 Before committing any documentation-only update:
 
 ```bash
@@ -81,4 +85,4 @@ npm run build
 
 - Do not put credentials, secrets, temporary secrets, or local environment files in sources, mirrors, diagrams, logs, or artifacts.
 - Use `.gitignore` and the wiki tooling for generated files. Do not discard unrelated work or use destructive Git cleanup.
-- If this contract changes, update this canonical source, both audience mirrors, and its diagram together, then obtain current human approval.
+- If this contract changes manually, update this canonical source, both audience mirrors, and its diagram together, then obtain current human approval.

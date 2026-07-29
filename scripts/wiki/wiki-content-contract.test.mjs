@@ -10,6 +10,7 @@ import {
   validateWikiContent,
   wikiContentExitCode,
 } from './wiki-content-contract.mjs';
+import { wikiContract } from './wiki-contract.mjs';
 
 const reviewedOn = '2026-07-28T20:10:06.000Z';
 
@@ -205,7 +206,7 @@ async function makeFixture(t) {
   await write(
     'scripts/wiki/wiki-inventory.generated.json',
     `${JSON.stringify({
-      contractVersion: '1.4.0',
+      contractVersion: wikiContract.version,
       sourceCount: entries.length,
       sourcePaths: specs.map(({ sourcePath }) => sourcePath),
       warnings: [],

@@ -8,12 +8,16 @@ import {
   approvalErrors,
   expertSourceHash,
 } from './wiki-approval.mjs';
+import { wikiContract } from './wiki-contract.mjs';
 
 const repoRoot = process.cwd();
 const inventoryPath = path.join(repoRoot, 'scripts/wiki/wiki-inventory.generated.json');
 
 const inventory = JSON.parse(await fs.readFile(inventoryPath, 'utf8'));
-assert.equal(inventory.entries.length, 227, 'approval gate requires the complete wiki inventory');
+assert.ok(
+  inventory.entries.length >= wikiContract.baselineSourceCount,
+  'approval gate requires at least the v1 baseline wiki inventory',
+);
 
 let reviewManifestCount = 0;
 for (const entry of inventory.entries) {
@@ -52,6 +56,7 @@ for (const entry of inventory.entries) {
     'reviewed_by',
     'reviewed_on',
     'technical_source_hash',
+    'automation',
   ]) {
     assert.equal(
       simpleApproval[field],
@@ -80,7 +85,7 @@ for (const entry of inventory.entries) {
 }
 
 console.log(
-  `Wiki approval gate passed: ${inventory.entries.length} current human approvals, `
+  `Wiki approval gate passed: ${inventory.entries.length} current human or automated approvals, `
     + `${inventory.entries.length * 3} source/mirror records, `
     + `${reviewManifestCount} review manifests.`,
 );

@@ -5,25 +5,23 @@ title: Wiki publishing pipeline
 flowchart LR
   accTitle: GitHub Pages Publishing for the NutsNews Wiki
   accDescr {
-    Reviewed wiki sources pass the complete quality gate, emit an exact ready commit, build and inspect an immutable artifact, and deploy to the default GitHub Pages URL. Production cutover adds only a DNS-only wiki CNAME, deploys the root artifact, configures the custom domain, waits for HTTPS, and performs public smoke tests or rolls back to the default URL.
+    A merged NutsNews pull request is discovered centrally. Codex drafts only documentation without a GitHub write token. A fixed path boundary records immutable merge provenance and runs the complete gate before committing to main. The existing exact-SHA Pages workflow then builds, inspects, and deploys the HTTPS wiki. Failures retain the prior site and cursor, cap an identical batch at three attempts, and resume when a newer merge appears.
   }
-  change["Reviewed source or site-code change"] --> quality["Quality: contracts, fixtures, build, browser"]
+  merge["Merged PR in a NutsNews repository"] --> discover["Central five-minute discovery"]
+  discover --> evidence["Bounded PR and patch evidence"]
+  evidence --> codex["Codex drafts complete bundle without write token"]
+  codex --> boundary{"Allowed documentation paths only?"}
+  boundary -->|No| incident["Block, retain cursor, report incident"]
+  boundary -->|Yes| provenance["Record repo, PRs, SHA, run, and source hash"]
+  provenance --> quality["Quality: contracts, fixtures, build, browser"]
   quality --> ready{"All gates pass?"}
-  ready -->|No| fix["Fix source; rerun complete gate"]
-  fix --> quality
+  ready -->|No| incident
   ready -->|Yes| sha["Emit validated SHA"]
   sha --> exact["Check out and verify exact SHA"]
   exact --> build["Build allowlisted site and base"]
   build --> inspect["Stamp commit; inspect budgets and final artifact"]
   inspect --> upload["Upload pinned Pages artifact"]
   upload --> deploy["Deploy through main-only environment"]
-  deploy --> default["Smoke default /nutsnews-docs URL"]
-  default --> launch{"Production launch approved?"}
-  launch -->|No| default
-  launch -->|Yes| dns["Set only DNS-only CNAME wiki to ramideltoro.github.io"]
-  dns --> root["Deploy validated production-root artifact"]
-  root --> domain["Set Pages custom domain"]
-  domain --> https["Wait for certificate; enforce HTTPS"]
-  https --> smoke{"Production smoke passes?"}
-  smoke -->|Yes| live["Launch verified"]
-  smoke -->|No| rollback["Redeploy pre-cutover artifact; remove custom domain; repair only wiki CNAME"]
+  deploy --> smoke{"Production HTTPS smoke passes?"}
+  smoke -->|Yes| live["wiki.nutsnews.com updated"]
+  smoke -->|No| rollback["Keep or restore last-good release"]

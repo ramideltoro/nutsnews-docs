@@ -17,8 +17,8 @@ wiki:
     state: approved
     publishing: allowed
     reviewed_by: "ramideltoro"
-    reviewed_on: "2026-07-28T22:50:31.364Z"
-    technical_source_hash: a6928f078a0e14b28290ed7ff6c09ad655ac183e523f80b764d7e51e72793a78
+    reviewed_on: "2026-07-29T04:08:08.257Z"
+    technical_source_hash: 01c303443caa804a613dfd40492fd1ec3bb179e7a2bc836af1ca3869105696b0
 ---
 
 # Documentation Style Guide
@@ -113,8 +113,8 @@ Valid status values are `active`, `draft`, `deprecated`, and `obsolete`. Use onl
 
 4. Reconcile the generated Simple text and Technical mirror with the canonical source. Generation is a draft aid, not approval.
 5. Make the Mermaid diagram accurate and accessible. Resolve every item in the adjacent review manifest.
-6. Have a human review the current Technical source, both mirrors, and diagram.
-7. Record approval only after that review:
+6. For manual work, have a human review the current Technical source, both mirrors, and diagram.
+7. Record manual approval only after that review:
 
    ```bash
    npm run docs:approve -- CACHE_INVALIDATION_GUIDE.md --reviewed-by "<human-reviewer>" --confirm-human-review
@@ -133,6 +133,8 @@ Valid status values are `active`, `draft`, `deprecated`, and `obsolete`. Use onl
 
 9. Follow [AGENTS.md](AGENTS.md): documentation-only changes may go directly to `main` after validation; site-code or mixed changes require a checked and explicitly approved pull request.
 
+The merge-documentation workflow is the only non-human path. It treats merged code as untrusted evidence, restricts Codex to the complete documentation bundle, records immutable repository/PR/SHA/run/hash provenance after Codex exits, and requires the same publication gates. Do not use `docs:auto-approve` manually.
+
 ## Existing document and stale-review path
 
 A substantive canonical edit invalidates the old hash even if the approval fields still say `approved`.
@@ -146,8 +148,8 @@ The expected failure identifies stale approval. Do not change only the hash or b
 
 1. Update the Simple mirror, Technical mirror, and diagram to match the new source.
 2. Preserve every safety-critical fact, command, caution, verification, and rollback.
-3. Have a human review the complete current bundle.
-4. Run the exact `docs:approve` command for that canonical source.
+3. For manual work, have a human review the complete current bundle.
+4. Run the exact `docs:approve` command for that canonical source. The trusted merge workflow instead records its distinct automated provenance.
 5. Rerun the complete gate until it passes.
 
 ## Safety content that cannot be omitted
@@ -191,7 +193,7 @@ Schema-valid Markdown image form:
 - [ ] Metadata, routes, status, collection, section, and order are valid.
 - [ ] The accessible diagram is current; screenshots have alt text and captions.
 - [ ] Related links and History placement are correct.
-- [ ] Approval names a human and matches the current source hash.
+- [ ] Approval is either current human review or trusted merge provenance and matches the current source hash.
 - [ ] The complete documentation gate passes before delivery.
 
 ## Related docs

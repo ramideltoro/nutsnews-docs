@@ -5,13 +5,19 @@ title: AGENTS migration governance flow
 flowchart TD
   accTitle: AGENTS.md (Technical)
   accDescr {
-    A contribution is classified as documentation-only or site-code work. Documentation-only work updates the complete approved document bundle and may go directly to main after validation. Site-code or mixed work uses a checked and approved pull request.
+    A contribution is classified as manual documentation, merge-triggered documentation, or site-code work. Manual documentation receives human review. The merge workflow gives Codex no write token, rejects prohibited paths, records immutable merge provenance, and publishes only a complete validated bundle. Site-code or mixed work uses a checked and approved pull request.
   }
-  request["Contribution request"] --> classify{"Documentation only?"}
+  request["Contribution request"] --> automated{"Trusted merged-PR workflow?"}
+  automated -->|Yes| codex["Codex drafts complete bundle without GitHub write access"]
+  codex --> boundary{"Only allowed documentation paths changed?"}
+  boundary -->|No| incident["Block publication and report failure"]
+  boundary -->|Yes| provenance["Record repository, PRs, merge SHA, run, and source hash"]
+  provenance --> validate["Run exact wiki validation commands"]
+  automated -->|No| classify{"Documentation only?"}
   classify -->|Yes| bundle["Update canonical source, Simple mirror, Technical mirror, and diagram"]
   bundle --> review["Human reviews current Simple content and diagram"]
   review --> approve["Record current approval"]
-  approve --> validate["Run exact wiki validation commands"]
+  approve --> validate
   validate --> direct["Commit and push directly to main"]
   classify -->|No or mixed| branch["Create site-code branch"]
   branch --> pr["Open normal ready pull request"]

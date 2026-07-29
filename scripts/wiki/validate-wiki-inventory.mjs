@@ -17,7 +17,7 @@ const execFileAsync = promisify(execFile);
 const repoRoot = process.cwd();
 const inventoryPath = path.join(repoRoot, 'scripts', 'wiki', 'wiki-inventory.generated.json');
 const generatorPath = path.join(repoRoot, 'scripts', 'wiki', 'generate-wiki-content.mjs');
-const expectedSourceCount = 227;
+const minimumSourceCount = wikiContract.baselineSourceCount;
 
 async function generateInventory() {
   await execFileAsync(process.execPath, [generatorPath, '--strict'], {
@@ -51,11 +51,11 @@ async function run() {
   const inventory = JSON.parse(first);
   assert.equal('generatedAtUtc' in inventory, false, 'stable manifest may not contain a timestamp');
   assert.equal(inventory.contractVersion, wikiContract.version);
-  assert.equal(inventory.sourceCount, expectedSourceCount);
-  assert.equal(inventory.sourcePaths.length, expectedSourceCount);
-  assert.equal(inventory.entries.length, expectedSourceCount);
+  assert.ok(inventory.sourceCount >= minimumSourceCount);
+  assert.equal(inventory.sourcePaths.length, inventory.sourceCount);
+  assert.equal(inventory.entries.length, inventory.sourceCount);
   assert.equal(inventory.warnings.length, 0);
-  assert.equal(new Set(inventory.sourcePaths).size, expectedSourceCount);
+  assert.equal(new Set(inventory.sourcePaths).size, inventory.sourceCount);
   assert.deepEqual(
     inventory.entries.map((entry) => entry.source.path),
     inventory.sourcePaths,

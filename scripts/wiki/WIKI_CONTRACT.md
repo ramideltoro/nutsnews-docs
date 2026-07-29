@@ -28,18 +28,22 @@ Responses API only at author time. It reads `OPENAI_API_KEY` only from the
 process environment, pins `gpt-5.4-mini-2026-03-17`, requests strict structured
 output with `store: false`, and never adds an AI dependency to the built wiki.
 
-Every generated bundle is marked `unreviewed` with publishing `blocked`. A
-human must resolve its review notes and approve it before publication. The
-command validates Mermaid locally and retries an invalid diagram once. It
-checks all target paths before the API request and refuses to replace any
-existing artifact unless the author explicitly adds `--force`.
+Every manually generated bundle is marked `unreviewed` with publishing
+`blocked`. A human must resolve its review notes and approve it before manual
+publication. The command validates Mermaid locally and retries an invalid
+diagram once. It checks all target paths before the API request and refuses to
+replace any existing artifact unless the author explicitly adds `--force`.
 
 After review, run
 `npm run docs:approve -- <canonical-source.md> --reviewed-by <identity> --confirm-human-review`.
 This separate command records the reviewer, review time, and normalized
 Technical-source hash on the canonical Technical source, Simple mirror, and
 tracked Technical mirror. Generator, automation, bot, and pending identities
-are rejected. The hash excludes the approval record itself and normalizes line
+are rejected from this manual path. The trusted `automated-merge-docs` workflow
+is the only exception: after Codex exits, deterministic code records the source
+repository, merged PRs, merge SHA, workflow run, and normalized source hash
+with `state: automated`. Codex has no GitHub write token and cannot create this
+record itself. The hash excludes the approval record itself and normalizes line
 endings, so approval metadata and LF/CRLF conversions do not stale content;
 any substantive Technical source change does. Draft, blocked, missing, or
 stale approval fails CI and the production build.
@@ -56,7 +60,7 @@ and refuses to overwrite any target. On success it prints the exact
 
 Run `npm run validate:content` after `npm run wiki:prepare`. This single,
 deterministic gate validates the stable inventory, generated schema, Simple and
-Technical mirrors, human approval freshness, accessible Mermaid syntax,
+Technical mirrors, current human or trusted merge-provenance approval, accessible Mermaid syntax,
 unique slugs/orders/routes, internal links and heading fragments, image alt
 text/captions/assets, and orphan artifacts. Failures are grouped by source and
 include a remediation. Any defect exits nonzero, and the production build runs
@@ -126,7 +130,8 @@ History is excluded by default and can be included with an explicit control.
 <!-- wiki-contract:start -->
 ```json
 {
-  "version": "1.4.0",
+  "version": "1.5.0",
+  "baselineSourceCount": 227,
   "audiences": [
     "simple",
     "technical"

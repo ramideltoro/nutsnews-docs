@@ -8,8 +8,7 @@ import { parseMarkdownFrontmatter } from './parse-markdown.mjs';
 import { deriveSlugFromSource, wikiContract } from './wiki-contract.mjs';
 
 const repoRoot = process.cwd();
-const expectedSourceCount = 227;
-const expectedDiagramCount = expectedSourceCount;
+const minimumSourceCount = wikiContract.baselineSourceCount;
 
 const knownDiagramStarters = new Set([
   'flowchart',
@@ -278,16 +277,16 @@ async function validateDiagramSyntax(mermaid, diagramPath) {
     }
   }
 
-  if (sourcePaths.length !== expectedSourceCount) {
-    errors.push(`expected ${expectedSourceCount} source documents, found ${sourcePaths.length}`);
+  if (sourcePaths.length < minimumSourceCount) {
+    errors.push(`expected at least ${minimumSourceCount} source documents, found ${sourcePaths.length}`);
   }
 
-  if (diagramPaths.length !== expectedDiagramCount) {
-    errors.push(`expected ${expectedDiagramCount} canonical diagrams, found ${diagramPaths.length}`);
+  if (diagramPaths.length !== sourcePaths.length) {
+    errors.push(`expected ${sourcePaths.length} canonical diagrams, found ${diagramPaths.length}`);
   }
 
-  if (new Set(diagramPaths).size !== expectedDiagramCount) {
-    errors.push(`expected ${expectedDiagramCount} unique canonical diagrams, found ${new Set(diagramPaths).size}`);
+  if (new Set(diagramPaths).size !== sourcePaths.length) {
+    errors.push(`expected ${sourcePaths.length} unique canonical diagrams, found ${new Set(diagramPaths).size}`);
   }
 
   for (const [pathValue, count] of diagramCountByPath.entries()) {
