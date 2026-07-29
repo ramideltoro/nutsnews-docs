@@ -1,12 +1,30 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
 
-import { wikiContract } from '../../scripts/wiki/wiki-contract.mjs';
+import {
+  isHistoricalSourcePath,
+  wikiContract,
+} from '../../scripts/wiki/wiki-contract.mjs';
 
 const articlePath = '/simple/project/';
 const nestedArticlePath = '/simple/archive/nutsnews-app-store-privacy-policy-update-readme/';
 const historicalArticlePath = '/simple/updates/readme-footer-search-menu-patch/';
 const screenshotStyle = new URL('./visual-stability.css', import.meta.url).pathname;
+const inventory = JSON.parse(await readFile(
+  new URL('../../scripts/wiki/wiki-inventory.generated.json', import.meta.url),
+  'utf8',
+));
+const historicalSources = inventory.entries.filter(
+  (entry) => isHistoricalSourcePath(entry.source.path),
+).length;
+const expectedHistoricalPages = historicalSources;
+const expectedCurrentPages = (
+  inventory.entries.length
+  - historicalSources
+  + wikiContract.navigation.rail.length
+);
+const expectedPagesPerAudience = expectedCurrentPages + expectedHistoricalPages;
 
 function seriousOrCritical(violations) {
   return violations.filter(({ impact }) => impact === 'serious' || impact === 'critical');
@@ -227,14 +245,35 @@ test('Pagefind exhaustively isolates audience and History index partitions', asy
 
   expect(audit).toEqual({
     filters: {
-      audience: { simple: 234, technical: 234 },
-      history: { current: 260, historical: 208 },
+      audience: Object.fromEntries(
+        wikiContract.audiences.map((audience) => [audience, expectedPagesPerAudience]),
+      ),
+      history: {
+        current: expectedCurrentPages * wikiContract.audiences.length,
+        historical: expectedHistoricalPages * wikiContract.audiences.length,
+      },
     },
     partitions: {
-      'simple:current': { count: 130, unique: 130, isolated: true },
-      'simple:historical': { count: 104, unique: 104, isolated: true },
-      'technical:current': { count: 130, unique: 130, isolated: true },
-      'technical:historical': { count: 104, unique: 104, isolated: true },
+      'simple:current': {
+        count: expectedCurrentPages,
+        unique: expectedCurrentPages,
+        isolated: true,
+      },
+      'simple:historical': {
+        count: expectedHistoricalPages,
+        unique: expectedHistoricalPages,
+        isolated: true,
+      },
+      'technical:current': {
+        count: expectedCurrentPages,
+        unique: expectedCurrentPages,
+        isolated: true,
+      },
+      'technical:historical': {
+        count: expectedHistoricalPages,
+        unique: expectedHistoricalPages,
+        isolated: true,
+      },
     },
   });
 });
