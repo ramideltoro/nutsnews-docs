@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">NutsNews</title>
+  <defs>
+    <linearGradient id="shell" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d78a24"/>
+      <stop offset="0.55" stop-color="#8f3e08"/>
+      <stop offset="1" stop-color="#3f1606"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="15" fill="#f8ecd2"/>
+  <path d="M31.5 8C19 8 10 17.8 10 30.5 10 43 19.6 54 31.5 56 43.4 54 53 43 53 30.5 53 17.8 44 8 31.5 8Z" fill="url(#shell)" stroke="#6c2a07" stroke-width="2"/>
+  <path d="M13 25c6.5-2.2 12.6-7.4 18.5-15 5.9 7.6 12 12.8 18.5 15" fill="none" stroke="#f4bd55" stroke-linecap="round" stroke-width="3"/>
+  <path d="M22 43V23l20 20V23" fill="none" stroke="#fff6df" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+</svg>

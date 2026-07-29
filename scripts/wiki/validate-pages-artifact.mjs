@@ -139,6 +139,15 @@ export async function validatePagesArtifact({
     errors.push('root canonical URL does not match the pre-cutover public URL');
   }
   const basePrefix = manifest.deployment.base_path === '/' ? '' : manifest.deployment.base_path;
+  const faviconHref = `${basePrefix}/favicon.svg`;
+  try {
+    await fs.access(path.join(outputRoot, 'favicon.svg'));
+  } catch {
+    errors.push('local favicon is missing from the static artifact');
+  }
+  if (!index.includes(`href="${faviconHref}"`)) {
+    errors.push('root favicon URL is not project-base aware');
+  }
   if (!index.includes(`href="${basePrefix}/simple/"`)
       || !index.includes(`href="${basePrefix}/technical/"`)) {
     errors.push('root audience destinations are not project-base aware');

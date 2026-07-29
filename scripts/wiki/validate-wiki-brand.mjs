@@ -6,6 +6,7 @@ import path from 'node:path';
 const repoRoot = process.cwd();
 const cssPath = path.join(repoRoot, 'src', 'styles', 'wiki.css');
 const logoPath = path.join(repoRoot, 'src', 'assets', 'nutsnews-logo.png');
+const faviconPath = path.join(repoRoot, 'public', 'favicon.svg');
 const astroConfigPath = path.join(repoRoot, 'astro.config.mjs');
 const approvedLogoSha256 = 'ca9e0164b281cc8d00a5ad97357f6e53c8bfcacfce633dd6edfe44bcc0f11fcd';
 
@@ -62,17 +63,21 @@ function hexToken(css, token) {
 }
 
 async function run() {
-  const [css, logo, astroConfig] = await Promise.all([
+  const [css, logo, favicon, astroConfig] = await Promise.all([
     fs.readFile(cssPath, 'utf8'),
     fs.readFile(logoPath),
+    fs.readFile(faviconPath, 'utf8'),
     fs.readFile(astroConfigPath, 'utf8'),
   ]);
 
   const logoHash = createHash('sha256').update(logo).digest('hex');
   assert.equal(logoHash, approvedLogoSha256, 'wiki logo must match the approved NutsNews asset');
+  assert.match(astroConfig, /favicon:\s*['"]\/favicon\.svg['"]/);
   assert.match(astroConfig, /src:\s*['"]\.\/src\/assets\/nutsnews-logo\.png['"]/);
   assert.match(astroConfig, /alt:\s*['"]NutsNews chestnut logo['"]/);
   assert.match(astroConfig, /customCss:\s*\[['"]\.\/src\/styles\/wiki\.css['"]\]/);
+  assert.match(favicon, /<svg\b[^>]*viewBox=["']0 0 64 64["']/);
+  assert.doesNotMatch(favicon, /<script\b|(?:href|src)=["']https?:\/\//i);
 
   for (const token of requiredTokens) {
     assert.match(css, new RegExp(`--${token}:`), `missing design token --${token}`);
@@ -141,7 +146,7 @@ async function run() {
   console.log(
     `Wiki brand validation passed: approved logo ${logoHash.slice(0, 12)}, `
       + `${requiredTokens.length} required token families, ${results.join(', ')}; `
-      + 'system/local fonts only.',
+      + 'local favicon and system/local fonts only.',
   );
 }
 
