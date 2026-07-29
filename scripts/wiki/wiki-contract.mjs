@@ -97,6 +97,7 @@ export const wikiContract = {
       '_sitemaps',
       '.well-known',
       '.husky',
+      '_automation-work',
       'bin',
       'dist',
       'public',
