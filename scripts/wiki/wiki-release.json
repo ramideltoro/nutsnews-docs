@@ -4,9 +4,9 @@
   "ready": true,
   "expected_source_count": 227,
   "deployment": {
-    "mode": "pre-cutover",
-    "site_url": "https://ramideltoro.github.io",
-    "base_path": "/nutsnews-docs",
-    "public_url": "https://ramideltoro.github.io/nutsnews-docs/"
+    "mode": "production",
+    "site_url": "https://wiki.nutsnews.com",
+    "base_path": "/",
+    "public_url": "https://wiki.nutsnews.com/"
   }
 }

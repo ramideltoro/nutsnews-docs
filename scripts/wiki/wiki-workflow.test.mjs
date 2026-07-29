@@ -94,9 +94,9 @@ export function validateWorkflow(source) {
   if (!/ref: \$\{\{ needs\.validate\.outputs\.validated_sha \}\}/.test(buildJob)) {
     errors.push('the Pages build must check out the exact validated SHA');
   }
-  if (!/WIKI_SITE_URL: https:\/\/ramideltoro\.github\.io/.test(buildJob)
-      || !/WIKI_BASE_PATH: \/nutsnews-docs/.test(buildJob)) {
-    errors.push('the pre-cutover artifact must target the default project Pages URL');
+  if (!/WIKI_SITE_URL: https:\/\/wiki\.nutsnews\.com/.test(buildJob)
+      || !/WIKI_BASE_PATH: \/$/m.test(buildJob)) {
+    errors.push('the production artifact must target the root custom domain');
   }
   const artifactValidation = buildJob.indexOf('npm run validate:pages-artifact');
   const artifactUpload = buildJob.indexOf('actions/upload-pages-artifact@');

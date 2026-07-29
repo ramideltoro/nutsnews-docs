@@ -23,6 +23,13 @@ const sourceExtensions = new Set([
   '.tsx',
 ]);
 
+const productionDeployment = Object.freeze({
+  mode: 'production',
+  site_url: 'https://wiki.nutsnews.com',
+  base_path: '/',
+  public_url: 'https://wiki.nutsnews.com/',
+});
+
 async function walk(root, relative = '') {
   const entries = await fs.readdir(path.join(root, relative), { withFileTypes: true });
   const files = [];
@@ -79,14 +86,24 @@ export async function validatePagesArtifact({
     );
   }
 
-  if (manifest.deployment.mode !== 'pre-cutover') {
-    errors.push('release manifest must remain pre-cutover until the production domain gate');
+  for (const [key, value] of Object.entries(productionDeployment)) {
+    if (manifest.deployment[key] !== value) {
+      errors.push(`release manifest deployment.${key} must equal ${value}`);
+    }
   }
   if (expectedSiteUrl && expectedSiteUrl !== manifest.deployment.site_url) {
     errors.push('WIKI_SITE_URL does not match the release manifest');
   }
   if (expectedBasePath && normalizedBase(expectedBasePath) !== manifest.deployment.base_path) {
     errors.push('WIKI_BASE_PATH does not match the release manifest');
+  }
+  try {
+    const cname = (await fs.readFile(path.join(repoRoot, 'CNAME'), 'utf8')).trim();
+    if (cname !== new URL(productionDeployment.public_url).hostname) {
+      errors.push('tracked CNAME does not match the production hostname');
+    }
+  } catch {
+    errors.push('tracked CNAME is missing');
   }
 
   const { files, symlinks } = await walk(outputRoot);
@@ -99,7 +116,7 @@ export async function validatePagesArtifact({
     if (!files.includes(required)) errors.push(`artifact is missing ${required}`);
   }
   if (files.includes('CNAME')) {
-    errors.push('pre-cutover artifact must not claim the custom domain');
+    errors.push('Pages settings own the custom domain; the artifact must not include CNAME');
   }
 
   for (const file of files) {
@@ -136,7 +153,7 @@ export async function validatePagesArtifact({
 
   const index = await fs.readFile(path.join(outputRoot, 'index.html'), 'utf8');
   if (!index.includes(`rel="canonical" href="${manifest.deployment.public_url}"`)) {
-    errors.push('root canonical URL does not match the pre-cutover public URL');
+    errors.push('root canonical URL does not match the production public URL');
   }
   const basePrefix = manifest.deployment.base_path === '/' ? '' : manifest.deployment.base_path;
   const faviconHref = `${basePrefix}/favicon.svg`;
