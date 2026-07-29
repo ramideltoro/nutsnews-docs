@@ -35,6 +35,7 @@ export default defineConfig({
     starlight({
       title: 'NutsNews Wiki',
       description: 'NutsNews technical and reader documentation',
+      favicon: '/favicon.svg',
       disable404Route: true,
       logo: {
         src: './src/assets/nutsnews-logo.png',

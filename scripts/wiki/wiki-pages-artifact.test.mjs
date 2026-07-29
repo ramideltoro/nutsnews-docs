@@ -38,9 +38,11 @@ async function fixtureRepo(t) {
     repoRoot,
     '_site/index.html',
     '<link rel="canonical" href="https://ramideltoro.github.io/nutsnews-docs/">'
+      + '<link rel="shortcut icon" href="/nutsnews-docs/favicon.svg">'
       + '<a href="/nutsnews-docs/simple/">Simple</a>'
       + '<a href="/nutsnews-docs/technical/">Technical</a>',
   );
+  await write(repoRoot, '_site/favicon.svg', '<svg viewBox="0 0 64 64"></svg>');
   await write(repoRoot, '_site/simple/index.html', '<h1>Simple</h1>');
   await write(repoRoot, '_site/technical/index.html', '<h1>Technical</h1>');
   await write(repoRoot, '_site/_astro/app.js', 'globalThis.wikiReady = true;');
@@ -64,7 +66,7 @@ test('clean pre-cutover artifact passes deterministically', async (t) => {
   assert.deepEqual(second, first);
   assert.deepEqual(first.errors, []);
   assert.equal(first.sources, 2);
-  assert.equal(first.files, 5);
+  assert.equal(first.files, 6);
 });
 
 test('incomplete inventory fixture cannot publish', async (t) => {
@@ -88,6 +90,13 @@ test('artifact stamped from a different commit cannot publish', async (t) => {
   await stampWikiRelease({ repoRoot, sha: 'b'.repeat(40) });
   const result = await validate(repoRoot);
   assert.ok(result.errors.some((error) => error.includes('does not match the validated commit')));
+});
+
+test('missing local favicon cannot publish', async (t) => {
+  const repoRoot = await fixtureRepo(t);
+  await fs.rm(path.join(repoRoot, '_site/favicon.svg'));
+  const result = await validate(repoRoot);
+  assert.ok(result.errors.some((error) => error.includes('local favicon is missing')));
 });
 
 test('rollback contract remains documented', async () => {
