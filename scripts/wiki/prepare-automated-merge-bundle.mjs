@@ -55,7 +55,8 @@ async function nextGlobalWikiOrder(repoRoot) {
     .map((entry) => entry.source)
     .filter((source) => Number.isSafeInteger(source.order))
     .map((source) => source.order);
-  return (orders.length ? Math.max(...orders) : 0) + 1;
+  const prospectiveFallbackMaximum = inventory.entries.length + 1;
+  return Math.max(prospectiveFallbackMaximum, ...orders) + 1;
 }
 
 export async function prepareAutomatedMergeBundle({

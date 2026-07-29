@@ -329,22 +329,13 @@ test('isolated merge bundle creates a complete target when a repository has no l
   const manifestFile = path.join(root, '_automation-work/trusted-bundle.json');
   await Promise.all([
     write(root, 'scripts/wiki/wiki-inventory.generated.json', `${JSON.stringify({
-      entries: [
-        {
-          source: {
-            collection: 'platform-and-data',
-            section: 'core-platform',
-            order: 100,
-          },
+      entries: Array.from({ length: 227 }, (_, index) => ({
+        source: {
+          collection: index === 99 ? 'platform-and-data' : 'start-here',
+          section: index === 99 ? 'core-platform' : 'overview',
+          order: index + 1,
         },
-        {
-          source: {
-            collection: 'start-here',
-            section: 'overview',
-            order: 227,
-          },
-        },
-      ],
+      })),
     })}\n`),
     write(root, 'scripts/wiki/prompts/automated-merge-docs.md', 'Trusted fixture prompt.\n'),
     write(root, 'event.json', `${JSON.stringify({
@@ -368,7 +359,7 @@ test('isolated merge bundle creates a complete target when a repository has no l
     await fs.readFile(path.join(root, sourcePath), 'utf8'),
     sourcePath,
   );
-  assert.equal(canonical.data.wiki.order, 228);
+  assert.equal(canonical.data.wiki.order, 229);
   for (const artifact of manifest.artifacts) {
     assert.equal((await fs.lstat(path.join(root, artifact.repository_path))).isFile(), true);
     assert.equal((await fs.lstat(path.join(workspace, artifact.workspace_path))).isFile(), true);
