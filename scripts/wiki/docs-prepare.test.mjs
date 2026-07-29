@@ -32,7 +32,7 @@ Preserve the [operator guide](https://example.com/operator) and never expose a c
 
 ## Safety boundary
 
-The reviewer must verify the deployment claim before publication.
+The author must verify the deployment claim before publication.
 `;
 
 function structuredDraft(overrides = {}) {
@@ -46,12 +46,12 @@ function structuredDraft(overrides = {}) {
       '',
       '## Safety boundary',
       '',
-      'A person must verify the deployment claim before publication.',
+      'An author must verify the deployment claim before publication.',
     ].join('\n'),
-    mermaid: 'flowchart TD\n  source[Technical source] --> review[Human review]',
+    mermaid: 'flowchart TD\n  source[Technical source] --> review[Author checks]',
     accessibility: {
       title: 'Draft review flow',
-      description: 'A Technical source becomes a draft that waits for human review.',
+      description: 'A Technical source becomes a draft that an author verifies.',
     },
     review_notes: [
       'Verify the deployment claim.',
@@ -84,7 +84,7 @@ async function fixtureRepo(t) {
   return root;
 }
 
-test('prepares blocked Simple, Mermaid, and review artifacts with the Responses API contract', async (t) => {
+test('prepares publishable Simple, Mermaid, and review artifacts with the Responses API contract', async (t) => {
   const repoRoot = await fixtureRepo(t);
   const client = fakeClient([structuredDraft()]);
   const validated = [];
@@ -112,7 +112,7 @@ test('prepares blocked Simple, Mermaid, and review artifacts with the Responses 
     review: 'audiences/simple/reports/PREPARE_FIXTURE.review.json',
   });
   assert.equal(result.state, 'unreviewed');
-  assert.equal(result.publishing, 'blocked');
+  assert.equal(result.publishing, 'allowed');
   assert.equal(validated.length, 1);
 
   const [simpleRaw, diagramRaw, reviewRaw] = await Promise.all([
@@ -122,7 +122,7 @@ test('prepares blocked Simple, Mermaid, and review artifacts with the Responses 
   ]);
   const simple = parseMarkdownFrontmatter(simpleRaw);
   assert.equal(simple.data.wiki.approval.state, 'unreviewed');
-  assert.equal(simple.data.wiki.approval.publishing, 'blocked');
+  assert.equal(simple.data.wiki.approval.publishing, 'allowed');
   assert.equal(simple.data.wiki.approval.reviewed_by, 'pending');
   assert.equal(simple.data.wiki.approval.reviewed_on, 'pending');
   assert.match(simple.data.wiki.approval.technical_source_hash, /^[a-f0-9]{64}$/);
@@ -131,7 +131,7 @@ test('prepares blocked Simple, Mermaid, and review artifacts with the Responses 
   assert.match(diagramRaw, /accDescr \{/);
   const review = JSON.parse(reviewRaw);
   assert.equal(review.state, 'unreviewed');
-  assert.equal(review.publishing, 'blocked');
+  assert.equal(review.publishing, 'allowed');
   assert.equal(review.generator.api, 'responses');
   assert.equal(review.generator.model, DOCS_PREPARE_MODEL);
   assert.equal(review.generator.store, false);

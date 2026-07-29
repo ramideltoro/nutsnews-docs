@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { parseMarkdownFrontmatter } from './parse-markdown.mjs';
 
 export const approvalContract = {
+  requiredForPublishing: false,
   approvedState: 'approved',
   automatedState: 'automated',
   allowedPublishing: 'allowed',

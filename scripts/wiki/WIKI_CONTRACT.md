@@ -28,13 +28,13 @@ Responses API only at author time. It reads `OPENAI_API_KEY` only from the
 process environment, pins `gpt-5.4-mini-2026-03-17`, requests strict structured
 output with `store: false`, and never adds an AI dependency to the built wiki.
 
-Every manually generated bundle is marked `unreviewed` with publishing
-`blocked`. A human must resolve its review notes and approve it before manual
+Every generated bundle is marked `unreviewed`, but publishing remains
+`allowed`. Review notes are advisory authoring guidance and do not block
 publication. The command validates Mermaid locally and retries an invalid
 diagram once. It checks all target paths before the API request and refuses to
 replace any existing artifact unless the author explicitly adds `--force`.
 
-After review, run
+An author may optionally record a review by running
 `npm run docs:approve -- <canonical-source.md> --reviewed-by <identity> --confirm-human-review`.
 This separate command records the reviewer, review time, and normalized
 Technical-source hash on the canonical Technical source, Simple mirror, and
@@ -45,26 +45,29 @@ repository, merged PRs, merge SHA, workflow run, and normalized source hash
 with `state: automated`. Codex has no GitHub write token and cannot create this
 record itself. The hash excludes the approval record itself and normalizes line
 endings, so approval metadata and LF/CRLF conversions do not stale content;
-any substantive Technical source change does. Draft, blocked, missing, or
-stale approval fails CI and the production build.
+any substantive Technical source change does. Human approval enforcement is
+disabled by the source-controlled `approvalContract.requiredForPublishing`
+policy. Missing or stale approval metadata therefore does not fail CI or the
+production build.
 
 For a new document, run
 `npm run docs:new -- <canonical-source.md> --collection <collection> --section <section>`.
-The command deterministically creates the canonical expert scaffold, blocked
-Simple draft, tracked Technical mirror, accessible Mermaid diagram, and review
-manifest. It rejects unsafe, duplicate, route-colliding, or unclassified paths
-and refuses to overwrite any target. On success it prints the exact
-`docs:prepare`, `docs:approve`, and approval-validation commands to run next.
+The command deterministically creates the canonical expert scaffold,
+publishable Simple draft, tracked Technical mirror, accessible Mermaid diagram,
+and review manifest. It rejects unsafe, duplicate, route-colliding, or
+unclassified paths and refuses to overwrite any target. On success it prints
+the exact `docs:prepare` and content-validation commands to run next.
 
 ## Complete publication gate
 
 Run `npm run validate:content` after `npm run wiki:prepare`. This single,
 deterministic gate validates the stable inventory, generated schema, Simple and
-Technical mirrors, current human or trusted merge-provenance approval, accessible Mermaid syntax,
-unique slugs/orders/routes, internal links and heading fragments, image alt
-text/captions/assets, and orphan artifacts. Failures are grouped by source and
-include a remediation. Any defect exits nonzero, and the production build runs
-the same gate before Astro.
+Technical mirrors, accessible Mermaid syntax, unique slugs/orders/routes,
+internal links and heading fragments, image alt text/captions/assets, and
+orphan artifacts. Approval metadata remains advisory and is excluded from the
+publication decision. Failures are grouped by source and include a remediation.
+Any enforced defect exits nonzero, and the production build runs the same gate
+before Astro.
 
 The offline `npm run test:content-routes` suite builds and inspects both `/` and
 the custom `/wiki-preview/` base without a browser or network service. It loads

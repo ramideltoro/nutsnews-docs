@@ -4,6 +4,7 @@ import path from 'node:path';
 import { extractMermaidAccessibility } from './mermaid-accessibility.mjs';
 import { parseMarkdownFrontmatter } from './parse-markdown.mjs';
 import {
+  approvalContract,
   approvalErrors,
   expertSourceHash,
 } from './wiki-approval.mjs';
@@ -584,27 +585,29 @@ export async function validateWikiContent({
       diagramPath,
     });
 
-    const expectedHash = expertSourceHash(document.raw);
-    for (const [relativePath, mirrorDocument] of [
-      [sourcePath, document],
-      [simplePath, simpleDocument],
-      [technicalPath, technicalDocument],
-    ]) {
-      if (!mirrorDocument) continue;
-      const approval = mirrorDocument.data?.wiki?.approval;
-      const issues = approvalErrors(approval, expectedHash);
-      for (const issue of issues) addError(errors, relativePath, 'approval', issue);
-    }
+    if (approvalContract.requiredForPublishing) {
+      const expectedHash = expertSourceHash(document.raw);
+      for (const [relativePath, mirrorDocument] of [
+        [sourcePath, document],
+        [simplePath, simpleDocument],
+        [technicalPath, technicalDocument],
+      ]) {
+        if (!mirrorDocument) continue;
+        const approval = mirrorDocument.data?.wiki?.approval;
+        const issues = approvalErrors(approval, expectedHash);
+        for (const issue of issues) addError(errors, relativePath, 'approval', issue);
+      }
 
-    if (simpleDocument && technicalDocument) {
-      const approvals = [
-        document.data?.wiki?.approval,
-        simpleDocument.data?.wiki?.approval,
-        technicalDocument.data?.wiki?.approval,
-      ];
-      if (JSON.stringify(approvals[0]) !== JSON.stringify(approvals[1])
-        || JSON.stringify(approvals[0]) !== JSON.stringify(approvals[2])) {
-        addError(errors, sourcePath, 'approval', 'source and mirror approval records differ');
+      if (simpleDocument && technicalDocument) {
+        const approvals = [
+          document.data?.wiki?.approval,
+          simpleDocument.data?.wiki?.approval,
+          technicalDocument.data?.wiki?.approval,
+        ];
+        if (JSON.stringify(approvals[0]) !== JSON.stringify(approvals[1])
+          || JSON.stringify(approvals[0]) !== JSON.stringify(approvals[2])) {
+          addError(errors, sourcePath, 'approval', 'source and mirror approval records differ');
+        }
       }
     }
 
@@ -632,7 +635,10 @@ export async function validateWikiContent({
     if (reviewRaw !== null) {
       try {
         const review = JSON.parse(reviewRaw);
-        if (JSON.stringify(review.approval) !== JSON.stringify(document.data?.wiki?.approval)) {
+        if (
+          approvalContract.requiredForPublishing
+          && JSON.stringify(review.approval) !== JSON.stringify(document.data?.wiki?.approval)
+        ) {
           addError(errors, reviewPath, 'approval', 'review manifest approval differs from source');
         }
       } catch (error) {

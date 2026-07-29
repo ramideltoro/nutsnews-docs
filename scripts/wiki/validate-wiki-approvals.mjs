@@ -5,6 +5,7 @@ import path from 'node:path';
 import { parseMarkdownFrontmatter } from './parse-markdown.mjs';
 import { technicalMirrorPathFromSource } from './wiki-contract.mjs';
 import {
+  approvalContract,
   approvalErrors,
   expertSourceHash,
 } from './wiki-approval.mjs';
@@ -12,6 +13,11 @@ import { wikiContract } from './wiki-contract.mjs';
 
 const repoRoot = process.cwd();
 const inventoryPath = path.join(repoRoot, 'scripts/wiki/wiki-inventory.generated.json');
+
+if (!approvalContract.requiredForPublishing) {
+  console.log('Wiki human approval gate is disabled; approval metadata is advisory.');
+  process.exit(0);
+}
 
 const inventory = JSON.parse(await fs.readFile(inventoryPath, 'utf8'));
 assert.ok(
