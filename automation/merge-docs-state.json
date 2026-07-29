@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "owner": "ramideltoro",
+  "repositories": {
+    "ramideltoro/nutsnews": {
+      "lastMergedAt": "2026-07-29T03:42:47Z",
+      "lastPullNumber": 535,
+      "lastMergeCommit": "86854c059d1bd8e841baf36b4aed718ff76b397d"
+    },
+    "ramideltoro/nutsnews-android": {
+      "lastMergedAt": "2026-07-28T21:45:34Z",
+      "lastPullNumber": 138,
+      "lastMergeCommit": "4f82d41a903d18e57409c3d7b429bb77cae626d3"
+    },
+    "ramideltoro/nutsnews-backend": {
+      "lastMergedAt": "2026-07-28T22:15:23Z",
+      "lastPullNumber": 441,
+      "lastMergeCommit": "2d044026b132eb0e0544c86647a38b07b69e47a8"
+    },
+    "ramideltoro/nutsnews-infra": {
+      "lastMergedAt": "2026-07-29T03:51:31Z",
+      "lastPullNumber": 427,
+      "lastMergeCommit": "f4360e6ae94bb1e2b7e71498fe5a1ae1675da3f4"
+    },
+    "ramideltoro/nutsnews-ios": {
+      "lastMergedAt": "2026-07-04T21:39:27Z",
+      "lastPullNumber": 2,
+      "lastMergeCommit": "972dda3a0208bd97ddcdc2cd660bbd4360fc6898"
+    },
+    "ramideltoro/nutsnews-worker": {
+      "lastMergedAt": "2026-07-23T12:13:17Z",
+      "lastPullNumber": 154,
+      "lastMergeCommit": "22a2c4f33d8dacdf9fd2367de852ae29d3abaa85"
+    },
+    "ramideltoro/nutsnews-worker-article-approval": {
+      "lastMergedAt": "2026-07-28T22:08:49Z",
+      "lastPullNumber": 17,
+      "lastMergeCommit": "38185c74717221453c662f4ba1b093315eff5b83"
+    },
+    "ramideltoro/nutsnews-worker-article-canonicalizer": {
+      "lastMergedAt": "2026-07-28T22:08:50Z",
+      "lastPullNumber": 15,
+      "lastMergeCommit": "64d6f59920ec6aa5fb56028de99f7600ecb5be2d"
+    },
+    "ramideltoro/nutsnews-worker-article-enrichment": {
+      "lastMergedAt": "2026-07-28T22:08:50Z",
+      "lastPullNumber": 14,
+      "lastMergeCommit": "edd63d8acd4a46a33aea4b043e3dc8dfd95af310"
+    },
+    "ramideltoro/nutsnews-worker-article-persistence": {
+      "lastMergedAt": "2026-07-28T22:08:50Z",
+      "lastPullNumber": 17,
+      "lastMergeCommit": "6dae69d96b4b081b23b5e1d85e10133ee36a6674"
+    },
+    "ramideltoro/nutsnews-worker-article-publication": {
+      "lastMergedAt": "2026-07-28T22:08:50Z",
+      "lastPullNumber": 13,
+      "lastMergeCommit": "5a9e3c09a8572a7978687bcb7afec548e3934a63"
+    },
+    "ramideltoro/nutsnews-worker-article-translation": {
+      "lastMergedAt": "2026-07-28T22:08:50Z",
+      "lastPullNumber": 20,
+      "lastMergeCommit": "d3b68668c7b714500d7efd204ecf33987a34e3ee"
+    },
+    "ramideltoro/nutsnews-worker-contracts": {
+      "lastMergedAt": "2026-07-25T11:23:21Z",
+      "lastPullNumber": 17,
+      "lastMergeCommit": "bf10f4257a1ac7f3e5aef0c5a14f62ec51ae4bb2"
+    },
+    "ramideltoro/nutsnews-worker-feed-fetcher": {
+      "lastMergedAt": "2026-07-28T22:08:50Z",
+      "lastPullNumber": 14,
+      "lastMergeCommit": "5b82b3e27ef85e57fc9aec23a0815cde584758eb"
+    },
+    "ramideltoro/nutsnews-worker-feed-scheduler": {
+      "lastMergedAt": "2026-07-26T18:14:10Z",
+      "lastPullNumber": 11,
+      "lastMergeCommit": "ab61a4a6c83a5ae8dad374e1edf89ffa0b4e6396"
+    },
+    "ramideltoro/nutsnews-worker-runtime": {
+      "lastMergedAt": "2026-07-28T20:57:36Z",
+      "lastPullNumber": 14,
+      "lastMergeCommit": "43e7883554e250b2297d40266374cb4ff87d141c"
+    }
+  },
+  "failures": {}
+}

@@ -54,3 +54,4 @@ src/content/docs/**
 *.swp
 *.swo
 scripts/wiki/wiki-inventory.generated.json
+_automation-work/

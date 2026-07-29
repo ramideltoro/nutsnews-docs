@@ -17,23 +17,39 @@ wiki:
     state: approved
     publishing: allowed
     reviewed_by: "ramideltoro"
-    reviewed_on: "2026-07-28T23:05:55.928Z"
-    technical_source_hash: a08bcae6eae07cf2afe5dcfd32c4021a2c8f12014da8d5a458f34966b964494e
+    reviewed_on: "2026-07-29T04:08:08.420Z"
+    technical_source_hash: 346276feb40a25072366fbef0bd3b69f54846df6f6ecfc5a60bc3d9a16e8787c
 ---
 
 # GitHub Pages publishing for the NutsNews wiki
 
 The repository is the source of truth. Astro/Starlight builds a pure-static artifact, Pagefind indexes it, and the pinned `.github/workflows/wiki-pages.yml` workflow deploys it to GitHub Pages.
 
-## Current pre-cutover state
+## Current production state
 
-- Default HTTPS URL: `https://ramideltoro.github.io/nutsnews-docs/`
-- Release target: `pre-cutover` in `scripts/wiki/wiki-release.json`
-- Build site/base: `https://ramideltoro.github.io` and `/nutsnews-docs`
-- Pages custom domain: not set until the production cutover
-- Production destination: `https://wiki.nutsnews.com/`
+- Production URL: `https://wiki.nutsnews.com/`
+- Release target: `production` in `scripts/wiki/wiki-release.json`
+- Build site/base: `https://wiki.nutsnews.com` and `/`
+- Pages custom domain: `wiki.nutsnews.com`
+- HTTPS enforcement: enabled
 
-The tracked root `CNAME` records the intended hostname, but the pre-cutover artifact must not contain a `CNAME` file or claim the custom domain.
+The tracked root `CNAME` records the intended hostname. GitHub Pages receives only the inspected static artifact.
+
+## Automatic documentation after NutsNews merges
+
+`.github/workflows/automated-merge-docs.yml` polls every five minutes. It discovers every active public repository owned by `ramideltoro` whose name is `nutsnews` or begins with `nutsnews-`, excluding this documentation repository. New repositories are baselined automatically, so no per-repository workflow or duplicated secret is required.
+
+For each repository with new merged pull requests, the workflow:
+
+1. checks out the exact latest merge and gathers bounded PR metadata and patches
+2. runs the pinned `openai/codex-action` with the repository secret `OPENAI_API_KEY`
+3. requires a per-repository merge-log entry and updates any directly stale operating docs
+4. rejects deletion, tooling changes, or any path outside canonical Markdown, its two mirrors, review manifest, and Mermaid diagram
+5. records automated approval provenance after Codex exits; Codex never receives a GitHub write token
+6. runs contracts, content, approval, link, Mermaid, secret, and production-build gates
+7. commits directly to `main`, advances the merge cursor, and dispatches the Pages workflow
+
+The cursor advances only after success. A failure leaves the cursor unchanged and opens or updates a GitHub incident. The same merge batch retries at most three times to bound API spend; a later merge automatically resumes a paused repository and includes the still-pending changes. PR text, patches, source files, and repository instruction files are untrusted evidence, never instructions.
 
 ## Owned paths
 
@@ -100,7 +116,7 @@ npm run test:browser
 npm run build
 ```
 
-The complete content gate checks all 227 canonical sources, both 227-file mirror sets, current human approvals, 227 accessible diagrams, unique routes/orders, links/fragments, images, and orphans. Broken fixtures must exit nonzero.
+The complete content gate requires at least the 227-source v1 baseline and then checks every current canonical source, both mirror sets, current human or merge-provenance approvals, one accessible diagram per source, unique routes/orders, links/fragments, images, and orphans. Broken fixtures must exit nonzero.
 
 ## GitHub Actions order
 
@@ -120,7 +136,7 @@ Only the quality job runs. It installs with `npm ci`, exercises authoring and br
 6. The pinned Pages artifact Action uploads `_site/`.
 7. The deploy job, restricted to `main` by the `github-pages` environment, deploys that artifact.
 
-Global token access is `contents: read`. Only the deploy job has `pages: write` and `id-token: write`. Publishing consumes no repository secret and no OpenAI key; the mocked drafting test receives an empty key. Failure-only browser artifacts contain only the two Playwright output directories, exclude hidden files, and expire after seven days.
+Global token access is `contents: read`. Only the deploy job has `pages: write` and `id-token: write`. The Pages workflow consumes no OpenAI key; only the separate merge-documentation workflow uses it. Failure-only browser artifacts contain only the two Playwright output directories, exclude hidden files, and expire after seven days.
 
 ## Launch gate and production cutover
 

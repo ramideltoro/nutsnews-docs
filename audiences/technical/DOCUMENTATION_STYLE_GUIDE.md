@@ -17,8 +17,8 @@ wiki:
     state: approved
     publishing: allowed
     reviewed_by: "ramideltoro"
-    reviewed_on: "2026-07-28T22:50:31.364Z"
-    technical_source_hash: a6928f078a0e14b28290ed7ff6c09ad655ac183e523f80b764d7e51e72793a78
+    reviewed_on: "2026-07-29T04:08:08.257Z"
+    technical_source_hash: 01c303443caa804a613dfd40492fd1ec3bb179e7a2bc836af1ca3869105696b0
 ---
 
 # Documentation Style Guide
@@ -67,7 +67,7 @@ npm run docs:prepare -- CACHE_INVALIDATION_GUIDE.md --force
 
 Replace all scaffold markers. Verify implementation claims, links, commands, warnings, status, observability, failure behavior, and rollback. Reconcile both mirrors and the diagram; generation never grants approval.
 
-After a human reviews the current complete bundle:
+For manual work, after a human reviews the current complete bundle:
 
 ```bash
 npm run docs:approve -- CACHE_INVALIDATION_GUIDE.md --reviewed-by "<human-reviewer>" --confirm-human-review
@@ -86,14 +86,16 @@ npm run build
 
 Documentation-only delivery may go directly to `main` after validation. Site-code and mixed changes require a checked, explicitly approved pull request under [AGENTS.md](AGENTS.md).
 
+The merge-documentation workflow is the only automated approval path. Codex receives no GitHub write token. Deterministic post-agent code enforces allowed documentation paths, writes immutable repository/PR/SHA/run/hash provenance, and runs the complete publication contract. `docs:auto-approve` is workflow-internal.
+
 ## Stale approval
 
 Any substantive canonical edit invalidates the stored Technical-source hash. The correct remediation is:
 
 1. update both audience mirrors and the diagram
 2. preserve all facts and safety controls
-3. obtain human review of the current bundle
-4. rerun `docs:approve`
+3. obtain human review of the current bundle for manual work
+4. rerun `docs:approve`, or allow the trusted merge workflow to record its distinct automated provenance
 5. rerun the complete gate
 
 Never edit only the hash or weaken validation.
@@ -117,7 +119,7 @@ Never edit only the hash or weaken validation.
 - [ ] Prerequisites, scope, exact commands, warnings, success signals, diagnostics, and rollback match across audiences.
 - [ ] Metadata, paths, routes, order, status, links, and History placement match the contract.
 - [ ] Diagram accessibility and screenshot alt/caption rules pass.
-- [ ] Approval names a human and matches the current source hash.
+- [ ] Approval is current human review or valid trusted merge provenance and matches the current source hash.
 - [ ] No credentials, local environment values, private data, or secret-bearing output is present.
 - [ ] Every publication command passes.
 

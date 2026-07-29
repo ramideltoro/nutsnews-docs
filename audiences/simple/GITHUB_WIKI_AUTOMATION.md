@@ -17,8 +17,8 @@ wiki:
     state: approved
     publishing: allowed
     reviewed_by: "ramideltoro"
-    reviewed_on: "2026-07-28T23:05:55.928Z"
-    technical_source_hash: a08bcae6eae07cf2afe5dcfd32c4021a2c8f12014da8d5a458f34966b964494e
+    reviewed_on: "2026-07-29T04:08:08.420Z"
+    technical_source_hash: 346276feb40a25072366fbef0bd3b69f54846df6f6ecfc5a60bc3d9a16e8787c
 ---
 
 # GitHub Pages publishing for the NutsNews wiki
@@ -27,11 +27,24 @@ The repository is the source of truth. Astro builds the docs into static files, 
 
 ## Where the wiki is now
 
-- Before cutover: `https://ramideltoro.github.io/nutsnews-docs/`
-- After cutover: `https://wiki.nutsnews.com/`
-- The custom domain stays unset until the launch gate.
+- Public URL: `https://wiki.nutsnews.com/`
+- GitHub Pages uses the custom domain and enforced HTTPS.
 
 Do not edit `_site/`, generated content, reports, caches, or the live Pages files.
+
+## What happens after a NutsNews merge
+
+Every five minutes, one central workflow checks all active public `nutsnews*` repositories for newly merged pull requests. New matching repositories are included automatically.
+
+1. It gathers the merged PR facts and changed-file patches.
+2. Codex updates a repository merge log and any wiki guide made stale by the merge.
+3. Codex has no GitHub write token and cannot publish by itself.
+4. A fixed safety step rejects deleted files, tooling edits, or incomplete document bundles.
+5. The workflow records the source repository, PR numbers, merge commit, workflow run, and source hash.
+6. Every content, link, diagram, secret, and build check must pass.
+7. Only then does the workflow commit to `main` and start a Pages deployment.
+
+Failures do not advance the merge cursor and are reported as GitHub issues. The same merge batch gets at most three attempts, which prevents endless API spending. A later merge automatically starts the repository again and includes all changes that are still waiting.
 
 ## Preview and check locally
 
@@ -67,7 +80,7 @@ Pull requests run checks but never deploy.
 
 A push or manual run on `main` follows this order:
 
-1. Check the 227 sources, both mirror sets, approvals, diagrams, links, secrets, routes, build, budgets, accessibility, keyboard flows, and screenshots.
+1. Check at least the original 227 sources plus every later source, both mirror sets, approvals, diagrams, links, secrets, routes, build, budgets, accessibility, keyboard flows, and screenshots.
 2. Mark the exact commit as ready only after every check passes.
 3. Check out that same commit in the Pages build.
 4. Build, stamp, and inspect the final artifact.

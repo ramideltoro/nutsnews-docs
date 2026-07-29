@@ -92,7 +92,7 @@ export async function loadWikiRouteSnapshot({
   repoRoot,
   outputRoot = path.join(repoRoot, '_site'),
   base = '/',
-  expectedSourceCount = 227,
+  minimumSourceCount = wikiContract.baselineSourceCount,
 } = {}) {
   const normalizedBase = normalizeBasePath(base);
   const inventory = JSON.parse(
@@ -135,7 +135,7 @@ export async function loadWikiRouteSnapshot({
 
   return {
     base: normalizedBase,
-    expectedSourceCount,
+    minimumSourceCount,
     inventorySourcePaths: inventory.sourcePaths,
     entries,
     builtFiles,
@@ -238,11 +238,11 @@ export function validateWikiRouteSnapshot(snapshot) {
     wikiContract.navigation.collections.map((collection) => [collection.id, collection]),
   );
 
-  if (snapshot.entries.length !== snapshot.expectedSourceCount) {
+  if (snapshot.entries.length < snapshot.minimumSourceCount) {
     addError(
       errors,
       'inventory',
-      `found ${snapshot.entries.length} entries; expected ${snapshot.expectedSourceCount}`,
+      `found ${snapshot.entries.length} entries; expected at least ${snapshot.minimumSourceCount}`,
     );
   }
   if (

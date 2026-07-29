@@ -24,7 +24,7 @@ import {
 import { parseMarkdownFrontmatter } from './parse-markdown.mjs';
 
 const repoRoot = process.cwd();
-const expectedSourceCount = 227;
+const minimumSourceCount = wikiContract.baselineSourceCount;
 const humanContractPath = path.join(repoRoot, 'scripts', 'wiki', 'WIKI_CONTRACT.md');
 
 async function walkMarkdownFiles(rootDir, relativeRoot = '') {
@@ -354,8 +354,8 @@ async function run() {
     }
   }
 
-  if (sourcePaths.length !== expectedSourceCount) {
-    errors.push(`expected ${expectedSourceCount} sources, found ${sourcePaths.length}`);
+  if (sourcePaths.length < minimumSourceCount) {
+    errors.push(`expected at least ${minimumSourceCount} sources, found ${sourcePaths.length}`);
   }
 
   if (warnings.length > 0) {

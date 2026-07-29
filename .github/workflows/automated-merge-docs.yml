@@ -1,0 +1,250 @@
+name: automated-merge-docs
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: automated-merge-docs
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    name: Discover merged NutsNews pull requests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      event_count: ${{ steps.discovery.outputs.event_count }}
+      events: ${{ steps.discovery.outputs.events }}
+    steps:
+      - name: Checkout documentation state
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.12
+
+      - name: Discover pending repository updates
+        id: discovery
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/wiki/discover-nutsnews-merges.mjs
+
+      - name: Persist newly discovered repository baselines
+        if: steps.discovery.outputs.state_changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "NutsNews Docs Automation"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config core.hooksPath /dev/null
+          git add automation/merge-docs-state.json
+          git commit -m "chore(docs): initialize merge documentation source"
+          gh auth setup-git
+          git push origin HEAD:main
+
+  document:
+    name: Document merged NutsNews changes
+    needs: discover
+    if: needs.discover.outputs.event_count != '0'
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        event: ${{ fromJSON(needs.discover.outputs.events) }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: write
+      issues: write
+    steps:
+      - name: Checkout current wiki source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.12
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Decode and validate merge event
+        id: event
+        env:
+          EVENT_BASE64: ${{ matrix.event }}
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const event = JSON.parse(Buffer.from(process.env.EVENT_BASE64, 'base64').toString('utf8'));
+          if (!/^ramideltoro\/nutsnews(?:-[a-z0-9-]+)?$/.test(event.repository)
+              || event.repository === 'ramideltoro/nutsnews-docs') throw new Error('invalid repository');
+          if (!/^[a-f0-9]{40}$/.test(event.head_sha)) throw new Error('invalid merge SHA');
+          if (!Array.isArray(event.pull_numbers) || !event.pull_numbers.length
+              || event.pull_numbers.some((value) => !Number.isInteger(value) || value < 1)) {
+            throw new Error('invalid pull request list');
+          }
+          fs.mkdirSync('_automation-work', { recursive: true });
+          fs.writeFileSync('_automation-work/merge-event.json', `${JSON.stringify(event, null, 2)}\n`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `repository=${event.repository}\n`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `head_sha=${event.head_sha}\n`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `pulls=${event.pull_numbers.join(',')}\n`);
+          NODE
+
+      - name: Checkout merged source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ steps.event.outputs.repository }}
+          ref: ${{ steps.event.outputs.head_sha }}
+          path: _automation-work/source
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Prepare bounded merge evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node scripts/wiki/prepare-merge-doc-context.mjs \
+            --event-file _automation-work/merge-event.json \
+            --output-file _automation-work/merge-context.json
+
+      - name: Generate complete wiki documentation
+        id: codex
+        uses: openai/codex-action@52fe01ec70a42f454c9d2ebd47598f9fd6893d56 # v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          prompt-file: scripts/wiki/prompts/automated-merge-docs.md
+          output-file: _automation-work/codex-final.txt
+          working-directory: .
+          sandbox: workspace-write
+          effort: high
+          safety-strategy: drop-sudo
+          allow-users: ramideltoro
+          allow-bots: true
+
+      - name: Enforce automated documentation change boundary
+        run: |
+          node scripts/wiki/automated-doc-changes.mjs \
+            --event-file _automation-work/merge-event.json \
+            --sources-only > "$RUNNER_TEMP/sources.json"
+          test "$(jq 'length' "$RUNNER_TEMP/sources.json")" -gt 0
+
+      - name: Record immutable automated provenance
+        env:
+          SOURCE_REPOSITORY: ${{ steps.event.outputs.repository }}
+          PULL_NUMBERS: ${{ steps.event.outputs.pulls }}
+          MERGE_COMMIT: ${{ steps.event.outputs.head_sha }}
+          WORKFLOW_RUN: ${{ github.run_id }}
+        run: |
+          node scripts/wiki/docs-auto-approve.mjs \
+            --sources-file "$RUNNER_TEMP/sources.json" \
+            --source-repository "$SOURCE_REPOSITORY" \
+            --pull-requests "$PULL_NUMBERS" \
+            --merge-commit "$MERGE_COMMIT" \
+            --workflow-run "$WORKFLOW_RUN"
+
+      - name: Validate generated documentation
+        run: |
+          npm run wiki:prepare
+          npm run validate:contracts
+          npm run validate:content
+          npm run validate:approvals
+          npm run validate:links
+          npm run validate:mermaid
+          npm run validate:secrets
+          npm run build
+
+      - name: Advance merge cursor
+        run: |
+          node scripts/wiki/mark-nutsnews-merge-processed.mjs \
+            automation/merge-docs-state.json \
+            _automation-work/merge-event.json
+
+      - name: Commit validated documentation directly to main
+        id: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_REPOSITORY: ${{ steps.event.outputs.repository }}
+          PULL_NUMBERS: ${{ steps.event.outputs.pulls }}
+        run: |
+          git config user.name "NutsNews Docs Automation"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config core.hooksPath /dev/null
+          git add -A
+          git commit -m "docs(auto): document ${SOURCE_REPOSITORY} PRs ${PULL_NUMBERS}"
+          gh auth setup-git
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      - name: Dispatch validated Pages deployment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for attempt in 1 2 3; do
+            if gh workflow run wiki-pages.yml --ref main; then
+              exit 0
+            fi
+            if test "$attempt" -lt 3; then sleep 5; fi
+          done
+          exit 1
+
+      - name: Persist bounded retry state
+        if: failure() && steps.event.outcome == 'success' && steps.publish.outcome != 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          failure_worktree="$RUNNER_TEMP/wiki-failure-state-$GITHUB_RUN_ID"
+          gh auth setup-git
+          git fetch origin main
+          git worktree add "$failure_worktree" origin/main
+          node "$failure_worktree/scripts/wiki/record-nutsnews-merge-failure.mjs" \
+            "$failure_worktree/automation/merge-docs-state.json" \
+            "$GITHUB_WORKSPACE/_automation-work/merge-event.json" \
+            "$GITHUB_RUN_ID" \
+            "$RUN_URL"
+          git -C "$failure_worktree" config user.name "NutsNews Docs Automation"
+          git -C "$failure_worktree" config user.email "github-actions[bot]@users.noreply.github.com"
+          git -C "$failure_worktree" config core.hooksPath /dev/null
+          git -C "$failure_worktree" add automation/merge-docs-state.json
+          git -C "$failure_worktree" commit -m "chore(docs): record merge documentation failure"
+          git -C "$failure_worktree" push origin HEAD:main
+
+      - name: Report automation failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_REPOSITORY: ${{ steps.event.outputs.repository }}
+          PULL_NUMBERS: ${{ steps.event.outputs.pulls }}
+          PUBLISH_OUTCOME: ${{ steps.publish.outcome }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          repository="${SOURCE_REPOSITORY:-merge event}"
+          pulls="${PULL_NUMBERS:-unknown}"
+          title="[Wiki automation] Documentation failed for ${repository}"
+          existing="$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number // empty')"
+          if test "$PUBLISH_OUTCOME" = "success"; then
+            body="Validated documentation for ${repository} pull request(s) ${pulls} was committed, but the Pages dispatch failed after three attempts. Run: ${RUN_URL}."
+          else
+            body="Automated documentation failed for ${repository} pull request(s) ${pulls}. Run: ${RUN_URL}. The merge cursor was not advanced. Identical merge batches retry at most three times; a newer merge resumes a paused repository automatically."
+          fi
+          if test -n "$existing"; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --title "$title" --body "$body"
+          fi

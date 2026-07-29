@@ -10,8 +10,8 @@ wiki:
     state: approved
     publishing: allowed
     reviewed_by: "ramideltoro"
-    reviewed_on: "2026-07-28T22:39:38.524Z"
-    technical_source_hash: 12f023586ae81d7be116edbb0b1bb12a502add3efdd703038a035c22c0ed105b
+    reviewed_on: "2026-07-29T04:08:08.086Z"
+    technical_source_hash: 96e85d5e0b029d83352b5c00319b3e3d1060bd23901701fc5de6d67e7c3c73af
 ---
 
 # AGENTS.md (Technical)
@@ -32,6 +32,7 @@ wiki:
 ## Contribution boundary
 
 - Documentation-only changes may be validated and pushed directly to `main`.
+- `.github/workflows/automated-merge-docs.yml` may publish merge-sourced documentation directly only after its fixed path boundary, immutable provenance, full content, and build gates pass.
 - Site-code, tooling, test, dependency, configuration, workflow, and mixed changes require a branch, a ready pull request, passing checks, and explicit merge approval.
 - Preserve existing work and operational boundaries unless explicitly superseded.
 
@@ -44,7 +45,9 @@ wiki:
 npm run docs:approve -- <canonical-source.md> --reviewed-by "<human-reviewer>" --confirm-human-review
 ```
 
-Generator, bot, model, pending, stale, or missing approval cannot publish.
+Manual generator, pending, stale, or missing approval cannot publish. The merge workflow may use the distinct `automated` state only with repository, pull-request, merge-SHA, workflow-run, and current-source-hash provenance. Codex receives no GitHub write token; deterministic post-agent steps approve, validate, and publish.
+
+`docs:auto-approve` is workflow-internal and must not replace `docs:approve` for ordinary authoring.
 
 ## Exact commands
 

@@ -3,6 +3,8 @@ import { access, readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { wikiContract } from './wiki-contract.mjs';
+
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const outputRoot = path.join(repoRoot, '_site');
 const inventoryPath = path.join(repoRoot, 'scripts/wiki/wiki-inventory.generated.json');
@@ -90,7 +92,7 @@ for (const reference of assetReferences) {
   await access(path.join(outputRoot, outputRelative));
 }
 
-assert.equal(inventory.entries.length, 227);
+assert.ok(inventory.entries.length >= wikiContract.baselineSourceCount);
 const audienceRoutes = inventory.entries.flatMap((entry) => [
   entry.simple.route,
   entry.technical.route,
@@ -108,7 +110,11 @@ let audiencePageCount = 0;
 for (const audience of ['simple', 'technical']) {
   const audienceFiles = (await walk(path.join(outputRoot, audience)))
     .filter((file) => file.endsWith('.html'));
-  assert.equal(audienceFiles.length, 234, `${audience} must publish 234 directory pages`);
+  assert.equal(
+    audienceFiles.length,
+    inventory.entries.length + 7,
+    `${audience} must publish one article page per source plus seven collection pages`,
+  );
   assert.ok(
     audienceFiles.every((file) => path.basename(file) === 'index.html'),
     `${audience} routes must use clean trailing-slash directories`,

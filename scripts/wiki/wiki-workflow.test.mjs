@@ -4,6 +4,11 @@ import path from 'node:path';
 import test from 'node:test';
 
 const workflowPath = path.join(process.cwd(), '.github/workflows/wiki-pages.yml');
+const mergeWorkflowPath = path.join(
+  process.cwd(),
+  '.github/workflows/automated-merge-docs.yml',
+);
+const CODEX_ACTION_SHA = '52fe01ec70a42f454c9d2ebd47598f9fd6893d56';
 
 const requiredActions = new Set([
   'actions/checkout',
@@ -141,6 +146,78 @@ export function validateWorkflow(source) {
   return errors;
 }
 
+export function validateMergeWorkflow(source) {
+  const errors = [];
+  if (!/cron: "\*\/5 \* \* \* \*"/.test(source) || !/workflow_dispatch:/.test(source)) {
+    errors.push('merge documentation must run every five minutes and support manual dispatch');
+  }
+  if (/pull_request_target:|pull_request:/.test(source)) {
+    errors.push('untrusted pull request events must not trigger merge documentation');
+  }
+  if (!source.includes(`openai/codex-action@${CODEX_ACTION_SHA} # v1`)) {
+    errors.push('Codex Action must use the reviewed immutable v1 commit');
+  }
+  const codexStep = source.match(
+    /- name: Generate complete wiki documentation\n([\s\S]*?)(?=\n      - name:)/,
+  )?.[1] || '';
+  if (!/openai-api-key: \$\{\{ secrets\.OPENAI_API_KEY \}\}/.test(codexStep)) {
+    errors.push('Codex must receive the dedicated repository secret');
+  }
+  if (/GH_TOKEN|github\.token/.test(codexStep)) {
+    errors.push('Codex must not receive a GitHub write token');
+  }
+  for (const setting of [
+    'sandbox: workspace-write',
+    'safety-strategy: drop-sudo',
+    'allow-users: ramideltoro',
+    'allow-bots: true',
+  ]) {
+    if (!codexStep.includes(setting)) errors.push(`Codex safety setting is missing: ${setting}`);
+  }
+  if ((source.match(/persist-credentials: false/g) || []).length < 2) {
+    errors.push('both documentation and source checkouts must drop persisted credentials');
+  }
+  if (!/max-parallel: 1/.test(source) || !/cancel-in-progress: false/.test(source)) {
+    errors.push('merge documentation must serialize repositories and workflow runs');
+  }
+  const orderedSteps = [
+    'Prepare bounded merge evidence',
+    'Generate complete wiki documentation',
+    'Enforce automated documentation change boundary',
+    'Record immutable automated provenance',
+    'Validate generated documentation',
+    'Advance merge cursor',
+    'Commit validated documentation directly to main',
+    'Dispatch validated Pages deployment',
+  ];
+  let previous = -1;
+  for (const step of orderedSteps) {
+    const current = source.indexOf(`- name: ${step}`);
+    if (current < 0 || current <= previous) {
+      errors.push(`merge documentation ordering is unsafe at: ${step}`);
+    }
+    previous = current;
+  }
+  for (const command of [
+    'npm run validate:contracts',
+    'npm run validate:content',
+    'npm run validate:approvals',
+    'npm run validate:links',
+    'npm run validate:mermaid',
+    'npm run validate:secrets',
+    'npm run build',
+  ]) {
+    if (!source.includes(command)) errors.push(`merge validation is missing: ${command}`);
+  }
+  if (
+    !source.includes('record-nutsnews-merge-failure.mjs')
+    || !source.includes('Identical merge batches retry at most three times')
+  ) {
+    errors.push('merge failures must persist and report the bounded retry state');
+  }
+  return errors;
+}
+
 test('clean workflow satisfies the pinned quality and security contract', async () => {
   const source = await fs.readFile(workflowPath, 'utf8');
   assert.deepEqual(validateWorkflow(source), []);
@@ -192,5 +269,31 @@ test('superseded-run fixture is rejected', async () => {
   const broken = source.replace('  cancel-in-progress: true', '  cancel-in-progress: false');
   assert.ok(
     validateWorkflow(broken).some((error) => error.includes('superseded runs must be cancelled')),
+  );
+});
+
+test('merge documentation workflow satisfies its security and ordering contract', async () => {
+  const source = await fs.readFile(mergeWorkflowPath, 'utf8');
+  assert.deepEqual(validateMergeWorkflow(source), []);
+});
+
+test('mutable Codex Action fixture is rejected', async () => {
+  const source = await fs.readFile(mergeWorkflowPath, 'utf8');
+  const broken = source.replace(`openai/codex-action@${CODEX_ACTION_SHA}`, 'openai/codex-action@v1');
+  assert.ok(
+    validateMergeWorkflow(broken).some((error) => error.includes('immutable v1 commit')),
+  );
+});
+
+test('cursor-before-validation fixture is rejected', async () => {
+  const source = await fs.readFile(mergeWorkflowPath, 'utf8');
+  const cursor = source.match(
+    /\n      - name: Advance merge cursor\n[\s\S]*?(?=\n      - name:)/,
+  )?.[0] || '';
+  const broken = source
+    .replace(cursor, '')
+    .replace('\n      - name: Validate generated documentation', `${cursor}\n      - name: Validate generated documentation`);
+  assert.ok(
+    validateMergeWorkflow(broken).some((error) => error.includes('ordering is unsafe')),
   );
 });

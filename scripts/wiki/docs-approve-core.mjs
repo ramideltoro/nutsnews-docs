@@ -16,7 +16,7 @@ import {
 } from './wiki-approval.mjs';
 
 function approvalLines(approval) {
-  return [
+  const lines = [
     '  approval:',
     `    state: ${approval.state}`,
     `    publishing: ${approval.publishing}`,
@@ -24,6 +24,16 @@ function approvalLines(approval) {
     `    reviewed_on: ${JSON.stringify(approval.reviewed_on)}`,
     `    technical_source_hash: ${approval.technical_source_hash}`,
   ];
+  if (approval.automation) {
+    lines.push(
+      '    automation:',
+      `      source_repository: ${JSON.stringify(approval.automation.source_repository)}`,
+      `      pull_requests: ${JSON.stringify(approval.automation.pull_requests)}`,
+      `      merge_commit: ${approval.automation.merge_commit}`,
+      `      workflow_run: ${JSON.stringify(approval.automation.workflow_run)}`,
+    );
+  }
+  return lines;
 }
 
 export function upsertWikiApproval(rawMarkdown, approval) {

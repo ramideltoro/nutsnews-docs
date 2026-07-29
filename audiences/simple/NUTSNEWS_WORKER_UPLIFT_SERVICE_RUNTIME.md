@@ -1,10 +1,10 @@
 ---
 wiki:
   approval:
-    state: unreviewed
-    publishing: blocked
-    reviewed_by: pending
-    reviewed_on: pending
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-07-29T04:17:53.311Z"
     technical_source_hash: d0de67f2d72af5b6d3bda6d8385d69f8df4f966a089c2c41934789ded501ab2f
   source_route: /technical/nutsnews-worker-uplift-service-runtime
   simple_route: /simple/nutsnews-worker-uplift-service-runtime

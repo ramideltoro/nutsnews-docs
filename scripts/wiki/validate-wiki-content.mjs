@@ -8,6 +8,7 @@ import {
   validateWikiContent,
   wikiContentExitCode,
 } from './wiki-content-contract.mjs';
+import { wikiContract } from './wiki-contract.mjs';
 
 const dom = new JSDOM('<!doctype html><html><body></body></html>');
 globalThis.window = dom.window;
@@ -30,7 +31,7 @@ const isDirectRun = path.resolve(process.argv[1] || '') === scriptPath;
 if (isDirectRun) {
   const report = await validateWikiContent({
     repoRoot,
-    expectedSourceCount: 227,
+    minimumSourceCount: wikiContract.baselineSourceCount,
     parseMermaid: (diagram) => mermaid.parse(diagram, { suppressErrors: false }),
   });
   const output = formatWikiContentReport(report);

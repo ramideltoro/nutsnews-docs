@@ -142,10 +142,10 @@ async function validateBuiltRoute(entry, audience) {
 
 async function run() {
   const inventory = JSON.parse(await fs.readFile(inventoryPath, 'utf8'));
-  assert.equal(inventory.entries.length, 227);
+  assert.ok(inventory.entries.length >= wikiContract.baselineSourceCount);
   const generatedMarkdown = (await walkFiles(generatedRoot))
     .filter((file) => file.endsWith('.md'));
-  assert.equal(generatedMarkdown.length, 454);
+  assert.equal(generatedMarkdown.length, inventory.entries.length * 2);
 
   await Promise.all(inventory.entries.map((entry) => validateGeneratedPair(entry)));
 

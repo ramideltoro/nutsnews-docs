@@ -17,8 +17,8 @@ wiki:
     state: approved
     publishing: allowed
     reviewed_by: "ramideltoro"
-    reviewed_on: "2026-07-28T23:05:55.928Z"
-    technical_source_hash: a08bcae6eae07cf2afe5dcfd32c4021a2c8f12014da8d5a458f34966b964494e
+    reviewed_on: "2026-07-29T04:08:08.420Z"
+    technical_source_hash: 346276feb40a25072366fbef0bd3b69f54846df6f6ecfc5a60bc3d9a16e8787c
 ---
 
 # GitHub Pages publishing for the NutsNews wiki
@@ -27,9 +27,15 @@ Astro/Starlight and Pagefind build a pure-static site. The pinned `.github/workf
 
 ## Targets and paths
 
-The current pre-cutover target is `https://ramideltoro.github.io/nutsnews-docs/`; `scripts/wiki/wiki-release.json` allowlists site `https://ramideltoro.github.io`, base `/nutsnews-docs`, and mode `pre-cutover`. Production will use `https://wiki.nutsnews.com/` at base `/`.
+The production target is `https://wiki.nutsnews.com/`; `scripts/wiki/wiki-release.json` allowlists that site, base `/`, and mode `production`.
 
 The active contract includes `.github/workflows/wiki-pages.yml`, Astro/Playwright and npm configuration, `scripts/wiki/wiki-release.json`, artifact/budget/secret validators, browser tests, and the tracked `CNAME`. Generated content, `_site/`, reports, caches, and inventory output are not editable sources.
+
+## Merge-triggered documentation
+
+The central `.github/workflows/automated-merge-docs.yml` schedule discovers new merged PRs across every active public `ramideltoro/nutsnews*` repository except `nutsnews-docs`. It batches pending PRs per repository, checks out the exact latest merge, and prepares bounded untrusted evidence.
+
+The pinned Codex Action receives only the OpenAI credential proxy and a writable documentation checkout; it receives no GitHub write token. A deterministic post-agent boundary allows only canonical Markdown, matching Simple/Technical mirrors, review manifests, and Mermaid diagrams. It rejects deletions and ownerless artifacts, records repository/PR/SHA/run/hash provenance, runs the complete gate, advances the cursor, commits, and dispatches Pages. Failure leaves the cursor unchanged and creates or updates an incident. Identical merge batches retry at most three times to bound API spend; a newer merge clears the effective pause by creating a new batch that still includes the earlier pending merges.
 
 ## Preview and validation
 
@@ -72,7 +78,7 @@ Pull requests run quality only. Relevant `main` pushes and manual runs execute:
 7. pinned Pages artifact upload
 8. `main`-restricted Pages deployment
 
-Concurrency cancels superseded same-ref runs. Global permission is `contents: read`; only deploy receives `pages: write` and `id-token: write`. No repository secret or OpenAI key is consumed.
+Concurrency cancels superseded same-ref runs. Global permission is `contents: read`; only deploy receives `pages: write` and `id-token: write`. The Pages workflow consumes no OpenAI key; only the isolated merge-documentation workflow does.
 
 ## Production launch
 

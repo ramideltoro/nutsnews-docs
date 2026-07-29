@@ -14,8 +14,8 @@ wiki:
     state: approved
     publishing: allowed
     reviewed_by: "ramideltoro"
-    reviewed_on: "2026-07-28T20:10:06.000Z"
-    technical_source_hash: 6a62a0dba8e86f315ea3c46b7988d0ce56db340e69a823bbdd56a31bdcb80695
+    reviewed_on: "2026-07-29T04:17:53.484Z"
+    technical_source_hash: 2db7b312e4925abe9bad8cc79abcb3501053d558dba4be4a132084f9d7348807
 ---
 
 # NutsNews Worker-Uplift Telemetry Scope

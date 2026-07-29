@@ -26,7 +26,7 @@ const IMAGE_EXTENSION = /\.(?:avif|bmp|gif|ico|jpe?g|png|svg|webp)$/i;
 const EXTERNAL_TARGET = /^(?:[a-z][a-z\d+.-]*:|\/\/)/i;
 
 const remediation = {
-  approval: 'Run docs:approve after a human reviews the current Technical source and both mirrors.',
+  approval: 'Run docs:approve after human review, or let the trusted merge workflow record current automated provenance.',
   diagram: 'Add one valid, accessible Mermaid diagram at the canonical diagram path.',
   fragment: 'Update the fragment to match a heading in the linked document.',
   image: 'Give the image meaningful alt text, a caption, and a resolvable asset target.',
@@ -433,6 +433,7 @@ async function readMarkdown(repoRoot, relativePath, errors, invariant) {
 export async function validateWikiContent({
   repoRoot,
   expectedSourceCount,
+  minimumSourceCount,
   parseMermaid = async () => true,
 } = {}) {
   if (!repoRoot) throw new Error('validateWikiContent requires repoRoot');
@@ -457,6 +458,14 @@ export async function validateWikiContent({
       'repository',
       'inventory',
       `found ${sources.length} canonical sources; expected ${expectedSourceCount}`,
+    );
+  }
+  if (minimumSourceCount !== undefined && sources.length < minimumSourceCount) {
+    addError(
+      errors,
+      'repository',
+      'inventory',
+      `found ${sources.length} canonical sources; expected at least ${minimumSourceCount}`,
     );
   }
   if (inventory) {
