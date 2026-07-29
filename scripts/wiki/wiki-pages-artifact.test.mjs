@@ -9,10 +9,10 @@ import { validatePagesArtifact } from './validate-pages-artifact.mjs';
 
 const fixtureSha = 'a'.repeat(40);
 const fixtureDeployment = {
-  mode: 'pre-cutover',
-  site_url: 'https://ramideltoro.github.io',
-  base_path: '/nutsnews-docs',
-  public_url: 'https://ramideltoro.github.io/nutsnews-docs/',
+  mode: 'production',
+  site_url: 'https://wiki.nutsnews.com',
+  base_path: '/',
+  public_url: 'https://wiki.nutsnews.com/',
 };
 
 async function write(root, relative, content) {
@@ -34,13 +34,14 @@ async function fixtureRepo(t) {
   await write(repoRoot, 'scripts/wiki/wiki-inventory.generated.json', `${JSON.stringify({
     entries: [{ source: 'ONE.md' }, { source: 'TWO.md' }],
   })}\n`);
+  await write(repoRoot, 'CNAME', 'wiki.nutsnews.com\n');
   await write(
     repoRoot,
     '_site/index.html',
-    '<link rel="canonical" href="https://ramideltoro.github.io/nutsnews-docs/">'
-      + '<link rel="shortcut icon" href="/nutsnews-docs/favicon.svg">'
-      + '<a href="/nutsnews-docs/simple/">Simple</a>'
-      + '<a href="/nutsnews-docs/technical/">Technical</a>',
+    '<link rel="canonical" href="https://wiki.nutsnews.com/">'
+      + '<link rel="shortcut icon" href="/favicon.svg">'
+      + '<a href="/simple/">Simple</a>'
+      + '<a href="/technical/">Technical</a>',
   );
   await write(repoRoot, '_site/favicon.svg', '<svg viewBox="0 0 64 64"></svg>');
   await write(repoRoot, '_site/simple/index.html', '<h1>Simple</h1>');
@@ -59,7 +60,7 @@ async function validate(repoRoot) {
   });
 }
 
-test('clean pre-cutover artifact passes deterministically', async (t) => {
+test('clean production artifact passes deterministically', async (t) => {
   const repoRoot = await fixtureRepo(t);
   const first = await validate(repoRoot);
   const second = await validate(repoRoot);
@@ -74,6 +75,24 @@ test('incomplete inventory fixture cannot publish', async (t) => {
   await write(repoRoot, 'scripts/wiki/wiki-inventory.generated.json', '{"entries":[]}\n');
   const result = await validate(repoRoot);
   assert.ok(result.errors.some((error) => error.includes('2 are required for v1')));
+});
+
+test('pre-cutover deployment fixture cannot publish', async (t) => {
+  const repoRoot = await fixtureRepo(t);
+  await write(repoRoot, 'scripts/wiki/wiki-release.json', `${JSON.stringify({
+    schema_version: 1,
+    release: 'v1',
+    ready: true,
+    expected_source_count: 2,
+    deployment: {
+      mode: 'pre-cutover',
+      site_url: 'https://ramideltoro.github.io',
+      base_path: '/nutsnews-docs',
+      public_url: 'https://ramideltoro.github.io/nutsnews-docs/',
+    },
+  })}\n`);
+  const result = await validate(repoRoot);
+  assert.ok(result.errors.some((error) => error.includes('deployment.mode must equal production')));
 });
 
 test('secret and source-environment fixture cannot publish', async (t) => {
