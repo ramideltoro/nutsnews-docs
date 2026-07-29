@@ -122,6 +122,42 @@ Mutating actions require `confirm_target=backend.nutsnews.com` and the
 protected `production-backend` approval gate. Status and check actions are
 expected to pass when no services are configured.
 
+## Zero-Consumer Readiness And Recovery
+
+Every consuming shadow service treats its contracted main queue as part of
+readiness. The scheduler is producer-only and does not require a consumer.
+`/ready` returns unhealthy when the service has zero active consumers.
+Backend `status` reports the HTTP readiness result and RabbitMQ consumer count
+for each service, while a main-queue `queue-inspect` fails when a declared
+consumer queue has a healthy RabbitMQ snapshot with zero consumers.
+
+Consumer cancellation and dropped-channel transitions emit the structured
+event `runtime.broker.consumer_state_changed`. The bounded event attributes are
+service, queue, stage, previous state, current state, and reason. Prometheus
+exports `nutsnews_worker_consumers` and
+`nutsnews_worker_consumer_events_total` with only the approved
+environment/host/service/version/queue/outcome label set.
+
+Use the protected restart path when the reviewed image and configuration are
+still correct and only the live consumer was lost:
+
+1. Run `status`, `queue-inspect`, and bounded `logs` through `Backend Worker
+   Runtime Operations`.
+2. Run `restart` for the affected service only, type
+   `backend.nutsnews.com`, and obtain `production-backend` approval.
+3. Require healthy `/ready`, at least one main-queue consumer, no DLQ growth,
+   and the queued work drained.
+
+Use deployment recovery when the image or configuration must change. Merge the
+service and backend manifest PRs, run protected backend Ansible check and apply,
+and then use the fixed `deploy` operation for the affected service. Apply the
+same readiness, consumer-count, DLQ, log, and drain verification. Do not use
+ad hoc SSH or Compose commands for either recovery path.
+
+Both paths preserve `production_writes_enabled=false`, keep legacy ingestion as
+the production owner, and leave DNS and failover behavior unchanged. Grafana
+rules stay owned and applied by `ramideltoro/nutsnews-infra`.
+
 ## Runtime Logs
 
 Backend issue `ramideltoro/nutsnews-worker#88` routes worker-uplift runtime

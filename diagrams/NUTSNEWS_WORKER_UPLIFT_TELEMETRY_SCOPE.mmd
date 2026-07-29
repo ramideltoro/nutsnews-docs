@@ -1,38 +1,19 @@
 flowchart TD
-  accTitle: NutsNews Worker-Uplift Telemetry Scope
+  accTitle: Worker-uplift telemetry scope decision flow
   accDescr {
-    Status: approved for ramideltoro/nutsnews-worker#144 on 2026-07-23.
+    The diagram starts with the approved worker-uplift telemetry scope, splits it into
+    required metrics and logs, deferred traces and exemplars, and forbidden profiles and
+    payload telemetry, then shows that metrics and logs go to Grafana Cloud with bounded
+    labels, while the policy also enforces quota guardrails, rollback switches, and privacy
+    limits.
   }
-  A["Decision: Worker-uplift telemetry scope"] --> B["Required metrics"]
-  A --> C["Required structured logs"]
-  A --> D["Traces disabled"]
-  A --> E["Exemplars deferred"]
-  A --> F["Profiles forbidden"]
-
-  B --> G["RabbitMQ + service metrics only"]
-  G --> H["Private Alloy scrape / metrics remote_write"]
-  C --> I["Docker journald + worker logs"]
-  I --> J["Loki process label allowlist and redaction"]
-
-  H --> K["Credentials: metrics URL/user/policy token"]
-  J --> L["Credentials: logs URL/user/policy token"]
-
-  K --> M["Apply usage and quota guardrails from grafanacloud-usage"]
-  L --> M
-
-  M --> N["70% freeze optional telemetry"]
-  M --> O["85% reduce debug / verbosity"]
-  M --> P["95% disable offending signal"]
-  M --> Q["Over budget hold production uplift"]
-
-  B --> R["Allowed labels only: environment, host, service, version, queue, outcome"]
-  C --> S["Forbidden payload fields excluded"]
-
-  T["Rollback switches"] --> U["Disable metrics / logs / traces / exemplars"]
-  R --> T
-  S --> T
-
-  N --> V["Backend Worker-Uplift Logs Check workflow"]
-  O --> V
-  P --> V
-  Q --> V
+  A[Worker-uplift telemetry scope approved] --> B[Required: metrics and structured logs]
+  A --> C[Deferred: traces and exemplars]
+  A --> D[Forbidden: profiles and payload telemetry]
+  B --> E[Metrics to Grafana Cloud Metrics]
+  B --> F[Logs to Grafana Cloud Logs]
+  C --> G[No Tempo, OTLP, or trace credentials now]
+  D --> H[No article, model, or secret data in telemetry]
+  E --> I[Bounded labels and queue/service coverage]
+  F --> I
+  I --> J[Quota guardrails, rollback switches, and privacy boundary]
