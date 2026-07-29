@@ -2,7 +2,7 @@
   "schema_version": 1,
   "release": "v1",
   "ready": true,
-  "expected_source_count": 227,
+  "minimum_source_count": 227,
   "deployment": {
     "mode": "production",
     "site_url": "https://wiki.nutsnews.com",

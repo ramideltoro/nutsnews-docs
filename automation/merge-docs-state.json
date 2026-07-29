@@ -83,49 +83,5 @@
       "lastMergeCommit": "43e7883554e250b2297d40266374cb4ff87d141c"
     }
   },
-  "failures": {
-    "ramideltoro/nutsnews": {
-      "headSha": "d339f40a6c29b41d18d5d977575274345c73941b",
-      "pullNumbers": [
-        536,
-        537,
-        538
-      ],
-      "attempts": 3,
-      "blocked": true,
-      "lastFailedAt": "2026-07-29T05:31:47.024Z",
-      "workflowRun": "30425226894",
-      "runUrl": "https://github.com/ramideltoro/nutsnews-docs/actions/runs/30425226894"
-    },
-    "ramideltoro/nutsnews-infra": {
-      "headSha": "ee61807a757fe087dbcecd60d5e0b7fe07f4115a",
-      "pullNumbers": [
-        428,
-        429,
-        430,
-        431,
-        432,
-        433,
-        434,
-        435,
-        436
-      ],
-      "attempts": 2,
-      "blocked": false,
-      "lastFailedAt": "2026-07-29T05:35:28.952Z",
-      "workflowRun": "30425226894",
-      "runUrl": "https://github.com/ramideltoro/nutsnews-docs/actions/runs/30425226894"
-    },
-    "ramideltoro/nutsnews-backend": {
-      "headSha": "9060a2573befba6a9d4cb494c05a6fe9b6e307b4",
-      "pullNumbers": [
-        442
-      ],
-      "attempts": 3,
-      "blocked": true,
-      "lastFailedAt": "2026-07-29T05:33:09.992Z",
-      "workflowRun": "30425226894",
-      "runUrl": "https://github.com/ramideltoro/nutsnews-docs/actions/runs/30425226894"
-    }
-  }
+  "failures": {}
 }

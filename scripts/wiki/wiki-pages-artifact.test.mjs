@@ -28,7 +28,7 @@ async function fixtureRepo(t) {
     schema_version: 1,
     release: 'v1',
     ready: true,
-    expected_source_count: 2,
+    minimum_source_count: 2,
     deployment: fixtureDeployment,
   })}\n`);
   await write(repoRoot, 'scripts/wiki/wiki-inventory.generated.json', `${JSON.stringify({
@@ -74,7 +74,17 @@ test('incomplete inventory fixture cannot publish', async (t) => {
   const repoRoot = await fixtureRepo(t);
   await write(repoRoot, 'scripts/wiki/wiki-inventory.generated.json', '{"entries":[]}\n');
   const result = await validate(repoRoot);
-  assert.ok(result.errors.some((error) => error.includes('2 are required for v1')));
+  assert.ok(result.errors.some((error) => error.includes('at least 2 are required for v1')));
+});
+
+test('inventory growth above the release baseline can publish', async (t) => {
+  const repoRoot = await fixtureRepo(t);
+  await write(repoRoot, 'scripts/wiki/wiki-inventory.generated.json', `${JSON.stringify({
+    entries: [{ source: 'ONE.md' }, { source: 'TWO.md' }, { source: 'THREE.md' }],
+  })}\n`);
+  const result = await validate(repoRoot);
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.sources, 3);
 });
 
 test('pre-cutover deployment fixture cannot publish', async (t) => {
@@ -83,7 +93,7 @@ test('pre-cutover deployment fixture cannot publish', async (t) => {
     schema_version: 1,
     release: 'v1',
     ready: true,
-    expected_source_count: 2,
+    minimum_source_count: 2,
     deployment: {
       mode: 'pre-cutover',
       site_url: 'https://ramideltoro.github.io',

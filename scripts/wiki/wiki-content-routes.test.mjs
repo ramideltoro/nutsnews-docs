@@ -16,9 +16,17 @@ import {
   loadWikiRouteSnapshot,
   validateWikiRouteSnapshot,
 } from './wiki-route-contract.mjs';
+import { expectedGeneratedDocumentCount } from './validate-link-routes.mjs';
 
 const execFileAsync = promisify(execFile);
 const repoRoot = process.cwd();
+
+test('generated audience document count grows with the inventory', () => {
+  const inventory = {
+    entries: Array.from({ length: 228 }, () => ({})),
+  };
+  assert.equal(expectedGeneratedDocumentCount(inventory), 456);
+});
 
 async function build(base) {
   try {
