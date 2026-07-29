@@ -1,35 +1,16 @@
 flowchart TD
-  accTitle: NutsNews Worker-Uplift Service Runtime
+  accTitle: Worker runtime guardrail flow
   accDescr {
-    Status: implemented for ramideltoro/nutsnews-worker#85 on 2026-07-23.
+    The diagram shows the backend installing the worker runtime in shadow mode, validating
+    manifests, restricting scoped Worker DB commands, and only allowing production actions
+    after cutover gates are met. If the gates are not met, production writes stay off and
+    legacy ingestion remains the owner.
   }
-  A["Worker-uplift service runtime request"] --> B["Backend protected apply sets runtime enabled flag"]
-  B --> C["Install runtime manager framework"]
-
-  C --> D["Read/validate service manifests"]
-  D --> E["Check immutable digest and repo allowlist"]
-  D --> F["Reject unsafe manifests and inline secrets"]
-
-  B --> G["Queue scoped worker API commands
-  through /api/worker/db/*"]
-  G --> H["Persist command receipts"
-  in worker_uplift_final.api_command_receipts]
-  G --> I["Shadow-first mode writes to staging tables only"]
-  H --> J["Require idempotency + correlation metadata"]
-
-  B --> K["Protected workflow actions"]
-  K --> L["check / status / logs / queue-inspect"]
-  K --> M["deploy / promote / restart / scale"]
-  K --> N["reconciliation / smoke / rollback"]
-
-  C --> O["Journald + Alloy logging
-  on approved worker tags"]
-  C --> P["Telemetry scope holds traces and exemplars deferred"]
-
-  N --> Q["Health and drift report evidence
-  confirms operational readiness"]
-
-  B --> R["Production writes remain disabled
-  until cutover-approved"]
-  R --> S["Production proof: status=pass
-  shadow mode default"]
+  A[Backend enables worker runtime framework] --> B[Shadow mode default with production writes disabled]
+  B --> C[Service manifests validated by runtime manager]
+  C --> D[Scoped Worker DB commands allowed only on /api/worker/db/*]
+  D --> E[Shadow commands record receipts and avoid live publication]
+  C --> F{Cutover gates met?}
+  F -- No --> G[Keep production writes off and legacy ingestion as owner]
+  F -- Yes --> H[Production scoped commands can proceed with guards]
+  H --> I[Operators use protected workflow actions for deploy, restart, recovery]

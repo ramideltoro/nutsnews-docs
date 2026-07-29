@@ -1,24 +1,34 @@
 ---
-title: NutsNews Worker-Uplift Telemetry Scope
 wiki:
-  source_route: /technical/nutsnews-worker-uplift-telemetry-scope/
-  simple_route: /simple/nutsnews-worker-uplift-telemetry-scope/
+  approval:
+    state: unreviewed
+    publishing: blocked
+    reviewed_by: pending
+    reviewed_on: pending
+    technical_source_hash: 2db7b312e4925abe9bad8cc79abcb3501053d558dba4be4a132084f9d7348807
+  source_route: /technical/nutsnews-worker-uplift-telemetry-scope
+  simple_route: /simple/nutsnews-worker-uplift-telemetry-scope
   primary_diagram:
     file: diagrams/NUTSNEWS_WORKER_UPLIFT_TELEMETRY_SCOPE.mmd
-    accTitle: "Telemetry contract and guardrail boundaries"
-    accDescr: "Shows approved telemetry classes, destination routing, guardrail thresholds, and rollback switches across worker-uplift metrics/logs telemetry scope."
+    accTitle: Worker-uplift telemetry scope decision flow
+    accDescr: >-
+      The diagram starts with the approved worker-uplift telemetry scope, splits
+      it into required metrics and logs, deferred traces and exemplars, and
+      forbidden profiles and payload telemetry, then shows that metrics and logs
+      go to Grafana Cloud with bounded labels, while the policy also enforces
+      quota guardrails, rollback switches, and privacy limits.
   status: active
-  collection: ai-and-automation
-  section: Automation & Workers
-  approval:
-    state: approved
-    publishing: allowed
-    reviewed_by: "ramideltoro"
-    reviewed_on: "2026-07-28T20:10:06.000Z"
-    technical_source_hash: 6a62a0dba8e86f315ea3c46b7988d0ce56db340e69a823bbdd56a31bdcb80695
+  collection: start-here
+  section: overview
+  order: 0
+title: NutsNews Worker-Uplift Telemetry Scope
+description: >-
+  A plain-language summary of which telemetry the worker-uplift pipeline may
+  emit, what is blocked, and the limits and guardrails that apply.
 ---
-
 # NutsNews Worker-Uplift Telemetry Scope
+
+This article explains the approved telemetry scope for the NutsNews worker-uplift pipeline. It covers what metrics and logs are allowed, what is deferred or forbidden, the label boundaries, queue and service coverage, volume budgets, guardrails, credentials, rollback switches, and privacy rules.
 
 Status: approved for `ramideltoro/nutsnews-worker#144` on 2026-07-23.
 
@@ -66,6 +76,14 @@ payload, url, path, user, ip, token, secret, prompt, model_output
 
 The `queue` value is bounded to the contract-defined RabbitMQ queue names. The `service` value is bounded to the eight worker-uplift services. The `outcome` value is bounded to `success`, `retry`, `dlq`, `dropped`, `timeout`, `validation_error`, `dependency_error`, and `canceled`.
 
+Consumer lifecycle telemetry uses the same approved label boundary. Runtime `0.5.0` exposes:
+
+- `nutsnews_worker_consumers`, a per-service/per-main-queue active consumer gauge;
+- `nutsnews_worker_consumer_events_total`, a counter for bounded outcomes such as `active`, `cancelled`, `channel-dropped`, `recovering`, and `closed`;
+- `runtime.broker.consumer_state_changed`, a structured JSON event carrying stage, queue, previous state, current state, and a bounded reason.
+
+Consumer cancellation and dropped-channel events must never include RabbitMQ URLs, credentials, message bodies, or article/model payloads. Grafana Cloud alert ownership remains in `ramideltoro/nutsnews-infra`; the per-main-queue consumer-loss rule alerts even when the affected queue is empty.
+
 ## Topology Coverage
 
 The telemetry policy covers every worker-uplift stage route from the contracts package:
@@ -83,7 +101,7 @@ The telemetry policy covers every worker-uplift stage route from the contracts p
 Total queue coverage:
 
 | Queue class | Count |
-| --- | ---: |
+| --- | ---:|
 | Stage queues | 7 |
 | Retry queues | 21 |
 | Terminal DLQs | 7 |
@@ -107,7 +125,7 @@ vps.nutsnews.com
 These are source-controlled ceilings, not measured production values.
 
 | Area | Ceiling |
-| --- | ---: |
+| --- | ---:|
 | RabbitMQ queue metrics | 700 active series |
 | Worker service metrics | 600 active series |
 | Worker histogram metrics | 700 active series |
@@ -118,7 +136,7 @@ These are source-controlled ceilings, not measured production values.
 Monthly log ceilings:
 
 | Area | Ceiling |
-| --- | ---: |
+| --- | ---:|
 | Worker services normal JSON logs | 2.0 GB/month |
 | RabbitMQ and broker logs | 1.0 GB/month |
 | Backend host total including worker uplift | 5.0 GB/month |
@@ -173,18 +191,7 @@ Logs:
 - `loki.write` sends to Grafana Cloud Logs;
 - credentials are `NUTSNEWS_GRAFANA_CLOUD_LOGS_URL`, `NUTSNEWS_GRAFANA_CLOUD_LOGS_USERNAME`, and `NUTSNEWS_GRAFANA_CLOUD_ACCESS_POLICY_TOKEN`.
 
-Backend issue `ramideltoro/nutsnews-worker#88` implements the approved log
-scope by collecting only explicitly tagged Docker journald streams on
-`backend.nutsnews.com`. RabbitMQ uses the `nutsnews-worker-uplift-rabbitmq`
-tag. Worker services use one stable tag per service:
-`nutsnews-worker-uplift-scheduler`, `nutsnews-worker-uplift-fetcher`,
-`nutsnews-worker-uplift-canonicalizer`, `nutsnews-worker-uplift-enrichment`,
-`nutsnews-worker-uplift-approval`, `nutsnews-worker-uplift-translation`,
-`nutsnews-worker-uplift-persistence`, and
-`nutsnews-worker-uplift-publication`. Backend verification is through the
-protected `Backend Worker-Uplift Logs Check` workflow, which reports only safe
-metadata: Alloy health, bounded source count, trace export absence, and Loki
-query result counts.
+Backend issue `ramideltoro/nutsnews-worker#88` implements the approved log scope by collecting only explicitly tagged Docker journald streams on `backend.nutsnews.com`. RabbitMQ uses the `nutsnews-worker-uplift-rabbitmq` tag. Worker services use one stable tag per service: `nutsnews-worker-uplift-scheduler`, `nutsnews-worker-uplift-fetcher`, `nutsnews-worker-uplift-canonicalizer`, `nutsnews-worker-uplift-enrichment`, `nutsnews-worker-uplift-approval`, `nutsnews-worker-uplift-translation`, `nutsnews-worker-uplift-persistence`, and `nutsnews-worker-uplift-publication`. Backend verification is through the protected `Backend Worker-Uplift Logs Check` workflow, which reports only safe metadata: Alloy health, bounded source count, trace export absence, and Loki query result counts.
 
 Traces and exemplars:
 

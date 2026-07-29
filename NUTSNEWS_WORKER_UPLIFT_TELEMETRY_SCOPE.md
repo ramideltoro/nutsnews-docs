@@ -55,6 +55,21 @@ payload, url, path, user, ip, token, secret, prompt, model_output
 
 The `queue` value is bounded to the contract-defined RabbitMQ queue names. The `service` value is bounded to the eight worker-uplift services. The `outcome` value is bounded to `success`, `retry`, `dlq`, `dropped`, `timeout`, `validation_error`, `dependency_error`, and `canceled`.
 
+Consumer lifecycle telemetry uses the same approved label boundary. Runtime
+`0.5.0` exposes:
+
+- `nutsnews_worker_consumers`, a per-service/per-main-queue active consumer
+  gauge;
+- `nutsnews_worker_consumer_events_total`, a counter for bounded outcomes such
+  as `active`, `cancelled`, `channel-dropped`, `recovering`, and `closed`;
+- `runtime.broker.consumer_state_changed`, a structured JSON event carrying
+  stage, queue, previous state, current state, and a bounded reason.
+
+Consumer cancellation and dropped-channel events must never include RabbitMQ
+URLs, credentials, message bodies, or article/model payloads. Grafana Cloud
+alert ownership remains in `ramideltoro/nutsnews-infra`; the per-main-queue
+consumer-loss rule alerts even when the affected queue is empty.
+
 ## Topology Coverage
 
 The telemetry policy covers every worker-uplift stage route from the contracts package:
