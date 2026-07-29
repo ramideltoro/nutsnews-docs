@@ -106,6 +106,10 @@ export async function automateWikiSource({
     const review = JSON.parse(await fs.readFile(reviewTarget, 'utf8'));
     review.state = approval.state;
     review.publishing = approval.publishing;
+    review.source = {
+      path: sourcePath,
+      sha256: sourceHash,
+    };
     review.approval = approval;
     writes.push(fs.writeFile(reviewTarget, `${JSON.stringify(review, null, 2)}\n`, 'utf8'));
   }

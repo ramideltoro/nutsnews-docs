@@ -12,13 +12,13 @@ wiki:
   status: draft
   collection: platform-and-data
   section: core-platform
-  order: 229
+  order: 1000001
   approval:
     state: automated
     publishing: allowed
     reviewed_by: "codex-merge-docs"
     reviewed_on: "2026-07-29T05:44:15.162Z"
-    technical_source_hash: ac6748ae61d15d54007f90eba17bf4be3aa5e3dfce9cbe2e54d63563e2c71ede
+    technical_source_hash: 6b3808c3abac20968c73c27126eaf719dc84cc2303bb0b5a11e42a039182275b
     automation:
       source_repository: "ramideltoro/nutsnews"
       pull_requests: "536,537,538"

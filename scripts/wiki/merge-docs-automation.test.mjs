@@ -159,6 +159,12 @@ test('automated approval is written identically to a complete document bundle', 
     write(root, `audiences/simple/${sourcePath}`, source),
     write(root, `audiences/technical/${sourcePath}`, source),
     write(root, 'diagrams/updates/AUTOMATED_FIXTURE.mmd', 'flowchart LR\n  A --> B\n'),
+    write(root, `audiences/simple/${sourcePath.replace(/\.md$/i, '.review.json')}`, `${JSON.stringify({
+      source: {
+        path: sourcePath,
+        sha256: 'stale',
+      },
+    })}\n`),
   ]);
   const result = await automateWikiSource({
     repoRoot: root,
@@ -180,6 +186,13 @@ test('automated approval is written identically to a complete document bundle', 
   )));
   assert.deepEqual(approvals[1], approvals[0]);
   assert.deepEqual(approvals[2], approvals[0]);
+  const review = JSON.parse(
+    await fs.readFile(
+      path.join(root, `audiences/simple/${sourcePath.replace(/\.md$/i, '.review.json')}`),
+      'utf8',
+    ),
+  );
+  assert.equal(review.source.sha256, result.approval.technical_source_hash);
 });
 
 test('change boundary accepts complete bundles and rejects tooling changes', async (t) => {
@@ -329,11 +342,11 @@ test('isolated merge bundle creates a complete target when a repository has no l
   const manifestFile = path.join(root, '_automation-work/trusted-bundle.json');
   await Promise.all([
     write(root, 'scripts/wiki/wiki-inventory.generated.json', `${JSON.stringify({
-      entries: Array.from({ length: 227 }, (_, index) => ({
+      entries: Array.from({ length: 228 }, (_, index) => ({
         source: {
-          collection: index === 99 ? 'platform-and-data' : 'start-here',
-          section: index === 99 ? 'core-platform' : 'overview',
-          order: index + 1,
+          collection: index === 99 || index === 227 ? 'platform-and-data' : 'start-here',
+          section: index === 99 || index === 227 ? 'core-platform' : 'overview',
+          order: index === 227 ? 1_000_001 : index + 1,
         },
       })),
     })}\n`),
@@ -359,7 +372,7 @@ test('isolated merge bundle creates a complete target when a repository has no l
     await fs.readFile(path.join(root, sourcePath), 'utf8'),
     sourcePath,
   );
-  assert.equal(canonical.data.wiki.order, 229);
+  assert.equal(canonical.data.wiki.order, 1_000_002);
   for (const artifact of manifest.artifacts) {
     assert.equal((await fs.lstat(path.join(root, artifact.repository_path))).isFile(), true);
     assert.equal((await fs.lstat(path.join(workspace, artifact.workspace_path))).isFile(), true);
