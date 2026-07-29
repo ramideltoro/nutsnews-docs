@@ -1,0 +1,17 @@
+flowchart TD
+  accTitle: Worker uplift operating state and future cutover gates
+  accDescr {
+    The diagram shows that legacy ingestion remains the production owner while operators
+    gather read-only evidence and keep the uplift shadow-only. Future cutover can only
+    happen after separate approved controls are added, the DNS failover system stays
+    independent, and a reversible watermark-based switch is proven.
+  }
+  A[Current coexistence: legacy worker owns production ingestion] --> B[Collect read-only evidence\nruntime, queues, DLQ, metrics, backups, credentials]
+  B --> C[Shadow uplift services remain active\nproduction_writes_enabled=false]
+  C --> D[Future controls in separate issues\n#125, #150, #126, #127, #128]
+  D --> E{Approved reversible cutover exists?}
+  E -- No --> F[Stay shadow-only\nDNS failover remains independent]
+  E -- Yes --> G[Establish cutover watermark\nkeep DNS unchanged]
+  G --> H[Switch owner and gates through protected workflow]
+  H --> I[Prove consumers, queues, DLQs, parity, and rollback evidence]
+  I --> J[Observe or roll back with watermark preserved]
