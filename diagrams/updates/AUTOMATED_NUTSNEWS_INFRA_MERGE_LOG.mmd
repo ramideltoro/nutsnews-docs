@@ -1,0 +1,7 @@
+flowchart TD
+  accTitle: NutsNews infrastructure merge sequence
+  accDescr: Three promotions set the production VPS inventory to one immutable image, three rollbacks restore a recorded immutable image, and workflow changes strengthen fixed rollback runtime configuration and smoke validation.
+  P["Promotions: PRs 430, 433, 436\nproduction VPS inventory → promoted immutable image"] --> R["Recorded rollbacks: PRs 428, 431, 434\nproduction VPS inventory → recorded immutable image"]
+  R --> G["PRs 429 and 432\nexact confirmation restores production runtime selection\nand sends production configuration sync"]
+  G --> H["PR 435\nvalidated current smoke-helper SHA\npassed to protected apply"]
+  H --> B["Boundary\nmerge evidence does not establish execution, health,\nconfiguration application, compatibility, or security outcome"]

@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "state": "automated",
+  "publishing": "allowed",
+  "source": {
+    "path": "updates/AUTOMATED_NUTSNEWS_INFRA_MERGE_LOG.md",
+    "sha256": "7b4cd5b57a9096230ae6263a26d01779cd66ad84f612e1062060a9c9bfec16ee"
+  },
+  "artifacts": {
+    "canonical_expert": "updates/AUTOMATED_NUTSNEWS_INFRA_MERGE_LOG.md",
+    "simple_markdown": "audiences/simple/updates/AUTOMATED_NUTSNEWS_INFRA_MERGE_LOG.md",
+    "technical_mirror": "audiences/technical/updates/AUTOMATED_NUTSNEWS_INFRA_MERGE_LOG.md",
+    "primary_diagram": "diagrams/updates/AUTOMATED_NUTSNEWS_INFRA_MERGE_LOG.mmd",
+    "review_manifest": "audiences/simple/updates/AUTOMATED_NUTSNEWS_INFRA_MERGE_LOG.review.json"
+  },
+  "accessibility": {
+    "title": "NutsNews infrastructure merge sequence",
+    "description": "Three promotions set the production VPS inventory to one immutable image, three rollbacks restore a recorded immutable image, and workflow changes strengthen fixed rollback runtime configuration and smoke validation."
+  },
+  "review_notes": [
+    "The bundle documents nine supplied merges in newest-first order.",
+    "Each entry distinguishes merged changes from unestablished operational results.",
+    "No human review is claimed by this manifest."
+  ],
+  "next_commands": [],
+  "approval": {
+    "state": "automated",
+    "publishing": "allowed",
+    "reviewed_by": "codex-merge-docs",
+    "reviewed_on": "2026-07-29T06:08:57.922Z",
+    "technical_source_hash": "7b4cd5b57a9096230ae6263a26d01779cd66ad84f612e1062060a9c9bfec16ee",
+    "automation": {
+      "source_repository": "ramideltoro/nutsnews-infra",
+      "pull_requests": "428,429,430,431,432,433,434,435,436",
+      "merge_commit": "ee61807a757fe087dbcecd60d5e0b7fe07f4115a",
+      "workflow_run": "30426987154"
+    }
+  }
+}
