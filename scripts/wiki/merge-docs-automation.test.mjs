@@ -328,7 +328,24 @@ test('isolated merge bundle creates a complete target when a repository has no l
   const workspace = path.join(root, '_automation-work/agent');
   const manifestFile = path.join(root, '_automation-work/trusted-bundle.json');
   await Promise.all([
-    write(root, 'scripts/wiki/wiki-inventory.generated.json', '{"entries":[]}\n'),
+    write(root, 'scripts/wiki/wiki-inventory.generated.json', `${JSON.stringify({
+      entries: [
+        {
+          source: {
+            collection: 'platform-and-data',
+            section: 'core-platform',
+            order: 100,
+          },
+        },
+        {
+          source: {
+            collection: 'start-here',
+            section: 'overview',
+            order: 227,
+          },
+        },
+      ],
+    })}\n`),
     write(root, 'scripts/wiki/prompts/automated-merge-docs.md', 'Trusted fixture prompt.\n'),
     write(root, 'event.json', `${JSON.stringify({
       repository,
@@ -347,6 +364,11 @@ test('isolated merge bundle creates a complete target when a repository has no l
   });
   assert.equal(manifest.source_path, sourcePath);
   assert.equal(manifest.artifacts.length, 5);
+  const canonical = parseMarkdownFrontmatter(
+    await fs.readFile(path.join(root, sourcePath), 'utf8'),
+    sourcePath,
+  );
+  assert.equal(canonical.data.wiki.order, 228);
   for (const artifact of manifest.artifacts) {
     assert.equal((await fs.lstat(path.join(root, artifact.repository_path))).isFile(), true);
     assert.equal((await fs.lstat(path.join(workspace, artifact.workspace_path))).isFile(), true);
