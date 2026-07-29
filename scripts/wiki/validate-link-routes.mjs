@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { normalizeRoute, wikiContract } from './wiki-contract.mjs';
 import { parseMarkdownFrontmatter } from './parse-markdown.mjs';
 
 const repoRoot = process.cwd();
+const scriptPath = fileURLToPath(import.meta.url);
+const isDirectRun = path.resolve(process.argv[1] || '') === scriptPath;
 const docsRoot = path.join(repoRoot, wikiContract.generatedContentRoot);
 const inventoryPath = path.join(repoRoot, 'scripts', 'wiki', 'wiki-inventory.generated.json');
 const minimumProductionLinkCoverage = 426;
@@ -129,6 +132,10 @@ function resolveSourceReference(sourcePath, core) {
   return path.posix.normalize(relative).replace(/^\.\//, '');
 }
 
+export function expectedGeneratedDocumentCount(inventory) {
+  return inventory.entries.length * wikiContract.audiences.length;
+}
+
 async function validateProductionSourceLinks(inventory, errors) {
   const sourceLookup = new Map(
     inventory.sourcePaths.map((sourcePath) => [sourcePath.toLowerCase(), sourcePath]),
@@ -186,7 +193,7 @@ async function validateProductionSourceLinks(inventory, errors) {
   return covered;
 }
 
-async function validateGeneratedLinks(errors) {
+async function validateGeneratedLinks(inventory, errors) {
   const docs = await walkMarkdown(docsRoot);
   const routeSet = new Set(docs.map(routeFromGeneratedPath));
   for (const audience of wikiContract.audiences) {
@@ -196,7 +203,12 @@ async function validateGeneratedLinks(errors) {
   }
   let checked = 0;
 
-  assert.equal(docs.length, 454, 'expected 454 generated audience documents');
+  const expectedDocumentCount = expectedGeneratedDocumentCount(inventory);
+  assert.equal(
+    docs.length,
+    expectedDocumentCount,
+    `expected ${expectedDocumentCount} generated audience documents`,
+  );
 
   for (const doc of docs) {
     const currentRoute = routeFromGeneratedPath(doc);
@@ -255,7 +267,7 @@ async function run() {
   const errors = [];
   const inventory = JSON.parse(await fs.readFile(inventoryPath, 'utf8'));
   const productionLinks = await validateProductionSourceLinks(inventory, errors);
-  const generated = await validateGeneratedLinks(errors);
+  const generated = await validateGeneratedLinks(inventory, errors);
 
   if (errors.length > 0) {
     console.error(`Link validation found ${errors.length} error(s):`);
@@ -277,7 +289,9 @@ async function run() {
   );
 }
 
-run().catch((error) => {
-  console.error(error.message || error);
-  process.exit(1);
-});
+if (isDirectRun) {
+  run().catch((error) => {
+    console.error(error.message || error);
+    process.exit(1);
+  });
+}

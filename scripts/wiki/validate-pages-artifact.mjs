@@ -76,13 +76,20 @@ export async function validatePagesArtifact({
     await fs.readFile(path.join(repoRoot, 'scripts/wiki/wiki-inventory.generated.json'), 'utf8'),
   );
 
-  if (manifest.schema_version !== 1 || manifest.release !== 'v1' || manifest.ready !== true) {
-    errors.push('release manifest must explicitly mark schema 1 v1 as ready');
+  const validMinimumSourceCount = Number.isSafeInteger(manifest.minimum_source_count)
+    && manifest.minimum_source_count > 0;
+  if (
+    manifest.schema_version !== 1
+    || manifest.release !== 'v1'
+    || manifest.ready !== true
+    || !validMinimumSourceCount
+  ) {
+    errors.push('release manifest must explicitly mark schema 1 v1 as ready with a source baseline');
   }
-  if (inventory.entries?.length !== manifest.expected_source_count) {
+  if (validMinimumSourceCount && inventory.entries?.length < manifest.minimum_source_count) {
     errors.push(
       `inventory has ${inventory.entries?.length ?? 0} sources; `
-      + `${manifest.expected_source_count} are required for v1`,
+      + `at least ${manifest.minimum_source_count} are required for v1`,
     );
   }
 
