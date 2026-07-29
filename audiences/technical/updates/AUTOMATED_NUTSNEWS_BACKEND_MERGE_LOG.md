@@ -7,8 +7,8 @@ wiki:
   slug: "updates/automated-nutsnews-backend-merge-log"
   primary_diagram:
     file: "diagrams/updates/AUTOMATED_NUTSNEWS_BACKEND_MERGE_LOG.mmd"
-    accTitle: "Backend credential readiness paths after pull request 443"
-    accDescr: "Routine readiness reads production-backend secret-name and variable metadata without an Environment gate, while a separate manual audit remains behind the production-backend approval gate for injected-value and shape checks."
+    accTitle: "Worker-uplift security controls after pull request 444"
+    accDescr: "Pull request 444 moves workflow inputs through step environment variables before shell use, adds automated security-review checks, and retains shadow-only worker-uplift operation with production writes disabled."
   status: draft
   collection: platform-and-data
   section: core-platform
@@ -17,17 +17,26 @@ wiki:
     state: automated
     publishing: allowed
     reviewed_by: "codex-merge-docs"
-    reviewed_on: "2026-07-29T11:26:30.163Z"
-    technical_source_hash: 12b26c9de1264608a02dae97db6586a33c0a818695a1d5e2441c60274147afa7
+    reviewed_on: "2026-07-29T19:39:55.371Z"
+    technical_source_hash: a11b4beabe89bcd36f6b621567ab5ca31419a28255c6cf76e487c6fd0d85f759
     automation:
       source_repository: "ramideltoro/nutsnews-backend"
-      pull_requests: "443"
-      merge_commit: f5dea5b3255471d571ba6875fa9412db7346100b
-      workflow_run: "30447354125"
+      pull_requests: "444"
+      merge_commit: b619cf91504eafca21f70c5d68888563f5fca7a9
+      workflow_run: "30485228434"
 ---
 # Automated NutsNews Backend Merge Log
 
 ## Merge entries
+
+### 2026-07-29 — `ramideltoro/nutsnews-backend` [PR #444](https://github.com/ramideltoro/nutsnews-backend/pull/444)
+
+- Merge commit: `b619cf91504eafca21f70c5d68888563f5fca7a9`.
+- Summary: completes a source-controlled, non-mutating worker-uplift security review and hardens backend GitHub Actions workflows against shell-template injection. Dispatch, repository, and event-derived workflow data now enter shell steps through quoted step environment variables instead of direct expressions in generated shell programs.
+- Operator impact: `Backend Checks` now runs GitHub Actions security validation, worker-uplift security-review validation, and the review tests. Protected live checks remain subject to the `production-backend` owner approval gate; this merge does not bypass it.
+- Technical behavior and affected components: changed backend database, PostgreSQL, cutover, Supabase, and worker-uplift workflows use environment indirection for relevant inputs and add strict shell handling where shown. `validate_backend_github_actions_security.py` requires immutable action references and rejects direct dispatch, repository, or event expressions in shell blocks. `validate_worker_uplift_security_review.py` validates repository, supply-chain, credential, network, RabbitMQ, PostgreSQL, backend API, AI, telemetry, and operations evidence; it requires no unresolved critical or high finding, while accepted residual risks are shadow-only and expire at `ramideltoro/nutsnews-worker#125`.
+- Security boundary: one high finding is recorded as remediated and eight bounded residual risks are accepted only for shadow operation. Legacy worker ingestion remains the production owner, worker-uplift remains shadow-only, and `production_writes_enabled=false` remains unchanged. No secret values are recorded.
+- Deployment, migration, configuration, compatibility, and rollback: workflow source and CI checks change. A deployment, host, legacy-ingestion, Cloudflare, DNS, failover, cutover, production-write, migration, or compatibility-state change is not established by this merge. The recorded workflow-regression recovery is to revert this review commit through a pull request and rerun `Backend Checks`; no host rollback or writer-state change is established.
 
 ### 2026-07-29 — `ramideltoro/nutsnews-backend` [PR #443](https://github.com/ramideltoro/nutsnews-backend/pull/443)
 

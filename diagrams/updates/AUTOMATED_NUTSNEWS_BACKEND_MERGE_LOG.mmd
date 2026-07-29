@@ -1,8 +1,10 @@
 flowchart LR
-  accTitle: Backend credential readiness paths after pull request 443
-  accDescr: Routine readiness reads production-backend secret-name and variable metadata without an Environment gate, while a separate manual audit remains behind the production-backend approval gate for injected-value and shape checks.
+  accTitle: Worker-uplift security controls after pull request 444
+  accDescr: Pull request 444 moves workflow inputs through step environment variables before shell use, adds automated security-review checks, and retains shadow-only worker-uplift operation with production writes disabled.
 
-  routine["Backend Credential Readiness\nno production-backend Environment"] --> metadata["GitHub Environment metadata\nsecret names and non-secret variables"]
-  metadata --> checker["Credential readiness checker\nmissing required names fail closed"]
-  audit["Backend Protected Value Audit\nmanual, production-backend Environment"] --> values["Injected values and shape checks"]
-  protected["production-backend approval gate"] --> audit
+  inputs["Dispatch, repository, and event inputs"] --> env["Quoted step environment variables"]
+  env --> workflows["Backend database, PostgreSQL, cutover, Supabase, and worker-uplift workflows"]
+  workflows --> security["GitHub Actions security validation\nimmutable actions; no direct expressions in shell blocks"]
+  workflows --> review["Worker-uplift security-review validation\nno unresolved critical or high findings"]
+  review --> boundary["Legacy worker owns production\nuplift is shadow-only\nproduction writes disabled"]
+  gate["production-backend owner approval gate"] --> live["Protected live checks"]
