@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "state": "unreviewed",
-  "publishing": "blocked",
+  "state": "approved",
+  "publishing": "allowed",
   "generated_at": "2026-07-28T21:20:44.036Z",
   "generator": {
     "provider": "openai",
@@ -29,5 +29,12 @@
     "Verify the exact set of protected manager actions and environment variable names against the live backend runbook before publishing.",
     "Confirm the telemetry restrictions and the deferred Tempo/OTLP wording still match current backend policy.",
     "Review whether the Recovery section's operational steps and gate names match the current production procedures exactly."
-  ]
+  ],
+  "approval": {
+    "state": "approved",
+    "publishing": "allowed",
+    "reviewed_by": "ramideltoro",
+    "reviewed_on": "2026-07-29T04:17:53.311Z",
+    "technical_source_hash": "d0de67f2d72af5b6d3bda6d8385d69f8df4f966a089c2c41934789ded501ab2f"
+  }
 }
