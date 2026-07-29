@@ -25,6 +25,7 @@ import {
   automatedRecord,
   expertSourceHash,
 } from './wiki-approval.mjs';
+import { wikiContract } from './wiki-contract.mjs';
 
 const execFileAsync = promisify(execFile);
 
@@ -113,6 +114,10 @@ test('merge discovery aggregates every pending pull request in cursor order', ()
   assert.deepEqual(event.pull_numbers, [11, 12]);
   assert.equal(event.previous_merge_commit, '1'.repeat(40));
   assert.equal(event.head_sha, '3'.repeat(40));
+});
+
+test('isolated Codex workspaces are outside the canonical wiki inventory', () => {
+  assert.equal(wikiContract.exclusions.ignoreDirs.has('_automation-work'), true);
 });
 
 test('automated approvals require complete immutable merge provenance', () => {
