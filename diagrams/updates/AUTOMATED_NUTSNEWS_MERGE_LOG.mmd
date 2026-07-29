@@ -1,0 +1,13 @@
+flowchart TD
+  accTitle: Reviewed staging-evidence verification flow
+  accDescr {
+    The Vercel production-release workflow exports the reviewed verifier to temporary storage, supplies the checked-out app contract path, and verifies the canonical qualified report before staging a production candidate.
+  }
+  workflow["Vercel production-release workflow"] --> checkout["Exact application-source checkout"]
+  workflow --> helper["Reviewed verifier in RUNNER_TEMP"]
+  checkout --> contract["admin-backend operation contract"]
+  contract --> helper
+  artifact["Qualification artifact"] --> report["qualification-evidence/app/staging-qualification.json"]
+  report --> helper
+  helper --> staging["Stage production candidate"]
+  artifact -. "canonical report absent" .-> fail["Fail closed"]

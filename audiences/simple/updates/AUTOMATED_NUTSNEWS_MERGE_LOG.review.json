@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "state": "automated",
+  "publishing": "allowed",
+  "source": {
+    "path": "updates/AUTOMATED_NUTSNEWS_MERGE_LOG.md",
+    "sha256": "123c3820eb052078b38732c199e7a2835b7422428847a4199daa5b8ff2bedb2f"
+  },
+  "artifacts": {
+    "canonical_expert": "updates/AUTOMATED_NUTSNEWS_MERGE_LOG.md",
+    "simple_markdown": "audiences/simple/updates/AUTOMATED_NUTSNEWS_MERGE_LOG.md",
+    "technical_mirror": "audiences/technical/updates/AUTOMATED_NUTSNEWS_MERGE_LOG.md",
+    "primary_diagram": "diagrams/updates/AUTOMATED_NUTSNEWS_MERGE_LOG.mmd",
+    "review_manifest": "audiences/simple/updates/AUTOMATED_NUTSNEWS_MERGE_LOG.review.json"
+  },
+  "accessibility": {
+    "title": "Reviewed staging-evidence verification flow",
+    "description": "The Vercel production-release workflow exports the reviewed verifier to temporary storage, supplies the checked-out app contract path, and verifies the canonical qualified report before staging a production candidate."
+  },
+  "review_notes": [
+    "Automated merge documentation; human review is not claimed.",
+    "The record is limited to the supplied merged-change evidence.",
+    "Simple and Technical pages describe the same safety boundaries."
+  ],
+  "next_commands": [],
+  "approval": {
+    "state": "automated",
+    "publishing": "allowed",
+    "reviewed_by": "codex-merge-docs",
+    "reviewed_on": "2026-07-29T05:44:15.162Z",
+    "technical_source_hash": "ac6748ae61d15d54007f90eba17bf4be3aa5e3dfce9cbe2e54d63563e2c71ede",
+    "automation": {
+      "source_repository": "ramideltoro/nutsnews",
+      "pull_requests": "536,537,538",
+      "merge_commit": "d339f40a6c29b41d18d5d977575274345c73941b",
+      "workflow_run": "30425862591"
+    }
+  }
+}
