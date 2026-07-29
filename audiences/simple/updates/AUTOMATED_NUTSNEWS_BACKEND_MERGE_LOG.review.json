@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "state": "automated",
+  "publishing": "allowed",
+  "source": {
+    "path": "updates/AUTOMATED_NUTSNEWS_BACKEND_MERGE_LOG.md",
+    "sha256": "f6b7b4b50ba2e8984a9d17e33e8fc68b58453816c99f099a2340c915c588d062"
+  },
+  "artifacts": {
+    "canonical_expert": "updates/AUTOMATED_NUTSNEWS_BACKEND_MERGE_LOG.md",
+    "simple_markdown": "audiences/simple/updates/AUTOMATED_NUTSNEWS_BACKEND_MERGE_LOG.md",
+    "technical_mirror": "audiences/technical/updates/AUTOMATED_NUTSNEWS_BACKEND_MERGE_LOG.md",
+    "primary_diagram": "diagrams/updates/AUTOMATED_NUTSNEWS_BACKEND_MERGE_LOG.mmd",
+    "review_manifest": "audiences/simple/updates/AUTOMATED_NUTSNEWS_BACKEND_MERGE_LOG.review.json"
+  },
+  "accessibility": {
+    "title": "Qwen credential readiness mapping after backend pull request 442",
+    "description": "A protected production-backend source credential is mapped by protected apply to separate approval and translation shadow-service runtime credentials. Legacy ingestion remains the production owner."
+  },
+  "review_notes": [
+    "Unreviewed automated merge record; no human review is claimed.",
+    "Facts are limited to merged pull request 442 evidence.",
+    "Deployment, migration, rollback, rotation, and replacement are not established by this merge."
+  ],
+  "next_commands": [],
+  "approval": {
+    "state": "automated",
+    "publishing": "allowed",
+    "reviewed_by": "codex-merge-docs",
+    "reviewed_on": "2026-07-29T06:06:14.693Z",
+    "technical_source_hash": "f6b7b4b50ba2e8984a9d17e33e8fc68b58453816c99f099a2340c915c588d062",
+    "automation": {
+      "source_repository": "ramideltoro/nutsnews-backend",
+      "pull_requests": "442",
+      "merge_commit": "9060a2573befba6a9d4cb494c05a6fe9b6e307b4",
+      "workflow_run": "30426987154"
+    }
+  }
+}

@@ -1,0 +1,8 @@
+flowchart LR
+  accTitle: Qwen credential readiness mapping after backend pull request 442
+  accDescr: A protected production-backend source credential is mapped by protected apply to separate approval and translation shadow-service runtime credentials. Legacy ingestion remains the production owner.
+
+  source["production-backend: LOCAL_AI_API_KEY"] --> apply["Protected apply"]
+  apply --> approval["Approval shadow service: approval-qwen-api-key / NUTSNEWS_APPROVAL_QWEN_API_KEY"]
+  apply --> translation["Translation shadow service: translation-qwen-api-key / NUTSNEWS_TRANSLATION_QWEN_API_KEY"]
+  legacy["Legacy ingestion owns production"] -. separate retained binding .-> cloudflare["Legacy Cloudflare LOCAL_AI_API_KEY binding"]
