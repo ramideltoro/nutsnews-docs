@@ -94,6 +94,17 @@
       "lastFailedAt": "2026-07-29T04:32:29.731Z",
       "workflowRun": "30422109647",
       "runUrl": "https://github.com/ramideltoro/nutsnews-docs/actions/runs/30422109647"
+    },
+    "ramideltoro/nutsnews-infra": {
+      "headSha": "da37adb5eae8603d378903ede91b1095d4df1b83",
+      "pullNumbers": [
+        428
+      ],
+      "attempts": 1,
+      "blocked": false,
+      "lastFailedAt": "2026-07-29T04:33:12.508Z",
+      "workflowRun": "30422109647",
+      "runUrl": "https://github.com/ramideltoro/nutsnews-docs/actions/runs/30422109647"
     }
   }
 }
