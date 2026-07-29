@@ -48,16 +48,12 @@ async function exists(target) {
   return fs.stat(target).then((stat) => stat.isFile()).catch(() => false);
 }
 
-async function nextCorePlatformOrder(repoRoot) {
+async function nextGlobalWikiOrder(repoRoot) {
   const inventoryPath = path.join(repoRoot, 'scripts/wiki/wiki-inventory.generated.json');
   const inventory = JSON.parse(await fs.readFile(inventoryPath, 'utf8'));
   const orders = inventory.entries
     .map((entry) => entry.source)
-    .filter((source) => (
-      source.collection === 'platform-and-data'
-      && source.section === 'core-platform'
-      && Number.isSafeInteger(source.order)
-    ))
+    .filter((source) => Number.isSafeInteger(source.order))
     .map((source) => source.order);
   return (orders.length ? Math.max(...orders) : 0) + 1;
 }
@@ -78,7 +74,7 @@ export async function prepareAutomatedMergeBundle({
       sourcePath,
       collection: 'platform-and-data',
       section: 'core-platform',
-      order: await nextCorePlatformOrder(repoRoot),
+      order: await nextGlobalWikiOrder(repoRoot),
     });
   }
 
