@@ -4,7 +4,7 @@
   "publishing": "allowed",
   "source": {
     "path": "updates/AUTOMATED_NUTSNEWS_ANDROID_MERGE_LOG.md",
-    "sha256": "bc39369f398cd85ab6856ea4c3f19308c7f6d7d5fb88a543facff1bc557e5586"
+    "sha256": "78b94b591677da02503a3cce52e429f3de80d0fbb5a396a5b98bbe78c869b499"
   },
   "artifacts": {
     "canonical_expert": "updates/AUTOMATED_NUTSNEWS_ANDROID_MERGE_LOG.md",
@@ -14,26 +14,26 @@
     "review_manifest": "audiences/simple/updates/AUTOMATED_NUTSNEWS_ANDROID_MERGE_LOG.review.json"
   },
   "accessibility": {
-    "title": "Alpha promotion fallback when Google Play requires Console review",
-    "description": "PR 146 retries an Alpha edit commit with changesNotSentForReview=true only after the specified Play HTTP 400 response, reports pending-console-review after success, and directs the operator to send the changes for review in Google Play Console."
+    "title": "Android launcher icon rendering after PR 148",
+    "description": "PR 148 places the complete iOS icon composition inside Android's centered 66dp adaptive-icon safe zone, uses full-composition legacy assets, and removes the Play listing icon crop."
   },
   "review_notes": [
     "This bundle is unreviewed and must not be represented as human-reviewed.",
-    "The record covers merged pull request 146 for ramideltoro/nutsnews-android, while retaining earlier entries for 145, 144, 143, 142, 141, 140, and 139.",
-    "For PR 146, deployment, migration, configuration beyond the documented request parameter, compatibility, security, rollback, successful promotion, Console submission, release, and execution facts are not established; earlier entries retain their documented evidence boundaries."
+    "The record covers merged pull request 148 for ramideltoro/nutsnews-android, while retaining earlier entries for 146, 145, 144, 143, 142, 141, 140, and 139.",
+    "For PR 148, deployment, migration, configuration, compatibility, security, rollback, release version, execution, and successful Play listing publication facts are not established; earlier entries retain their documented evidence boundaries."
   ],
   "next_commands": [],
   "approval": {
     "state": "automated",
     "publishing": "allowed",
     "reviewed_by": "codex-merge-docs",
-    "reviewed_on": "2026-07-30T13:10:18.284Z",
-    "technical_source_hash": "bc39369f398cd85ab6856ea4c3f19308c7f6d7d5fb88a543facff1bc557e5586",
+    "reviewed_on": "2026-07-30T20:06:07.395Z",
+    "technical_source_hash": "78b94b591677da02503a3cce52e429f3de80d0fbb5a396a5b98bbe78c869b499",
     "automation": {
       "source_repository": "ramideltoro/nutsnews-android",
-      "pull_requests": "146",
-      "merge_commit": "b97a5f4951a3529366f5cc47be1953a8d4a5938f",
-      "workflow_run": "30545558158"
+      "pull_requests": "148",
+      "merge_commit": "9724b3a88ac840c077853dac5dcd0be589466d45",
+      "workflow_run": "30577386413"
     }
   }
 }

@@ -1,14 +1,12 @@
 flowchart TD
-  accTitle: Alpha promotion fallback when Google Play requires Console review
-  accDescr: PR 146 first commits the Alpha edit normally. Only the specified HTTP 400 Play error triggers a retry with changesNotSentForReview=true. A successful retry reports pending-console-review and directs the operator to send changes for review in Google Play Console; all other failures follow error reporting.
+  accTitle: Android launcher icon rendering after PR 148
+  accDescr: PR 148 puts the complete iOS icon composition inside Android's centered 66dp adaptive-icon safe zone with a 19.4444 percent inset on each edge. Legacy and Play listing assets use the full composition, and validation checks the foreground contract.
 
-  start[PR 146: commit verified Alpha edit] --> initial[Initial Play edit commit]
-  initial --> result{Result}
-  result -->|Success| submitted[Submitted]
-  result -->|Specified HTTP 400 and exact review message| retry[Retry with changesNotSentForReview=true]
-  result -->|Any other failure| initialError[Report Alpha commit error]
-  retry --> retryResult{Retry result}
-  retryResult -->|Success| pending[pending-console-review]
-  pending --> action[Operator sends changes for review in Google Play Console]
-  retryResult -->|Failure| deferredError[Report unreachable Play or deferred commit rejection]
-  pending --> checks[Workflow summary, validator, and negative test]
+  source[iOS icon composition] --> adaptive[Adaptive foreground: 19.4444% inset on each edge]
+  adaptive --> safe[Centered 66dp safe zone in 108dp layer]
+  safe --> launcher[Launcher masks retain the complete composition]
+  source --> legacy[Legacy icons: full-composition resizes]
+  legacy --> sizes[48, 72, 96, 144, and 192px]
+  source --> listing[Play listing icon: 512px full composition]
+  adaptive --> validation[Brand validation]
+  validation --> checks[Four insets and @drawable/brand_icon required]

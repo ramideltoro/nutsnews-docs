@@ -1,14 +1,14 @@
 ---
 title: "Automated NutsNews Android Merge Log"
-description: "Merge record for Android changes, including the Alpha Console-review fallback."
+description: "Merge record for Android changes, including launcher-icon safe-zone rendering."
 wiki:
   source_route: "/technical/updates/automated-nutsnews-android-merge-log"
   simple_route: "/simple/updates/automated-nutsnews-android-merge-log"
   slug: "updates/automated-nutsnews-android-merge-log"
   primary_diagram:
     file: "diagrams/updates/AUTOMATED_NUTSNEWS_ANDROID_MERGE_LOG.mmd"
-    accTitle: "Alpha promotion fallback when Google Play requires Console review"
-    accDescr: "PR 146 retries an Alpha edit commit with changesNotSentForReview=true only after the specified Play HTTP 400 response, reports pending-console-review after success, and directs the operator to send the changes for review in Google Play Console."
+    accTitle: "Android launcher icon rendering after PR 148"
+    accDescr: "PR 148 places the complete iOS icon composition inside Android's centered 66dp adaptive-icon safe zone, uses full-composition legacy assets, and removes the Play listing icon crop."
   status: draft
   collection: platform-and-data
   section: core-platform
@@ -17,19 +17,28 @@ wiki:
     state: automated
     publishing: allowed
     reviewed_by: "codex-merge-docs"
-    reviewed_on: "2026-07-30T13:10:18.284Z"
-    technical_source_hash: bc39369f398cd85ab6856ea4c3f19308c7f6d7d5fb88a543facff1bc557e5586
+    reviewed_on: "2026-07-30T20:06:07.395Z"
+    technical_source_hash: 78b94b591677da02503a3cce52e429f3de80d0fbb5a396a5b98bbe78c869b499
     automation:
       source_repository: "ramideltoro/nutsnews-android"
-      pull_requests: "146"
-      merge_commit: b97a5f4951a3529366f5cc47be1953a8d4a5938f
-      workflow_run: "30545558158"
+      pull_requests: "148"
+      merge_commit: 9724b3a88ac840c077853dac5dcd0be589466d45
+      workflow_run: "30577386413"
 ---
 # Automated NutsNews Android Merge Log
 
 This log records merged Android changes. It is an unreviewed draft; approval metadata remains present and does not claim human review.
 
 ## Merge entries
+
+### 2026-07-30 — [PR #148](https://github.com/ramideltoro/nutsnews-android/pull/148): Match Android launcher icon to the iOS artwork
+
+- **Repository:** `ramideltoro/nutsnews-android`
+- **Merge commit:** `9724b3a88ac840c077853dac5dcd0be589466d45`
+- **Affected components:** `app/src/main/res/drawable/ic_launcher_foreground.xml`; legacy `ic_launcher.png` resources in the `mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, and `xxxhdpi` families; `docs/branding/android-brand-assets.md`; `scripts/generate-brand-assets.swift`; `scripts/generate-play-store-assets.swift`; `fastlane/metadata/android/en-US/images/icon.png` and its SHA-256 manifest entry; and `scripts/validate-brand-assets.sh`.
+- **Behavior:** The adaptive foreground now wraps `@drawable/brand_icon` in an inset of `19.4444%` on every edge. This fits the complete iOS composition into Android's centered 66dp safe zone of the 108dp adaptive-icon layer, so launcher masks do not enlarge or clip the upper-right highlights. Legacy square and round assets are generated as full-composition resizes at 48, 72, 96, 144, and 192 pixels; round variants retain only Android's circular clip. The Play listing's 512px icon is rendered without the removed rounded-corner crop, and its SHA-256 manifest value changes accordingly. Brand validation now requires the four foreground insets and `@drawable/brand_icon` source reference.
+- **Reader and operator impact:** Android launchers and the Play listing use the iOS icon composition without the prior Android-only framing or listing crop. The validation script checks the adaptive safe-zone contract; no new operator command is established by this merge.
+- **Safety boundary:** This merge establishes the documented asset rendering, generator, checksum-manifest, and validation changes only. Deployment, migration, configuration, compatibility, security, rollback, release version, execution, and successful Play listing publication facts are not established by this merge.
 
 ### 2026-07-30 — [PR #146](https://github.com/ramideltoro/nutsnews-android/pull/146): Stage Alpha when Play requires Console review
 
