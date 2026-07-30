@@ -1,7 +1,9 @@
 flowchart TD
   accTitle: NutsNews infrastructure merge sequence
-  accDescr: Three promotions set the production VPS inventory to one immutable image, three rollbacks restore a recorded immutable image, and workflow changes strengthen fixed rollback runtime configuration and smoke validation.
-  P["Promotions: PRs 430, 433, 436\nproduction VPS inventory → promoted immutable image"] --> R["Recorded rollbacks: PRs 428, 431, 434\nproduction VPS inventory → recorded immutable image"]
-  R --> G["PRs 429 and 432\nexact confirmation restores production runtime selection\nand sends production configuration sync"]
-  G --> H["PR 435\nvalidated current smoke-helper SHA\npassed to protected apply"]
-  H --> B["Boundary\nmerge evidence does not establish execution, health,\nconfiguration application, compatibility, or security outcome"]
+  accDescr: Four July 30 merges restore an auto-idled staging Access verifier, select a production VPS image, and constrain public health identity during a cache transition. Execution outcomes are not established by the merges.
+  A["PR 441: staging deploy\nverify retained root-owned Access files"] --> B["Start existing staging Access Compose project\nwait up to 60 seconds for healthy verifier"]
+  B --> C["Live boundary verification\nunsafe files, Compose failure, or unhealthy status fail closed"]
+  D["PR 442: production VPS inventory\nselect source, immutable image, build, and generation"] --> E["PR 443: health identity split\nhealth vps; runtime checks production-vps"]
+  E --> F["PR 444: cache transition\nhealth accepts only vps or production-vps\nheader must match response body"]
+  C --> G["Boundary\nmerge evidence does not establish deployment, migration,\nconfiguration application, compatibility, security, or rollback execution"]
+  F --> G
