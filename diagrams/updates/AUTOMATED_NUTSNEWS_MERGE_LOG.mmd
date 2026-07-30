@@ -1,13 +1,18 @@
 flowchart TD
-  accTitle: Centered mobile navigation menu behavior
+  accTitle: Automatic production release handoff
   accDescr {
-    When a reader opens the mobile navigation menu, a dimmed backdrop appears and the menu panel is centered in the viewport. Its labels are centered independently of their arrows, and reduced-motion preferences disable the new animations.
+    A successful same-repository main build publishes an immutable release candidate. A guarded handoff validates its exact metadata before dispatching it to protected staging, qualification, VPS production, and Vercel production steps; a Vercel promotion failure triggers VPS rollback.
   }
-  toggle["Reader opens mobile navigation"] --> backdrop["Fixed dimmed and blurred backdrop"]
-  toggle --> panel["Panel fixed at viewport center"]
-  panel --> layout["Centered label; trailing arrow in separate column"]
-  panel --> bounds["Width and height constrained; vertical scrolling remains available"]
-  motion{"Reduced-motion preference?"}
-  motion -- No --> animation["Backdrop fades; panel fades/scales; options stagger in"]
-  motion -- Yes --> disabled["Backdrop, panel, and option animations disabled"]
-  panel -. Escape or outside click .-> closed["Existing close behavior; Escape returns focus to toggle"]
+  main["Successful same-repository main build"] --> image["Container Image builds and smoke-tests immutable image"]
+  image --> metadata["Exact-run metadata: source SHA, run and build IDs, digest, migration and schema, project reference"]
+  metadata --> guard{"Automatic handoff validates expected, complete metadata"}
+  guard -- "Rejected: fork, failed, non-main, mutable, mismatched, incomplete, or unexpected" --> stop["No dispatch"]
+  guard -- "Accepted" --> staging["Protected infra: VPS staging deployment and qualification"]
+  staging --> vps["Protected infra: VPS production apply"]
+  vps --> vercel["Protected Vercel production release and smoke"]
+  vercel -- "Promotion fails" --> rollback["Automatic VPS rollback"]
+  vercel -- "Promotion succeeds" --> complete["Release chain completes"]
+  migration{"Production migration already applied?"}
+  migration -- "No" --> blocked["Promotion fails closed; run protected migration workflow, then retry"]
+  migration -- "Yes" --> vps
+  staging -. "Migration compatibility check" .-> migration

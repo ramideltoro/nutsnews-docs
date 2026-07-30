@@ -4,7 +4,7 @@
   "publishing": "allowed",
   "source": {
     "path": "updates/AUTOMATED_NUTSNEWS_MERGE_LOG.md",
-    "sha256": "bf7d7ea4668526ff064e2e3e2b5908e96b2e59b0b8d3c923595812a46f4f903c"
+    "sha256": "46d583fc757d201827f3de82dbf67a7944084b4be18b802402499483934ea46f"
   },
   "artifacts": {
     "canonical_expert": "updates/AUTOMATED_NUTSNEWS_MERGE_LOG.md",
@@ -14,27 +14,27 @@
     "review_manifest": "audiences/simple/updates/AUTOMATED_NUTSNEWS_MERGE_LOG.review.json"
   },
   "accessibility": {
-    "title": "Centered mobile navigation menu behavior",
-    "description": "When a reader opens the mobile navigation menu, a dimmed backdrop appears and the menu panel is centered in the viewport. Its labels are centered independently of their arrows, and reduced-motion preferences disable the new animations."
+    "title": "Automatic production release handoff",
+    "description": "A successful same-repository main build publishes an immutable release candidate. A guarded handoff validates its exact metadata before dispatching it to protected staging, qualification, VPS production, and Vercel production steps; a Vercel promotion failure triggers VPS rollback."
   },
   "review_notes": [
     "Automated merge documentation; human review is not claimed.",
     "The record is limited to the supplied merged-change evidence.",
     "Simple and Technical pages describe the same safety boundaries.",
-    "PR #540 documents a centered mobile navigation panel, backdrop, animations, and reduced-motion behavior."
+    "PR #541 documents a guarded automatic production release handoff, protected downstream release stages, migration failure behavior, and the Vercel-promotion VPS rollback path."
   ],
   "next_commands": [],
   "approval": {
     "state": "automated",
     "publishing": "allowed",
     "reviewed_by": "codex-merge-docs",
-    "reviewed_on": "2026-07-30T06:47:11.810Z",
-    "technical_source_hash": "bf7d7ea4668526ff064e2e3e2b5908e96b2e59b0b8d3c923595812a46f4f903c",
+    "reviewed_on": "2026-07-30T11:28:20.155Z",
+    "technical_source_hash": "46d583fc757d201827f3de82dbf67a7944084b4be18b802402499483934ea46f",
     "automation": {
       "source_repository": "ramideltoro/nutsnews",
-      "pull_requests": "540",
-      "merge_commit": "740230f0ada1c7031703ad075f4ddc3d0f0db4eb",
-      "workflow_run": "30520576038"
+      "pull_requests": "541",
+      "merge_commit": "1ee1d034951ddfe134f2a3caea9ca9341672054f",
+      "workflow_run": "30538554281"
     }
   }
 }

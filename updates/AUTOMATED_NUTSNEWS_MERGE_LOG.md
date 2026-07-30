@@ -7,8 +7,8 @@ wiki:
   slug: "updates/automated-nutsnews-merge-log"
   primary_diagram:
     file: "diagrams/updates/AUTOMATED_NUTSNEWS_MERGE_LOG.mmd"
-    accTitle: "Centered mobile navigation menu behavior"
-    accDescr: "When a reader opens the mobile navigation menu, a dimmed backdrop appears and the menu panel is centered in the viewport. Its labels are centered independently of their arrows, and reduced-motion preferences disable the new animations."
+    accTitle: "Automatic production release handoff"
+    accDescr: "A successful same-repository main build publishes an immutable release candidate. A guarded handoff validates its exact metadata before dispatching it to protected staging, qualification, VPS production, and Vercel production steps; a Vercel promotion failure triggers VPS rollback."
   status: draft
   collection: platform-and-data
   section: core-platform
@@ -17,19 +17,31 @@ wiki:
     state: automated
     publishing: allowed
     reviewed_by: "codex-merge-docs"
-    reviewed_on: "2026-07-30T06:47:11.810Z"
-    technical_source_hash: bf7d7ea4668526ff064e2e3e2b5908e96b2e59b0b8d3c923595812a46f4f903c
+    reviewed_on: "2026-07-30T11:28:20.155Z"
+    technical_source_hash: 46d583fc757d201827f3de82dbf67a7944084b4be18b802402499483934ea46f
     automation:
       source_repository: "ramideltoro/nutsnews"
-      pull_requests: "540"
-      merge_commit: 740230f0ada1c7031703ad075f4ddc3d0f0db4eb
-      workflow_run: "30520576038"
+      pull_requests: "541"
+      merge_commit: 1ee1d034951ddfe134f2a3caea9ca9341672054f
+      workflow_run: "30538554281"
 ---
 # Automated NutsNews Merge Log
 
 This log records already-merged changes from supplied merge evidence. Approval metadata is automated and does not claim human review.
 
 ## Merge entries
+
+### 2026-07-30 — ramideltoro/nutsnews [PR #541](https://github.com/ramideltoro/nutsnews/pull/541) — merge commit `1ee1d034951ddfe134f2a3caea9ca9341672054f`
+
+PR #541 makes a successful same-repository merge to `main` enter the automatic production release chain. `Container Image` builds and smoke-tests an immutable image, then publishes exact-run metadata containing the source commit, source workflow run ID, build ID, image digest, migration head, schema version, and production Supabase project reference. `automatic-production-release.yml` is the automatic post-`main` release owner: it revalidates the triggering successful `main` run and its artifact before dispatching the candidate to the protected infra release chain.
+
+For readers and operators, normal successful `main` merges now request protected VPS staging deployment and qualification, VPS production promotion, and Vercel production release. The documented chain deploys VPS staging, runs staging qualification, applies VPS production, deploys and smokes Vercel production, and automatically rolls VPS back if Vercel promotion fails. Manual `Container Image` runs remain build-only, and typed manual recovery workflows remain available.
+
+The handoff accepts only complete, expected metadata for the same repository, a full source SHA, an immutable `sha256` image digest, matching run/build identity, matching migration and schema values, and a production project reference. Fork, failed, non-`main`, mutable-image, mismatched-run or SHA, incomplete, and unexpected metadata are rejected. The app-side handoff has read-only GitHub permissions and uses only the staging dispatch token; staging secrets remain in protected infra environments and production credentials remain downstream in protected environments. No workflow pushes or merges `main`.
+
+Production database migrations remain separately protected. If the exact application source requires a migration that production has not applied, promotion fails closed until the protected production migration workflow has run, after which the release can be retried. This merge also adds the `automatic-release` environment for the post-`main` handoff and the `staging-recovery` environment for manual staging recovery; the evidence states that these have protected-branch restrictions and no reviewer wait. The Vercel workflow is renamed to describe its protected release role.
+
+This merge does not establish that a staging or production deployment completed, any changed secret value, a new external dependency, a database migration, a configuration value beyond the documented workflow and environment behavior, compatibility beyond the stated release-contract checks, or an operator rollback command. It establishes automatic VPS rollback only for the documented Vercel-promotion failure path.
 
 ### 2026-07-30 — ramideltoro/nutsnews [PR #540](https://github.com/ramideltoro/nutsnews/pull/540) — merge commit `740230f0ada1c7031703ad075f4ddc3d0f0db4eb`
 
@@ -75,4 +87,4 @@ This merge establishes no migration, compatibility commitment, security change, 
 
 ## Combined safety boundary
 
-PR #540 establishes the documented centered mobile-navigation behavior, including its supported motion preference. PR #539 establishes the documented privacy-route and responsive-navigation behavior. PRs #536–#538 establish the documented staging-evidence verification behavior. The supplied evidence does not establish successful production deployment, changed secret values or access policy, a new external dependency, or an operator rollback command.
+PR #541 establishes the guarded automatic release handoff and its documented Vercel-failure VPS rollback path. PR #540 establishes the documented centered mobile-navigation behavior, including its supported motion preference. PR #539 establishes the documented privacy-route and responsive-navigation behavior. PRs #536–#538 establish the documented staging-evidence verification behavior. The supplied evidence does not establish successful production deployment, changed secret values or access policy, a new external dependency, a database migration, or an operator rollback command.
