@@ -4,7 +4,7 @@
   "publishing": "allowed",
   "source": {
     "path": "updates/AUTOMATED_NUTSNEWS_ANDROID_MERGE_LOG.md",
-    "sha256": "80d9a61a3f26ce67786227f0107f8f64e6cee75b315979bae9eb22746ffac798"
+    "sha256": "448b7cf7f8e27fedee0ea6cb0d2583a0ad0bfa8de1c8d6133694ac390f0da823"
   },
   "artifacts": {
     "canonical_expert": "updates/AUTOMATED_NUTSNEWS_ANDROID_MERGE_LOG.md",
@@ -14,26 +14,26 @@
     "review_manifest": "audiences/simple/updates/AUTOMATED_NUTSNEWS_ANDROID_MERGE_LOG.review.json"
   },
   "accessibility": {
-    "title": "Read Story shape and guarded Alpha promotion after merges 141 and 142",
-    "description": "PR 141 applies the standard rounded control shape to Read Story. PR 142 verifies an Internal version, then promotes it to Alpha only after an exact review-replacement acknowledgement and verifies Alpha afterward."
+    "title": "Fixed-width centered Read Story button after merge 143",
+    "description": "PR 143 renders the home-feed Read Story control at 160 by 48 dp and centers its one-line label; its regression test checks the dimensions and label center."
   },
   "review_notes": [
     "This bundle is unreviewed and must not be represented as human-reviewed.",
-    "The record covers merged pull requests 142 and 141 for ramideltoro/nutsnews-android, while retaining earlier entries for 140 and 139.",
-    "For PR 142, deployment outside the workflow, migration, compatibility, successful Play promotion, and rollback are not established. For PR 141, deployment, migration, configuration, compatibility, security, and rollback are not established."
+    "The record covers merged pull request 143 for ramideltoro/nutsnews-android, while retaining earlier entries for 142, 141, 140, and 139.",
+    "For PR 143, deployment, migration, configuration, compatibility, security, rollback, release, and execution facts are not established. Earlier entries retain their documented evidence boundaries."
   ],
   "next_commands": [],
   "approval": {
     "state": "automated",
     "publishing": "allowed",
     "reviewed_by": "codex-merge-docs",
-    "reviewed_on": "2026-07-30T06:49:36.365Z",
-    "technical_source_hash": "80d9a61a3f26ce67786227f0107f8f64e6cee75b315979bae9eb22746ffac798",
+    "reviewed_on": "2026-07-30T11:30:18.525Z",
+    "technical_source_hash": "448b7cf7f8e27fedee0ea6cb0d2583a0ad0bfa8de1c8d6133694ac390f0da823",
     "automation": {
       "source_repository": "ramideltoro/nutsnews-android",
-      "pull_requests": "141,142",
-      "merge_commit": "2ce2ee0aec3d64079b41764c6430413e1498bb16",
-      "workflow_run": "30520576038"
+      "pull_requests": "143",
+      "merge_commit": "4868451e13786353677d1089c4970ce412f4da09",
+      "workflow_run": "30538554281"
     }
   }
 }

@@ -1,14 +1,14 @@
 ---
 title: "Automated NutsNews Android Merge Log (Simple)"
-description: "Plain-language record of Android feed controls and Play closed-testing promotion changes."
+description: "Plain-language record of Android feed controls and Play closed-testing promotion changes, including the fixed-width Read Story control."
 wiki:
   source_route: "/technical/updates/automated-nutsnews-android-merge-log"
   simple_route: "/simple/updates/automated-nutsnews-android-merge-log"
   slug: "updates/automated-nutsnews-android-merge-log"
   primary_diagram:
     file: "diagrams/updates/AUTOMATED_NUTSNEWS_ANDROID_MERGE_LOG.mmd"
-    accTitle: "Read Story shape and guarded Alpha promotion after merges 141 and 142"
-    accDescr: "PR 141 applies the standard rounded control shape to Read Story. PR 142 verifies an Internal version, then promotes it to Alpha only after an exact review-replacement acknowledgement and verifies Alpha afterward."
+    accTitle: "Fixed-width centered Read Story button after merge 143"
+    accDescr: "PR 143 renders the home-feed Read Story control at 160 by 48 dp and centers its one-line label; its regression test checks the dimensions and label center."
   status: draft
   collection: platform-and-data
   section: core-platform
@@ -17,19 +17,28 @@ wiki:
     state: automated
     publishing: allowed
     reviewed_by: "codex-merge-docs"
-    reviewed_on: "2026-07-30T06:49:36.365Z"
-    technical_source_hash: 80d9a61a3f26ce67786227f0107f8f64e6cee75b315979bae9eb22746ffac798
+    reviewed_on: "2026-07-30T11:30:18.525Z"
+    technical_source_hash: 448b7cf7f8e27fedee0ea6cb0d2583a0ad0bfa8de1c8d6133694ac390f0da823
     automation:
       source_repository: "ramideltoro/nutsnews-android"
-      pull_requests: "141,142"
-      merge_commit: 2ce2ee0aec3d64079b41764c6430413e1498bb16
-      workflow_run: "30520576038"
+      pull_requests: "143"
+      merge_commit: 4868451e13786353677d1089c4970ce412f4da09
+      workflow_run: "30538554281"
 ---
 # Automated NutsNews Android Merge Log
 
 This log records merged Android changes. It is an unreviewed draft; approval metadata remains present and does not claim human review.
 
 ## Merge entries
+
+### 2026-07-30 — [PR #143](https://github.com/ramideltoro/nutsnews-android/pull/143): Center and widen Read Story button
+
+- **Repository:** `ramideltoro/nutsnews-android`
+- **Merge commit:** `4868451e13786353677d1089c4970ce412f4da09`
+- **Affected components:** the home-feed `ReadStoryButton` in `app/src/main/kotlin/com/nutsnews/app/feature/feed/ArticleCard.kt` and its regression test in `app/src/test/kotlin/com/nutsnews/app/feature/feed/ArticleCardTest.kt`.
+- **Behavior:** Read Story now uses a `Box` that is fixed at 160 dp wide and 48 dp high. It keeps the existing shadow, clipping, border, click handling, and `article_read_story` test tag. The Box centers its content. The `Read Story` label fills the available width, stays on one line, and is centered. The regression test checks the 160 dp width, 48 dp height, and that the label and button have the same horizontal and vertical centers.
+- **Reader and operator impact:** On the home feed, Read Story is wider and its label is centered inside a fixed 160 × 48 dp control. The test protects those dimensions and alignment.
+- **Safety boundary:** Deployment, migration, configuration, compatibility, security, rollback, release, and execution facts are not established by this merge.
 
 ### 2026-07-30 — [PR #142](https://github.com/ramideltoro/nutsnews-android/pull/142): Add guarded Play Alpha promotion
 

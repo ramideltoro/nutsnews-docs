@@ -1,25 +1,13 @@
 flowchart TD
-  accTitle: Read Story shape and guarded Alpha promotion after merges 141 and 142
-  accDescr: PR 141 applies the standard rounded control shape to Read Story. PR 142 verifies an Internal version, then promotes it to Alpha only after an exact review-replacement acknowledgement and verifies Alpha afterward.
+  accTitle: Fixed-width centered Read Story button after merge 143
+  accDescr: PR 143 renders the home-feed Read Story control at 160 by 48 dp and centers its one-line label; its regression test checks the dimensions and label center.
 
-  subgraph Feed[PR 141: Home feed Read Story]
-    dimensions[Theme control corner radius] --> shape[One rounded control shape]
-    shape --> shadow[Shadow]
-    shape --> clip[Clip]
-    shape --> border[Border]
-    shape --> test[Geometry regression test: 16 dp corner, less than half of 48 dp height]
-  end
-
-  subgraph Promotion[PR 142: Guarded Play Alpha promotion]
-    start[Manual workflow on main] --> acknowledgement{Exact REPLACE_ALPHA_REVIEW acknowledgement?}
-    acknowledgement -->|no| stop[Stop]
-    acknowledgement -->|yes| internal[Verify requested version on Internal]
-    internal --> alpha[Query Alpha]
-    alpha --> present{Version already on Alpha?}
-    present -->|yes| already[Report already-present]
-    present -->|no| newer{Version code greater than Alpha maximum?}
-    newer -->|no| stop
-    newer -->|yes| promote[Assign verified bundle to Alpha completed rollout]
-    promote --> commit[Commit with CANCEL_IN_REVIEW_AND_SUBMIT]
-    commit --> verify[Query Alpha again for requested version]
-  end
+  button[ReadStoryButton] --> box[Box: 160 dp width and 48 dp height]
+  box --> retained[Retained: shadow, clip, border, click handling, and article_read_story tag]
+  box --> label[Read Story text: fill width, one line, centered]
+  box --> centered[Content alignment: center]
+  centered --> alignment[Button and label share horizontal and vertical centers]
+  label --> alignment
+  box --> test[Regression test]
+  test --> dimensions[Checks 160 dp width and 48 dp height]
+  test --> alignment
