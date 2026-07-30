@@ -1,9 +1,14 @@
 flowchart TD
-  accTitle: NutsNews infrastructure merge sequence
-  accDescr: Four July 30 merges restore an auto-idled staging Access verifier, select a production VPS image, and constrain public health identity during a cache transition. Execution outcomes are not established by the merges.
-  A["PR 441: staging deploy\nverify retained root-owned Access files"] --> B["Start existing staging Access Compose project\nwait up to 60 seconds for healthy verifier"]
-  B --> C["Live boundary verification\nunsafe files, Compose failure, or unhealthy status fail closed"]
-  D["PR 442: production VPS inventory\nselect source, immutable image, build, and generation"] --> E["PR 443: health identity split\nhealth vps; runtime checks production-vps"]
-  E --> F["PR 444: cache transition\nhealth accepts only vps or production-vps\nheader must match response body"]
-  C --> G["Boundary\nmerge evidence does not establish deployment, migration,\nconfiguration application, compatibility, security, or rollback execution"]
-  F --> G
+  accTitle: NutsNews infrastructure merge updates
+  accDescr: Two July 30 merges select a qualified production VPS image and make promotion-check polling retry documented transient GitHub failures. Operational outcomes are not established by the merges.
+  A["PR 451: production VPS inventory\nselect immutable image, source commit, build,\nand configuration generation"] --> B["Recorded release context\nmigration head and rollback-compatible schema retained\nprevious digest becomes last-known-good"]
+  C["PR 452: gh pr checks poll"] --> D{"Classifier result"}
+  D -->|pass or skipping only| E["passed"]
+  D -->|fail or cancel| F["failed immediately"]
+  D -->|pending, absent, or no checks reported| G["waiting"]
+  D -->|documented transient transport error| H["retry after 10 seconds\nwithin existing one-hour deadline"]
+  B --> I["Boundary\nmerge evidence does not establish deployment, migration,\nconfiguration application, compatibility, security, or rollback execution"]
+  E --> I
+  F --> I
+  G --> I
+  H --> I

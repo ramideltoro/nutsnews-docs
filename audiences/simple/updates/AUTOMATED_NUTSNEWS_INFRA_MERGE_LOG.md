@@ -7,8 +7,8 @@ wiki:
   slug: "updates/automated-nutsnews-infra-merge-log"
   primary_diagram:
     file: "diagrams/updates/AUTOMATED_NUTSNEWS_INFRA_MERGE_LOG.mmd"
-    accTitle: "NutsNews infrastructure merge sequence"
-    accDescr: "Four new merges restore an auto-idled staging Access verifier, select a production image, and bound public VPS health identity during a cache transition."
+    accTitle: "NutsNews infrastructure merge updates"
+    accDescr: "Two July 30 merges select a qualified production VPS image and make promotion-check polling retry documented transient GitHub failures. Operational outcomes are not established by the merges."
   status: draft
   collection: platform-and-data
   section: core-platform
@@ -17,13 +17,13 @@ wiki:
     state: automated
     publishing: allowed
     reviewed_by: "codex-merge-docs"
-    reviewed_on: "2026-07-30T12:54:25.871Z"
-    technical_source_hash: 0df376113227d86a5f4a8db08dc404af54c0d100f523cb0ed784404f929b9b60
+    reviewed_on: "2026-07-30T20:10:48.301Z"
+    technical_source_hash: 344a543318f16701f145523c7148f37353e775613ca1a88c6eebfae7bf73e575
     automation:
       source_repository: "ramideltoro/nutsnews-infra"
-      pull_requests: "441,442,443,444"
-      merge_commit: eb1810f45c1e0b3b7d1cd30d258ce1b88af9fd8b
-      workflow_run: "30544170238"
+      pull_requests: "451,452"
+      merge_commit: 48748cd7fea036d14e281fe84fcde5a52d41166c
+      workflow_run: "30577386413"
 ---
 # Automated NutsNews Infra Merge Log
 
@@ -31,11 +31,19 @@ This is a record of supplied merges to `ramideltoro/nutsnews-infra`. A merged re
 
 ## What changed for operators
 
-On 2026-07-30, the staging release gained a safe way to restore the existing Access verifier after auto-idle. It checks that the retained files are root-owned and have the expected modes, starts only that existing Compose project, and waits up to 60 seconds for a healthy verifier before boundary checks. The production VPS inventory selected image `sha256:bc79ff2a104d92ea705a025bcb0457c56a0b1fe585d04ff1b0402cf5868324a5`. The public `/healthz` check now allows only `vps` or `production-vps` while a cache changes, and its header must match its response body; separate readiness and runtime configuration checks still require `production-vps`.
+On 2026-07-30, production VPS inventory selected immutable image `sha256:509da0d20b278acc383b27ba1af1a59f9468b8108b6b9e4d09d6221cc1ae935d` for source commit `ba8fd07b940d0418436b33c6ccb4d59a76caab4a`, build `30570857159-1`, and configuration generation `production-30570857159-1-20260717113000`. Promotion-check polling now separates check results from GitHub connection problems: documented temporary HTTP, timeout, TLS, connection, and EOF errors retry every 10 seconds within the existing one-hour deadline, but failed or cancelled checks and non-temporary errors still fail immediately.
 
 Whether deployment, migration, configuration sync, Vercel recovery, health checks, compatibility beyond the recorded schema values, security, or rollback execution actually happened is **not established by this merge**.
 
 ## Merges (newest first)
+
+### PR [#452](https://github.com/ramideltoro/nutsnews-infra/pull/452) — 2026-07-30 — `48748cd7fea036d14e281fe84fcde5a52d41166c`
+
+Repository: `ramideltoro/nutsnews-infra`. The release-promotion workflow now uses `ansible/scripts/classify_promotion_checks.py` for every `gh pr checks` poll. Checks pass only when every result is `pass` or `skipping`; any `fail` or `cancel` result still fails, while pending, absent, or not-yet-reported checks wait. With no check output, documented temporary HTTP 408, 425, 429, or 5xx errors; timeouts; TLS/SSL handshake failures; connection reset/refused/closed/aborted errors; temporary-network errors; EOF; stream errors; and HTTP/2 errors are retried. The workflow logs the error and retries after 10 seconds until its existing one-hour deadline. Bad check JSON, a response that is not a list, authentication failures, and other non-temporary errors remain fatal. This affects the release-promotion workflow, the new classifier, and its regression checks. It prevents known temporary GitHub read failures from looking like failed checks without weakening real failed or cancelled checks. Deployment, merge completion beyond the recorded merge, migration, configuration application, compatibility, security outcome, and rollback execution are **not established by this merge**.
+
+### PR [#451](https://github.com/ramideltoro/nutsnews-infra/pull/451) — 2026-07-30 — `81bd2a5305c04bc13b3bbd2fea57e99234985fac`
+
+Repository: `ramideltoro/nutsnews-infra`. Production VPS inventory now selects immutable image `sha256:509da0d20b278acc383b27ba1af1a59f9468b8108b6b9e4d09d6221cc1ae935d`, source commit `ba8fd07b940d0418436b33c6ccb4d59a76caab4a`, build `30570857159-1`, and configuration generation `production-30570857159-1-20260717113000`. The recorded migration head remains `20260717113000`; the recorded rollback-compatible schema remains `20260712170000`; and the previous selected image `sha256:bc79ff2a104d92ea705a025bcb0457c56a0b1fe585d04ff1b0402cf5868324a5` is now the recorded last-known-good image. This affects production VPS inventory by updating the reviewed release selection and recorded rollback reference. Deployment or Vercel synchronization, migration execution, configuration application, compatibility beyond the recorded schema value, security outcome, and rollback execution are **not established by this merge**.
 
 ### PR [#444](https://github.com/ramideltoro/nutsnews-infra/pull/444) — 2026-07-30 — `eb1810f45c1e0b3b7d1cd30d258ce1b88af9fd8b`
 Repository: `ramideltoro/nutsnews-infra`. The protected release check accepts only `vps` and `production-vps` from cacheable public `/healthz`. It still checks the exact source commit and build ID, and the health header must equal the target in the response body. Readiness and public configuration are uncached checks that still require `production-vps`. This affects the protected-apply workflow and app/release-promotion checks, allowing only the documented cache transition without weakening identity checks. Deployment, cache settlement, migration, configuration, compatibility, security, and rollback execution are **not established by this merge**.

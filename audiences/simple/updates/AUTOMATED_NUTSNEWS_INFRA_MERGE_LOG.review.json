@@ -4,7 +4,7 @@
   "publishing": "allowed",
   "source": {
     "path": "updates/AUTOMATED_NUTSNEWS_INFRA_MERGE_LOG.md",
-    "sha256": "0df376113227d86a5f4a8db08dc404af54c0d100f523cb0ed784404f929b9b60"
+    "sha256": "344a543318f16701f145523c7148f37353e775613ca1a88c6eebfae7bf73e575"
   },
   "artifacts": {
     "canonical_expert": "updates/AUTOMATED_NUTSNEWS_INFRA_MERGE_LOG.md",
@@ -14,11 +14,12 @@
     "review_manifest": "audiences/simple/updates/AUTOMATED_NUTSNEWS_INFRA_MERGE_LOG.review.json"
   },
   "accessibility": {
-    "title": "NutsNews infrastructure merge sequence",
-    "description": "Four July 30 merges restore an auto-idled staging Access verifier, select a production VPS image, and constrain public health identity during a cache transition. Execution outcomes are not established by the merges."
+    "title": "NutsNews infrastructure merge updates",
+    "description": "Two July 30 merges select a qualified production VPS image and make promotion-check polling retry documented transient GitHub failures. Operational outcomes are not established by the merges."
   },
   "review_notes": [
-    "The bundle documents the four newly supplied merges, plus its existing history, in newest-first order.",
+    "The bundle documents the two newly supplied merges, plus its existing history, in newest-first order.",
+    "PR 451 records the production VPS image selection and rollback reference; PR 452 records bounded retry handling for transient promotion-check reads.",
     "Each entry distinguishes merged changes from unestablished operational results.",
     "No human review is claimed by this manifest."
   ],
@@ -27,13 +28,13 @@
     "state": "automated",
     "publishing": "allowed",
     "reviewed_by": "codex-merge-docs",
-    "reviewed_on": "2026-07-30T12:54:25.871Z",
-    "technical_source_hash": "0df376113227d86a5f4a8db08dc404af54c0d100f523cb0ed784404f929b9b60",
+    "reviewed_on": "2026-07-30T20:10:48.301Z",
+    "technical_source_hash": "344a543318f16701f145523c7148f37353e775613ca1a88c6eebfae7bf73e575",
     "automation": {
       "source_repository": "ramideltoro/nutsnews-infra",
-      "pull_requests": "441,442,443,444",
-      "merge_commit": "eb1810f45c1e0b3b7d1cd30d258ce1b88af9fd8b",
-      "workflow_run": "30544170238"
+      "pull_requests": "451,452",
+      "merge_commit": "48748cd7fea036d14e281fe84fcde5a52d41166c",
+      "workflow_run": "30577386413"
     }
   }
 }
