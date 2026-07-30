@@ -1,6 +1,7 @@
 ---
 import Pagination from 'virtual:starlight/components/Pagination';
 import { sourceMetadataForPage } from '../../scripts/wiki/source-metadata.mjs';
+import NutsNewsFooter from './NutsNewsFooter.astro';
 
 const { data } = Astro.locals.starlightRoute.entry;
 const metadata = await sourceMetadataForPage({
@@ -49,6 +50,7 @@ const formattedDate = metadata
     )
   }
   <Pagination />
+  <NutsNewsFooter as="section" />
 </footer>
 
 <style>

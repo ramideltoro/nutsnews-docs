@@ -8,13 +8,19 @@ const buildRoot = path.join(repoRoot, '_site');
 const headerPath = path.join(repoRoot, 'src', 'components', 'Header.astro');
 const railPath = path.join(repoRoot, 'src', 'components', 'CollectionRail.astro');
 const mobileMenuPath = path.join(repoRoot, 'src', 'components', 'MobileMenuToggle.astro');
+const siteNavigationPath = path.join(repoRoot, 'src', 'components', 'NutsNewsSiteNavigation.astro');
+const siteFooterPath = path.join(repoRoot, 'src', 'components', 'NutsNewsFooter.astro');
+const siteLinksPath = path.join(repoRoot, 'src', 'lib', 'nutsnews-navigation.mjs');
 const pagePath = path.join(repoRoot, 'src', 'pages', '[audience]', 'collections', '[section].astro');
 
 async function run() {
-  const [header, rail, mobileMenu, page] = await Promise.all([
+  const [header, rail, mobileMenu, siteNavigation, siteFooter, siteLinks, page] = await Promise.all([
     fs.readFile(headerPath, 'utf8'),
     fs.readFile(railPath, 'utf8'),
     fs.readFile(mobileMenuPath, 'utf8'),
+    fs.readFile(siteNavigationPath, 'utf8'),
+    fs.readFile(siteFooterPath, 'utf8'),
+    fs.readFile(siteLinksPath, 'utf8'),
     fs.readFile(pagePath, 'utf8'),
   ]);
 
@@ -32,7 +38,11 @@ async function run() {
   assert.match(header, /<ThemeSelect \/>/);
   assert.match(header, /min-height:\s*var\(--wiki-touch-target\)/);
   assert.match(header, /@media \(max-width: 30rem\)/);
-  assert.match(header, /\.site-title span/);
+  assert.match(
+    header,
+    /padding-inline-start:\s*calc\(var\(--wiki-touch-target\) \+ var\(--wiki-space-3\)\)/,
+  );
+  assert.match(header, /\.brand-slot\s*\{\s*display:\s*none;/);
   const searchIndex = header.indexOf('<Search />');
   const historyIndex = header.indexOf('>History</a>');
   const githubIndex = header.indexOf('\n      GitHub\n');
@@ -66,6 +76,24 @@ async function run() {
   assert.match(mobileMenu, /this\.btn\?\.focus\(\{ preventScroll: true \}\)/);
   assert.match(mobileMenu, /body\[data-mobile-menu-expanded\]/);
   assert.doesNotMatch(mobileMenu, /tabindex=["']?[1-9]/i);
+  assert.match(siteNavigation, /aria-label="Open NutsNews menu"/);
+  assert.match(siteNavigation, /aria-controls="nutsnews-site-navigation-panel"/);
+  assert.match(siteNavigation, /aria-label="NutsNews navigation"/);
+  assert.match(siteNavigation, /event\.key === 'Escape'/);
+  assert.match(siteNavigation, /handlePointerDown/);
+  assert.match(siteNavigation, /handleLinkClick/);
+  assert.match(siteNavigation, /this\.button\?\.focus\(\{ preventScroll: true \}\)/);
+  assert.match(siteNavigation, /top:\s*50%/);
+  assert.match(siteNavigation, /left:\s*50%/);
+  assert.match(siteNavigation, /nutsnews-menu-panel-in/);
+  assert.doesNotMatch(siteNavigation, /tabindex=["']?[1-9]/i);
+  assert.match(siteFooter, /data-nutsnews-site-footer/);
+  assert.match(siteFooter, /aria-label="NutsNews navigation"/);
+  assert.match(siteFooter, /aria-label="Return to NutsNews"/);
+  assert.match(siteLinks, /https:\/\/wiki\.nutsnews\.com\/simple\//);
+  for (const route of ['apps', 'saved', 'about', 'contact', 'privacy']) {
+    assert.match(siteLinks, new RegExp(`https://www\\.nutsnews\\.com/${route}`));
+  }
   assert.match(page, /getStaticPaths/);
   assert.match(page, /getCollection\('docs'\)/);
 
@@ -106,6 +134,9 @@ async function run() {
   assert.match(desktopFixture, /id="contextual-navigation"/);
   assert.match(desktopFixture, /<starlight-menu-button[^>]*aria-expanded="false"/);
   assert.match(desktopFixture, /<button[^>]*aria-expanded="false"[^>]*aria-label="Menu"/);
+  assert.match(desktopFixture, /data-nutsnews-site-footer/);
+  assert.match(desktopFixture, /aria-label="Open NutsNews menu"/);
+  assert.match(desktopFixture, /href="https:\/\/wiki\.nutsnews\.com\/simple\/"/);
   assert.match(desktopFixture, /href="\/technical\/project\/" aria-current="page"/);
   const historyGroups = [...desktopFixture.matchAll(/<details data-history-group="([^"]+)"[^>]*>/g)];
   assert.ok(historyGroups.length > 0, 'Expected contextual History groups in the project fixture.');

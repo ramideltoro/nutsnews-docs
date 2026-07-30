@@ -1,6 +1,8 @@
 ---
 import logo from '../assets/nutsnews-logo.png';
 import { wikiContract } from '../../scripts/wiki/wiki-contract.mjs';
+import NutsNewsFooter from '../components/NutsNewsFooter.astro';
+import NutsNewsSiteNavigation from '../components/NutsNewsSiteNavigation.astro';
 import '../styles/wiki.css';
 
 const { resolver } = wikiContract.route;
@@ -24,6 +26,7 @@ const canonicalPath = base === '/' ? '/' : `${basePrefix}/`;
     <link rel="canonical" href={new URL(canonicalPath, Astro.site)} />
   </head>
   <body>
+    <NutsNewsSiteNavigation />
     <main
       class="resolver-shell"
       data-root-resolver
@@ -77,6 +80,7 @@ const canonicalPath = base === '/' ? '/' : `${basePrefix}/`;
         </noscript>
       </div>
     </main>
+    <NutsNewsFooter />
 
     <script>
       import {

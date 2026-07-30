@@ -4,6 +4,7 @@ import SiteTitle from 'virtual:starlight/components/SiteTitle';
 import ThemeSelect from 'virtual:starlight/components/ThemeSelect';
 import config from 'virtual:starlight/user-config';
 import { wikiContract } from '../../scripts/wiki/wiki-contract.mjs';
+import NutsNewsSiteNavigation from './NutsNewsSiteNavigation.astro';
 
 const path = Astro.url.pathname;
 const isTechnical = path === '/technical/' || path.startsWith('/technical/');
@@ -25,6 +26,8 @@ const shouldRenderSearch =
 ---
 
 <div class="wiki-header">
+  <NutsNewsSiteNavigation />
+
   <div class="brand-slot">
     <SiteTitle />
   </div>
@@ -116,6 +119,7 @@ const shouldRenderSearch =
 <style>
   @layer starlight.core {
     .wiki-header {
+      box-sizing: border-box;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -205,6 +209,7 @@ const shouldRenderSearch =
     @media (max-width: 50rem) {
       .wiki-header {
         align-items: flex-start;
+        padding-inline-start: calc(var(--wiki-touch-target) + var(--wiki-space-3));
       }
 
       .global-tools {
@@ -252,14 +257,8 @@ const shouldRenderSearch =
     }
 
     @media (max-width: 30rem) {
-      .brand-slot :global(.site-title span) {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        overflow: hidden;
-        clip: rect(0 0 0 0);
-        clip-path: inset(50%);
-        white-space: nowrap;
+      .brand-slot {
+        display: none;
       }
     }
   }

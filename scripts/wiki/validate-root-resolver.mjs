@@ -77,6 +77,16 @@ async function run() {
     /data-default-audience="simple"/,
     'Root build must expose the Simple default.',
   );
+  assertPattern(
+    built,
+    /data-nutsnews-site-footer/,
+    'Root build must retain the NutsNews site footer.',
+  );
+  assertPattern(
+    built,
+    /aria-label="Open NutsNews menu"/,
+    'Root build must retain the mobile NutsNews menu.',
+  );
 
   console.log(
     'Root resolver validation passed: Simple default, stored/explicit precedence, normal fallback '

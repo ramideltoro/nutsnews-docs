@@ -1,0 +1,125 @@
+---
+import {
+  NUTSNEWS_HOME_LINK,
+  NUTSNEWS_WIKI_URL,
+  nutsNewsNavigationLinks,
+} from '../lib/nutsnews-navigation.mjs';
+
+const { as = 'footer' } = Astro.props;
+const Tag = as === 'section' ? 'section' : 'footer';
+---
+
+<Tag
+  class="nutsnews-site-footer"
+  aria-label="NutsNews site footer"
+  data-nutsnews-site-footer
+>
+  <div class="nutsnews-site-footer-inner">
+    <a
+      class="nutsnews-site-footer-brand"
+      href={NUTSNEWS_HOME_LINK.href}
+      aria-label="Return to NutsNews"
+    >
+      <span aria-hidden="true">←</span>
+      <span>NutsNews</span>
+    </a>
+
+    <nav aria-label="NutsNews navigation">
+      {
+        nutsNewsNavigationLinks.map((link) => (
+          <a
+            href={link.href}
+            aria-current={link.href === NUTSNEWS_WIKI_URL ? 'page' : undefined}
+          >
+            {link.label}
+          </a>
+        ))
+      }
+    </nav>
+
+    <p>© 2026 NutsNews · Positive news, simplified.</p>
+  </div>
+</Tag>
+
+<style>
+  @layer starlight.core {
+    .nutsnews-site-footer {
+      box-sizing: border-box;
+      width: 100%;
+      margin-top: var(--wiki-space-6);
+      padding: var(--wiki-space-5);
+      border: 1px solid var(--wiki-color-border);
+      border-radius: var(--wiki-radius-lg);
+      color: var(--wiki-color-text);
+      background: color-mix(in srgb, var(--wiki-color-surface) 94%, transparent);
+    }
+
+    .nutsnews-site-footer-inner {
+      display: grid;
+      justify-items: center;
+      gap: var(--wiki-space-3);
+      width: min(100%, 64rem);
+      margin: 0 auto;
+    }
+
+    .nutsnews-site-footer-brand {
+      display: inline-flex;
+      min-height: var(--wiki-touch-target);
+      align-items: center;
+      gap: var(--wiki-space-2);
+      color: var(--wiki-color-link);
+      font-family: var(--wiki-font-display);
+      font-size: var(--wiki-type-lg);
+      font-weight: 750;
+      text-decoration: none;
+    }
+
+    nav {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: var(--wiki-space-1);
+    }
+
+    nav a {
+      display: inline-flex;
+      min-height: var(--wiki-touch-target);
+      align-items: center;
+      justify-content: center;
+      padding-inline: var(--wiki-space-3);
+      border-radius: 999px;
+      color: var(--wiki-color-text);
+      font-size: var(--wiki-type-sm);
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    nav a:hover,
+    nav a:focus-visible,
+    nav a[aria-current="page"] {
+      color: var(--wiki-color-link);
+      background: var(--wiki-color-surface-raised);
+    }
+
+    p {
+      margin: 0;
+      color: var(--wiki-color-text-muted);
+      font-size: var(--wiki-type-xs);
+      text-align: center;
+    }
+
+    @media (max-width: 30rem) {
+      .nutsnews-site-footer {
+        padding-inline: var(--wiki-space-3);
+      }
+
+      nav {
+        width: 100%;
+      }
+
+      nav a {
+        flex: 1 1 5.5rem;
+      }
+    }
+  }
+</style>
