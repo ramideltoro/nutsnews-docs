@@ -7,8 +7,8 @@ wiki:
   slug: "updates/automated-nutsnews-merge-log"
   primary_diagram:
     file: "diagrams/updates/AUTOMATED_NUTSNEWS_MERGE_LOG.mmd"
-    accTitle: "Automatic production release handoff"
-    accDescr: "A successful same-repository main build publishes an immutable release candidate. A guarded handoff validates its exact metadata before dispatching it to protected staging, qualification, VPS production, and Vercel production steps; a Vercel promotion failure triggers VPS rollback."
+    accTitle: "Wiki link in NutsNews footer navigation"
+    accDescr: "PR 542 adds a localized Wiki link to the SiteFooter navigation. The link consistently opens the public Simple Wiki URL, and the sixth mobile navigation link receives its configured animation delay."
   status: draft
   collection: platform-and-data
   section: core-platform
@@ -17,19 +17,27 @@ wiki:
     state: automated
     publishing: allowed
     reviewed_by: "codex-merge-docs"
-    reviewed_on: "2026-07-30T11:28:20.155Z"
-    technical_source_hash: 46d583fc757d201827f3de82dbf67a7944084b4be18b802402499483934ea46f
+    reviewed_on: "2026-07-30T20:03:44.955Z"
+    technical_source_hash: 0df3ceb5e417b05f2b366ee627cf8f1240a216da4cff50a98540f1beaef443ac
     automation:
       source_repository: "ramideltoro/nutsnews"
-      pull_requests: "541"
-      merge_commit: 1ee1d034951ddfe134f2a3caea9ca9341672054f
-      workflow_run: "30538554281"
+      pull_requests: "542"
+      merge_commit: ba8fd07b940d0418436b33c6ccb4d59a76caab4a
+      workflow_run: "30577386413"
 ---
 # Automated NutsNews Merge Log
 
 This log records already-merged changes from supplied merge evidence. Approval metadata is automated and does not claim human review.
 
 ## Merge entries
+
+### 2026-07-30 — ramideltoro/nutsnews [PR #542](https://github.com/ramideltoro/nutsnews/pull/542) — merge commit `ba8fd07b940d0418436b33c6ccb4d59a76caab4a`
+
+PR #542 adds the public NutsNews Wiki to `web/app/components/SiteFooter.tsx` navigation. The component defines `NUTSNEWS_WIKI_URL` as `https://wiki.nutsnews.com/simple/` and adds a `Wiki` entry to the footer link collection. The supplied patch adds a `wiki` label with the value `Wiki` to every shown `footerCopyByLanguage` language record, so the destination remains the same while the label is available through the localized footer-copy configuration.
+
+For readers, the footer and its mobile navigation panel now offer a Wiki destination that opens `https://wiki.nutsnews.com/simple/`. For operators and maintainers, the affected components are `web/app/components/SiteFooter.tsx` and `web/app/globals.css`; the stylesheet assigns `.mobile-site-navigation__link:nth-child(6)` an animation delay of `175ms`.
+
+The changed component coverage asserts that the `Wiki` link in the menu panel has exactly that public URL. The public-reader smoke coverage adds the same destination to its mobile-footer route list. The supplied evidence establishes no deployment or migration, no configuration requirement beyond the documented component constant and stylesheet rule, no compatibility commitment beyond this navigation behavior, no security or access-policy change, no new dependency, and no rollback procedure. Successful deployment, a deployment procedure, and a rollback command are not established by this merge.
 
 ### 2026-07-30 — ramideltoro/nutsnews [PR #541](https://github.com/ramideltoro/nutsnews/pull/541) — merge commit `1ee1d034951ddfe134f2a3caea9ca9341672054f`
 
@@ -87,4 +95,4 @@ This merge establishes no migration, compatibility commitment, security change, 
 
 ## Combined safety boundary
 
-PR #541 establishes the guarded automatic release handoff and its documented Vercel-failure VPS rollback path. PR #540 establishes the documented centered mobile-navigation behavior, including its supported motion preference. PR #539 establishes the documented privacy-route and responsive-navigation behavior. PRs #536–#538 establish the documented staging-evidence verification behavior. The supplied evidence does not establish successful production deployment, changed secret values or access policy, a new external dependency, a database migration, or an operator rollback command.
+PR #542 establishes the documented Wiki footer and mobile-navigation destination only. PR #541 establishes the guarded automatic release handoff and its documented Vercel-failure VPS rollback path. PR #540 establishes the documented centered mobile-navigation behavior, including its supported motion preference. PR #539 establishes the documented privacy-route and responsive-navigation behavior. PRs #536–#538 establish the documented staging-evidence verification behavior. The supplied evidence does not establish successful production deployment, changed secret values or access policy, a new external dependency, a database migration, or an operator rollback command.

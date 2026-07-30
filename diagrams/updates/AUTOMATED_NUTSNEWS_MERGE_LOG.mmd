@@ -1,18 +1,12 @@
-flowchart TD
-  accTitle: Automatic production release handoff
+flowchart LR
+  accTitle: Wiki link in NutsNews footer navigation
   accDescr {
-    A successful same-repository main build publishes an immutable release candidate. A guarded handoff validates its exact metadata before dispatching it to protected staging, qualification, VPS production, and Vercel production steps; a Vercel promotion failure triggers VPS rollback.
+    PR 542 adds a localized Wiki link to the SiteFooter navigation. The link consistently opens the public Simple Wiki URL, and the sixth mobile navigation link receives its configured animation delay.
   }
-  main["Successful same-repository main build"] --> image["Container Image builds and smoke-tests immutable image"]
-  image --> metadata["Exact-run metadata: source SHA, run and build IDs, digest, migration and schema, project reference"]
-  metadata --> guard{"Automatic handoff validates expected, complete metadata"}
-  guard -- "Rejected: fork, failed, non-main, mutable, mismatched, incomplete, or unexpected" --> stop["No dispatch"]
-  guard -- "Accepted" --> staging["Protected infra: VPS staging deployment and qualification"]
-  staging --> vps["Protected infra: VPS production apply"]
-  vps --> vercel["Protected Vercel production release and smoke"]
-  vercel -- "Promotion fails" --> rollback["Automatic VPS rollback"]
-  vercel -- "Promotion succeeds" --> complete["Release chain completes"]
-  migration{"Production migration already applied?"}
-  migration -- "No" --> blocked["Promotion fails closed; run protected migration workflow, then retry"]
-  migration -- "Yes" --> vps
-  staging -. "Migration compatibility check" .-> migration
+  copy["footerCopyByLanguage records\nwiki label: Wiki"] --> links["SiteFooter link collection"]
+  url["NUTSNEWS_WIKI_URL\nhttps://wiki.nutsnews.com/simple/"] --> links
+  links --> footer["Footer Wiki link"]
+  links --> menu["Mobile menu-panel Wiki link"]
+  delay["Sixth mobile link\n175ms animation delay"] --> menu
+  menu --> componentTest["Component coverage checks exact href"]
+  menu --> smokeTest["Public-reader smoke route list"]

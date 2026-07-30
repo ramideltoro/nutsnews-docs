@@ -4,7 +4,7 @@
   "publishing": "allowed",
   "source": {
     "path": "updates/AUTOMATED_NUTSNEWS_MERGE_LOG.md",
-    "sha256": "46d583fc757d201827f3de82dbf67a7944084b4be18b802402499483934ea46f"
+    "sha256": "0df3ceb5e417b05f2b366ee627cf8f1240a216da4cff50a98540f1beaef443ac"
   },
   "artifacts": {
     "canonical_expert": "updates/AUTOMATED_NUTSNEWS_MERGE_LOG.md",
@@ -14,27 +14,28 @@
     "review_manifest": "audiences/simple/updates/AUTOMATED_NUTSNEWS_MERGE_LOG.review.json"
   },
   "accessibility": {
-    "title": "Automatic production release handoff",
-    "description": "A successful same-repository main build publishes an immutable release candidate. A guarded handoff validates its exact metadata before dispatching it to protected staging, qualification, VPS production, and Vercel production steps; a Vercel promotion failure triggers VPS rollback."
+    "title": "Wiki link in NutsNews footer navigation",
+    "description": "PR 542 adds a localized Wiki link to the SiteFooter navigation. The link consistently opens the public Simple Wiki URL, and the sixth mobile navigation link receives its configured animation delay."
   },
   "review_notes": [
     "Automated merge documentation; human review is not claimed.",
     "The record is limited to the supplied merged-change evidence.",
     "Simple and Technical pages describe the same safety boundaries.",
-    "PR #541 documents a guarded automatic production release handoff, protected downstream release stages, migration failure behavior, and the Vercel-promotion VPS rollback path."
+    "PR #541 documents a guarded automatic production release handoff, protected downstream release stages, migration failure behavior, and the Vercel-promotion VPS rollback path.",
+    "PR #542 documents a SiteFooter Wiki destination, its localized footer-copy label, the sixth mobile-link animation delay, and component and smoke coverage for the exact public URL."
   ],
   "next_commands": [],
   "approval": {
     "state": "automated",
     "publishing": "allowed",
     "reviewed_by": "codex-merge-docs",
-    "reviewed_on": "2026-07-30T11:28:20.155Z",
-    "technical_source_hash": "46d583fc757d201827f3de82dbf67a7944084b4be18b802402499483934ea46f",
+    "reviewed_on": "2026-07-30T20:03:44.955Z",
+    "technical_source_hash": "0df3ceb5e417b05f2b366ee627cf8f1240a216da4cff50a98540f1beaef443ac",
     "automation": {
       "source_repository": "ramideltoro/nutsnews",
-      "pull_requests": "541",
-      "merge_commit": "1ee1d034951ddfe134f2a3caea9ca9341672054f",
-      "workflow_run": "30538554281"
+      "pull_requests": "542",
+      "merge_commit": "ba8fd07b940d0418436b33c6ccb4d59a76caab4a",
+      "workflow_run": "30577386413"
     }
   }
 }
