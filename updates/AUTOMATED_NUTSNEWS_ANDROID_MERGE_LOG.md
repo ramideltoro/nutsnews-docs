@@ -1,14 +1,14 @@
 ---
 title: "Automated NutsNews Android Merge Log"
-description: "Merge record for Android changes, including review-safe Internal Play commits and Alpha commit diagnostics."
+description: "Merge record for Android changes, including the Alpha Console-review fallback."
 wiki:
   source_route: "/technical/updates/automated-nutsnews-android-merge-log"
   simple_route: "/simple/updates/automated-nutsnews-android-merge-log"
   slug: "updates/automated-nutsnews-android-merge-log"
   primary_diagram:
     file: "diagrams/updates/AUTOMATED_NUTSNEWS_ANDROID_MERGE_LOG.mmd"
-    accTitle: "Google Play commit handling after merges 145 and 144"
-    accDescr: "PR 145 records Alpha commit responses and reports HTTP status with a structured Play error when available. PR 144 does the same for Internal commits and sends changesNotSentForReview=true to avoid disrupting an active Alpha review."
+    accTitle: "Alpha promotion fallback when Google Play requires Console review"
+    accDescr: "PR 146 retries an Alpha edit commit with changesNotSentForReview=true only after the specified Play HTTP 400 response, reports pending-console-review after success, and directs the operator to send the changes for review in Google Play Console."
   status: draft
   collection: platform-and-data
   section: core-platform
@@ -17,19 +17,28 @@ wiki:
     state: automated
     publishing: allowed
     reviewed_by: "codex-merge-docs"
-    reviewed_on: "2026-07-30T12:51:32.870Z"
-    technical_source_hash: 550325fa53898a230443aa7428fd893e836fbf6d196c535b6b6e277841eefd16
+    reviewed_on: "2026-07-30T13:10:18.284Z"
+    technical_source_hash: bc39369f398cd85ab6856ea4c3f19308c7f6d7d5fb88a543facff1bc557e5586
     automation:
       source_repository: "ramideltoro/nutsnews-android"
-      pull_requests: "144,145"
-      merge_commit: bfefe83ebedd25f5fa6ea7afc38d79ecb9d8c4c8
-      workflow_run: "30544170238"
+      pull_requests: "146"
+      merge_commit: b97a5f4951a3529366f5cc47be1953a8d4a5938f
+      workflow_run: "30545558158"
 ---
 # Automated NutsNews Android Merge Log
 
 This log records merged Android changes. It is an unreviewed draft; approval metadata remains present and does not claim human review.
 
 ## Merge entries
+
+### 2026-07-30 — [PR #146](https://github.com/ramideltoro/nutsnews-android/pull/146): Stage Alpha when Play requires Console review
+
+- **Repository:** `ramideltoro/nutsnews-android`
+- **Merge commit:** `b97a5f4951a3529366f5cc47be1953a8d4a5938f`
+- **Affected components:** `.github/workflows/play-closed-promotion.yml`, `scripts/promote-play-closed.sh`, `scripts/validate-play-closed-promotion.sh`, and `scripts/tests/test-play-closed-promotion.sh`.
+- **Behavior:** After assigning the verified bundle to Alpha, the promotion script first commits the Play edit normally. It retries with `changesNotSentForReview=true` only when Play returns HTTP 400 and the error message exactly states that changes cannot be sent for review automatically and requests that query parameter. If that retry succeeds, the script returns `pending-console-review`; other initial failures retain the existing Alpha-commit rejection path, and retry failures report that Play could not be reached or rejected the deferred Alpha commit. The workflow accepts `pending-console-review` as a valid result and adds the required action: send changes for review from Google Play Console. The validator requires both the fallback parameter and status, and a negative test verifies that changing the parameter causes validation to fail.
+- **Reader and operator impact:** A promotion that encounters the specified Play review requirement can stage Alpha instead of failing immediately. Its workflow summary tells the operator that the remaining action is to send the staged changes for review in Google Play Console.
+- **Safety boundary:** This merge establishes only the exact HTTP-400/message-gated fallback, its status, workflow summary, validator, and test. Deployment, migration, configuration beyond that request parameter, compatibility, security, rollback, a successful Play promotion, Console submission, release, and execution facts are not established by this merge.
 
 ### 2026-07-30 — [PR #145](https://github.com/ramideltoro/nutsnews-android/pull/145): Report Google Play Alpha commit errors
 

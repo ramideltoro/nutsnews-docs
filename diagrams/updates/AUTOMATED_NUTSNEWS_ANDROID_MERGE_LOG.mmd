@@ -1,13 +1,14 @@
 flowchart TD
-  accTitle: Google Play commit handling after merges 145 and 144
-  accDescr: PR 145 records Alpha commit responses and reports HTTP status with a structured Play error when available. PR 144 does the same for Internal commits and sends changesNotSentForReview=true to avoid disrupting an active Alpha review.
+  accTitle: Alpha promotion fallback when Google Play requires Console review
+  accDescr: PR 146 first commits the Alpha edit normally. Only the specified HTTP 400 Play error triggers a retry with changesNotSentForReview=true. A successful retry reports pending-console-review and directs the operator to send changes for review in Google Play Console; all other failures follow error reporting.
 
-  alpha[PR 145: Alpha promotion commit] --> alphaRequest[Commit uses changesInReviewBehavior]
-  alpha --> alphaResponse[Save response and capture HTTP status]
-  alphaResponse --> alphaFailure[Non-2xx: report Alpha rejection and structured error when available]
-  alphaFailure --> alphaValidation[Validator and negative regression test]
-
-  internal[PR 144: Internal deployment commit] --> internalRequest[Commit uses changesNotSentForReview=true]
-  internal --> internalResponse[Save response and capture HTTP status]
-  internalResponse --> internalFailure[Non-2xx: report Internal rejection and structured error when available]
-  internalFailure --> internalValidation[Tagged-release validator and negative regression test]
+  start[PR 146: commit verified Alpha edit] --> initial[Initial Play edit commit]
+  initial --> result{Result}
+  result -->|Success| submitted[Submitted]
+  result -->|Specified HTTP 400 and exact review message| retry[Retry with changesNotSentForReview=true]
+  result -->|Any other failure| initialError[Report Alpha commit error]
+  retry --> retryResult{Retry result}
+  retryResult -->|Success| pending[pending-console-review]
+  pending --> action[Operator sends changes for review in Google Play Console]
+  retryResult -->|Failure| deferredError[Report unreachable Play or deferred commit rejection]
+  pending --> checks[Workflow summary, validator, and negative test]
