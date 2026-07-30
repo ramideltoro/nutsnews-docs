@@ -83,5 +83,18 @@
       "lastMergeCommit": "43e7883554e250b2297d40266374cb4ff87d141c"
     }
   },
-  "failures": {}
+  "failures": {
+    "ramideltoro/nutsnews-backend": {
+      "headSha": "374c2fa59d588a7f97a8c34abf93dad9d18439f3",
+      "pullNumbers": [
+        447,
+        448
+      ],
+      "attempts": 1,
+      "blocked": false,
+      "lastFailedAt": "2026-07-30T23:38:17.458Z",
+      "workflowRun": "30591058738",
+      "runUrl": "https://github.com/ramideltoro/nutsnews-docs/actions/runs/30591058738"
+    }
+  }
 }
