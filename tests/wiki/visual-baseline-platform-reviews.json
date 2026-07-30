@@ -1,0 +1,11 @@
+{
+  "article-shell-desktop-1440x1024": {
+    "platforms": [
+      "linux"
+    ],
+    "reason": "The cross-site navigation shell expands the previously clipped Wiki title under Linux font metrics; the reviewed macOS rendering is unchanged.",
+    "sha256": {
+      "linux": "a8213eceb91113002ff29eba70d4a6b8e029704325175a0bf6f77c9ac6baa16c"
+    }
+  }
+}

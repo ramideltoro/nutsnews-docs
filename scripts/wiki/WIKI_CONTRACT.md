@@ -84,7 +84,14 @@ rendering/zoom/fullscreen, edit links, nested content, and the branded 404.
 Each project rejects serious or critical axe findings and document-level
 horizontal overflow, verifies keyboard focus restoration, and compares the
 article shell and search dialog with six reviewed responsive baselines. Update
-those baselines intentionally with `npm run test:browser:update`.
+those baselines intentionally with `npm run test:browser:update`. Every logical
+baseline has reviewed `darwin` and `linux` companions. Run
+`npm run validate:visual-baselines` before committing; CI compares snapshot
+changes with the pull request base and rejects one-platform-only updates before
+the browser matrix starts. A legitimate platform-only rendering difference must
+record a specific reason and the reviewed image SHA-256 in
+`tests/wiki/visual-baseline-platform-reviews.json`; a later image change
+invalidates that approval automatically.
 
 ## Frontmatter and precedence
 

@@ -26,6 +26,7 @@ const requiredCommands = [
   'npm run test:docs-new',
   'npm run test:content-contract',
   'npm run test:workflow',
+  'npm run test:visual-baselines',
   'npm run test:pages-artifact',
   'npm run validate:contracts',
   'node scripts/wiki/validate-doc-paths.mjs',
@@ -47,6 +48,7 @@ const requiredCommands = [
   'npm run validate:audience-switch',
   'npm run validate:article',
   'npm run validate:shell',
+  'npm run validate:visual-baselines',
   'npm run test:browser',
   'npm run wiki:release:stamp',
   'npm run validate:pages-artifact',
@@ -88,6 +90,20 @@ export function validateWorkflow(source) {
   }
 
   const validateJob = source.match(/^  validate:\n([\s\S]*?)(?=^  build:)/m)?.[1] || '';
+  if (
+    !/- name: Checkout[\s\S]*?actions\/checkout@[0-9a-f]{40}[\s\S]*?fetch-depth: 0/.test(
+      validateJob,
+    )
+  ) {
+    errors.push('validation checkout must fetch the PR base for visual baseline parity');
+  }
+  if (
+    !/- name: Validate cross-platform visual baseline parity[\s\S]*?WIKI_VISUAL_BASE_SHA: \$\{\{ github\.event\.pull_request\.base\.sha \}\}[\s\S]*?npm run validate:visual-baselines/.test(
+      validateJob,
+    )
+  ) {
+    errors.push('cross-platform visual baseline parity must compare against the PR base');
+  }
   if (!/outputs:\n\s{6}validated_sha: \$\{\{ steps\.v1_ready\.outputs\.sha \}\}/.test(validateJob)) {
     errors.push('validation must expose the v1-ready commit SHA');
   }
@@ -275,6 +291,14 @@ test('broad failure-artifact fixture is rejected', async () => {
   );
   assert.ok(
     validateWorkflow(broken).some((error) => error.includes('two approved output directories')),
+  );
+});
+
+test('shallow validation checkout fixture is rejected', async () => {
+  const source = await fs.readFile(workflowPath, 'utf8');
+  const broken = source.replace('          fetch-depth: 0\n', '');
+  assert.ok(
+    validateWorkflow(broken).some((error) => error.includes('must fetch the PR base')),
   );
 });
 
