@@ -1,0 +1,329 @@
+---
+import {
+  NUTSNEWS_HOME_LINK,
+  nutsNewsNavigationLinks,
+} from '../lib/nutsnews-navigation.mjs';
+
+const links = [NUTSNEWS_HOME_LINK, ...nutsNewsNavigationLinks];
+---
+
+<nutsnews-site-navigation class="nutsnews-site-navigation print:hidden">
+  <button
+    type="button"
+    class="nutsnews-menu-toggle"
+    aria-label="Open NutsNews menu"
+    aria-expanded="false"
+    aria-controls="nutsnews-site-navigation-panel"
+    data-nutsnews-menu-toggle
+  >
+    <span class="nutsnews-menu-icon" aria-hidden="true">
+      <span></span>
+      <span></span>
+      <span></span>
+    </span>
+  </button>
+
+  <div class="nutsnews-menu-backdrop" data-nutsnews-menu-backdrop hidden></div>
+
+  <nav
+    id="nutsnews-site-navigation-panel"
+    class="nutsnews-menu-panel"
+    aria-label="NutsNews navigation"
+    data-nutsnews-menu-panel
+    hidden
+  >
+    <p>NutsNews</p>
+    {
+      links.map((link) => (
+        <a href={link.href} data-nutsnews-menu-link>
+          <span>{link.label}</span>
+          <span aria-hidden="true">→</span>
+        </a>
+      ))
+    }
+  </nav>
+</nutsnews-site-navigation>
+
+<script>
+  class NutsNewsSiteNavigation extends HTMLElement {
+    button = this.querySelector('[data-nutsnews-menu-toggle]');
+    panel = this.querySelector('[data-nutsnews-menu-panel]');
+    backdrop = this.querySelector('[data-nutsnews-menu-backdrop]');
+
+    handleButtonClick = () => this.setExpanded(!this.expanded);
+
+    handleLinkClick = () => this.setExpanded(false, { restoreFocus: false });
+
+    handlePanelClick = (event) => {
+      if (event.target instanceof Element && event.target.closest('[data-nutsnews-menu-link]')) {
+        this.handleLinkClick();
+      }
+    };
+
+    handleKeyDown = (event) => {
+      if (event.key === 'Escape' && this.expanded) {
+        event.preventDefault();
+        this.setExpanded(false);
+      }
+    };
+
+    handlePointerDown = (event) => {
+      if (
+        this.expanded
+        && event.target instanceof Node
+        && !this.panel?.contains(event.target)
+        && !this.button?.contains(event.target)
+      ) {
+        this.setExpanded(false);
+      }
+    };
+
+    handleViewportChange = (event) => {
+      if (event.matches && this.expanded) this.setExpanded(false);
+    };
+
+    connectedCallback() {
+      this.desktopViewport = matchMedia('(min-width: 50em)');
+      this.button?.addEventListener('click', this.handleButtonClick);
+      this.panel?.addEventListener('click', this.handlePanelClick);
+      document.addEventListener('keydown', this.handleKeyDown);
+      document.addEventListener('pointerdown', this.handlePointerDown);
+      this.desktopViewport.addEventListener('change', this.handleViewportChange);
+    }
+
+    disconnectedCallback() {
+      this.button?.removeEventListener('click', this.handleButtonClick);
+      this.panel?.removeEventListener('click', this.handlePanelClick);
+      document.removeEventListener('keydown', this.handleKeyDown);
+      document.removeEventListener('pointerdown', this.handlePointerDown);
+      this.desktopViewport?.removeEventListener('change', this.handleViewportChange);
+      document.body.removeAttribute('data-nutsnews-menu-expanded');
+    }
+
+    get expanded() {
+      return this.button?.getAttribute('aria-expanded') === 'true';
+    }
+
+    setExpanded(expanded, { restoreFocus = true } = {}) {
+      this.button?.setAttribute('aria-expanded', String(expanded));
+      this.button?.setAttribute(
+        'aria-label',
+        expanded ? 'Close NutsNews menu' : 'Open NutsNews menu',
+      );
+      this.toggleAttribute('data-expanded', expanded);
+      document.body.toggleAttribute('data-nutsnews-menu-expanded', expanded);
+
+      if (expanded) {
+        this.panel?.removeAttribute('hidden');
+        this.backdrop?.removeAttribute('hidden');
+      } else {
+        this.panel?.setAttribute('hidden', '');
+        this.backdrop?.setAttribute('hidden', '');
+        if (restoreFocus) this.button?.focus({ preventScroll: true });
+      }
+    }
+  }
+
+  if (!customElements.get('nutsnews-site-navigation')) {
+    customElements.define('nutsnews-site-navigation', NutsNewsSiteNavigation);
+  }
+</script>
+
+<style>
+  @layer starlight.core {
+    .nutsnews-site-navigation {
+      display: none;
+    }
+
+    .nutsnews-menu-backdrop[hidden],
+    .nutsnews-menu-panel[hidden] {
+      display: none;
+    }
+
+    @media (max-width: 50rem) {
+      .nutsnews-site-navigation {
+        display: block;
+      }
+
+      .nutsnews-menu-toggle {
+        position: fixed;
+        z-index: 10002;
+        top: max(var(--wiki-space-3), env(safe-area-inset-top));
+        inset-inline-start: max(var(--wiki-space-3), env(safe-area-inset-left));
+        display: inline-grid;
+        width: var(--wiki-touch-target);
+        height: var(--wiki-touch-target);
+        min-height: var(--wiki-touch-target);
+        place-items: center;
+        padding: var(--wiki-space-2);
+        border: 1px solid var(--wiki-color-border);
+        border-radius: 50%;
+        color: var(--wiki-color-control-text);
+        background: var(--wiki-color-control);
+        box-shadow: 0 1rem 2.75rem rgb(0 0 0 / 48%);
+        cursor: pointer;
+      }
+
+      .nutsnews-menu-toggle:focus-visible {
+        outline: var(--wiki-focus-ring-width) solid var(--wiki-color-focus);
+        outline-offset: var(--wiki-focus-ring-offset);
+      }
+
+      .nutsnews-menu-icon {
+        display: grid;
+        gap: 0.2rem;
+        width: 1.15rem;
+      }
+
+      .nutsnews-menu-icon span {
+        display: block;
+        width: 100%;
+        height: 0.12rem;
+        border-radius: 999px;
+        background: currentColor;
+        transition: opacity 160ms ease, transform 160ms ease;
+      }
+
+      .nutsnews-site-navigation[data-expanded] .nutsnews-menu-icon span:nth-child(1) {
+        transform: translateY(0.32rem) rotate(45deg);
+      }
+
+      .nutsnews-site-navigation[data-expanded] .nutsnews-menu-icon span:nth-child(2) {
+        opacity: 0;
+      }
+
+      .nutsnews-site-navigation[data-expanded] .nutsnews-menu-icon span:nth-child(3) {
+        transform: translateY(-0.32rem) rotate(-45deg);
+      }
+
+      .nutsnews-menu-backdrop {
+        position: fixed;
+        z-index: 10000;
+        inset: 0;
+        background: rgb(3 3 4 / 62%);
+        backdrop-filter: blur(8px);
+        animation: nutsnews-menu-backdrop-in 220ms ease-out both;
+      }
+
+      .nutsnews-menu-panel {
+        position: fixed;
+        z-index: 10001;
+        top: 50%;
+        left: 50%;
+        display: grid;
+        box-sizing: border-box;
+        width: min(22rem, calc(100vw - 2rem));
+        max-height: min(34rem, calc(100dvh - 6rem));
+        gap: var(--wiki-space-1);
+        overflow-y: auto;
+        padding: var(--wiki-space-3);
+        border: 1px solid var(--wiki-color-border);
+        border-radius: var(--wiki-radius-lg);
+        color: var(--wiki-color-text);
+        background: color-mix(in srgb, var(--wiki-color-surface) 96%, black);
+        box-shadow: 0 1.5rem 4.5rem rgb(0 0 0 / 64%);
+        transform: translate(-50%, -50%);
+        animation: nutsnews-menu-panel-in 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+
+      .nutsnews-menu-panel p {
+        margin: 0;
+        padding: var(--wiki-space-2) var(--wiki-space-3);
+        color: var(--wiki-color-text-muted);
+        font-size: var(--wiki-type-xs);
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-align: center;
+        text-transform: uppercase;
+      }
+
+      .nutsnews-menu-panel a {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        min-height: var(--wiki-touch-target);
+        align-items: center;
+        gap: var(--wiki-space-3);
+        padding: var(--wiki-space-3) var(--wiki-space-4);
+        border-radius: var(--wiki-radius-md);
+        color: var(--wiki-color-text);
+        font-size: var(--wiki-type-sm);
+        font-weight: 750;
+        text-decoration: none;
+        animation: nutsnews-menu-option-in 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+
+      .nutsnews-menu-panel a span:first-child {
+        grid-column: 2;
+        white-space: nowrap;
+      }
+
+      .nutsnews-menu-panel a span:last-child {
+        grid-column: 3;
+        justify-self: end;
+        color: var(--wiki-color-link);
+      }
+
+      .nutsnews-menu-panel a:hover,
+      .nutsnews-menu-panel a:focus-visible {
+        color: var(--wiki-color-link);
+        background: var(--wiki-color-surface-raised);
+      }
+
+      .nutsnews-menu-panel a:focus-visible {
+        outline: var(--wiki-focus-ring-width) solid var(--wiki-color-focus);
+        outline-offset: calc(var(--wiki-focus-ring-width) * -1);
+      }
+    }
+  }
+</style>
+
+<style is:global>
+  @layer starlight.core {
+    body[data-nutsnews-menu-expanded] {
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    @keyframes nutsnews-menu-backdrop-in {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes nutsnews-menu-panel-in {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -46%) scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+    }
+
+    @keyframes nutsnews-menu-option-in {
+      from {
+        opacity: 0;
+        transform: translateY(0.5rem) scale(0.97);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @media (min-width: 50rem) {
+      body[data-nutsnews-menu-expanded] {
+        overflow: auto;
+        touch-action: auto;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .nutsnews-menu-backdrop,
+      .nutsnews-menu-panel,
+      .nutsnews-menu-panel a {
+        animation: none;
+      }
+    }
+  }
+</style>

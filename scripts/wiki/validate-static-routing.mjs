@@ -58,6 +58,8 @@ assert.match(
 assert.match(notFoundHtml, /<title>Page not found \| NutsNews Wiki<\/title>/);
 assert.match(notFoundHtml, /<meta name="robots" content="noindex">/);
 assert.match(notFoundHtml, /data-not-found-page/);
+assert.match(notFoundHtml, /data-nutsnews-site-footer/);
+assert.match(notFoundHtml, /aria-label="Open NutsNews menu"/);
 assert.doesNotMatch(notFoundHtml, /data-pagefind-body/);
 assert.doesNotMatch(notFoundHtml, /<meta name="nutsnews:[^"]+" content="">/);
 assert.match(

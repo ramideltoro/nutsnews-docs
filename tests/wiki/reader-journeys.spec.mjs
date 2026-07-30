@@ -60,7 +60,7 @@ async function assertNoViewportOverflow(page) {
 }
 
 async function openMobileDrawer(page) {
-  const menu = page.getByRole('button', { name: 'Menu' });
+  const menu = page.getByRole('button', { name: 'Menu', exact: true });
   await expect(menu).toBeVisible();
   await menu.click();
   await expect(menu).toHaveAttribute('aria-expanded', 'true');
@@ -96,7 +96,7 @@ test('navigation, drawer, History, audience toggle, and edit link journey', asyn
 
   if (mobile) {
     await page.keyboard.press('Escape');
-    await expect(page.getByRole('button', { name: 'Menu' })).toBeFocused();
+    await expect(page.getByRole('button', { name: 'Menu', exact: true })).toBeFocused();
   }
 
   const technical = page.getByRole('link', { name: 'Technical audience' });
@@ -119,6 +119,89 @@ test('navigation, drawer, History, audience toggle, and edit link journey', asyn
     'https://github.com/ramideltoro/nutsnews-docs/edit/main/PROJECT.md',
   );
   await assertNoViewportOverflow(page);
+});
+
+test('NutsNews menu and footer preserve cross-site navigation', async ({
+  page,
+}, testInfo) => {
+  const mobile = testInfo.project.name.startsWith('mobile');
+  const footer = page.locator('[data-nutsnews-site-footer]');
+
+  await footer.scrollIntoViewIfNeeded();
+  await expect(footer).toBeVisible();
+  await expect(footer.getByRole('link', { name: 'Return to NutsNews' })).toHaveAttribute(
+    'href',
+    'https://www.nutsnews.com/',
+  );
+  await expect(footer.getByRole('link', { name: 'Apps', exact: true })).toHaveAttribute(
+    'href',
+    'https://www.nutsnews.com/apps',
+  );
+  await expect(footer.getByRole('link', { name: 'Privacy', exact: true })).toHaveAttribute(
+    'href',
+    'https://www.nutsnews.com/privacy',
+  );
+  await expect(footer.getByRole('link', { name: 'Wiki', exact: true })).toHaveAttribute(
+    'href',
+    'https://wiki.nutsnews.com/simple/',
+  );
+  await expect(footer.getByRole('link', { name: 'Wiki', exact: true })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+
+  const toggle = page.locator('[data-nutsnews-menu-toggle]');
+
+  if (!mobile) {
+    await expect(toggle).toBeHidden();
+    await assertNoViewportOverflow(page);
+    return;
+  }
+
+  await expect(toggle).toBeVisible();
+  await expect(toggle).toHaveAccessibleName('Open NutsNews menu');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(toggle).toHaveAttribute('aria-controls', 'nutsnews-site-navigation-panel');
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(toggle).toHaveAccessibleName('Close NutsNews menu');
+
+  let panel = page.locator('[data-nutsnews-menu-panel]');
+  await expect(panel).toBeVisible();
+  await expect(panel.getByRole('link', { name: 'NutsNews Home', exact: true })).toHaveAttribute(
+    'href',
+    'https://www.nutsnews.com/',
+  );
+  await expect(panel.getByRole('link', { name: 'Saved', exact: true })).toHaveAttribute(
+    'href',
+    'https://www.nutsnews.com/saved',
+  );
+  await expect(panel.getByRole('link', { name: 'Wiki', exact: true })).toHaveAttribute(
+    'href',
+    'https://wiki.nutsnews.com/simple/',
+  );
+
+  await page.keyboard.press('Escape');
+  await expect(panel).toBeHidden();
+  await expect(toggle).toBeFocused();
+  await expect(toggle).toHaveAccessibleName('Open NutsNews menu');
+
+  await toggle.click();
+  panel = page.locator('[data-nutsnews-menu-panel]');
+  await expect(panel).toBeVisible();
+  await page.locator('[data-nutsnews-menu-backdrop]').click({ force: true, position: { x: 4, y: 4 } });
+  await expect(panel).toBeHidden();
+
+  await toggle.click();
+  panel = page.locator('[data-nutsnews-menu-panel]');
+  const privacy = panel.getByRole('link', { name: 'Privacy', exact: true });
+  await privacy.evaluate((link) => {
+    link.addEventListener('click', (event) => event.preventDefault(), { once: true });
+  });
+  await privacy.click();
+  await expect(panel).toBeHidden();
+  await assertNoViewportOverflow(page);
+  await assertNoSeriousAxeIssues(page);
 });
 
 test('search isolates audience, opts into History, and passes keyboard and empty states', async ({
@@ -347,6 +430,12 @@ test('axe, overflow, nested route, and 404 recovery remain clean', async ({ page
     'href',
     '/technical/',
   );
+  await expect(page.locator('[data-nutsnews-site-footer]')).toBeVisible();
+  await expect(
+    page.locator('[data-nutsnews-site-footer]').getByRole('link', {
+      name: 'Return to NutsNews',
+    }),
+  ).toHaveAttribute('href', 'https://www.nutsnews.com/');
   await assertNoSeriousAxeIssues(page);
   await assertNoViewportOverflow(page);
 });
