@@ -7,8 +7,8 @@ wiki:
   slug: "updates/automated-nutsnews-merge-log"
   primary_diagram:
     file: "diagrams/updates/AUTOMATED_NUTSNEWS_MERGE_LOG.mmd"
-    accTitle: "Privacy selection and responsive navigation flow"
-    accDescr: "Readers choose an Android or iOS privacy policy at the privacy selector. On narrow screens, a top-left menu provides the public navigation links; the desktop footer keeps those links."
+    accTitle: "Centered mobile navigation menu behavior"
+    accDescr: "When a reader opens the mobile navigation menu, a dimmed backdrop appears and the menu panel is centered in the viewport. Its labels are centered independently of their arrows, and reduced-motion preferences disable the new animations."
   status: draft
   collection: platform-and-data
   section: core-platform
@@ -17,19 +17,27 @@ wiki:
     state: automated
     publishing: allowed
     reviewed_by: "codex-merge-docs"
-    reviewed_on: "2026-07-29T20:39:48.176Z"
-    technical_source_hash: 722af9fb732cc44a7541972d3a469f78cdc76063777be15b85d6b48ddb7c1829
+    reviewed_on: "2026-07-30T06:47:11.810Z"
+    technical_source_hash: bf7d7ea4668526ff064e2e3e2b5908e96b2e59b0b8d3c923595812a46f4f903c
     automation:
       source_repository: "ramideltoro/nutsnews"
-      pull_requests: "539"
-      merge_commit: 75890e1107d8b3cb709f5c7ac363ce91917a5281
-      workflow_run: "30489054881"
+      pull_requests: "540"
+      merge_commit: 740230f0ada1c7031703ad075f4ddc3d0f0db4eb
+      workflow_run: "30520576038"
 ---
 # Automated NutsNews Merge Log
 
 This log records already-merged changes from supplied merge evidence. Approval metadata is automated and does not claim human review.
 
 ## Merge entries
+
+### 2026-07-30 — ramideltoro/nutsnews [PR #540](https://github.com/ramideltoro/nutsnews/pull/540) — merge commit `740230f0ada1c7031703ad075f4ddc3d0f0db4eb`
+
+PR #540 moves the open mobile menu from beside its top-left button to the center of the screen. Its width is limited to `min(21rem, calc(100vw - 2rem))` and its height to `min(30rem, calc(100dvh - 6rem))`; it can still scroll when needed. When open, it shows a dimmed, blurred backdrop. The menu fades and scales in, and its choices appear one after another. If a reader prefers reduced motion, those animations are turned off.
+
+For readers on narrow browsers, the menu and its choices stay centered and visible. Each choice now has a centered label and a separately positioned trailing arrow. The changed browser check uses a 320×568 viewport. It checks that the menu and every label are within one pixel of the screen center, that choices are visible and keep their existing routes, that Escape returns focus to the button, and that clicking outside closes the menu.
+
+The affected parts are `web/app/components/MobileSiteNavigation.tsx`, `web/app/globals.css`, and `web/tests/public-reader-smoke.spec.ts`. The component now adds a backdrop, groups the button and panel in a positioned container, and gives every link separate label and arrow elements. This merge does not establish a deployment result or procedure, migration, configuration requirement, compatibility promise beyond this mobile-menu behavior, security-policy or access-policy change, new dependency, or rollback procedure.
 
 ### 2026-07-29 — ramideltoro/nutsnews [PR #539](https://github.com/ramideltoro/nutsnews/pull/539) — merge commit `75890e1107d8b3cb709f5c7ac363ce91917a5281`
 
@@ -67,4 +75,4 @@ This merge does not establish a migration, compatibility commitment, security ch
 
 ## Combined safety boundary
 
-PR #539 establishes the documented privacy pages and responsive menu. PRs #536–#538 establish the documented staging-evidence checks. The supplied evidence does not establish successful production deployment, changed secret values or access policy, a new external dependency, or an operator rollback command.
+PR #540 establishes the documented centered mobile menu, including its motion preference. PR #539 establishes the documented privacy pages and responsive menu. PRs #536–#538 establish the documented staging-evidence checks. The supplied evidence does not establish successful production deployment, changed secret values or access policy, a new external dependency, or an operator rollback command.

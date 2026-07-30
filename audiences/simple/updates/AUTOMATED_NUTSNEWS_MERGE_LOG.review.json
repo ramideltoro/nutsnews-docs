@@ -4,7 +4,7 @@
   "publishing": "allowed",
   "source": {
     "path": "updates/AUTOMATED_NUTSNEWS_MERGE_LOG.md",
-    "sha256": "722af9fb732cc44a7541972d3a469f78cdc76063777be15b85d6b48ddb7c1829"
+    "sha256": "bf7d7ea4668526ff064e2e3e2b5908e96b2e59b0b8d3c923595812a46f4f903c"
   },
   "artifacts": {
     "canonical_expert": "updates/AUTOMATED_NUTSNEWS_MERGE_LOG.md",
@@ -14,26 +14,27 @@
     "review_manifest": "audiences/simple/updates/AUTOMATED_NUTSNEWS_MERGE_LOG.review.json"
   },
   "accessibility": {
-    "title": "Privacy selection and responsive navigation flow",
-    "description": "Readers choose an Android or iOS privacy policy at the privacy selector. On narrow screens, a top-left menu provides the public navigation links; the desktop footer keeps those links."
+    "title": "Centered mobile navigation menu behavior",
+    "description": "When a reader opens the mobile navigation menu, a dimmed backdrop appears and the menu panel is centered in the viewport. Its labels are centered independently of their arrows, and reduced-motion preferences disable the new animations."
   },
   "review_notes": [
     "Automated merge documentation; human review is not claimed.",
     "The record is limited to the supplied merged-change evidence.",
-    "Simple and Technical pages describe the same safety boundaries."
+    "Simple and Technical pages describe the same safety boundaries.",
+    "PR #540 documents a centered mobile navigation panel, backdrop, animations, and reduced-motion behavior."
   ],
   "next_commands": [],
   "approval": {
     "state": "automated",
     "publishing": "allowed",
     "reviewed_by": "codex-merge-docs",
-    "reviewed_on": "2026-07-29T20:39:48.176Z",
-    "technical_source_hash": "722af9fb732cc44a7541972d3a469f78cdc76063777be15b85d6b48ddb7c1829",
+    "reviewed_on": "2026-07-30T06:47:11.810Z",
+    "technical_source_hash": "bf7d7ea4668526ff064e2e3e2b5908e96b2e59b0b8d3c923595812a46f4f903c",
     "automation": {
       "source_repository": "ramideltoro/nutsnews",
-      "pull_requests": "539",
-      "merge_commit": "75890e1107d8b3cb709f5c7ac363ce91917a5281",
-      "workflow_run": "30489054881"
+      "pull_requests": "540",
+      "merge_commit": "740230f0ada1c7031703ad075f4ddc3d0f0db4eb",
+      "workflow_run": "30520576038"
     }
   }
 }

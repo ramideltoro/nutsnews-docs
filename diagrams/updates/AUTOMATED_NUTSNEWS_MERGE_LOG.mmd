@@ -1,12 +1,13 @@
 flowchart TD
-  accTitle: Privacy selection and responsive navigation flow
+  accTitle: Centered mobile navigation menu behavior
   accDescr {
-    Readers choose an Android or iOS privacy policy at the privacy selector. On narrow screens, a top-left menu provides the public navigation links; the desktop footer keeps those links.
+    When a reader opens the mobile navigation menu, a dimmed backdrop appears and the menu panel is centered in the viewport. Its labels are centered independently of their arrows, and reduced-motion preferences disable the new animations.
   }
-  privacy["/privacy selector"] --> android["Android policy: /privacy/android"]
-  privacy --> ios["iOS policy: /privacy/ios"]
-  viewport{"Viewport below 720px?"}
-  viewport -- Yes --> menu["Fixed top-left hamburger menu"]
-  menu --> links["Apps · Saved · About · Contact · Privacy"]
-  viewport -- No --> footer["Desktop footer keeps navigation links"]
-  menu -. Escape, outside pointer, or link selection .-> closed["Menu closes; Escape returns focus to toggle"]
+  toggle["Reader opens mobile navigation"] --> backdrop["Fixed dimmed and blurred backdrop"]
+  toggle --> panel["Panel fixed at viewport center"]
+  panel --> layout["Centered label; trailing arrow in separate column"]
+  panel --> bounds["Width and height constrained; vertical scrolling remains available"]
+  motion{"Reduced-motion preference?"}
+  motion -- No --> animation["Backdrop fades; panel fades/scales; options stagger in"]
+  motion -- Yes --> disabled["Backdrop, panel, and option animations disabled"]
+  panel -. Escape or outside click .-> closed["Existing close behavior; Escape returns focus to toggle"]

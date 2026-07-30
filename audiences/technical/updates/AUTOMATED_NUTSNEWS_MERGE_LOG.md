@@ -7,8 +7,8 @@ wiki:
   slug: "updates/automated-nutsnews-merge-log"
   primary_diagram:
     file: "diagrams/updates/AUTOMATED_NUTSNEWS_MERGE_LOG.mmd"
-    accTitle: "Privacy selection and responsive navigation flow"
-    accDescr: "Readers choose an Android or iOS privacy policy at the privacy selector. On narrow screens, a top-left menu provides the public navigation links; the desktop footer keeps those links."
+    accTitle: "Centered mobile navigation menu behavior"
+    accDescr: "When a reader opens the mobile navigation menu, a dimmed backdrop appears and the menu panel is centered in the viewport. Its labels are centered independently of their arrows, and reduced-motion preferences disable the new animations."
   status: draft
   collection: platform-and-data
   section: core-platform
@@ -17,19 +17,27 @@ wiki:
     state: automated
     publishing: allowed
     reviewed_by: "codex-merge-docs"
-    reviewed_on: "2026-07-29T20:39:48.176Z"
-    technical_source_hash: 722af9fb732cc44a7541972d3a469f78cdc76063777be15b85d6b48ddb7c1829
+    reviewed_on: "2026-07-30T06:47:11.810Z"
+    technical_source_hash: bf7d7ea4668526ff064e2e3e2b5908e96b2e59b0b8d3c923595812a46f4f903c
     automation:
       source_repository: "ramideltoro/nutsnews"
-      pull_requests: "539"
-      merge_commit: 75890e1107d8b3cb709f5c7ac363ce91917a5281
-      workflow_run: "30489054881"
+      pull_requests: "540"
+      merge_commit: 740230f0ada1c7031703ad075f4ddc3d0f0db4eb
+      workflow_run: "30520576038"
 ---
 # Automated NutsNews Merge Log
 
 This log records already-merged changes from supplied merge evidence. Approval metadata is automated and does not claim human review.
 
 ## Merge entries
+
+### 2026-07-30 — ramideltoro/nutsnews [PR #540](https://github.com/ramideltoro/nutsnews/pull/540) — merge commit `740230f0ada1c7031703ad075f4ddc3d0f0db4eb`
+
+PR #540 changes the existing mobile navigation so its open panel is fixed at the center of the viewport rather than positioned beside the top-left toggle. The panel width is limited to `min(21rem, calc(100vw - 2rem))` and its height to `min(30rem, calc(100dvh - 6rem))`; it remains vertically scrollable. A fixed, dimmed and blurred backdrop is rendered while the menu is open. The panel fades and scales into view, and menu options animate in with staggered delays. With `prefers-reduced-motion: reduce`, those backdrop, panel, and option animations are disabled.
+
+For readers on narrow browsers, the mobile menu is centered so its choices and labels remain visible. Each option now uses a three-column grid: the label occupies the center column while the trailing arrow is placed independently at the end column. The changed browser coverage uses a 320×568 viewport and verifies that the panel center and every option-label center are within one pixel of the viewport’s horizontal center; it also verifies visibility, existing routes, Escape focus restoration, and closing by an outside click.
+
+The affected components are `web/app/components/MobileSiteNavigation.tsx`, `web/app/globals.css`, and `web/tests/public-reader-smoke.spec.ts`. The component adds a backdrop element, wraps its toggle and panel in a positioned content container, and adds label and arrow elements to each link. The evidence does not establish a deployment result or procedure, migration, configuration requirement, compatibility promise beyond the documented mobile-navigation behavior, security-policy or access-policy change, new dependency, or rollback procedure.
 
 ### 2026-07-29 — ramideltoro/nutsnews [PR #539](https://github.com/ramideltoro/nutsnews/pull/539) — merge commit `75890e1107d8b3cb709f5c7ac363ce91917a5281`
 
@@ -67,4 +75,4 @@ This merge establishes no migration, compatibility commitment, security change, 
 
 ## Combined safety boundary
 
-PR #539 establishes the documented privacy-route and responsive-navigation behavior. PRs #536–#538 establish the documented staging-evidence verification behavior. The supplied evidence does not establish successful production deployment, changed secret values or access policy, a new external dependency, or an operator rollback command.
+PR #540 establishes the documented centered mobile-navigation behavior, including its supported motion preference. PR #539 establishes the documented privacy-route and responsive-navigation behavior. PRs #536–#538 establish the documented staging-evidence verification behavior. The supplied evidence does not establish successful production deployment, changed secret values or access policy, a new external dependency, or an operator rollback command.
