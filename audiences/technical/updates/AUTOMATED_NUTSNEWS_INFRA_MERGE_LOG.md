@@ -8,7 +8,7 @@ wiki:
   primary_diagram:
     file: "diagrams/updates/AUTOMATED_NUTSNEWS_INFRA_MERGE_LOG.mmd"
     accTitle: "NutsNews infrastructure merge updates"
-    accDescr: "Two July 30 merges select a qualified production VPS image and make promotion-check polling retry documented transient GitHub failures. Operational outcomes are not established by the merges."
+    accDescr: "Three July 30 failover-analytics merges add best-effort telemetry, guarded account activation, and bounded deployment-proof polling. Operational outcomes are not established by the merges."
   status: draft
   collection: platform-and-data
   section: core-platform
@@ -17,13 +17,13 @@ wiki:
     state: automated
     publishing: allowed
     reviewed_by: "codex-merge-docs"
-    reviewed_on: "2026-07-30T20:10:48.301Z"
-    technical_source_hash: 344a543318f16701f145523c7148f37353e775613ca1a88c6eebfae7bf73e575
+    reviewed_on: "2026-07-30T22:34:27.748Z"
+    technical_source_hash: 4b1683f99f205ed7e4b99b3e9a7d001b7e66ccadb3f16d5bb422e21739477739
     automation:
       source_repository: "ramideltoro/nutsnews-infra"
-      pull_requests: "451,452"
-      merge_commit: 48748cd7fea036d14e281fe84fcde5a52d41166c
-      workflow_run: "30577386413"
+      pull_requests: "453,454,455"
+      merge_commit: 46fc6bf28f4f73b4491049c5118440346ff35d23
+      workflow_run: "30587476848"
 ---
 # Automated NutsNews Infra Merge Log
 
@@ -31,11 +31,29 @@ The canonical Technical source is the authoritative record for this mirror. It r
 
 ## Operator impact and boundaries
 
+On 2026-07-30, the Cloudflare DNS-failover Worker gained a best-effort `FAILOVER_ANALYTICS` binding for the `nutsnews_dns_failover_v1` Analytics Engine dataset, plus protected, value-free proof of its deployed binding, minute watchdog, and aggregate events. A separate, explicitly confirmed `enable-analytics-engine` workflow mode can request the zero-price account capability and emits a value-free activation proof. The deployment proof now polls both the schedule inventory and aggregate event query for up to 15 minutes before failing closed. Analytics remains non-blocking: health classification, thresholds, alarms, locks, DNS state and actions, the write gate, manual controls, routes, cron, and Durable Object behavior are unchanged by these merges.
+
+Deployment completion, account-capability activation, data ingestion, migration, configuration application, compatibility, security posture, and rollback execution are **not established by this merge**.
+
+## Merges (newest first)
+
+### PR [#455](https://github.com/ramideltoro/nutsnews-infra/pull/455) — 2026-07-30 — `46fc6bf28f4f73b4491049c5118440346ff35d23`
+
+Repository: `ramideltoro/nutsnews-infra`. The protected apply proof now polls the deployed Cron Trigger inventory together with the Analytics Engine aggregate-event query every 15 seconds for up to 900 seconds. It passes only when the minute watchdog `* * * * *` is present and the query has a positive event count; otherwise it fails closed at the deadline. Affected components are the protected DNS-failover apply workflow, `verify_failover_analytics.py`, its proof tests, and the failover runbook. Operators must inspect the uploaded value-free proof rather than treat an early empty schedule sample or workflow conclusion as authoritative. Deployment completion, trigger propagation, analytics ingestion, migration, configuration application, compatibility, security posture, and rollback execution are **not established by this merge**.
+
+### PR [#454](https://github.com/ramideltoro/nutsnews-infra/pull/454) — 2026-07-30 — `7d4e51f2b7ef1d112ae3b0f71367dcbcc903b997`
+
+Repository: `ramideltoro/nutsnews-infra`. The protected Cloudflare DNS-failover workflow now offers an explicitly confirmed `enable-analytics-engine` mode. It requests only the zero-price `beta_analytics_engine_api` subscription, is idempotent when that subscription already exists, verifies an active zero-price result, and uploads a value-free activation proof; the proof omits account, subscription, billing-profile, payment, and secret values. The mode requires its exact confirmation and a billing token scoped for Billing Read and Billing Write, and it does not deploy the Worker, alter bindings, DNS, routes, cron, or Durable Object state. Affected components are the protected workflow, activation script and tests, guardrail validation, and runbook. Account-capability activation, deployment, DNS writes, migration, configuration application, compatibility, security posture, and rollback execution are **not established by this merge**.
+
+### PR [#453](https://github.com/ramideltoro/nutsnews-infra/pull/453) — 2026-07-30 — `f3f4140e0cb5f0c4b8ead5ae729343ad668451e8`
+
+Repository: `ramideltoro/nutsnews-infra`. The DNS-failover Worker declares `FAILOVER_ANALYTICS` on the `nutsnews_dns_failover_v1` dataset and adds a sanitized, best-effort writer for controller check and error events. Analytics failures return unavailable or failed status without changing health classification, thresholds, alarms, locks, DNS state, or DNS actions. Protected apply verifies the deployed analytics and Durable Object bindings, the existing minute cron, and a positive aggregate GraphQL event query, then uploads only value-free evidence. Affected components are the Worker core and entrypoint, worker configuration, protected apply and CI workflows, proof script and tests, guardrail validation, and runbook. Deployment completion, analytics ingestion, DNS writes, migration, configuration application, compatibility, security posture, and rollback execution are **not established by this merge**.
+
+## Earlier merges
+
 On 2026-07-30, production VPS inventory selected the immutable image digest `sha256:509da0d20b278acc383b27ba1af1a59f9468b8108b6b9e4d09d6221cc1ae935d` for source commit `ba8fd07b940d0418436b33c6ccb4d59a76caab4a`, build `30570857159-1`, and configuration generation `production-30570857159-1-20260717113000`. Promotion-check polling now classifies check status separately from GitHub transport failures: documented transient HTTP, timeout, TLS, connection, and EOF errors retry every 10 seconds within the existing one-hour deadline, while failed or cancelled checks and non-transient errors remain immediate failures.
 
 Deployment completion, migration execution, configuration application, Vercel recovery completion, health-check results, compatibility beyond recorded schema values, security posture, and rollback execution are **not established by this merge**.
-
-## Merges (newest first)
 
 ### PR [#452](https://github.com/ramideltoro/nutsnews-infra/pull/452) — 2026-07-30 — `48748cd7fea036d14e281fe84fcde5a52d41166c`
 

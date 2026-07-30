@@ -1,14 +1,12 @@
 flowchart TD
-  accTitle: NutsNews infrastructure merge updates
-  accDescr: Two July 30 merges select a qualified production VPS image and make promotion-check polling retry documented transient GitHub failures. Operational outcomes are not established by the merges.
-  A["PR 451: production VPS inventory\nselect immutable image, source commit, build,\nand configuration generation"] --> B["Recorded release context\nmigration head and rollback-compatible schema retained\nprevious digest becomes last-known-good"]
-  C["PR 452: gh pr checks poll"] --> D{"Classifier result"}
-  D -->|pass or skipping only| E["passed"]
-  D -->|fail or cancel| F["failed immediately"]
-  D -->|pending, absent, or no checks reported| G["waiting"]
-  D -->|documented transient transport error| H["retry after 10 seconds\nwithin existing one-hour deadline"]
-  B --> I["Boundary\nmerge evidence does not establish deployment, migration,\nconfiguration application, compatibility, security, or rollback execution"]
-  E --> I
-  F --> I
+  accTitle: Cloudflare DNS failover analytics merge updates
+  accDescr: Three July 30 merges add best-effort Analytics Engine telemetry, guarded zero-price account activation, and a bounded deployment proof that requires both the minute watchdog and positive aggregate events. Operational outcomes are not established by the merges.
+  A["PR 453: Worker analytics\nFAILOVER_ANALYTICS on nutsnews_dns_failover_v1\nbest-effort sanitized check and error events"] --> B["Non-blocking boundary\nanalytics cannot alter health decisions, thresholds, alarms,\nlocks, DNS state/actions, write gate, or manual controls"]
+  C["PR 454: guarded account activation\nexplicit enable-analytics-engine confirmation\nzero-price, idempotent subscription proof"] --> D["Activation boundary\nno Worker deploy; no binding, DNS, route, cron,\nor Durable Object state change"]
+  E["PR 455: protected deployment proof"] --> F{"Poll up to 900 seconds\nevery 15 seconds"}
+  F -->|minute watchdog present\nand positive aggregate events| G["Pass and upload value-free proof"]
+  F -->|deadline reached without both| H["Fail closed"]
+  B --> I["Evidence boundary\nDeployment, activation, ingestion, migration, configuration,\ncompatibility, security, and rollback execution are not established"]
+  D --> I
   G --> I
   H --> I

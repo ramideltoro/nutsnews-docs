@@ -8,7 +8,7 @@ wiki:
   primary_diagram:
     file: "diagrams/updates/AUTOMATED_NUTSNEWS_INFRA_MERGE_LOG.mmd"
     accTitle: "NutsNews infrastructure merge updates"
-    accDescr: "Two July 30 merges select a qualified production VPS image and make promotion-check polling retry documented transient GitHub failures. Operational outcomes are not established by the merges."
+    accDescr: "Three July 30 failover-analytics merges add best-effort telemetry, guarded account activation, and bounded deployment-proof polling. Operational outcomes are not established by the merges."
   status: draft
   collection: platform-and-data
   section: core-platform
@@ -17,13 +17,13 @@ wiki:
     state: automated
     publishing: allowed
     reviewed_by: "codex-merge-docs"
-    reviewed_on: "2026-07-30T20:10:48.301Z"
-    technical_source_hash: 344a543318f16701f145523c7148f37353e775613ca1a88c6eebfae7bf73e575
+    reviewed_on: "2026-07-30T22:34:27.748Z"
+    technical_source_hash: 4b1683f99f205ed7e4b99b3e9a7d001b7e66ccadb3f16d5bb422e21739477739
     automation:
       source_repository: "ramideltoro/nutsnews-infra"
-      pull_requests: "451,452"
-      merge_commit: 48748cd7fea036d14e281fe84fcde5a52d41166c
-      workflow_run: "30577386413"
+      pull_requests: "453,454,455"
+      merge_commit: 46fc6bf28f4f73b4491049c5118440346ff35d23
+      workflow_run: "30587476848"
 ---
 # Automated NutsNews Infra Merge Log
 
@@ -31,11 +31,29 @@ This is a record of supplied merges to `ramideltoro/nutsnews-infra`. A merged re
 
 ## What changed for operators
 
+On 2026-07-30, the Cloudflare DNS-failover Worker received a best-effort `FAILOVER_ANALYTICS` link to the `nutsnews_dns_failover_v1` Analytics Engine dataset. The protected workflow can produce a value-free proof of the deployed analytics link, minute watchdog, and aggregate events. It also has a separately confirmed `enable-analytics-engine` mode that can request the zero-price account capability and saves a value-free activation proof. The deployment proof now checks both the schedule and the event query for up to 15 minutes before failing closed. Analytics cannot change health decisions, thresholds, alarms, locks, DNS state or actions, the write gate, manual controls, routes, cron, or Durable Object behavior.
+
+Whether deployment, account activation, data ingestion, migration, configuration, compatibility, security, or rollback execution actually happened is **not established by this merge**.
+
+## Merges (newest first)
+
+### PR [#455](https://github.com/ramideltoro/nutsnews-infra/pull/455) — 2026-07-30 — `46fc6bf28f4f73b4491049c5118440346ff35d23`
+
+Repository: `ramideltoro/nutsnews-infra`. The protected proof checks the deployed Cron Trigger and Analytics Engine aggregate events every 15 seconds for up to 900 seconds. It passes only when the `* * * * *` watchdog is present and the event count is positive; otherwise it fails closed at the deadline. This affects the protected apply workflow, analytics-proof script and tests, and runbook. Operators should inspect the uploaded value-free proof, not treat an early empty schedule result or workflow conclusion as final. Deployment, trigger propagation, analytics ingestion, migration, configuration, compatibility, security, and rollback execution are **not established by this merge**.
+
+### PR [#454](https://github.com/ramideltoro/nutsnews-infra/pull/454) — 2026-07-30 — `7d4e51f2b7ef1d112ae3b0f71367dcbcc903b997`
+
+Repository: `ramideltoro/nutsnews-infra`. The protected workflow now has an explicitly confirmed `enable-analytics-engine` mode. It requests only the zero-price `beta_analytics_engine_api` subscription, does nothing new if that subscription already exists, checks for an active zero-price result, and uploads a value-free proof that omits account, subscription, billing, payment, and secret values. It needs the exact confirmation and a Billing Read and Billing Write token. It does not deploy the Worker or change bindings, DNS, routes, cron, or Durable Object state. This affects the workflow, activation script and tests, guardrails, and runbook. Account activation, deployment, DNS writes, migration, configuration, compatibility, security, and rollback execution are **not established by this merge**.
+
+### PR [#453](https://github.com/ramideltoro/nutsnews-infra/pull/453) — 2026-07-30 — `f3f4140e0cb5f0c4b8ead5ae729343ad668451e8`
+
+Repository: `ramideltoro/nutsnews-infra`. The DNS-failover Worker now declares `FAILOVER_ANALYTICS` for `nutsnews_dns_failover_v1` and writes sanitized controller check and error events on a best-effort basis. If analytics is unavailable or fails, it reports that status without changing health decisions, thresholds, alarms, locks, DNS state, or DNS actions. Protected apply checks the deployed analytics and Durable Object links, existing minute cron, and a positive aggregate event query, then uploads value-free evidence. This affects Worker code and configuration, protected apply and CI, proof scripts and tests, validation, and the runbook. Deployment, analytics ingestion, DNS writes, migration, configuration, compatibility, security, and rollback execution are **not established by this merge**.
+
+## Earlier merges
+
 On 2026-07-30, production VPS inventory selected immutable image `sha256:509da0d20b278acc383b27ba1af1a59f9468b8108b6b9e4d09d6221cc1ae935d` for source commit `ba8fd07b940d0418436b33c6ccb4d59a76caab4a`, build `30570857159-1`, and configuration generation `production-30570857159-1-20260717113000`. Promotion-check polling now separates check results from GitHub connection problems: documented temporary HTTP, timeout, TLS, connection, and EOF errors retry every 10 seconds within the existing one-hour deadline, but failed or cancelled checks and non-temporary errors still fail immediately.
 
 Whether deployment, migration, configuration sync, Vercel recovery, health checks, compatibility beyond the recorded schema values, security, or rollback execution actually happened is **not established by this merge**.
-
-## Merges (newest first)
 
 ### PR [#452](https://github.com/ramideltoro/nutsnews-infra/pull/452) — 2026-07-30 — `48748cd7fea036d14e281fe84fcde5a52d41166c`
 
