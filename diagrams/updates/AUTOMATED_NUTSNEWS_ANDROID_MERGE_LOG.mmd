@@ -1,13 +1,13 @@
 flowchart TD
-  accTitle: Fixed-width centered Read Story button after merge 143
-  accDescr: PR 143 renders the home-feed Read Story control at 160 by 48 dp and centers its one-line label; its regression test checks the dimensions and label center.
+  accTitle: Google Play commit handling after merges 145 and 144
+  accDescr: PR 145 records Alpha commit responses and reports HTTP status with a structured Play error when available. PR 144 does the same for Internal commits and sends changesNotSentForReview=true to avoid disrupting an active Alpha review.
 
-  button[ReadStoryButton] --> box[Box: 160 dp width and 48 dp height]
-  box --> retained[Retained: shadow, clip, border, click handling, and article_read_story tag]
-  box --> label[Read Story text: fill width, one line, centered]
-  box --> centered[Content alignment: center]
-  centered --> alignment[Button and label share horizontal and vertical centers]
-  label --> alignment
-  box --> test[Regression test]
-  test --> dimensions[Checks 160 dp width and 48 dp height]
-  test --> alignment
+  alpha[PR 145: Alpha promotion commit] --> alphaRequest[Commit uses changesInReviewBehavior]
+  alpha --> alphaResponse[Save response and capture HTTP status]
+  alphaResponse --> alphaFailure[Non-2xx: report Alpha rejection and structured error when available]
+  alphaFailure --> alphaValidation[Validator and negative regression test]
+
+  internal[PR 144: Internal deployment commit] --> internalRequest[Commit uses changesNotSentForReview=true]
+  internal --> internalResponse[Save response and capture HTTP status]
+  internalResponse --> internalFailure[Non-2xx: report Internal rejection and structured error when available]
+  internalFailure --> internalValidation[Tagged-release validator and negative regression test]

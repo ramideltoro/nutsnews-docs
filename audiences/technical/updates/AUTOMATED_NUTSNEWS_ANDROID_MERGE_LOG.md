@@ -1,14 +1,14 @@
 ---
 title: "Automated NutsNews Android Merge Log (Technical)"
-description: "Merge record for Android feed controls and Play closed-testing promotion changes, including the fixed-width Read Story control."
+description: "Merge record for Android changes, including review-safe Internal Play commits and Alpha commit diagnostics."
 wiki:
   source_route: "/technical/updates/automated-nutsnews-android-merge-log"
   simple_route: "/simple/updates/automated-nutsnews-android-merge-log"
   slug: "updates/automated-nutsnews-android-merge-log"
   primary_diagram:
     file: "diagrams/updates/AUTOMATED_NUTSNEWS_ANDROID_MERGE_LOG.mmd"
-    accTitle: "Fixed-width centered Read Story button after merge 143"
-    accDescr: "PR 143 renders the home-feed Read Story control at 160 by 48 dp and centers its one-line label; its regression test checks the dimensions and label center."
+    accTitle: "Google Play commit handling after merges 145 and 144"
+    accDescr: "PR 145 records Alpha commit responses and reports HTTP status with a structured Play error when available. PR 144 does the same for Internal commits and sends changesNotSentForReview=true to avoid disrupting an active Alpha review."
   status: draft
   collection: platform-and-data
   section: core-platform
@@ -17,19 +17,37 @@ wiki:
     state: automated
     publishing: allowed
     reviewed_by: "codex-merge-docs"
-    reviewed_on: "2026-07-30T11:30:18.525Z"
-    technical_source_hash: 448b7cf7f8e27fedee0ea6cb0d2583a0ad0bfa8de1c8d6133694ac390f0da823
+    reviewed_on: "2026-07-30T12:51:32.870Z"
+    technical_source_hash: 550325fa53898a230443aa7428fd893e836fbf6d196c535b6b6e277841eefd16
     automation:
       source_repository: "ramideltoro/nutsnews-android"
-      pull_requests: "143"
-      merge_commit: 4868451e13786353677d1089c4970ce412f4da09
-      workflow_run: "30538554281"
+      pull_requests: "144,145"
+      merge_commit: bfefe83ebedd25f5fa6ea7afc38d79ecb9d8c4c8
+      workflow_run: "30544170238"
 ---
 # Automated NutsNews Android Merge Log
 
 This log records merged Android changes. It is an unreviewed draft; approval metadata remains present and does not claim human review.
 
 ## Merge entries
+
+### 2026-07-30 — [PR #145](https://github.com/ramideltoro/nutsnews-android/pull/145): Report Google Play Alpha commit errors
+
+- **Repository:** `ramideltoro/nutsnews-android`
+- **Merge commit:** `bfefe83ebedd25f5fa6ea7afc38d79ecb9d8c4c8`
+- **Affected components:** `scripts/promote-play-closed.sh`, `scripts/validate-play-closed-promotion.sh`, and `scripts/tests/test-play-closed-promotion.sh`.
+- **Behavior:** The Alpha promotion script saves the Play edit-commit response to `commit-response.json` and captures the HTTP status. A network failure reports that Play could not be reached while committing the Alpha release. A non-2xx response reads `.error.message` with `jq` when available, otherwise uses `Play returned no structured error message.`, and fails with `Play rejected the Alpha release commit (HTTP <status>): <message>`. The existing commit query continues to use `changesInReviewBehavior=${review_behavior}`. The validator requires response output, HTTP-status capture, and the Alpha-specific rejection message; a negative regression test verifies that changing that message causes validation to fail.
+- **Reader and operator impact:** Alpha-promotion failures now report the HTTP status and a structured Play error message when one is returned, making the immediate rejection more diagnosable.
+- **Safety boundary:** This merge changes diagnostic handling around the Alpha commit only. Deployment, migration, configuration, compatibility, security, rollback, a successful Play promotion, release, and execution facts are not established by this merge.
+
+### 2026-07-30 — [PR #144](https://github.com/ramideltoro/nutsnews-android/pull/144): Make Play Internal deployment review-safe
+
+- **Repository:** `ramideltoro/nutsnews-android`
+- **Merge commit:** `9c18d7dce6b11299f0aef61d3a77367dddc2df21`
+- **Affected components:** `scripts/deploy-play-internal.sh`, `scripts/validate-tagged-release.sh`, and `scripts/tests/test-tagged-release.sh`.
+- **Behavior:** The Internal deployment script commits its Play edit with `changesNotSentForReview=true`. It saves the commit response to `commit-response.json` and captures the HTTP status. A network failure reports that Play could not be reached while committing the Internal release. A non-2xx response reads `.error.message` with `jq` when available, otherwise uses `Play returned no structured error message.`, and fails with `Play rejected the internal release commit (HTTP <status>): <message>`. Tagged-release validation requires both the review-safe commit parameter and the structured Internal-commit rejection message; a negative regression test verifies that removing the parameter causes validation to fail.
+- **Reader and operator impact:** Internal deployment commits explicitly request that changes are not sent for review, while commit failures now expose the HTTP status and structured Play error when available.
+- **Safety boundary:** The supplied evidence supports the Internal commit parameter and diagnostics only. Whether this changes an active Alpha review, any deployment result, migration, configuration, compatibility, security, rollback, release, and execution facts are not established by this merge.
 
 ### 2026-07-30 — [PR #143](https://github.com/ramideltoro/nutsnews-android/pull/143): Center and widen Read Story button
 
