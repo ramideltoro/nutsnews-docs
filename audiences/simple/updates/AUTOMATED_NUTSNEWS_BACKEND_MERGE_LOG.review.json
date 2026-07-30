@@ -4,7 +4,7 @@
   "publishing": "allowed",
   "source": {
     "path": "updates/AUTOMATED_NUTSNEWS_BACKEND_MERGE_LOG.md",
-    "sha256": "a11b4beabe89bcd36f6b621567ab5ca31419a28255c6cf76e487c6fd0d85f759"
+    "sha256": "e636c59f9c472e738c68e8e012e44f841c0892f7ff3a1ea4d0e73cad1c2aa3c1"
   },
   "artifacts": {
     "canonical_expert": "updates/AUTOMATED_NUTSNEWS_BACKEND_MERGE_LOG.md",
@@ -14,13 +14,14 @@
     "review_manifest": "audiences/simple/updates/AUTOMATED_NUTSNEWS_BACKEND_MERGE_LOG.review.json"
   },
   "accessibility": {
-    "title": "Worker-uplift security controls after pull request 444",
-    "description": "Pull request 444 moves workflow inputs through step environment variables before shell use, adds automated security-review checks, and retains shadow-only worker-uplift operation with production writes disabled."
+    "title": "Worker-uplift runtime evidence and readiness decision after pull requests 445 and 446",
+    "description": "Pull request 446 separates approval-free read-only runtime evidence from protected actions. Pull request 445 records a NO-GO decision, current blockers, and unchanged shadow-only production boundaries."
   },
   "review_notes": [
     "Unreviewed automated merge record; no human review is claimed.",
-    "Facts are limited to merged pull request 444 evidence and prior log entries.",
-    "For pull request 444, deployment, migration, and compatibility-state changes beyond documented workflow source and CI behavior are not established by the merge.",
+    "Facts are limited to merged pull requests 445 and 446 evidence and prior log entries.",
+    "For pull request 445, cutover, production-write enablement, ingestion-owner change, deployment, migration, compatibility, and rollback facts are not established unless expressly recorded.",
+    "For pull request 446, protected actions remain gated; mutating action, cutover, production-write enablement, deployment, migration, compatibility, and rollback facts are not established unless expressly recorded.",
     "Automated provenance, including the current source hash, is recorded by the trusted workflow after this update."
   ],
   "next_commands": [],
@@ -28,13 +29,13 @@
     "state": "automated",
     "publishing": "allowed",
     "reviewed_by": "codex-merge-docs",
-    "reviewed_on": "2026-07-29T19:39:55.371Z",
-    "technical_source_hash": "a11b4beabe89bcd36f6b621567ab5ca31419a28255c6cf76e487c6fd0d85f759",
+    "reviewed_on": "2026-07-30T20:08:33.963Z",
+    "technical_source_hash": "e636c59f9c472e738c68e8e012e44f841c0892f7ff3a1ea4d0e73cad1c2aa3c1",
     "automation": {
       "source_repository": "ramideltoro/nutsnews-backend",
-      "pull_requests": "444",
-      "merge_commit": "b619cf91504eafca21f70c5d68888563f5fca7a9",
-      "workflow_run": "30485228434"
+      "pull_requests": "446,445",
+      "merge_commit": "a3e88aadcc1aef0880569192c90b9f444e21ed56",
+      "workflow_run": "30577386413"
     }
   }
 }

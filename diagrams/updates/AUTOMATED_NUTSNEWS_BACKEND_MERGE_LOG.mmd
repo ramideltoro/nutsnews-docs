@@ -1,10 +1,12 @@
 flowchart LR
-  accTitle: Worker-uplift security controls after pull request 444
-  accDescr: Pull request 444 moves workflow inputs through step environment variables before shell use, adds automated security-review checks, and retains shadow-only worker-uplift operation with production writes disabled.
+  accTitle: Worker-uplift runtime evidence and readiness decision after pull requests 445 and 446
+  accDescr: Pull request 446 routes approved read-only actions to an environment-free evidence job and protected actions to the production-backend gate. Pull request 445 records that evidence supports shadow monitoring only and that unresolved blockers keep cutover readiness at NO-GO.
 
-  inputs["Dispatch, repository, and event inputs"] --> env["Quoted step environment variables"]
-  env --> workflows["Backend database, PostgreSQL, cutover, Supabase, and worker-uplift workflows"]
-  workflows --> security["GitHub Actions security validation\nimmutable actions; no direct expressions in shell blocks"]
-  workflows --> review["Worker-uplift security-review validation\nno unresolved critical or high findings"]
-  review --> boundary["Legacy worker owns production\nuplift is shadow-only\nproduction writes disabled"]
-  gate["production-backend owner approval gate"] --> live["Protected live checks"]
+  dispatch["Runtime dispatch"] --> validation["Validate action and inputs"]
+  validation --> readonly["PR 446: read-only-runtime\ncheck, status, logs, queue-inspect, dlq-inspect\ndry_run=true; no Environment"]
+  validation --> protected["PR 446: protected-runtime\ndeploy, promote, restart, scale, rollback, dlq-replay, drain, reconciliation, smoke"]
+  protected --> gate["production-backend approval\nexact confirmation and --confirm-action"]
+  readonly --> evidence["Runtime evidence\nshadow mode; production writes disabled"]
+  gate --> evidence
+  evidence --> nogo["PR 445: #125 NO-GO\nblockers and no named approver"]
+  nogo --> boundary["No cutover or ingestion-owner change\nlegacy worker remains production owner"]

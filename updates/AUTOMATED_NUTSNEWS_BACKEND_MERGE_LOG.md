@@ -7,8 +7,8 @@ wiki:
   slug: "updates/automated-nutsnews-backend-merge-log"
   primary_diagram:
     file: "diagrams/updates/AUTOMATED_NUTSNEWS_BACKEND_MERGE_LOG.mmd"
-    accTitle: "Worker-uplift security controls after pull request 444"
-    accDescr: "Pull request 444 moves workflow inputs through step environment variables before shell use, adds automated security-review checks, and retains shadow-only worker-uplift operation with production writes disabled."
+    accTitle: "Worker-uplift runtime evidence and readiness decision after pull requests 445 and 446"
+    accDescr: "Pull request 446 separates approval-free read-only runtime evidence from protected actions. Pull request 445 records a NO-GO decision, current blockers, and unchanged shadow-only production boundaries."
   status: draft
   collection: platform-and-data
   section: core-platform
@@ -17,13 +17,13 @@ wiki:
     state: automated
     publishing: allowed
     reviewed_by: "codex-merge-docs"
-    reviewed_on: "2026-07-29T19:39:55.371Z"
-    technical_source_hash: a11b4beabe89bcd36f6b621567ab5ca31419a28255c6cf76e487c6fd0d85f759
+    reviewed_on: "2026-07-30T20:08:33.963Z"
+    technical_source_hash: e636c59f9c472e738c68e8e012e44f841c0892f7ff3a1ea4d0e73cad1c2aa3c1
     automation:
       source_repository: "ramideltoro/nutsnews-backend"
-      pull_requests: "444"
-      merge_commit: b619cf91504eafca21f70c5d68888563f5fca7a9
-      workflow_run: "30485228434"
+      pull_requests: "446,445"
+      merge_commit: a3e88aadcc1aef0880569192c90b9f444e21ed56
+      workflow_run: "30577386413"
 ---
 # Automated NutsNews Backend Merge Log
 
@@ -32,6 +32,24 @@ wiki:
 This log records source-grounded documentation for already-merged backend changes. It describes what the merge establishes and explicitly separates that evidence from facts not established by the merge.
 
 ## Merge entries
+
+### 2026-07-30 — `ramideltoro/nutsnews-backend` [PR #445](https://github.com/ramideltoro/nutsnews-backend/pull/445)
+
+- Merge commit: `a3e88aadcc1aef0880569192c90b9f444e21ed56`.
+- Summary: records an explicit NO-GO for beginning guarded cutover-control implementation under worker tracking issue #125. It adds the production-readiness decision runbook, machine-readable evidence, validator, tests, and `Backend Checks` coverage.
+- Reader and operator impact: do not treat the successful runtime evidence as cutover authorization. Issue #125 remains open, has no named authorized approver, and authorizes neither cutover, production writes, nor an ingestion-owner change. A later #125 GO could begin only #150; the ordered path remains #125 → #150 → #126 → #166 → #127.
+- Technical behavior and affected components: the readiness evidence incorporates the protected `status` run `30513933114` and the approval-free read-only status run `30573044860`. Both report shadow mode, `production_writes_enabled=false`, eight healthy services, seven required queues with one consumer each, and zero ready or unacknowledged messages. The decision validator and 18 focused tests enforce the recorded readiness boundary.
+- Current blockers: #157 needs a `FAILOVER_ANALYTICS` disposition or proof; #158 current-candidate parity; #159 current-topology empty-broker recovery; #160 runtime-identity inventory reconciliation; #161 current PostgreSQL/API/Qwen outage drills; #162 backup and isolated restore evidence; #163 authenticated production-admin evidence; #164 named dispositions for SEC-124-002 through SEC-124-009; #165 planned watermark, rollback deadline, observation window, thresholds, and owners; #168 scheduler adapter and current-time readiness proof; and a named authorized #125 approver after technical blockers resolve. Missing implementation of #150 and #126 is explicitly not a #125 blocker.
+- Deployment, migration, configuration, compatibility, security, and rollback: no cutover, production-write enablement, legacy-worker change, ingestion-owner change, DNS, failover, Cloudflare, production-infrastructure, environment-protection, or production-data change is established by this merge. No risk waiver or approver decision is established. A deployment, migration, compatibility change, or rollback procedure is not established by this merge.
+
+### 2026-07-30 — `ramideltoro/nutsnews-backend` [PR #446](https://github.com/ramideltoro/nutsnews-backend/pull/446)
+
+- Merge commit: `ba26e7bb9fa7a4f30773216da1e69bfe7ec3bf0d`.
+- Summary: separates worker-runtime dispatch validation, approval-free read-only evidence, and protected runtime operations. It adds workflow-boundary validation and focused regression tests.
+- Reader and operator impact: `check`, `status`, `logs`, `queue-inspect`, and `dlq-inspect` can produce read-only evidence without creating a `production-backend` pending deployment. Protected actions remain approval-gated and require the exact typed confirmation `backend.nutsnews.com`.
+- Technical behavior and affected components: `validate-dispatch` runs without an Environment reference. `read-only-runtime` accepts only the five read-only actions, requires `dry_run=true`, rejects `confirm_target` and replica input, has no GitHub Environment reference, and always invokes the fixed remote operation with `--dry-run`. `protected-runtime` accepts only `deploy`, `promote`, `restart`, `scale`, `rollback`, `dlq-replay`, `drain`, `reconciliation`, and `smoke`; it declares `production-backend` and always passes `--confirm-action`. Both paths validate bounded tail and queue-kind inputs, use strict SSH host-key checking, do not accept a free-form remote command, and upload `backend-worker-runtime-report`.
+- Security and configuration boundary: the environment reviewer rule remains unchanged. Read-only and protected routes are mutually exclusive; a protected action cannot enter the read-only job and vice versa. The merge records secret names and security controls, not secret values.
+- Deployment, migration, compatibility, and rollback: this merge changes workflow behavior and CI validation. A mutating action, cutover, uplift production-write enablement, ingestion-owner change, legacy-ingestion modification, DNS/failover change, production-infrastructure change, migration, compatibility change, or rollback procedure is not established by this merge.
 
 ### 2026-07-29 — `ramideltoro/nutsnews-backend` [PR #444](https://github.com/ramideltoro/nutsnews-backend/pull/444)
 
