@@ -209,11 +209,11 @@
       "pullNumbers": [
         21
       ],
-      "attempts": 1,
+      "attempts": 2,
       "blocked": false,
-      "lastFailedAt": "2026-07-31T18:20:38.920Z",
-      "workflowRun": "30654215954",
-      "runUrl": "https://github.com/ramideltoro/nutsnews-docs/actions/runs/30654215954"
+      "lastFailedAt": "2026-07-31T20:00:54.419Z",
+      "workflowRun": "30660881067",
+      "runUrl": "https://github.com/ramideltoro/nutsnews-docs/actions/runs/30660881067"
     },
     "ramideltoro/nutsnews-worker-article-translation": {
       "headSha": "d1206b73157305128b3bf5dc6bf5a7bcbb4c818d",
