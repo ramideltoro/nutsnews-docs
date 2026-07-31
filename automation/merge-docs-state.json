@@ -220,11 +220,11 @@
       "pullNumbers": [
         26
       ],
-      "attempts": 2,
-      "blocked": false,
-      "lastFailedAt": "2026-07-31T20:03:02.814Z",
-      "workflowRun": "30660881067",
-      "runUrl": "https://github.com/ramideltoro/nutsnews-docs/actions/runs/30660881067"
+      "attempts": 3,
+      "blocked": true,
+      "lastFailedAt": "2026-07-31T21:11:33.166Z",
+      "workflowRun": "30665253209",
+      "runUrl": "https://github.com/ramideltoro/nutsnews-docs/actions/runs/30665253209"
     },
     "ramideltoro/nutsnews-worker-contracts": {
       "headSha": "663e5b6053666ebf5fbcf9ed79c02d34193d215c",
