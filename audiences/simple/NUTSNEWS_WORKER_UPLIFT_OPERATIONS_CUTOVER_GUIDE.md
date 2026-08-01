@@ -71,7 +71,7 @@ Use only fixed, reviewed workflows from `main`. Do not run improvised SSH, Docke
 | DNS failover controller and DNS-write state | infra | `Cloudflare DNS Failover Apply` in `cloudflare-admin` |
 | Legacy ingestion scheduling | legacy worker | `Controller Ingestion Scheduling Operations` |
 | Admin worker-uplift projection | web app | reviewed application deployment; no broker or Grafana management access |
-| Future ingestion cutover | not authorized | #126 controls, #166 final gate, and #127 execution |
+| Reversible ingestion controls | backend | fixed #126 workflow; #166 final gate and #127 execution remain separate |
 
 The existing backend workflow named `Backend Production Cutover` switches the database provider. It is not a worker-ingestion cutover workflow and must not be used to promote the worker uplift.
 
@@ -97,6 +97,7 @@ This guide is pinned to specific source commits:
 - [Admin application commit `d339f40a6c29b41d18d5d977575274345c73941b`](https://github.com/ramideltoro/nutsnews/tree/d339f40a6c29b41d18d5d977575274345c73941b) and merged [admin worker-uplift PR #518](https://github.com/ramideltoro/nutsnews/pull/518).
 - [Legacy failover evidence contract at worker commit `22a2c4f33d8dacdf9fd2367de852ae29d3abaa85`](https://github.com/ramideltoro/nutsnews-worker/tree/22a2c4f33d8dacdf9fd2367de852ae29d3abaa85), including the [Analytics Engine documentation](https://github.com/ramideltoro/nutsnews-worker/blob/22a2c4f33d8dacdf9fd2367de852ae29d3abaa85/docs/FAILOVER_ANALYTICS_ENGINE.md).
 - [Legacy ingestion-scheduling separation at worker merge `a073e351e5716a97e0759cca17096851cbb80261`](https://github.com/ramideltoro/nutsnews-worker/tree/a073e351e5716a97e0759cca17096851cbb80261), including the safe status contract and protected scheduling operations workflow.
+- [Reversible cutover controls at backend commit `4a86fcb85a94f3821ee4ebe804c62cf2dab1bee7`](https://github.com/ramideltoro/nutsnews-backend/tree/4a86fcb85a94f3821ee4ebe804c62cf2dab1bee7), including a fixed workflow, single-row database gate, fail-closed decision, validator, tests, and runbook.
 
 ## Legacy ingestion scheduling is now separate
 
@@ -499,23 +500,25 @@ The later cutover is split into future issues. Steps marked future control canno
 
 ### Phase 1: Production-readiness review
 
-Issue #125 must disposition every residual security and operations risk, including action pinning, cache isolation, runtime image contents, SBOM attestations, fetcher connection binding, provider credential sharing, read-only host identity, reviewer posture, generic DLQ replay limitations, and the Analytics Engine binding state. Closing this guide does not begin or pass #125.
+Issue #125 recorded GO for guarded control implementation only. It did not authorize cutover.
 
 ### Phase 2: Separate ingestion scheduling from DNS failover
 
-Future issue #150 must prove that legacy ingestion scheduling can stop without changing the DNS controller, Durable Object state, Analytics Engine evidence, alerts, status/actions, or manual failover. This is a hard dependency for cutover.
+Issue #150 separated legacy ingestion scheduling from the DNS controller. The live setting remains enabled and all failover surfaces remain active.
 
 ### Phase 3: Add reversible controls
 
-Future issue #126 must implement and test fixed protected controls for production-owner state, scheduler pause/resume, production-write enable/disable, a cutover watermark and evidence artifact, rollback eligibility and stop conditions, and independent DNS-failover invariants.
+Issue #126 implemented and safely deployed fixed protected controls. A single database row records the owner and write state. It starts at `shadow` with the legacy owner enabled and uplift writes disabled. Constraints, an audit trigger, and a dedicated role reject two writers, stale state, and unrelated database changes.
+
+Routine preflight, dry-run, isolated rehearsal, verification, and safe control deployment use a standing owner authorization whose exact scope is pinned by a validator. It does not authorize #166 GO, #127 execution, production writes, legacy-ingestion disable, DNS/failover changes, arbitrary SQL, secret access, or risk acceptance. Operators must download `cutover-control-report.json` and verify `SHA256SUMS`; a green run alone is not enough.
 
 ### Phase 4: Establish the cutover watermark
 
-During a future approved window, leave DNS failover unchanged, pause new legacy scheduling through the future protected control, keep legacy production writers authoritative while establishing the reviewed handoff boundary, allow in-flight work to settle, prove queues drained and state reconciled, and write an immutable watermark artifact.
+During a future #127 window after #166 GO, leave DNS failover unchanged, pause new legacy scheduling through the fixed protected control, keep legacy production writers authoritative while establishing the reviewed handoff boundary, allow in-flight work to settle, prove queues drained and state reconciled, and write an immutable watermark artifact.
 
 ### Phase 5: Execute the protected switch
 
-Future issue #127 may switch the owner and production-write gates only through the #126 protected workflow, after #125 approval. Legacy ingestion becomes standby, not deleted. DNS failover continues unchanged.
+Future issue #127 may switch the owner and production-write gates only through the #126 protected workflow, after #166 approves the exact candidate, watermark, deadline, controls, and named approver. Legacy ingestion becomes standby, not deleted. DNS failover continues unchanged.
 
 Immediately prove one production ingestion owner, matching uplift production-write gates, correct and idempotent public visibility and publication, all consumers present, queue and retry depth decreasing, DLQs not growing unexpectedly, and healthy admin projection, Grafana, alerts, SLOs, quotas, and DNS controller state.
 

@@ -75,7 +75,7 @@ Docker, RabbitMQ administration, SQL, secret-copying, DNS, or replay commands.
 | DNS failover controller and DNS-write state | infra | `Cloudflare DNS Failover Apply` in `cloudflare-admin` |
 | Legacy ingestion scheduling and its retained failover-controller surfaces | legacy worker | `Controller Ingestion Scheduling Operations`; protected `apply` uses `production` |
 | Admin worker-uplift projection | web app | reviewed application deployment; no broker or Grafana management access |
-| Future ingestion cutover | not authorized | reversible controls in #126, final readiness in #166, and execution in #127 |
+| Reversible ingestion controls | backend | `Backend Worker-Uplift Cutover Controls`; routine modes are standing-authorized, execution remains blocked by #166 and #127 |
 
 The existing backend workflow named `Backend Production Cutover` switches the
 **database provider**. It is not a worker-ingestion cutover workflow and must
@@ -93,7 +93,7 @@ not imply that the action mutates production.
 | Offline validation | Checks repository files only | docs validation, backend validators, Ansible syntax |
 | Dry run or plan | Builds and validates an intended operation without applying it | Ansible `check`, runtime `dry_run=true`, reconciliation plan, Grafana plan, DNS failover `plan`, ingestion-scheduling `plan` |
 | Protected mutation | Changes service, host, test fixture, backup, or managed cloud state | deploy, restart, scale, drain, rollback, smoke, canary drill, restore drill, Grafana apply |
-| Unavailable or blocked | No approved current apply path | worker cutover/promotion, generic DLQ replay, legacy-ingestion disable before #166 and #127 |
+| Unavailable or blocked | No approved current apply path | worker cutover execution, generic DLQ replay, legacy-ingestion disable before #166 GO and #127 |
 
 Every workflow invocation must use `--ref main`. Read the workflow summary and
 download the artifact; a green workflow conclusion without a reviewed artifact
@@ -113,6 +113,16 @@ These links pin the implementation this guide describes:
   [backup baseline](https://github.com/ramideltoro/nutsnews-backend/blob/b619cf91504eafca21f70c5d68888563f5fca7a9/runbooks/BACKUP_RESTORE_BASELINE.md),
   and
   [credential bootstrap](https://github.com/ramideltoro/nutsnews-backend/blob/b619cf91504eafca21f70c5d68888563f5fca7a9/runbooks/CREDENTIAL_BOOTSTRAP.md).
+- Reversible cutover controls are additive backend commits
+  [`9c58c44c267cc1a82c450ee3468932d82c1c25fc`](https://github.com/ramideltoro/nutsnews-backend/tree/9c58c44c267cc1a82c450ee3468932d82c1c25fc)
+  and
+  [`4a86fcb85a94f3821ee4ebe804c62cf2dab1bee7`](https://github.com/ramideltoro/nutsnews-backend/tree/4a86fcb85a94f3821ee4ebe804c62cf2dab1bee7).
+  They add the
+  [fixed protected workflow](https://github.com/ramideltoro/nutsnews-backend/blob/4a86fcb85a94f3821ee4ebe804c62cf2dab1bee7/.github/workflows/backend-worker-uplift-cutover-controls.yml),
+  [machine-enforced contract](https://github.com/ramideltoro/nutsnews-backend/blob/4a86fcb85a94f3821ee4ebe804c62cf2dab1bee7/docs/worker-uplift-cutover-controls.json),
+  [fail-closed final decision](https://github.com/ramideltoro/nutsnews-backend/blob/4a86fcb85a94f3821ee4ebe804c62cf2dab1bee7/docs/worker-uplift-final-cutover-decision.json),
+  and
+  [operator runbook](https://github.com/ramideltoro/nutsnews-backend/blob/4a86fcb85a94f3821ee4ebe804c62cf2dab1bee7/runbooks/WORKER_UPLIFT_CUTOVER_CONTROLS.md).
 - Infra commit
   [`ee61807a757fe087dbcecd60d5e0b7fe07f4115a`](https://github.com/ramideltoro/nutsnews-infra/tree/ee61807a757fe087dbcecd60d5e0b7fe07f4115a),
   including the
@@ -724,7 +734,37 @@ Durable Object migration is removed by either rendered state.
 
 ### Phase 3: Add reversible controls
 
-Future issue #126 must implement and test fixed protected controls for:
+Issue #126 implemented fixed protected controls without performing a cutover.
+The state machine is `shadow → fenced → cutover_active → rollback_pending →
+shadow`. Its sole database target is the `production` row in
+`worker_uplift_final.cutover_control`; a dedicated least-privilege role can
+select that row and compare-and-swap fixed columns, but cannot insert, delete,
+truncate, change schemas, write domain tables, mutate queues, or alter its
+audit rows. Database constraints and a security-definer transition/audit
+trigger enforce the single-writer state graph and reject stale generations.
+
+Uplift API production commands now require all environment flags plus the
+database row for the same exact candidate and watermark. A missing, stale, or
+mismatched row fails closed. The deployed safe row remains:
+
+- `state=shadow`;
+- `active_ingestion_owner=legacy_shards`;
+- `legacy_dispatch_enabled=true`;
+- `uplift_scheduler_enabled=true` in shadow mode;
+- `uplift_production_writes_enabled=false`.
+
+The owner standing authorization on #126 removes new per-release, first-run,
+and routine environment-wait approval only for source-validated `preflight`,
+`dry-run`, `rehearse`, `verify`, and safe control deployment. The validator
+pins that scope to digest
+`17dffe06f80ec9266761a84a2c738517c57da31e57ad8936dce16d003c021804`
+and fails closed if the operations, confirmations, environment, target, role,
+safe state, or exclusions change. It does not authorize #166 GO, #127
+execution, production writes, an ownership switch, legacy-ingestion disable,
+DNS/failover/Cloudflare changes, arbitrary SQL, secret retrieval, or residual
+risk acceptance.
+
+The implemented controls cover:
 
 - production-owner state;
 - scheduler pause/resume;
@@ -733,8 +773,15 @@ Future issue #126 must implement and test fixed protected controls for:
 - rollback eligibility and stop conditions;
 - independent DNS-failover invariants.
 
-Dry-run the complete sequence. The current runtime `promote` action is not a
-substitute.
+Use the exact confirmations `plan-worker-uplift-cutover`,
+`rehearse-worker-uplift-rollback`,
+`inspect-worker-uplift-cutover-controls`, or
+`verify-worker-uplift-cutover-controls` for non-mutating evidence. Download
+`cutover-control-report.json` and `SHA256SUMS`, verify the portable checksum,
+and inspect the report. The protected apply and rollback modes require the
+separate source-controlled #166 GO for the exact candidate, watermark,
+deadline, control commit, #127 execution issue, and named approver. The
+runtime `promote` action is not a substitute.
 
 ### Phase 4: Establish the cutover watermark
 
@@ -751,12 +798,14 @@ During a future approved window:
 6. write an immutable watermark artifact with timestamps, owner state,
    versions, digests, counts, and rollback deadline.
 
-No current workflow implements this ingestion handoff.
+The #126 workflow implements this handoff but its committed decision is
+`NO-GO`. It cannot execute until #166 freezes and approves the exact candidate
+and #127 supplies the separately protected execution authority.
 
 ### Phase 5: Execute the protected switch
 
 Future issue #127 may switch the owner and production-write gates only through
-the #126 protected workflow, after #125 approval. Legacy ingestion becomes
+the #126 protected workflow, after #166 GO. Legacy ingestion becomes
 standby, not deleted. DNS failover continues unchanged.
 
 Immediately prove:

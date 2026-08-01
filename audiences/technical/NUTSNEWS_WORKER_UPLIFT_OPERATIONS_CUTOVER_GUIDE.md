@@ -46,7 +46,7 @@ record, and completion checklist.
 | Apex/www DNS failover | `nutsnews-infra` | `Cloudflare DNS Failover Apply` |
 | Legacy ingestion scheduling | `nutsnews-worker` | `Controller Ingestion Scheduling Operations` |
 | Admin projection | `nutsnews` | authenticated `/admin/shards` |
-| Worker cutover | not authorized | #126 controls, #166 final gate, and #127 execution |
+| Reversible worker controls | `nutsnews-backend` | fixed #126 workflow; #166 and #127 remain separate execution gates |
 
 The existing backend `Backend Production Cutover` workflow is for the database
 provider. It is not a worker-ingestion cutover.
@@ -192,6 +192,30 @@ disabled dry-run plan 30690250417, and live status 30690250981 all passed.
 Their artifacts prove that Worker identity, routes, cron, bindings, Durable
 Object migrations, and failover surfaces are retained.
 
+## Reversible cutover controls
+
+Backend commits `9c58c44c267cc1a82c450ee3468932d82c1c25fc` and
+`4a86fcb85a94f3821ee4ebe804c62cf2dab1bee7` implement #126 without performing
+a cutover. `Backend Worker-Uplift Cutover Controls` owns fixed preflight,
+dry-run, rehearsal, verify, apply, and rollback modes. The source-controlled
+decision remains `NO-GO` until #166 freezes an exact candidate.
+
+The sole database target is
+`worker_uplift_final.cutover_control(control_id='production')`. Its dedicated
+role can select and compare-and-swap fixed columns only. Database constraints
+and a security-definer transition/audit trigger reject dual-writer states,
+stale generations, and transitions outside `shadow → fenced → cutover_active
+→ rollback_pending → shadow`. API flags alone cannot enable production writes;
+the database candidate and watermark must also match.
+
+Standing authorization covers only machine-validated routine checks,
+value-free rehearsal, and safe deployment. Its pinned digest is
+`17dffe06f80ec9266761a84a2c738517c57da31e57ad8936dce16d003c021804`.
+It excludes #166 GO, #127 execution, owner/write switches, legacy-ingestion
+disable, DNS/failover/Cloudflare changes, arbitrary SQL, secret retrieval, and
+risk acceptance. Inspect the downloaded report and portable checksum for
+every run.
+
 ## Future sequence
 
 1. Keep current coexistence: legacy production owner, uplift shadow-only, DNS
@@ -199,9 +223,9 @@ Object migrations, and failover surfaces are retained.
 2. #125 recorded GO for guarded control implementation, not cutover.
 3. #150 has separated ingestion scheduling from DNS failover and preserved
    the enabled legacy-owner baseline.
-4. #126 adds fixed reversible owner, scheduling, write, watermark, and rollback
-   controls.
-5. #127 establishes the watermark, proves drain/reconciliation/backups, and
+4. #126 has deployed fixed reversible owner, scheduling, write, watermark, and
+   rollback controls while preserving the safe shadow state.
+5. #166 must approve the exact candidate; then #127 establishes the watermark, proves drain/reconciliation/backups, and
    switches only through the protected workflow while legacy becomes standby.
 6. Observe against consumers, queues, DLQs, parity, SLOs, quotas, admin state,
    and DNS-controller health. Roll back only within the verified
@@ -209,8 +233,8 @@ Object migrations, and failover surfaces are retained.
 7. #128 may retire legacy ingestion after observation but must retain DNS
    failover. #151 records the final architecture.
 
-No current workflow implements the ingestion handoff. The runtime `promote`
-action is not a substitute.
+The #126 workflow implements the ingestion handoff but remains blocked by its
+committed `NO-GO` decision. The runtime `promote` action is not a substitute.
 
 ## Incident exit criteria
 

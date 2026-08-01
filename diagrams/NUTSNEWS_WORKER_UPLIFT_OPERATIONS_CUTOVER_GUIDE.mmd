@@ -3,14 +3,15 @@ flowchart TD
   accDescr {
     The diagram shows that legacy ingestion remains the production owner while operators
     gather read-only evidence and keep the uplift shadow-only. Future cutover can only
-    happen after separate approved controls are added, the DNS failover system stays
+    happen after the implemented controls pass the separate final gate, while DNS failover stays
     independent, and a reversible watermark-based switch is proven.
   }
   A[Current coexistence: legacy worker owns production ingestion] --> B[Collect read-only evidence\nruntime, queues, DLQ, metrics, backups, credentials]
   B --> C[Shadow uplift services remain active\nproduction_writes_enabled=false]
   C --> D[#150 control deployed enabled\ningestion scheduling separate from DNS failover]
-  D --> E[#126 controls and #166 final gate]
-  E --> F{Exact cutover candidate approved?}
+  D --> E[#126 controls deployed safe and fail closed]
+  E --> L[#166 final exact-candidate gate]
+  L --> F{Exact cutover candidate approved?}
   F -- No --> G[Stay shadow-only\nlegacy scheduling enabled\nDNS failover independent]
   F -- Yes --> H[Establish cutover watermark\nkeep DNS unchanged]
   H --> I[Switch owner and gates through protected workflow]
