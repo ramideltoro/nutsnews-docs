@@ -262,11 +262,11 @@
         19,
         20
       ],
-      "attempts": 2,
-      "blocked": false,
-      "lastFailedAt": "2026-08-01T06:34:00.950Z",
-      "workflowRun": "30687882367",
-      "runUrl": "https://github.com/ramideltoro/nutsnews-docs/actions/runs/30687882367"
+      "attempts": 3,
+      "blocked": true,
+      "lastFailedAt": "2026-08-01T08:58:05.366Z",
+      "workflowRun": "30692690566",
+      "runUrl": "https://github.com/ramideltoro/nutsnews-docs/actions/runs/30692690566"
     },
     "ramideltoro/nutsnews-worker-runtime": {
       "headSha": "9d3ad5998eaa2c2d2d157293f77e86a8c22a38b5",
