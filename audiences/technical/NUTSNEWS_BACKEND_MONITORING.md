@@ -15,7 +15,7 @@ wiki:
     publishing: allowed
     reviewed_by: pending
     reviewed_on: pending
-    technical_source_hash: ff04b067a5a9e352d565f61eba71227035e8e8027b193ec381f19e4368822b9a
+    technical_source_hash: f3a1be4cf8b20aa27f9c9ffa58beb95e928448ea3162b77e7bc72fb5f5e1bd13
 ---
 
 # NutsNews Backend Monitoring Baseline
@@ -49,7 +49,11 @@ Read-only remote check:
 ssh -i ~/.ssh/servercheap_65_75_201_18 rami@65.75.201.18 'hostname && systemctl --failed --no-pager && ss -tulpen 2>/dev/null || ss -tulpn'
 ```
 
-Backend PR #471 source-stages these monitoring endpoints; they are not a claim
+Backend PR #471 source-stages these monitoring endpoints, but the PR is
+`DIRTY`/conflicting with current main and undeployed. It must resolve the PR
+#483 `worker_db_api.py` conflict, derive ownership/`expected_active` from the
+authoritative generation 5 row, and add a separate runtime-container recreation
+path so exact-eight identity can converge. The endpoints below are not a claim
 about the currently deployed API:
 
 ```text
@@ -64,30 +68,60 @@ bounded API RED telemetry. `/healthz` remains compatible for older callers but
 is no longer the target monitoring source. Deployment and fresh query evidence
 remain required.
 
-This endpoint rollout is distinct from the live ingestion cutover. At
-2026-08-01 19:04 UTC, protected backend run
-[`30713923790`](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30713923790)
-succeeded with `active_ingestion_owner=worker_uplift`,
-`state=cutover_active`, production writes enabled, and legacy dispatch disabled.
-Protected controller run
-[`30713955433`](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30713955433)
-then confirmed public legacy scheduling disabled. The active candidate is the
-older `71b0303705093ad398458083547a86e9e61f50458e8799ace38de4f2404859df`
-under rollback deadline `2026-08-03T21:00:00Z`, not the newly published Runtime
-1 images. Draft backend PR
-[`#471`](https://github.com/ramideltoro/nutsnews-backend/pull/471) pins Runtime 1
-but remains undeployed; reconcile it with the live cutover/observation state
-before rollout. Neither control run proves these monitoring endpoints, their
-scrapes, or any Grafana resource is live.
+This endpoint rollout is distinct from the ingestion incident. The cutover used
+older Runtime 0.x candidate
+`71b0303705093ad398458083547a86e9e61f50458e8799ace38de4f2404859df`
+and met publication/freshness abort criteria before observation started.
+[Backend run 30715252632](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30715252632)
+completed rollback prepare but failed before finalize. Legacy scheduling was
+verified true by worker runs
+[30715590990](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30715590990)
+and [30715611673](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30715611673).
+Backend run
+[30715566651](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30715566651)
+completed finalize. The authoritative row is stable `shadow` generation 5,
+owner `legacy_shards`, legacy dispatch true, uplift scheduler true in shadow,
+uplift writes false, publication shadow, observation timestamps null, and
+single-writer/DNS checks passing.
+Runtime 1 in conflicting backend PR
+[`#471`](https://github.com/ramideltoro/nutsnews-backend/pull/471) remains
+undeployed. None of this proves the staged endpoints or worker scrapes are live.
 
-Temporary cutover safety freeze: until fail-closed deploy guards preserve the
-retained cutover state, `nutsnews-worker` merges are frozen because the ordinary
-main pipeline deploys the controller from base configuration where
-`INGESTION_SCHEDULING_ENABLED=true`. All mutating Backend Worker Runtime
-Operations are also frozen: the current deploy, scale, and rollback paths use
-base Compose and can recreate publication without the cutover overlay. Do not
-run the fetcher state-contract v2 migration while `state=cutover_active`.
-Read-only inspection does not remove these freezes.
+Retained
+[abort-threshold evidence](https://github.com/ramideltoro/nutsnews-infra/issues/474#issuecomment-5153075316)
+records 28 publication messages, 84 `handler-error` retries, no publication
+success, 28 ready messages in the 30-minute retry queue, and no post-cutover
+public freshness. The observation window never started. Rollback completed
+through the protected finalize run. No automatic rollback, recovery replay, or
+operator queue replay ran. The failed Runtime 0.x candidate is disqualified and
+quarantined.
+
+Backend source hardening is partly complete. Backend
+[`PR #482`](https://github.com/ramideltoro/nutsnews-backend/pull/482), merge
+`510b775d7962e2e66d430fb6d458c3c88d60cdd3`, records the immutable incident
+receipt, consumes the historical cutover authority, and fail-closes protected
+Ansible and generic runtime mutations against the exact maintenance-safe shadow
+row. Backend [`PR #483`](https://github.com/ramideltoro/nutsnews-backend/pull/483),
+merge `5531014000f52fd6101f8617463d5f2c887d0788`, hardens the forward
+publication API contract and idempotency semantics. These are source-only
+merges: no host/runtime deployment, Runtime 1 rollout, queue replay, or failed-
+candidate rehabilitation occurred. The worker deploy guard and infra verifier
+remain unfinished and frozen.
+
+The effective safety freeze remains until incident reconciliation and those
+unfinished guards are complete: no worker merge/ordinary deploy, backend
+Ansible or generic runtime mutation, duplicate cutover/rollback/finalize,
+Runtime 1/fetcher v2, Grafana apply, synthetic rollout, web merge, queue replay,
+or reconciliation mutation. Rollback is complete; no cutover-control mutation
+is authorized. Read-only evidence collection does not remove these freezes.
+
+Separately, pre-freeze Grafana Cloud Apply
+[`30708192621`](https://github.com/ramideltoro/nutsnews-infra/actions/runs/30708192621)
+verified the live baseline: 28 dashboards, 11 backend alerts, 20 worker alerts,
+five synthetics on two probes every 300 seconds, and populated host, RabbitMQ,
+and Loki queries. It does not prove the conflicting PR #471 endpoint changes,
+PR #473 hardening, native SLOs, notification receipts, controlled drills, or
+post-incident health.
 
 ## Initial Thresholds
 
@@ -238,10 +272,10 @@ respective repositories.
 ## Grafana Cloud Logs
 
 Backend issue #36 established Grafana Cloud Loki log shipping through the
-backend Grafana Alloy deployment in `ramideltoro/nutsnews-backend`. Backend PR
-#471 source-stages the expanded source coverage and normalized label boundary
-described below. Those additions still require merge, deployment, and recent
-Loki evidence; they are not live merely because they exist in the draft PR.
+backend Grafana Alloy deployment in `ramideltoro/nutsnews-backend`. Conflicting
+backend PR #471 source-stages the expanded source coverage and normalized label
+boundary described below. Those additions require reconciliation, deployment,
+and recent Loki evidence; the earlier baseline apply does not make them live.
 
 Secret names in the GitHub `production-backend` environment:
 
@@ -296,7 +330,7 @@ datasource because that stores alert history, not backend host logs.
 Backend issue #25 established a repo-managed Grafana alert group named
 `NutsNews Backend Guardrails` in the `NutsNews Backend Ops` folder.
 
-Backend PR #471 source-stages the PostgreSQL-aware `/readyz` signal and the
+Conflicting backend PR #471 source-stages the PostgreSQL-aware `/readyz` signal and the
 expanded label-aware rules below. Centralized operations-email routing is also
 staged in infra PR #473. The 2026-07-31 live audit still found the root route
 pointing to `empty`; neither draft PR proves the new route or readiness rule is
@@ -316,10 +350,11 @@ Initial alert rules cover:
 - fail2ban SSH ban events.
 
 The rules use the backend textfile metrics and explicit `noDataState` settings
-so intentionally not-configured services do not page as failures. Grafana
-notification routing, grouping, cooldowns, and resolved messages are managed by
-`ramideltoro/nutsnews-infra` through the protected operations-email contact
-point and severity policies.
+so intentionally not-configured services do not page as failures. The staged
+target in `ramideltoro/nutsnews-infra` will manage Grafana notification routing,
+grouping, cooldowns, and resolved messages through the protected operations-email
+contact point and severity policies. The live root route remains `empty`, and no
+receipt canary has proved delivery.
 
 The abuse-detection rules added for backend issue #40 are report-only. They do
 not mutate UFW, Caddy, Cloudflare, fail2ban, or host firewall policy. Their Loki
@@ -331,7 +366,7 @@ fields; IP, path, user, request ID, and raw-message values never become labels.
 
 Backend issue #30 established `.github/workflows/backend-synthetic-monitor.yml`
 in `ramideltoro/nutsnews-backend`. The current `main` workflow still checks
-`/healthz`. Backend PR #471 source-stages its replacement with the truthful
+`/healthz`. Conflicting backend PR #471 source-stages its replacement with the truthful
 PostgreSQL-aware `/readyz` assertion described below; that replacement is not
 live until the PR is merged and deployed.
 
@@ -345,7 +380,7 @@ checks public endpoints without authentication or production mutation:
 - `https://backend.nutsnews.com/` expected current `404`
 - Supabase public status API as the auth-provider availability signal
 
-Backend PR #471 retains `/healthz` for older callers but removes it from this
+The conflicting PR #471 source retains `/healthz` for older callers but removes it from this
 scheduled synthetic inventory; compatibility is not treated as a reliability
 signal.
 
@@ -434,9 +469,8 @@ Host deployment path:
   stale output with an explicit unavailable state after collection failure.
 
 The source-staged qualification baseline sets non-owning split workers to
-`nutsnews_worker_expected_active=0`; it is not a description of the current
-uplift-owned live cutover. Before deployment, PR #471 must reconcile its
-per-service ownership signals with that state. Every worker must nevertheless
+`nutsnews_worker_expected_active=0`; it must be reconciled with stable
+generation 5 shadow before deployment. Every worker must nevertheless
 be deployed, report `up == 1`, have a scrape age below 180 seconds, expose
 readiness series, and publish exact non-`unknown` build and deployment identity.
 Those structural requirements are never ownership-gated. A service with

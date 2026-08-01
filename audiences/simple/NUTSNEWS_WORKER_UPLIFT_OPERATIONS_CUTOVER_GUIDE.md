@@ -1,22 +1,19 @@
 ---
-title: NutsNews Worker-Uplift Operations and Cutover Guide
+title: NutsNews Worker-Uplift Incident and Rollback Record
 description: >-
-  A plain-language operator guide for the shadow RabbitMQ worker pipeline,
-  protected recovery steps, evidence collection, and the later reversible
-  cutover plan.
+  A plain-language guide to the completed worker-uplift rollback, stable shadow
+  baseline, quarantined failed candidate, and read-only evidence boundary.
 wiki:
   source_route: /technical/nutsnews-worker-uplift-operations-cutover-guide
   simple_route: /simple/nutsnews-worker-uplift-operations-cutover-guide
   slug: nutsnews-worker-uplift-operations-cutover-guide
   primary_diagram:
     file: diagrams/NUTSNEWS_WORKER_UPLIFT_OPERATIONS_CUTOVER_GUIDE.mmd
-    accTitle: Worker uplift operating state and future cutover gates
+    accTitle: Worker uplift cutover incident and completed rollback
     accDescr: >-
-      The diagram shows that legacy ingestion remains the production owner while
-      operators gather read-only evidence and keep the uplift shadow-only.
-      Future cutover can only happen after separate approved controls are added,
-      the DNS failover system stays independent, and a reversible
-      watermark-based switch is proven.
+      The failed cutover rolled back to stable generation 5 shadow with legacy
+      ownership and scheduling restored, uplift writes disabled, observation
+      never started, and the failed publication candidate quarantined.
   status: active
   collection: platform-and-data
   section: core-platform
@@ -26,27 +23,67 @@ wiki:
     publishing: allowed
     reviewed_by: pending
     reviewed_on: pending
-    technical_source_hash: c869f2661581f86752771fd84906c307c40a92b6a8e31f1cc69b543b639ab27b
+    technical_source_hash: 83e12961d48fd31be6bced1e342b2c369de67a3ae7fa31f6a02b51c0ac503ea6
 ---
-# NutsNews Worker-Uplift Operations and Cutover Guide
+# NutsNews Worker-Uplift Incident and Rollback Record
 
-This guide explains the current worker-uplift setup for NutsNews, how to check it safely, how recovery is handled, and what evidence is needed before any future cutover. It is an operator guide for the shadow RabbitMQ worker pipeline.
+This guide explains the completed rollback, how to inspect stable shadow safely, and which older procedures remain frozen.
 
-> Readiness documentation is not cutover authorization. The legacy `nutsnews-worker` is still the production ingestion owner. All eight uplift services are shadow-only, and `production_writes_enabled` remains `false`. Nothing in this guide authorizes a production write, a DNS or failover change, a legacy-ingestion stop, or a cutover.
+> **Current incident override (2026-08-01).** The cutover used an older Runtime
+> 0.x candidate, publication failed with 28 messages, 84 retries, and zero
+> successes, and public freshness breached 15 minutes. The observation window
+> never started. [Backend run 30715252632](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30715252632)
+> completed rollback prepare but failed before finalize. [Worker run
+> 30715293972](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30715293972)
+> deployed legacy scheduling true; its immediate verifier saw the old false
+> value. Scheduling was then successfully verified by [worker run
+> 30715590990](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30715590990)
+> and [status run 30715611673](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30715611673).
+> [Backend run 30715566651](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30715566651)
+> completed finalize. The current row is stable `shadow` generation 5 with
+> owner `legacy_shards`, legacy dispatch and scheduling true, uplift scheduler
+> true in shadow, uplift writes false, publication shadow, null observation
+> timestamps, and single-writer/DNS checks passing.
+
+> **Backend source hardening.** Backend
+> [`PR #482`](https://github.com/ramideltoro/nutsnews-backend/pull/482) now
+> records the rollback receipt, consumes the old cutover authority, and guards
+> backend mutations. Backend
+> [`PR #483`](https://github.com/ramideltoro/nutsnews-backend/pull/483) repairs
+> the forward publication contract and retry identity. Both are source-only
+> merges. They did not deploy, replay queues, or make the failed candidate safe.
+> The worker deploy guard and infra verifier remain unfinished and frozen.
+
+> **Freeze.** Use read-only evidence only until incident reconciliation and the
+> unfinished worker deploy guard and infra verifier are complete. Do not run
+> normal worker deploys, backend Ansible/runtime actions, replay or
+> reconciliation, duplicate cutover or rollback, Grafana apply, synthetics, or
+> web merge. Rollback is complete; do not rerun cutover, rollback, or finalize.
+> The failed Runtime 0.x candidate is disqualified and quarantined. No automatic
+> rollback or recovery replay ran. See
+> the [central incident evidence](https://github.com/ramideltoro/nutsnews-infra/issues/474#issuecomment-5153075316).
 
 ## Current operating state
 
 The current state is:
 
-| Control | Required value or owner |
+| Control | Verified incident state |
 | --- | --- |
-| Production ingestion owner | Legacy `ramideltoro/nutsnews-worker` |
-| Uplift mode | `shadow` |
+| Production ingestion owner | `legacy_shards` |
+| Control state | Stable `shadow`, generation 5 |
 | Uplift production writes | `false` |
+| Uplift scheduler | `true` in shadow |
+| Publication | `shadow` |
+| Legacy dispatch | `true` |
+| Public legacy scheduling | `true`, verified |
+| Runtime 1 | Published, but backend PR #471 is conflicting and undeployed; PR #483, authoritative generation 5 ownership, and exact-eight runtime recreation remain blockers |
+| Backend source guards | PRs #482 and #483 merged; source-only, no deployment or replay |
+| Remaining source blockers | Worker deploy guard and infra verifier unfinished and frozen |
+| Writer safety | Single-writer and DNS checks passed |
+| Recovery | Complete; do not rerun cutover, rollback, or finalize |
 | Services | scheduler, fetcher, canonicalizer, enrichment, approval, translation, persistence, publication |
 | Durable transport | RabbitMQ on the backend host |
-| Authoritative shadow state | Backend PostgreSQL stage schemas, outboxes, and watermarks |
-| Final public writes | Backend Worker DB API, gated closed while the uplift is shadow-only |
+| Authoritative state | Backend PostgreSQL control row, stage schemas, outboxes, and watermarks |
 | Backend operations | `ramideltoro/nutsnews-backend` |
 | Grafana Cloud resources | `ramideltoro/nutsnews-infra` |
 | Admin projection | `ramideltoro/nutsnews`, `/admin/shards` |
@@ -61,17 +98,18 @@ Use only fixed, reviewed workflows from `main`. Do not run improvised SSH, Docke
 
 | Surface | Source-controlled owner | Protected path |
 | --- | --- | --- |
-| Host configuration | backend | `Protected Backend Ansible Apply` |
-| Service deploy, status, logs, queues, restart, scale, rollback, drain, and reconciliation | backend | `Backend Worker Runtime Operations` |
-| RabbitMQ status, topology export, and disposable recovery drills | backend | `Backend RabbitMQ Recovery` |
-| RabbitMQ failure drills and isolated smoke | backend | `Backend RabbitMQ Canary` and `Backend RabbitMQ Smoke` |
-| PostgreSQL backup and isolated restore proof | backend | `Backend Backup Maintenance` and `Backend Postgres Backup Restore Proof` |
-| Credential inventory and readiness | backend | `Backend Credential Readiness` |
-| Grafana dashboards, alerts, folders, quotas, and drift | infra | `Grafana Cloud Plan` and `Grafana Cloud Apply` |
-| DNS failover controller and DNS-write state | infra | `Cloudflare DNS Failover Apply` in `cloudflare-admin` |
-| Legacy ingestion scheduling | legacy worker | `Controller Ingestion Scheduling Operations` |
+| Host configuration | backend | Read-only drift/evidence only; Ansible apply frozen |
+| Service status, logs, and queue inspection | backend | Read-only `Backend Worker Runtime Operations` actions |
+| Service mutations | backend | Frozen; generic runtime rollback is not cutover rollback |
+| RabbitMQ status, topology export, and disposable recovery drills | backend | Read-only status/topology evidence only; rebuild and recovery drills frozen |
+| RabbitMQ failure drills and isolated smoke | backend | Read-only retained artifacts only; canary fixtures and smoke mutations frozen |
+| PostgreSQL backup and isolated restore proof | backend | Read-only backup status/artifacts only; backup and restore mutations frozen |
+| Credential inventory and readiness | backend | Read-only readiness evidence only; changes/application frozen |
+| Grafana dashboards, alerts, folders, quotas, and drift | infra | Read-only evidence; Grafana apply is frozen |
+| DNS failover controller and DNS-write state | infra | Read-only status/evidence only; DNS apply/writes frozen |
+| Legacy ingestion scheduling | legacy worker | Public status is verified true; read-only status only |
 | Admin worker-uplift projection | web app | reviewed application deployment; no broker or Grafana management access |
-| Reversible ingestion controls | backend | fixed #126 workflow; #166 final gate and #127 execution remain separate |
+| Reversible ingestion controls | backend | Rollback complete; no rerun authorized |
 
 The existing backend workflow named `Backend Production Cutover` switches the database provider. It is not a worker-ingestion cutover workflow and must not be used to promote the worker uplift.
 
@@ -82,9 +120,9 @@ The existing backend workflow named `Backend Production Cutover` switches the da
 | Public or application read-only | No infrastructure change | public health, authenticated `/admin/shards`, immutable workflow artifacts |
 | Protected read-only | Fixed workflow reads host, broker, database, or telemetry state | runtime `status`, `logs`, queue inspection, recovery `status`, complete soak report |
 | Offline validation | Checks repository files only | docs validation, backend validators, Ansible syntax |
-| Dry run or plan | Builds and validates an intended operation without applying it | Ansible `check`, runtime `dry_run=true`, reconciliation plan, Grafana plan, DNS failover `plan` |
-| Protected mutation | Changes service, host, test fixture, backup, or managed cloud state | deploy, restart, scale, drain, rollback, smoke, canary drill, restore drill, Grafana apply |
-| Unavailable or blocked | No approved current apply path | worker cutover/promotion, generic DLQ replay, legacy-ingestion disable before the final gates |
+| Dry run or plan | Historical capability | Frozen during post-rollback hold |
+| Protected mutation | Changes production or managed state | Frozen; rollback complete |
+| Unavailable or blocked | No current incident authorization | Full rollback rerun, generic runtime actions, replay, reconciliation, Ansible, Grafana apply, synthetics, web merge, Runtime 1, and fetcher v2 |
 
 Every workflow invocation must use `--ref main`. Read the workflow summary and download the artifact. A green workflow conclusion without a reviewed artifact is not complete evidence.
 
@@ -98,6 +136,11 @@ This guide is pinned to specific source commits:
 - [Legacy failover evidence contract at worker commit `22a2c4f33d8dacdf9fd2367de852ae29d3abaa85`](https://github.com/ramideltoro/nutsnews-worker/tree/22a2c4f33d8dacdf9fd2367de852ae29d3abaa85), including the [Analytics Engine documentation](https://github.com/ramideltoro/nutsnews-worker/blob/22a2c4f33d8dacdf9fd2367de852ae29d3abaa85/docs/FAILOVER_ANALYTICS_ENGINE.md).
 - [Legacy ingestion-scheduling separation at worker merge `a073e351e5716a97e0759cca17096851cbb80261`](https://github.com/ramideltoro/nutsnews-worker/tree/a073e351e5716a97e0759cca17096851cbb80261), including the safe status contract and protected scheduling operations workflow.
 - [Reversible cutover controls at backend commit `4a86fcb85a94f3821ee4ebe804c62cf2dab1bee7`](https://github.com/ramideltoro/nutsnews-backend/tree/4a86fcb85a94f3821ee4ebe804c62cf2dab1bee7), including a fixed workflow, single-row database gate, fail-closed decision, validator, tests, and runbook.
+- Post-incident backend guards at merges
+  [`510b775d7962e2e66d430fb6d458c3c88d60cdd3`](https://github.com/ramideltoro/nutsnews-backend/tree/510b775d7962e2e66d430fb6d458c3c88d60cdd3)
+  and
+  [`5531014000f52fd6101f8617463d5f2c887d0788`](https://github.com/ramideltoro/nutsnews-backend/tree/5531014000f52fd6101f8617463d5f2c887d0788);
+  these are source safeguards, not deployment or replay evidence.
 
 ## Legacy ingestion scheduling is now separate
 
@@ -108,12 +151,13 @@ the controller still checks failover first and keeps health, status, actions,
 DNS checks, alarms, alerts, and analytics working; it skips only legacy shard
 and translation-backlog requests.
 
-Operators use `Controller Ingestion Scheduling Operations`. `status` only
-reads the safe public state. `plan` tests and dry-runs the exact requested
-configuration without deploying. `apply` is protected and reversible. The
-live state remains enabled, and a disabled plan does not authorize cutover.
-Runs 30690135595, 30690227183, 30690250417, and 30690250981 prove the deployed
-enabled state, protected apply, disabled dry run, and current status.
+Operators use `Controller Ingestion Scheduling Operations`. During the
+post-rollback hold, use only `status`, which reads the safe public state; do not
+repeat `plan` or `apply`. Worker runs 30715590990 and 30715611673 verified that
+public scheduling is true. Historical runs 30690135595, 30690227183,
+30690250417, and 30690250981 prove the original deployed enabled state,
+protected apply, disabled dry run, and then-live status; they are not current
+mutation authority.
 
 If one of these owners changes behavior, update this guide in the same reviewed change or record the mismatch as a readiness blocker.
 
@@ -143,7 +187,7 @@ gh workflow run backend-worker-runtime-operations.yml \
   -f dry_run=true
 ```
 
-Accept only a report that shows `mode=shadow`, `production_writes_enabled=false`, all eight services present and healthy, every required main queue consumer count greater than zero, and no unexpected blocked stage or restart loop.
+Treat the runtime report as supporting evidence only. Cross-check it against the authoritative generation 5 finalize artifact, public scheduling, service health, queues, and publication outcome.
 
 For an authenticated operator view, open `/admin/shards`. The worker-uplift projection shows the active owner, cutover state, write mode, stage health, queue age, DLQs, throughput, p95 latency, retries, consumers, version, dashboard links, and runbook links. It is a sanitized PostgreSQL-backed projection; it does not grant broker, host, Grafana, or DNS mutation.
 
@@ -284,9 +328,13 @@ Alert coverage includes broker loss, private canary failure, Alloy loss, zero co
 
 At 70% quota use, freeze new telemetry classes. At 85%, reduce nonessential verbosity and debug logs. At 95%, stop or roll back the offending signal before traffic. If the account is over budget, keep the uplift disabled.
 
-Grafana changes follow `Grafana Cloud Plan`, reviewed Terraform, then `Grafana Cloud Apply`. A dashboard edit in the Grafana UI is not a durable change and must be reconciled to infra source control.
+Grafana changes normally follow plan, reviewed Terraform, and apply. Grafana plan/apply and synthetic rollout are frozen during the post-rollback hold.
 
-## Dry runs and plans
+## Historical capability reference: dry runs and mutations
+
+Everything from this heading through credential rotation describes older
+capabilities, not current authorization. During the post-rollback hold, use read-only
+evidence only. Do not execute these plans or mutations; rollback is complete.
 
 ### Host configuration
 
@@ -307,9 +355,9 @@ Important current limits:
 
 Use `Grafana Cloud Plan` before any Grafana apply. Use `Cloudflare DNS Failover Apply` with `run_mode=plan` and `dns_writes_enabled=false` to validate the controller bundle. A DNS plan is unrelated to worker cutover and must not be bundled into a worker-uplift change.
 
-## Protected service changes
+## Historical capability reference: protected service changes
 
-All commands in this section are mutations. Run them only for an approved shadow operation with the fixed confirmation, and inspect the artifact.
+All commands in this section are frozen until rollback finalize and a new reviewed authorization.
 
 ### Deploy
 
@@ -386,7 +434,7 @@ gh workflow run backend-worker-runtime-operations.yml \
   -f confirm_target=backend.nutsnews.com
 ```
 
-## DLQ and reconciliation
+## Historical capability reference: DLQ and reconciliation
 
 ### Poison-message handling
 
@@ -401,7 +449,7 @@ Generic `dlq-replay` apply is intentionally blocked. There is no approved manual
 
 ### Reconciliation
 
-Run a plan first, then apply only when the service-specific endpoint, bounded selection, stop switch, and protected reconciliation-enable gate are approved. The apply must remain shadow-only. Record plan count, applied count, new message identifiers, duplicate-effect count, public visibility, queue drain, and post-run DLQ change.
+Plan and apply are both frozen during the post-rollback hold. After a new reviewed recovery decision, any reconciliation must match the authoritative control row and preserve bounded evidence.
 
 Plan with `dry_run=true`; changing the same fixed invocation to
 `dry_run=false` is a protected mutation:
@@ -416,7 +464,7 @@ gh workflow run backend-worker-runtime-operations.yml \
   -f confirm_target=backend.nutsnews.com
 ```
 
-## RabbitMQ recovery and empty-broker procedure
+## Historical capability reference: RabbitMQ recovery and empty-broker procedure
 
 Use PostgreSQL state, not live broker files, as the recovery anchor.
 
@@ -432,7 +480,7 @@ Use PostgreSQL state, not live broker files, as the recovery anchor.
 
 `export-definitions`, `clean-rebuild-drill`, and `stopped-volume-restore-drill` are protected evidence actions. The drills use disposable or stopped test targets; they are not permission to overwrite the live broker.
 
-## Backup restore
+## Historical capability reference: backup restore
 
 `Backend Backup Maintenance` owns fixed `backup`, `verify`, and `restore-drill` actions. `Backend Postgres Backup Restore Proof` owns an isolated proof for the primary-shadow or rehearsal database.
 
@@ -447,7 +495,7 @@ For recovery:
 
 Restic backup and verify actions are protected mutations because they create or traverse remote backup state. Restore drills are also mutations, even when isolated.
 
-## Credential rotation
+## Historical capability reference: credential rotation
 
 Never read, copy, echo, download, or attach credential values.
 
@@ -465,20 +513,20 @@ Rotate RabbitMQ route identities one route at a time. Treat approval and transla
 
 | Incident | Immediate read-only evidence | Stop or hold | Protected recovery | Exit evidence |
 | --- | --- | --- | --- | --- |
-| Broker unavailable | runtime status, recovery status, metrics, host health | keep legacy owner; do not start scheduler | protected apply/recovery; empty-broker procedure when required | broker healthy, topology and permissions valid, all consumers restored, shadow queue drains |
-| PostgreSQL outage | stage health, API health, logs, backup status | pause scheduler; preserve broker; do not acknowledge work that cannot commit | database recovery and isolated restore proof; resume downstream before scheduler | DB health, watermarks/outboxes consistent, idempotent replay, parity |
-| Qwen/provider outage | approval/translation health, logs, retry/DLQ trends, credential readiness | pause affected consumers if retries amplify; leave other stages bounded | rotate retained provider credential or restart/deploy corrected service through protected paths | provider probe healthy, retries settle, queues drain, no public writes |
-| Backlog or oldest-age growth | queue depth/age, publish/ack rates, consumers, p95, host headroom | stop scheduler if downstream cannot catch up | restart lost consumer; scale to reviewed limit; deploy correction | positive consumers, falling depth/age, no new DLQ, quota within guardrail |
-| Poison message or DLQ growth | DLQ metadata, safe error code, stage/outbox state | stop automated replay and retry amplification | fix service, dry-run replay, service-owned reconciliation | bounded applied count, new IDs, zero duplicate effects, queue drain |
-| Telemetry loss | metrics check, logs check, runtime status, queue inspection | hold cutover/readiness; do not infer broker failure | correct Alloy/credentials through infra/backend protected paths | fresh Prometheus and Loki data plus independent runtime health |
-| Failed publication | publication health/logs, DB API health, outbox/watermark, queue/DLQ | pause publication and upstream scheduler as needed; preserve outbox | API credential recovery, deploy/rollback, or publication reconciliation | command-scoped API passes, idempotent final effect, no duplicate visibility |
-| Zero consumers or dropped channel | `/ready`, runtime status, main queue consumers, cancellation/reconnect logs | pause scheduler if backlog risk grows | protected restart when digest/config are correct; otherwise deployment recovery | consumer count restored, reconnect metric/log present, queue drains |
+| Broker unavailable | runtime status, recovery status, metrics, host health | preserve stable generation 5 shadow and rollback evidence | recovery frozen absent separate incident-owner authorization | new reviewed recovery evidence |
+| PostgreSQL outage | stage health, API health, logs, backup status | preserve stable shadow and broker state | recovery and restore mutation frozen | new reviewed recovery evidence |
+| Qwen/provider outage | approval/translation health, logs, retry/DLQ trends, credential readiness | keep the scheduler shadow-only and writes disabled | rotation/restart/deploy frozen | new reviewed recovery evidence |
+| Backlog or oldest-age growth | queue depth/age, publish/ack rates, consumers, p95, host headroom | preserve queues and evidence | restart, scale, and deploy frozen | new reviewed recovery decision |
+| Poison message or DLQ growth | DLQ metadata, safe error code, stage/outbox state | preserve metadata; do not replay | replay and reconciliation frozen | new reviewed recovery decision |
+| Telemetry loss | metrics check, logs check, runtime status, queue inspection | do not infer broker failure | Grafana/backend mutation frozen | new reviewed recovery decision |
+| Failed publication | publication health/logs, DB API health, outbox/watermark, queue/DLQ | preserve abort evidence and quarantine candidate | deployment, rollback, replay, and reconciliation frozen | stable gen5 shadow; new reviewed qualification required |
+| Zero consumers or dropped channel | `/ready`, runtime status, main queue consumers, cancellation/reconnect logs | preserve stable shadow; do not change scheduler | restart and deployment frozen | new reviewed recovery decision |
 
 If a fixed recovery path does not exist or evidence is ambiguous, stop and record the missing proof as a production-readiness blocker.
 
 ## Cloudflare DNS failover must stay independent
 
-The public apex/www DNS failover controller is not a worker-ingestion component. Stopping legacy ingestion in a future tranche must not stop, retire, redeploy incidentally, or weaken the Cloudflare Worker, Durable Object state, cron watchdog, protected status and action endpoints, automatic failover/failback alerting, sanitized DNS target-change evidence, the Analytics Engine evidence contract, or the emergency Cloudflare dashboard/API procedure. DNS plan/apply remains in `ramideltoro/nutsnews-infra` under `cloudflare-admin`.
+The public apex/www DNS failover controller is not a worker-ingestion component. Stopping legacy ingestion in a future tranche must not stop, retire, redeploy incidentally, or weaken the Cloudflare Worker, Durable Object state, cron watchdog, protected status and action endpoints, automatic failover/failback alerting, sanitized DNS target-change evidence, the Analytics Engine evidence contract, or the emergency Cloudflare dashboard/API procedure. `ramideltoro/nutsnews-infra` under `cloudflare-admin` remains the owner path for a future authorized DNS plan/apply; during this hold, use read-only status and evidence only, with no DNS apply or manual action.
 
 At the pinned infra baseline, `wrangler.toml` declares the Durable Object but
 does not declare `FAILOVER_ANALYTICS`. The legacy controller contains the
@@ -486,15 +534,15 @@ optional best-effort writer and dataset contract. Before readiness, infra must
 prove the active binding, migrate and test it, or record owner acceptance of
 the unbound residual risk. Analytics ingestion must never block DNS failover.
 
-## Future cutover sequence
+## Historical pre-cutover sequence
 
-The later cutover is split into future issues. Steps marked future control cannot be executed today.
+This records the old design. It is not a current action plan and must not be executed during the post-rollback hold.
 
-### Phase 0: Current coexistence
+### Phase 0: Historical coexistence
 
-- Legacy worker owns production ingestion.
-- Uplift services process shadow-only work.
-- Production writes remain false.
+- Legacy worker owned production ingestion.
+- Uplift services processed shadow-only work.
+- Production writes were false.
 - DNS failover continues independently.
 - Operators collect runtime, parity, soak, security, backup, recovery, telemetry, and quota evidence.
 
@@ -504,31 +552,31 @@ Issue #125 recorded GO for guarded control implementation only. It did not autho
 
 ### Phase 2: Separate ingestion scheduling from DNS failover
 
-Issue #150 separated legacy ingestion scheduling from the DNS controller. The live setting remains enabled and all failover surfaces remain active.
+Issue #150 separated legacy ingestion scheduling from the DNS controller. This phase description is historical; public scheduling is now true after rollback propagation.
 
 ### Phase 3: Add reversible controls
 
-Issue #126 implemented and safely deployed fixed protected controls. A single database row records the owner and write state. It starts at `shadow` with the legacy owner enabled and uplift writes disabled. Constraints, an audit trigger, and a dedicated role reject two writers, stale state, and unrelated database changes.
+Issue #126 implemented fixed protected controls. Before cutover, the row started at `shadow` with the legacy owner enabled and uplift writes disabled. Constraints, an audit trigger, and a dedicated role reject two writers, stale state, and unrelated database changes.
 
 Routine preflight, dry-run, isolated rehearsal, verification, and safe control deployment use a standing owner authorization whose exact scope is pinned by a validator. It does not authorize #166 GO, #127 execution, production writes, legacy-ingestion disable, DNS/failover changes, arbitrary SQL, secret access, or risk acceptance. Operators must download `cutover-control-report.json` and verify `SHA256SUMS`; a green run alone is not enough.
 
-### Phase 4: Establish the cutover watermark
+### Phase 4: Historical cutover watermark
 
-During a future #127 window after #166 GO, leave DNS failover unchanged, pause new legacy scheduling through the fixed protected control, keep legacy production writers authoritative while establishing the reviewed handoff boundary, allow in-flight work to settle, prove queues drained and state reconciled, and write an immutable watermark artifact.
+The pre-cutover plan required DNS to remain unchanged, queues to drain, state to reconcile, and an immutable watermark artifact.
 
-### Phase 5: Execute the protected switch
+### Phase 5: Historical protected switch
 
-Future issue #127 may switch the owner and production-write gates only through the #126 protected workflow, after #166 approves the exact candidate, watermark, deadline, controls, and named approver. Legacy ingestion becomes standby, not deleted. DNS failover continues unchanged.
+The switch later executed on the older Runtime 0.x candidate. Publication failed and freshness breached the abort threshold, so the transition must not be called successful.
 
 Immediately prove one production ingestion owner, matching uplift production-write gates, correct and idempotent public visibility and publication, all consumers present, queue and retry depth decreasing, DLQs not growing unexpectedly, and healthy admin projection, Grafana, alerts, SLOs, quotas, and DNS controller state.
 
-### Phase 6: Observation and rollback
+### Phase 6: Completed rollback
 
-Keep legacy ingestion deployable in standby for the approved observation window. Before any new backend-only writes pass the verified synchronization point, the future rollback workflow may disable uplift writes, restore the recorded owner state, and resume legacy scheduling. It must preserve the watermark and verify no split-brain writer. After the synchronization point, default to forward recovery unless a reviewed sync-back procedure proves that rollback cannot lose or duplicate data.
+The observation window never started. Rollback prepare completed, legacy scheduling was verified true, and backend run 30715566651 finalized stable `shadow` generation 5. Owner is `legacy_shards`, legacy dispatch and scheduling are true, uplift scheduler is true in shadow, uplift writes are false, publication is shadow, observation timestamps are null, and single-writer/DNS checks pass. Do not rerun cutover, rollback, or finalize. The failed candidate is disqualified and quarantined.
 
 ### Phase 7: Decommission and final documentation
 
-Only issue #128 may retire legacy ingestion after the observation window. Retiring ingestion does not retire DNS failover. Issue #151 records the final production architecture and surviving controller ownership.
+Do not retire legacy ingestion. The observation window never started and the failed candidate remains quarantined. DNS failover stays independent.
 
 ## Evidence record
 
@@ -546,19 +594,35 @@ The following tested results establish the baseline, not permission to cut over:
 | Service-owned reconciliation apply proof | run 30213792420, two persistence items, new message IDs, no duplicate final effect, no production visibility |
 | Fresh protected security evidence | shadow model 30451802240, runtime status 30451804551, recovery status 30451806594, metrics 30451809064, logs 30451811517, value audit 30451813700 |
 | Security review merge and post-merge checks | backend PR #444, merge `b619cf91504eafca21f70c5d68888563f5fca7a9`, Backend Checks 30484088483 |
+| Cutover abort | [Central incident evidence](https://github.com/ramideltoro/nutsnews-infra/issues/474#issuecomment-5153075316): 28 messages, 84 retries, zero publication success, and stale public content |
+| Partial rollback | [Backend run 30715252632](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30715252632): prepare complete, generation 4 rollback-pending, finalize missing |
+| Legacy scheduling | [Worker run 30715293972](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30715293972): deploy succeeded, immediate verification raced propagation, public state later true |
+| Verified legacy scheduling | [Worker run 30715590990](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30715590990) and [status run 30715611673](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30715611673) passed |
+| Completed rollback | [Backend run 30715566651](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30715566651): stable shadow generation 5, legacy owner/dispatch restored, single-writer and DNS checks pass |
+| Backend mutation guard | [Backend PR #482](https://github.com/ramideltoro/nutsnews-backend/pull/482), merge `510b775d7962e2e66d430fb6d458c3c88d60cdd3`; source-only |
+| Publication-contract repair | [Backend PR #483](https://github.com/ramideltoro/nutsnews-backend/pull/483), merge `5531014000f52fd6101f8617463d5f2c887d0788`; source-only, no replay |
+| Pre-freeze Grafana baseline | [Apply 30708192621](https://github.com/ramideltoro/nutsnews-infra/actions/runs/30708192621): five synthetics on two probes every 300 seconds plus populated host/RabbitMQ/Loki queries; later hardening remains frozen |
+| Synthetic forecast acknowledgment | Protected standing-major acknowledgment verified `true` at 2026-08-01 20:29:46 UTC; no apply or check-shape change |
 
 For a new incident or readiness decision, record workflow name, run ID, source commit, conclusion, environment, action class, artifact name, digest, observation window, owner mode, production-write state, service health, versions, consumer counts, queues, retries, DLQs, drain result, database and backup evidence, Grafana freshness, SLOs, quotas, alerts, host headroom, DNS controller status, and each failed check or explicit residual-risk decision.
 
 ## Completion checklist
 
-- [ ] Legacy ingestion is still the production owner.
-- [ ] Uplift is still shadow-only and production writes are false.
+- [ ] Stable `shadow` generation 5 is recorded with `legacy_shards` owner, legacy dispatch and scheduling true, uplift scheduler true in shadow, uplift writes false, publication shadow, and null observation timestamps.
+- [ ] Public legacy scheduling is verified true by successful apply and status artifacts.
+- [ ] Single-writer and DNS checks pass.
+- [ ] The failed candidate is disqualified and quarantined.
+- [ ] Backend PRs #482 and #483 are treated as source safeguards, not deploy,
+      replay, or qualification evidence.
+- [ ] The unfinished worker deploy guard and infra verifier remain frozen.
+- [ ] Cutover, rollback, and finalize are not rerun.
+- [ ] The observation window is recorded as never started.
 - [ ] Every read-only report artifact was inspected.
-- [ ] Every mutation used its fixed protected owner path.
+- [ ] No frozen mutation ran.
 - [ ] All eight services are healthy with required consumers.
 - [ ] Queue, retry, DLQ, and drain evidence is recorded.
 - [ ] PostgreSQL outbox, watermark, backup, and reconciliation evidence agrees.
-- [ ] Grafana data, alerts, SLOs, quotas, and admin projection are current.
+- [ ] Grafana and admin evidence stayed read-only.
 - [ ] DNS failover controller state and ownership are unchanged.
 - [ ] Missing apply paths or proof are recorded as readiness blockers.
 - [ ] No secret value, message payload, or improvised manual mutation appears in the evidence.

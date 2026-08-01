@@ -1,20 +1,25 @@
 flowchart LR
   accTitle: NutsNews observability layers
   accDescr {
-    NutsNews already has Grafana host metrics and logs. Draft application telemetry, managed
-    alert email, five public synthetics, and four SLOs still require protected inputs, a
-    synthetic cadence decision, apply, and live evidence. Sentry remains the exception store.
+    NutsNews has live Grafana host and log visibility plus five synthetics from a pre-freeze
+    apply. PR 473 telemetry and email hardening, four native SLOs, controlled drills, and
+    post-incident verification remain frozen. Sentry remains the exception store.
   }
   Services["Web, workers, backend and VPS"] --> Grafana["Grafana Cloud\nexisting host metrics and logs"]
   Owners["Backend owns deploy, Alloy and outbox; worker repos own service signals;\ninfra owns Grafana; meta repo coordinates"] --> Services
   Services --> WorkerGate["Every worker ownership state still requires deployed, up,\nfresh scrape, exact identity and readiness series"]
-  Live["Live 2026-08-01 19:04 UTC: worker_uplift cutover_active;\nolder candidate 71b030, Runtime 1 PR 471 undeployed"] --> Freeze["Temporary freeze: worker merges and runtime mutations;\nno fetcher v2 migration while cutover_active"]
-  Freeze --> Reconcile["Reconcile observation and rollback deadline\nbefore observability rollout"]
+  Incident["Historical Runtime 0.x cutover"] --> Failure["28 publication messages, 84 handler-error retries;\nno publication; freshness over 15m"]
+  Failure --> Prepare["Observation never started;\nrollback prepare completed"]
+  Prepare --> Finalize["Legacy scheduling verified true;\nrollback finalize succeeded"]
+  Finalize --> Stable["Stable shadow generation 5; legacy owner, dispatch and scheduling true;\nuplift writes false; single-writer and DNS pass"]
+  Stable --> Freeze["Post-rollback hold; failed candidate quarantined;\nno cutover or rollback rerun and no unrelated mutations"]
+  Freeze --> Reconcile["Reconcile stable shadow and incident evidence\nbefore observability rollout"]
   Reconcile --> Services
-  Staged["Draft source changes"] --> Pending["Staged application telemetry, email,\nfive synthetics and four SLOs"]
-  Pending --> Choice["Cadence unresolved: six minutes,\nfive-minute standing major,\nor reviewed threshold change"]
-  Readonly["Read-only audit Environment exists;\nall four inputs still absent"] --> Choice
-  Choice --> Apply["Protected apply and post-apply evidence"]
+  Baseline["Pre-freeze apply 30708192621"] --> Live["Five live synthetics: two probes, 300s;\n86.4k standing major acknowledged"]
+  Live --> Grafana
+  Staged["PR 473 and producer source changes"] --> Pending["Staged application telemetry, email,\nfour native SLOs and drills"]
+  Readonly["Read-only audit Environment exists;\nall four inputs still absent"] --> Pending
+  Pending --> Apply["Future protected apply and post-incident evidence\nafter freeze"]
   Apply --> Grafana
   Apply --> Ownership["Ownership dashboard shows backend revision\nand all eight worker identities"]
   Grafana --> Drilldown["Pipeline-run dashboard uses parsed metadata\nand bounded table field links"]

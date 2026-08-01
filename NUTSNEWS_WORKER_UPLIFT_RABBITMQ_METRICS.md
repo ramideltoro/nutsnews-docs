@@ -5,7 +5,7 @@ wiki:
     publishing: allowed
     reviewed_by: pending
     reviewed_on: pending
-    technical_source_hash: 49fbcb98a05b7d1a0dbb843f69865f043fce11cdf0d5a60f18d4ad7ee675fab3
+    technical_source_hash: 42de5b1f54dda32dfbf07d931fb7757de0b03ba5a7443a23574ffae0def4313b
 ---
 # NutsNews Worker-Uplift RabbitMQ Metrics
 
@@ -84,14 +84,15 @@ change Grafana dashboards, folders, alerts, contact points, synthetics, or
 quota guardrails.
 
 The source-staged qualification baseline sets non-owning split services to
-`nutsnews_worker_expected_active=0`; it does not describe current live
-ownership. At 2026-08-01 19:04 UTC, protected backend run
-[`30713923790`](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30713923790)
-recorded `active_ingestion_owner=worker_uplift`, `state=cutover_active`,
-production writes enabled, and legacy dispatch disabled. Protected controller
-run
-[`30713955433`](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30713955433)
-then confirmed public legacy scheduling disabled. Ownership gating suppresses
+`nutsnews_worker_expected_active=0`; it does not itself prove the live state.
+Legacy scheduling is verified true by worker runs
+[`30715590990`](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30715590990)
+and [`30715611673`](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30715611673).
+[Backend run 30715566651](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30715566651)
+completed finalize. The authoritative row is stable `shadow` generation 5,
+owner `legacy_shards`, legacy dispatch true, uplift scheduler true in shadow,
+uplift writes false, publication shadow, observation timestamps null, and
+single-writer/DNS checks passing. Ownership gating suppresses
 non-owner behavior paging, not structural qualification: every service must be
 deployed, report `up == 1`, remain scrape-fresh for less than 180 seconds,
 expose readiness series, and publish exact non-`unknown` build/deployment
@@ -100,23 +101,45 @@ identity. Missing structural series are never ownership-gated. A service with
 readiness, scheduler loop/cycle or delivery-stage activity as applicable, last
 success, and worker-local paging eligibility.
 
-That cutover uses the older candidate
+The failed cutover used older candidate
 `71b0303705093ad398458083547a86e9e61f50458e8799ace38de4f2404859df`
-under rollback deadline `2026-08-03T21:00:00Z`, not the newly published Runtime
-1 image set. Draft backend PR
+instead of the newly published Runtime 1 image set. Backend PR
 [`#471`](https://github.com/ramideltoro/nutsnews-backend/pull/471) pins Runtime 1
-but remains undeployed. Reconcile the live cutover/observation state before its
-observability deployment. These control runs do not prove new RabbitMQ panels,
-Grafana resources, synthetics, SLOs, canaries, or drills.
+but is `DIRTY`/conflicting with current main and undeployed. It must resolve the
+PR #483 Worker API conflict, replace mutable ownership/`expected_active` inputs
+with authoritative generation 5 state, and add a separate runtime-container
+recreation path so exact-eight identity can converge. Separately, pre-freeze
+Grafana apply 30708192621 verified 35 RabbitMQ queue query results, populated
+RabbitMQ logs, 28 dashboards, and 20 worker alerts. That baseline evidence does
+not prove Runtime 1, native SLOs, PR #473 hardening, or controlled drills.
 
-Temporary cutover safety freeze: until fail-closed deploy guards preserve the
-retained cutover state, `nutsnews-worker` merges are frozen because the ordinary
-main pipeline deploys the controller from base configuration where
-`INGESTION_SCHEDULING_ENABLED=true`. All mutating Backend Worker Runtime
-Operations are also frozen: the current deploy, scale, and rollback paths use
-base Compose and can recreate publication without the cutover overlay. Do not
-run the fetcher state-contract v2 migration while `state=cutover_active`.
-Read-only inspection does not remove these freezes.
+Retained
+[abort-threshold evidence](https://github.com/ramideltoro/nutsnews-infra/issues/474#issuecomment-5153075316)
+records 28 publication messages, 84 `handler-error` retries, no publication
+success, 28 ready messages in the 30-minute retry queue, and no post-cutover
+public freshness. The observation window never started. Rollback completed
+through the protected finalize run. No automatic rollback, recovery replay, or
+operator queue replay ran. The failed Runtime 0.x candidate is disqualified and
+quarantined.
+
+Backend source hardening is partly complete. Backend
+[`PR #482`](https://github.com/ramideltoro/nutsnews-backend/pull/482), merge
+`510b775d7962e2e66d430fb6d458c3c88d60cdd3`, records the immutable incident
+receipt, consumes the historical cutover authority, and fail-closes protected
+Ansible and generic runtime mutations against the exact maintenance-safe shadow
+row. Backend [`PR #483`](https://github.com/ramideltoro/nutsnews-backend/pull/483),
+merge `5531014000f52fd6101f8617463d5f2c887d0788`, hardens the forward
+publication API contract and idempotency semantics. These are source-only
+merges: no host/runtime deployment, Runtime 1 rollout, queue replay, or failed-
+candidate rehabilitation occurred. The worker deploy guard and infra verifier
+remain unfinished and frozen.
+
+The effective safety freeze remains until incident reconciliation and those
+unfinished guards are complete: no worker merge/ordinary deploy, backend
+Ansible or generic runtime mutation, duplicate cutover/rollback/finalize,
+Runtime 1/fetcher v2, Grafana apply, synthetic rollout, web merge, queue replay,
+or reconciliation mutation. Rollback is complete; no cutover-control mutation
+is authorized. Read-only evidence collection does not remove these freezes.
 
 ## Grafana Dashboards
 
@@ -203,7 +226,9 @@ Per-stage `stageRows[]` fields:
 | `updatedAt` | Projection row update timestamp. |
 | `errorClass` | Redacted error class for the stage. |
 
-Operator state mapping:
+Operator state mapping. These are portal presentation states, not cutover
+control-row state names. The current stable `shadow` generation 5 row maps to
+portal `Legacy-only` because owner is `legacy_shards` and writes are disabled:
 
 | State | How to read it in `/admin/shards` |
 | --- | --- |
@@ -348,9 +373,11 @@ alerts.
 
 Every rule must carry `severity`, `owner`, `route`, `service`,
 `deployment_environment`, a dashboard URL, and a runbook URL. Queue, threshold,
-and recovery-window metadata are added only where relevant. The route is
-consumed by the Terraform-managed operations-email notification policies; the
-recipient remains a protected secret rather than source-controlled plaintext.
+and recovery-window metadata are added only where relevant. After the frozen
+infra hardening is applied, the route will be consumed by the Terraform-managed
+operations-email notification policies; the recipient remains a protected
+secret rather than source-controlled plaintext. The live root route remains
+`empty`, and no receipt canary has proved delivery.
 
 Dashboard SLIs and custom guardrails covered by the catalog:
 
@@ -374,8 +401,9 @@ rules use 5-minute and 1-hour windows. Worker-local threshold rules use
 its three-hour critical guardrail are separate and source-defined without an
 ownership gate; Grafana activation remains unproved.
 
-The following is source-staged target state unless a protected apply and live
-query are separately evidenced. The four native, rolling 30-day Grafana SLOs are defined separately in
+The following is later source-staged target state unless a protected apply and
+live query are separately evidenced. The pre-freeze baseline apply above does
+not activate the four native, rolling 30-day Grafana SLOs defined separately in
 `terraform/grafana-cloud/slos.tf` and documented in
 [Service Level Objectives](SERVICE_LEVEL_OBJECTIVES.md). The 30-minute
 worker-specific freshness warning here is diagnostic and ownership-gated; it
@@ -387,8 +415,8 @@ event-weighted outcomes across every canonical delivery stage. It counts
 intermediate `retry`, and leaves scheduler cycles outside the stage family.
 Source defaults `worker_terminal_slo_alerting_enabled` to `false`, so the
 candidate omits generated burn alerts; the protected Grafana-side live value
-still needs rollout confirmation. The successful ingestion cutover does not
-prove a native SLO or its burn alerts are active. Custom worker-local rules use
+still needs rollout confirmation. The completed rollback does not prove a native
+SLO or its burn alerts are active. Custom worker-local rules use
 the separate `nutsnews_worker_expected_active` ownership gate.
 
 The native API-latency SLO denominator contains only successful article/API
@@ -404,8 +432,10 @@ data is a separate telemetry failure. RabbitMQ broker queue age remains useful
 for queue diagnosis, but neither value replaces the global 15-minute
 reader-visible feed-freshness SLO.
 
-Use the backend `Backend RabbitMQ Canary` workflow from #91 to exercise
-deliberate firing and recovery without exposing private AMQP:
+Historical/future drill capability: only after the freeze is lifted and a new
+reviewed drill authorization exists, use the backend `Backend RabbitMQ Canary`
+workflow from #91 to exercise deliberate firing and recovery without exposing
+private AMQP. This is not current authorization:
 
 | Drill | Alert classes exercised |
 | --- | --- |
@@ -418,7 +448,7 @@ deliberate firing and recovery without exposing private AMQP:
 | `grafana-connectivity-loss` | Alloy metrics write loss |
 | `restart` | repeated restart and recovery-proof checks |
 
-After each fixture drill, run a normal canary and wait through the Grafana
+After each future authorized fixture drill, run a normal canary and wait through the Grafana
 recovery window. Alert tests must not publish production articles, expose AMQP
 or management ports, disable legacy ingestion/failover, mutate contact points,
 or disable Alloy remote write.

@@ -1,9 +1,9 @@
 flowchart LR
   accTitle: NutsNews Grafana Cloud observability hardening
   accDescr {
-    Draft application, worker, backend, and VPS sources prepare bounded metrics and normalized
-    logs. Protected inputs, Environment policy, the synthetic cadence choice, GitOps apply, and
-    retained live evidence are all still required before the rollout is complete.
+    A pre-freeze apply made five synthetics and the verified dashboard, alert, host, RabbitMQ,
+    and log baseline live. PR 473 hardening, four native SLOs, notification receipts, controlled
+    drills, worker deployment, and post-incident verification remain frozen and incomplete.
   }
   subgraph Producers["Telemetry producers"]
     Web["Web and content signals"]
@@ -19,16 +19,17 @@ flowchart LR
   Alloy --> Metrics["Grafana Cloud Metrics"]
   Alloy --> Logs["Grafana Cloud Logs\nnormalized labels"]
   Logs --> Drilldown["Query-time pipeline drilldown\nfield links; no Tempo"]
-  Infra["nutsnews-infra draft PR"] --> Prereq["Environment policy, protected inputs\nand synthetic budget decision"]
+  Baseline["Pre-freeze apply 30708192621\ncommit c23403e"] --> Live["Live: five checks, two probes, 300s\n28 dashboards, 11 backend alerts,\n20 worker alerts and populated queries"]
+  Live --> Capacity["86.4k monthly standing major acknowledged\nwarning and 90k ceiling remain"]
+  Infra["PR 473 hardening after freeze"] --> Prereq["Environment policy and protected inputs\nfor remaining hardening"]
   Prereq --> Validator["Value-free synthetic validator\nregion, API bounds and quota ceiling"]
   Validator --> Plan["Protected read-only plan\nand drift check"]
   Plan --> PlanEvidence["Read-only evidence\ninputs, dashboards, alerts,\nPrometheus and Loki"]
   Plan --> Review{"Reviewed mutation approved?"}
   Review -->|"No"| Pending
   Review -->|"Yes"| Apply["Protected OpenTofu\nand Ansible apply"]
-  Apply --> Grafana["Dashboards, email policies,\nfive synthetics and four SLOs"]
+  Apply --> Grafana["PR 473 telemetry and email policies,\nfour native SLOs and re-verification"]
   Apply --> Ownership["Ownership dashboard: backend revision\nand exact identities for all eight workers"]
-  Apply --> Capacity["Cadence unresolved: six minutes about 72k,\nor five minutes 86.4k with standing major,\nor source-reviewed threshold change"]
   Metrics --> Grafana
   Logs --> Grafana
   Grafana --> Evidence["Post-apply query report"]
@@ -45,8 +46,14 @@ flowchart LR
   Capacity --> Ready
   Ready -->|"No"| Pending["Rollout remains pending"]
   Ready -->|"Yes"| Operate["Operate within free-tier\nand ownership guardrails"]
-  Live["Live 2026-08-01 19:04 UTC: worker_uplift cutover_active;\nwrites on, legacy dispatch and scheduling off;\nolder candidate 71b030 under rollback deadline"] --> Freeze["Temporary freeze: worker merges and runtime mutations;\nno fetcher v2 migration while cutover_active"]
-  Freeze --> Reconcile["Reconcile active observation and rollback state\nwith undeployed backend PR 471"]
+  Incident["Historical Runtime 0.x cutover"] --> Failure["28 publication messages, 84 handler-error retries;\nretry-30m depth 28; no publication; freshness over 15m"]
+  Failure --> Prepare["Observation never started;\nrollback prepare completed"]
+  Prepare --> Scheduling["Legacy scheduling verified true"]
+  Scheduling --> Finalize["Rollback finalize succeeded\nrun 30715566651"]
+  Finalize --> Stable["Stable shadow generation 5; legacy owner, dispatch and scheduling true;\nuplift scheduler shadow, writes false; single-writer and DNS pass"]
+  Stable --> Freeze["Post-rollback hold; failed candidate quarantined;\nno cutover or rollback rerun and no unrelated mutations"]
+  Freeze --> Guards["Backend PRs 482 and 483 merged source-only;\nworker deploy guard and infra verifier unfinished"]
+  Guards --> Reconcile["PR 471 is conflicting: reconcile PR 483,\ngeneration 5 ownership and exact-eight recreation"]
   Reconcile --> Workers
-  Packages["Contracts and Runtime 1.0 released;\neight worker images published and verified;\nPR 471 pins them but remains undeployed"] --> Reconcile
+  Packages["Contracts and Runtime 1.0 released;\neight worker images published and verified;\nPR 471 remains conflicting and undeployed"] --> Reconcile
   Readonly["Read-only audit Environment exists,\nbut all four inputs are absent"] --> Prereq

@@ -11,7 +11,7 @@
   },
   "source": {
     "path": "NUTSNEWS_WORKER_UPLIFT_TELEMETRY_SCOPE.md",
-    "sha256": "c90054fa2375b045f873c14d2b3e6eb27c1d150523e3c16323c90df00458de13"
+    "sha256": "b14a8c6492e9d56a4c5951ba9e6b8e80b5d636950aa993094dd1c5ddb7e9d98c"
   },
   "artifacts": {
     "simple_markdown": "audiences/simple/NUTSNEWS_WORKER_UPLIFT_TELEMETRY_SCOPE.md",
@@ -20,15 +20,15 @@
   },
   "accessibility": {
     "title": "Staged worker-uplift observability activation flow",
-    "description": "The diagram shows the released Contracts and Runtime packages, eight published but undeployed Runtime 1 images, the active older cutover candidate, temporary mutation freezes, private metrics and ownership gates, the unresolved synthetic budget choice, deferred signals, and the retained evidence required before activation."
+    "description": "The diagram shows the live pre-freeze five-synthetic baseline, failed older cutover, completed rollback to stable generation 5 shadow, quarantined candidate, active mutation freeze, conflicting PR #471, private metrics and ownership gates, accepted standing-major forecast, deferred signals, and retained evidence required before activation."
   },
   "review_notes": [
     "The generated_at and generator fields record the original 2026-07-28 artifact generation; the 2026-08-01 rollout-state and cutover-safety reconciliation was manual and does not constitute regeneration or approval.",
-    "Reconcile backend PR #471's Runtime 1 digest pins with the active older candidate, cutover observation, and rollback deadline before a fresh fail-closed qualification or deployment.",
-    "Keep nutsnews-worker merges and mutating Backend Worker Runtime Operations frozen until fail-closed deploy guards preserve cutover state; do not run the fetcher state-contract v2 migration while cutover_active.",
+    "Reconcile conflicting backend PR #471 with PR #483, authoritative generation 5 ownership, the separate exact-eight runtime-container recreation requirement, the quarantined failed candidate, and retained incident evidence before a fresh qualification or deployment.",
+    "Keep worker merges, backend mutations, replay, reconciliation, Grafana apply, synthetics, Runtime 1/fetcher v2, and web merge frozen until source hardening and incident reconciliation complete.",
     "Reconcile the companion infra policy JSON's old package source, approved status, exact buckets, health/value allowlists, and break-glass semantics before apply.",
     "Verify the complete histogram bucket set, bounded health checks, lease safety, and lifecycle outcomes against the final worker image revisions.",
-    "Record one synthetic budget decision in issue #474: six-minute source cadence, accepted five-minute standing major, or a reviewed threshold change that preserves the 90,000 ceiling.",
+    "Retain evidence that the live five-check, two-probe, 300-second topology projects 86,400 monthly executions and that the protected standing-major acknowledgment was verified true; keep the warning and 90,000 ceiling.",
     "Confirm the four read-only Synthetic Monitoring Environment inputs and every production writer/reviewer prerequisite without publishing values.",
     "Require deployed scrape, Loki label-boundary, quota, SLO, and firing/recovery evidence before changing staged wording to live."
   ],
@@ -37,6 +37,6 @@
     "publishing": "allowed",
     "reviewed_by": "pending",
     "reviewed_on": "pending",
-    "technical_source_hash": "c90054fa2375b045f873c14d2b3e6eb27c1d150523e3c16323c90df00458de13"
+    "technical_source_hash": "b14a8c6492e9d56a4c5951ba9e6b8e80b5d636950aa993094dd1c5ddb7e9d98c"
   }
 }

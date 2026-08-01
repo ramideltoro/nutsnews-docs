@@ -19,7 +19,7 @@ flowchart TD
   K --> L["Backend durable projection"]
   L --> H
 
-  M["Canary drill"] --> N["Backend collects textfile /var/lib/nutsnews/metrics/rabbitmq-canary.prom"]
+  M["Future authorized canary drill after freeze"] --> N["Backend collects textfile /var/lib/nutsnews/metrics/rabbitmq-canary.prom"]
   N --> O["Alloy remote-write of canary metrics"]
   O --> G
   O --> P["Custom alert firing and recovery evidence"]
@@ -27,12 +27,18 @@ flowchart TD
   Q --> R{"Worker owns production?"}
   R -->|"No"| S["No behavior paging; still require all eight\ndeployed, up, fresh, identified, readiness series"]
   R -->|"Yes"| T["Require readiness ok, activity and last success;\nworker-owned custom alerts eligible"]
-  Live["Live 2026-08-01 19:04 UTC: worker_uplift cutover_active;\nolder candidate 71b030 under rollback deadline"] --> Freeze["Temporary freeze: worker merges and runtime mutations;\nno fetcher v2 migration while cutover_active"]
-  Freeze --> Reconcile["PR 471 pins Runtime 1 but remains undeployed;\nreconcile before observability rollout"]
+  Incident["Historical Runtime 0.x cutover"] --> Failure["28 publication messages, 84 handler-error retries;\nretry-30m depth 28; no publication; freshness over 15m"]
+  Failure --> Prepare["Observation never started;\nrollback prepare completed"]
+  Prepare --> Finalize["Legacy scheduling verified true;\nrollback finalize succeeded"]
+  Finalize --> Stable["Stable shadow generation 5; legacy owner, dispatch and scheduling true;\nuplift writes false; single-writer and DNS pass"]
+  Stable --> Freeze["Post-rollback hold; failed candidate quarantined;\nno cutover or rollback rerun and no unrelated mutations"]
+  Freeze --> Guards["Backend PRs 482 and 483 merged source-only;\nworker deploy guard and infra verifier unfinished"]
+  Guards --> Reconcile["PR 471 conflicting: reconcile PR 483, generation 5\nownership and exact-eight runtime recreation"]
   Reconcile --> B
   F --> U["Four native Grafana SLOs\nseparate 30-day resources"]
-  U --> V["Global feed freshness pages\nregardless of worker ownership"]
+  U --> V["Global feed freshness paging is source-only;\nnative Grafana activation unproved"]
   U --> W["Native Worker terminal SLO uses all stages;\nsource defaults burns off; Grafana activation unproved"]
   L --> X["Backend outbox age only when availability is 1"]
   X --> Y["Worker pressure is distinct from\nRabbitMQ queue age and global feed freshness"]
   G --> Z["Ownership dashboard shows backend revision\nand all eight worker identities"]
+  Baseline["Pre-freeze Grafana apply 30708192621\nverified 35 queue results, logs and 20 worker alerts"] --> G

@@ -5,7 +5,7 @@ wiki:
     publishing: allowed
     reviewed_by: pending
     reviewed_on: pending
-    technical_source_hash: e4396c6f602a61eb01ac7e94948e64700af9dd11ab1f8fe43909be1710c7971d
+    technical_source_hash: 5d00bbce381e3082706db85e00172f5757e474b14c52a60615fcd162aa1c864c
 ---
 # NutsNews Service Level Objectives
 
@@ -55,7 +55,7 @@ a rolling 30-day compliance window.
 | Public availability | 99.5% over 30 days | Successful canonical-homepage observations from both public probes divided by all canonical-homepage observations | Source enables Grafana-generated fast- and slow-burn alerts; activation remains unproved. |
 | API latency | 95% over 30 days | Successful read-only article API observations completed within 750 milliseconds divided by all successful article API observations | Source enables Grafana-generated fast- and slow-burn alerts; activation remains unproved. Status, body, and cache-header validation failures remain separate availability/correctness failures. |
 | Feed freshness | 99% over 30 days | Eligible intervals in which the durable published-feed age from the current production publication owner is no more than 15 minutes | Source enables Grafana-generated fast- and slow-burn alerts plus a separate three-hour critical guardrail; activation remains unproved. |
-| Worker terminal success | 99% over 30 days | Event-weighted outcomes across all canonical delivery stages: `success|duplicate` divided by `success|duplicate|invalid|failure|dlq`; intermediate `retry` outcomes are excluded | Source defaults generated burn alerts off; the live ingestion cutover does not prove this native SLO or its alerts are active. |
+| Worker terminal success | 99% over 30 days | Event-weighted outcomes across all canonical delivery stages: `success|duplicate` divided by `success|duplicate|invalid|failure|dlq`; intermediate `retry` outcomes are excluded | Source defaults generated burn alerts off; the completed rollback does not prove this native SLO or its alerts are active. |
 
 `terminal` is an SLI classification, not an `outcome` label value. A zero
 eligible-event denominator is No Data, not a synthetic failure or proof of
@@ -69,8 +69,8 @@ processors; scheduler cycles are outside the stage-event family. Source defaults
 generated burn-alert block. The protected Grafana-side live value must still be
 confirmed during rollout. This native control is separate from the
 `nutsnews_worker_expected_active` joins used by custom worker-local rules; the
-successful ingestion cutover does not prove either Grafana activation or the
-deployed telemetry values.
+completed rollback does not prove either Grafana activation or the deployed
+telemetry values.
 
 The Worker-Uplift Pipeline dashboard's five descriptive SLI entries and its
 hand-authored rules are compatibility metadata and operational guardrails, not
@@ -84,29 +84,54 @@ global reader-visible feed-freshness SLO or its three-hour critical guardrail.
 Source leaves those feed signals ownership-ungated under either ingestion
 implementation; Grafana activation remains unproved.
 
-At 2026-08-01 19:04 UTC, protected backend run
-[`30713923790`](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30713923790)
-recorded `active_ingestion_owner=worker_uplift`, `state=cutover_active`,
-production writes enabled, and legacy dispatch disabled. Protected controller
-run
-[`30713955433`](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30713955433)
-then confirmed public legacy scheduling disabled. The active candidate is the
-older `71b0303705093ad398458083547a86e9e61f50458e8799ace38de4f2404859df`
-under rollback deadline `2026-08-03T21:00:00Z`, not the newly published Runtime
-1 images. Draft backend PR
-[`#471`](https://github.com/ramideltoro/nutsnews-backend/pull/471) pins Runtime 1
-but remains undeployed; reconcile it with this live cutover/observation state
-before rollout. These runs are ingestion-control evidence, not Grafana apply,
-synthetic, SLO, canary, or drill evidence.
+The cutover used older Runtime 0.x candidate
+`71b0303705093ad398458083547a86e9e61f50458e8799ace38de4f2404859df`
+and met publication/freshness abort criteria before observation started.
+Rollback prepare ran in backend run 30715252632. Legacy scheduling is verified
+true by worker runs
+[30715590990](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30715590990)
+and [30715611673](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30715611673).
+[Backend run 30715566651](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30715566651)
+completed finalize. The authoritative row is stable `shadow` generation 5,
+owner `legacy_shards`, legacy dispatch true, uplift scheduler true in shadow,
+uplift writes false, publication shadow, observation timestamps null, and
+single-writer/DNS checks passing. Backend PR #471 is `DIRTY`/conflicting with
+current main and undeployed. It must resolve the PR #483 Worker API conflict,
+derive ownership/`expected_active` from the authoritative generation 5 row, and
+add a separate runtime-container recreation path so exact-eight identity can
+converge. These runs are ingestion-control evidence. Separately, pre-freeze
+Grafana apply 30708192621 proves the five-check synthetic baseline and populated
+host/RabbitMQ/Loki queries, but not native SLOs, post-incident synthetic health,
+notification receipts, or controlled drills.
 
-Temporary cutover safety freeze: until fail-closed deploy guards preserve the
-retained cutover state, `nutsnews-worker` merges are frozen because the ordinary
-main pipeline deploys the controller from base configuration where
-`INGESTION_SCHEDULING_ENABLED=true`. All mutating Backend Worker Runtime
-Operations are also frozen: the current deploy, scale, and rollback paths use
-base Compose and can recreate publication without the cutover overlay. Do not
-run the fetcher state-contract v2 migration while `state=cutover_active`.
-Read-only inspection does not remove these freezes.
+Retained
+[abort-threshold evidence](https://github.com/ramideltoro/nutsnews-infra/issues/474#issuecomment-5153075316)
+records 28 publication messages, 84 `handler-error` retries, no publication
+success, 28 ready messages in the 30-minute retry queue, and no post-cutover
+public freshness. The observation window never started. Rollback completed
+through the protected finalize run; no automatic rollback, recovery replay, or
+operator queue replay ran. The failed candidate is disqualified and
+quarantined.
+
+Backend source hardening is partly complete. Backend
+[`PR #482`](https://github.com/ramideltoro/nutsnews-backend/pull/482), merge
+`510b775d7962e2e66d430fb6d458c3c88d60cdd3`, records the immutable incident
+receipt, consumes the historical cutover authority, and fail-closes protected
+Ansible and generic runtime mutations against the exact maintenance-safe shadow
+row. Backend [`PR #483`](https://github.com/ramideltoro/nutsnews-backend/pull/483),
+merge `5531014000f52fd6101f8617463d5f2c887d0788`, hardens the forward
+publication API contract and idempotency semantics. These are source-only
+merges: no host/runtime deployment, Runtime 1 rollout, queue replay, or failed-
+candidate rehabilitation occurred. The worker deploy guard and infra verifier
+remain unfinished and frozen.
+
+The effective safety freeze remains until incident reconciliation and those
+unfinished guards are complete: no `nutsnews-worker` merge or ordinary deploy;
+no backend Ansible apply or generic publication/runtime mutation; no duplicate
+cutover/rollback/finalize; no fetcher state-contract v2 migration or Runtime 1
+deployment; and no Grafana apply, synthetic rollout, web merge, queue replay,
+or reconciliation mutation. Rollback is complete; no cutover-control mutation
+is authorized. Read-only evidence collection does not remove these freezes.
 
 Every split worker must be deployed with `up == 1`, scrape age below 180
 seconds, exact non-`unknown` build/deployment identity, and readiness series.
@@ -253,10 +278,12 @@ No new environment variable, secret, database migration, provider credential, or
 The later Grafana hardening rollout is separate from issue #89 and does require
 protected provider, Synthetic Monitoring, SLO, and telemetry inputs. As of
 2026-08-01 its read-only synthetic-audit Environment exists but all four scoped
-inputs are absent, its writer/reviewer prerequisites are incomplete, and the
-five-minute 86,400-execution cadence choice remains unresolved in
-[`ramideltoro/nutsnews-infra#474`](https://github.com/ramideltoro/nutsnews-infra/issues/474).
-Therefore none of the four native Grafana SLOs is live.
+inputs are absent and its writer/reviewer prerequisites are incomplete. The
+five-check, two-probe, 300-second synthetic baseline is already live from
+pre-freeze apply 30708192621, projecting 86,400 monthly executions. The
+protected standing-major acknowledgment was set and verified `true` at
+2026-08-01 20:29:46 UTC; the major warning and 90,000 ceiling remain. PR #473
+hardening and all four native Grafana SLOs remain unapplied and frozen.
 
 External uptime, Grafana, Sentry, Vercel, Cloudflare, and Supabase dashboards remain provider-owned. Do not paste secrets, private URLs, tokens, raw environment files, or credential values into SLO notes.
 

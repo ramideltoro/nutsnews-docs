@@ -15,14 +15,15 @@ wiki:
     publishing: allowed
     reviewed_by: pending
     reviewed_on: pending
-    technical_source_hash: c90054fa2375b045f873c14d2b3e6eb27c1d150523e3c16323c90df00458de13
+    technical_source_hash: b14a8c6492e9d56a4c5951ba9e6b8e80b5d636950aa993094dd1c5ddb7e9d98c
 ---
 
 # NutsNews Worker-Uplift Telemetry Scope
 
-Status: the Runtime 1 producer and observability changes remain staged. Live
-ingestion was cut over on an older candidate and must be reconciled before the
-observability backend deployment and Grafana Cloud apply.
+Status: the Runtime 1 producer and worker-uplift/PR #473 observability changes
+remain staged. A separate pre-freeze Grafana baseline apply is live, including
+five synthetics. The failed cutover returned to stable shadow and must be
+reconciled before any further observability deployment or Grafana apply.
 
 Companion infra policy (must be reconciled in the same reviewed rollout):
 
@@ -35,30 +36,44 @@ emit. The companion JSON policy now carries the staged core label, outcome,
 quota, and ownership changes, but it is not aligned or applied until it also
 covers the exact histogram, health, native-SLO, Alloy break-glass, and
 value-allowlist semantics below and stops declaring an approved state while this
-bundle is unreviewed. Repository changes do not make the signals live.
+bundle is unreviewed. Repository changes do not make these worker-uplift signals live.
 Completion requires the observability backend and infra changes to merge,
 Runtime 1 worker images to be deployed, a reviewed
 `ramideltoro/nutsnews-infra` GitOps apply, and retained query/alert evidence.
+Pre-freeze apply 30708192621 separately proves the live five-check synthetic
+baseline and populated host/RabbitMQ/Loki queries, not this producer contract.
 
-> **Observability is not cutover authorization or proof.** At 2026-08-01 19:04
-> UTC, protected backend run
-> [`30713923790`](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30713923790)
-> recorded `active_ingestion_owner=worker_uplift`, `state=cutover_active`,
-> production writes enabled, and legacy dispatch disabled. Protected controller
-> run
-> [`30713955433`](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30713955433)
-> then confirmed public legacy scheduling disabled. These are ingestion-control
-> facts, not evidence that the telemetry or Grafana resources in this contract
-> are live.
+> **Observability is not cutover authorization or proof.** The failed Runtime
+> 0.x cutover rolled back in [backend run
+> 30715566651](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30715566651).
+> The current row is stable `shadow` generation 5 with owner `legacy_shards`,
+> legacy dispatch true, uplift scheduler true in shadow, uplift writes false,
+> publication shadow, null observation timestamps, and single-writer/DNS checks
+> passing. Legacy scheduling is verified true by worker runs
+> [30715590990](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30715590990)
+> and [30715611673](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30715611673).
+> These are ingestion-control facts, not evidence that the worker-uplift/PR #473
+> telemetry hardening or native SLOs are live. Separately, pre-freeze apply
+> 30708192621 proves the five-check synthetic baseline and populated
+> host/RabbitMQ/Loki queries.
 
-Temporary cutover safety freeze: until fail-closed deploy guards preserve the
-retained cutover state, `nutsnews-worker` merges are frozen because the ordinary
-main pipeline deploys the controller from base configuration where
-`INGESTION_SCHEDULING_ENABLED=true`. All mutating Backend Worker Runtime
-Operations are also frozen: the current deploy, scale, and rollback paths use
-base Compose and can recreate publication without the cutover overlay. Do not
-run the fetcher state-contract v2 migration while `state=cutover_active`.
-Read-only inspection does not remove these freezes.
+Retained
+[abort-threshold evidence](https://github.com/ramideltoro/nutsnews-infra/issues/474#issuecomment-5153075316)
+records 28 publication messages, 84 retries, zero success, and stale public
+content. The observation window never started. Rollback completed through the
+protected finalize run; no automatic rollback, recovery replay, or operator
+queue replay ran. The failed candidate is disqualified and quarantined.
+
+Backend PRs [#482](https://github.com/ramideltoro/nutsnews-backend/pull/482)
+and [#483](https://github.com/ramideltoro/nutsnews-backend/pull/483) are merged
+source safeguards. They consumed historical transition authority and repaired
+the forward publication contract without deployment or replay. The worker
+deploy guard and infra verifier remain unfinished and frozen.
+
+The effective freeze remains until incident reconciliation and those guards
+are complete: no worker merge/ordinary deploy, backend Ansible/runtime
+mutation, duplicate transition, Runtime 1/fetcher v2, further Grafana apply or
+synthetic mutation, web merge, queue replay, or reconciliation mutation.
 
 Producer ownership is explicit. `nutsnews-backend` owns worker deployment,
 backend Alloy, and backend-hosted production-ownership and outbox gauges. The
@@ -68,8 +83,8 @@ backend Alloy, and backend-hosted production-ownership and outbox gauges. The
 `nutsnews-worker-persistence`, and `nutsnews-worker-publication` repositories
 each own their service identity, health, lifecycle, and latency signals.
 `nutsnews-infra` alone owns Grafana resources, and the `nutsnews-worker`
-meta-repository coordinates the rollout. The live cutover currently assigns
-production ingestion to worker uplift; this runtime ownership is distinct from
+meta-repository coordinates the rollout. Stable generation 5 shadow assigns
+production ingestion to `legacy_shards`; runtime ownership is distinct from
 source ownership and from the `owner` label used to route and triage an alert.
 The Current Production Ownership dashboard must show the backend revision and
 exact deployed identity for all eight split-worker services.
@@ -223,13 +238,16 @@ attested, and install-smoke verified in the required order from merge commits
 merged, and each main push published a signed, attested immutable Runtime 1
 image with provenance, SBOM, manifest, and baked-revision evidence recorded in
 [`nutsnews-infra#474`](https://github.com/ramideltoro/nutsnews-infra/issues/474#issuecomment-5152934401).
-Those newly published Runtime 1 images have not been deployed. Draft backend PR
+Those newly published Runtime 1 images have not been deployed. Backend PR
 [`#471`](https://github.com/ramideltoro/nutsnews-backend/pull/471) pins them but
-remains undeployed. The live cutover instead uses the older candidate
+is `DIRTY`/conflicting with current main and undeployed. It must resolve the PR
+#483 Worker API conflict, derive ownership/`expected_active` from the
+authoritative generation 5 row, and add a separate runtime-container recreation
+path so exact-eight identity can converge. The failed cutover used the older candidate
 `71b0303705093ad398458083547a86e9e61f50458e8799ace38de4f2404859df`
-under rollback deadline `2026-08-03T21:00:00Z`. Reconcile that active
-cutover/observation state with PR #471 before a fresh fail-closed qualification
-or deployment. The active pre-Runtime-1 candidate may still expose legacy
+and rolled back to stable shadow. Reconcile the incident evidence with PR #471
+before any fresh fail-closed qualification or deployment. The retained
+pre-Runtime-1 candidate may still expose legacy
 `_duration_ms` summaries. The new stage SLI uses only fixed-bucket seconds
 histograms; image publication does not prove the Runtime 1 metric schema is
 live.
@@ -252,8 +270,8 @@ Required operational signals also include:
 
 The source-staged qualification baseline exports
 `nutsnews_worker_expected_active=0` for non-owning services; it is not a claim
-about the current uplift-owned live cutover. PR #471 must reconcile its
-per-service ownership signals with that state before deployment. Ownership
+about stable generation 5 shadow. Conflicting PR #471 must replace its mutable
+per-service ownership inputs with authoritative control-row projection before deployment. Ownership
 status does not waive structural telemetry: all eight must be deployed, report
 `up == 1`, have a scrape age below 180 seconds, expose readiness series, and
 publish exact non-`unknown` build and deployment identity. Missing structural
@@ -286,7 +304,7 @@ identity, and readiness-series absence still alerts or blocks rollout. The
 native Worker terminal-success SLI remains evaluable without that join; source
 omits its Grafana-generated burn-alert resources while
 `worker_terminal_slo_alerting_enabled` defaults to `false`. The protected
-Grafana-side value is unconfirmed, and the successful ingestion cutover does
+Grafana-side value is unconfirmed, and the completed ingestion-control transition does
 not prove the deployed telemetry values. Source does not mechanically couple
 the boolean to `expected_active`, so operators must reconcile both against the
 same retained production-ownership evidence. Source leaves the global
@@ -299,10 +317,10 @@ These are explicit unresolved acceptance blockers, not claims that the final
 producer contract is already satisfied:
 
 - All eight endpoint implementations are merged and verified immutable images
-  are published. Backend PR #471 pins them but remains undeployed; they have not
-  passed a fresh fail-closed qualification against the live cutover state or
-  produced fresh scrapes. The older active candidate and its rollback deadline
-  must be reconciled first. Exact image evidence is retained in
+  are published. Backend PR #471 is conflicting and undeployed. It must resolve
+  the PR #483 file conflict, authoritative ownership projection, and separate
+  runtime-container recreation needed for exact-eight identity before fresh
+  qualification and scrapes. Exact image evidence is retained in
   [`nutsnews-infra#474`](https://github.com/ramideltoro/nutsnews-infra/issues/474#issuecomment-5152934401).
 - The canonical target histogram buckets are `0.005`, `0.01`, `0.025`, `0.05`,
   `0.1`, `0.25`, `0.5`, `1`, `2.5`, `5`, `10`, `30`, `60`, `120`, and `300`
@@ -358,8 +376,8 @@ excluded, while `failure` is a forward-compatible terminal outcome until all
 producers converge. `terminal` names the SLI category and is not a literal
 metric outcome. A zero denominator returns NoData, never a fabricated failure.
 Source defaults `worker_terminal_slo_alerting_enabled=false`; the protected
-Grafana-side live value still requires rollout confirmation. The successful
-ingestion cutover does not prove the SLO resource or generated burn-alert block
+Grafana-side live value still requires rollout confirmation. The completed
+ingestion-control transition does not prove the SLO resource or generated burn-alert block
 exists.
 
 The worker catalog's five SLI entries are dashboard and custom-rule metadata,
@@ -458,14 +476,12 @@ engineering sub-budget, 7,000 is the global steady-state operating ceiling, and
 thresholds apply to each provider limit independently; native SLO count is not
 part of these ratios.
 
-The current source candidate configures five checks across two probes every five
-minutes, projecting 86,400 executions in 30 days. That is above the 85,000
-`major` band and below the 90,000 hard ceiling, so it remains an unresolved
-rollout decision rather than an accepted steady state. Issue #474 requires one
-choice before production plan/apply: change source to six minutes
-(approximately 72,000), explicitly accept the standing major and set the
-protected five-minute acknowledgment, or change the major threshold in reviewed
-source while preserving the 90,000 ceiling. Until then plan/apply fails closed.
+Pre-freeze Grafana apply 30708192621 made five checks across two probes every
+five minutes live, projecting 86,400 executions in 30 days. That is above the
+85,000 `major` band and below the 90,000 hard ceiling. At 2026-08-01 20:29:46
+UTC, the protected standing-major acknowledgment was set and verified `true`.
+The warning and ceiling remain; the acknowledgment does not authorize another
+frozen apply.
 
 No-surprise-spend response:
 
@@ -552,13 +568,14 @@ blocks production traffic.
 This contract is staged repository work, not proof of live Grafana Cloud
 coverage. Do not mark it complete until all of the following evidence exists:
 
-1. backend PR #471's Runtime 1 digest pins are reconciled with the active older
-   candidate, live `cutover_active` observation, and rollback deadline; the
-   reconciled source then passes a fresh fail-closed qualification and deploys;
+1. conflicting backend PR #471 is reconciled with PR #483, stable generation 5
+   ownership, the separate exact-eight runtime-container recreation step, and
+   retained incident evidence; the source then passes fresh qualification and deploys;
 2. the backend GitOps apply enables Alloy and configures all eight loopback
    scrapes without exposing them publicly;
-3. the Grafana Cloud plan and apply from `ramideltoro/nutsnews-infra` complete
-   and post-apply queries show a fresh `up` series for every service;
+3. after the freeze, the worker-uplift/PR #473 Grafana plan and apply complete
+   and post-apply queries show a fresh `up` series for every service; the
+   earlier baseline apply does not satisfy this producer gate;
 4. Alloy readiness, remote-write backlog/errors, Loki drops/retries, and
    collector freshness have retained query evidence; all eight split services
    are deployed with `up == 1`, scrape age below 180 seconds, exact non-unknown

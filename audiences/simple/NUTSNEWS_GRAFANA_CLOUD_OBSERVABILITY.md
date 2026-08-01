@@ -15,7 +15,7 @@ wiki:
     publishing: allowed
     reviewed_by: pending
     reviewed_on: pending
-    technical_source_hash: 6f4eb5bf0c61c4419ee522b67e4304528952b5f71f8cabe69c7094fc4a35af98
+    technical_source_hash: 02973ee05a2e53752705ef658e2b6d956d54489672783278247a270142daef7c
 ---
 
 # NutsNews Grafana Cloud Observability
@@ -32,10 +32,10 @@ checks, four service-level objectives, and free-tier guardrails.
 
 ## Easy Summary
 
-NutsNews has a staged Grafana Cloud observability enhancement that stays
-GitOps-managed. The repository changes are not proof that production was
-changed: live state changes only after merge and the protected OpenTofu and
-Ansible workflows succeed.
+NutsNews has a partially applied Grafana Cloud observability baseline plus a
+staged hardening enhancement. Both stay GitOps-managed. Repository changes are
+not production proof; retained protected apply and query evidence establish
+which subset is live.
 
 The authoritative rollout ledger is
 [`ramideltoro/nutsnews-infra#474`](https://github.com/ramideltoro/nutsnews-infra/issues/474).
@@ -47,37 +47,89 @@ As of 2026-08-01:
   `80bc2d1cc1ce2f089386c2653f9a69abe1ce9808` respectively;
 - the infrastructure, web, and observability backend changes remain open
   rollout work; all eight worker-service PRs are merged and their immutable
-  Runtime 1 images are published and verified, and draft backend PR
+  Runtime 1 images are published and verified. Backend PR
   [`#471`](https://github.com/ramideltoro/nutsnews-backend/pull/471) pins those
-  images but remains undeployed;
-- at 2026-08-01 19:04 UTC, protected backend cutover run
-  [`30713923790`](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30713923790)
-  succeeded with `active_ingestion_owner=worker_uplift`,
-  `state=cutover_active`, `uplift_production_writes_enabled=true`, and
-  `legacy_dispatch_enabled=false`; protected legacy scheduling run
-  [`30713955433`](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30713955433)
-  then confirmed public controller scheduling disabled;
-- that live cutover uses the older candidate
+  images but is `DIRTY`/conflicting with current main and undeployed. It must
+  resolve the PR #483 Worker API conflict, source ownership/`expected_active`
+  from the authoritative generation 5 row, and add a separate runtime-container
+  recreation path so exact-eight identity can converge;
+- the 19:04 UTC cutover used the older candidate
   `71b0303705093ad398458083547a86e9e61f50458e8799ace38de4f2404859df`
-  under rollback deadline `2026-08-03T21:00:00Z`, not the newly published
-  Runtime 1 image set. Reconcile the live cutover/observation state and rollback
-  window with backend PR #471 before the observability rollout; and
-- no production Grafana hardening apply, observability backend/Runtime 1 image
-  deployment, alert receipt, synthetic execution, native SLO activation, or
-  failure drill has been performed for this enhancement;
-- the five-minute synthetic topology is a source candidate, not an approved
-  operating choice. Its 86,400 monthly executions cross the 85,000 major band,
-  so production plan/apply remains fail-closed until an operator records one of
-  the allowed budget decisions below.
+  rather than Runtime 1, then met publication and freshness abort criteria
+  before its observation window started;
+- operator rollback in backend run
+  [`30715252632`](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30715252632)
+  completed prepare but failed before finalize. Legacy scheduling was verified
+  true by worker runs
+  [`30715590990`](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30715590990)
+  and [`30715611673`](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30715611673).
+  Backend run
+  [`30715566651`](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30715566651)
+  completed finalize. The authoritative row is stable `shadow` generation 5,
+  owner `legacy_shards`, legacy dispatch true, uplift scheduler true in shadow,
+  uplift writes false, publication shadow, observation timestamps null, and
+  single-writer/DNS checks passing; and
+- pre-freeze Grafana Cloud Apply
+  [`30708192621`](https://github.com/ramideltoro/nutsnews-infra/actions/runs/30708192621)
+  succeeded from main commit
+  `c23403e41d42595fdef3e26cd9965bd480c5b9ea`, creating the live baseline of
+  exactly five enabled synthetics on two probes every 300 seconds and verifying
+  28 dashboards, 11 backend alerts, 20 worker alerts, and populated host,
+  RabbitMQ, and Loki queries; and
+- the later [PR #473](https://github.com/ramideltoro/nutsnews-infra/pull/473)
+  hardening source is published at commit
+  [`662e4d7066e45bb28ee7a1cca637a06756e1c282`](https://github.com/ramideltoro/nutsnews-infra/commit/662e4d7066e45bb28ee7a1cca637a06756e1c282),
+  but its four native SLOs, operations-email receipt canary, controlled
+  mismatch/failure drills, and post-incident re-verification remain unapplied
+  and frozen. The live five-minute topology projects 86,400
+  monthly executions and already sits above the 85,000 major band. The new
+  explicit protected acknowledgment was set and verified at 2026-08-01
+  20:29:46 UTC as
+  `NUTSNEWS_GRAFANA_SYNTHETIC_MAJOR_FORECAST_ACKNOWLEDGED=true`. This records
+  acceptance of the live forecast; the major warning and 90,000 ceiling remain.
 
-Temporary cutover safety freeze: until fail-closed deploy guards preserve the
-retained cutover state, `nutsnews-worker` merges are frozen because the ordinary
-main pipeline deploys the controller from base configuration where
-`INGESTION_SCHEDULING_ENABLED=true`. All mutating Backend Worker Runtime
-Operations are also frozen: the current deploy, scale, and rollback paths use
-base Compose and can recreate publication without the cutover overlay. Do not
-run the fetcher state-contract v2 migration while `state=cutover_active`.
-Read-only inspection does not remove these freezes.
+The retained apply artifacts are
+`grafana-cloud-post-apply-verification` ID `8821001180`, digest
+`sha256:22eca572e6a50627f49b8214cde1ef9c0d528a29a1529350b81491eab4d7cf77`,
+and value-free `grafana-cloud-input-validation` ID `8821001367`, digest
+`sha256:b561e2fef58b833f1e77ce54d7e88f7c7168e31a59f80ad4020f6461a616f187`.
+The latter records five enabled checks, two probes, a 300-second cadence, and
+86,400 projected monthly executions. Neither artifact proves email receipt,
+native SLO activation, controlled assertion failure, or post-incident health.
+
+Retained
+[abort-threshold evidence](https://github.com/ramideltoro/nutsnews-infra/issues/474#issuecomment-5153075316)
+records 28 publication messages, 84 `handler-error` retries, no publication
+success, 28 ready messages in the 30-minute retry queue, and no post-cutover
+public freshness. The observation window never started. Rollback completed
+through the protected finalize run; no automatic rollback, recovery replay, or
+operator queue replay ran. The failed Runtime 0.x publication candidate is
+disqualified and quarantined.
+
+Backend source hardening is partly complete. Backend
+[`PR #482`](https://github.com/ramideltoro/nutsnews-backend/pull/482), merge
+`510b775d7962e2e66d430fb6d458c3c88d60cdd3`, records the immutable incident
+receipt, consumes the historical cutover authority, and fail-closes protected
+Ansible and generic runtime mutations against the exact maintenance-safe shadow
+row. Backend [`PR #483`](https://github.com/ramideltoro/nutsnews-backend/pull/483),
+merge `5531014000f52fd6101f8617463d5f2c887d0788`, hardens the forward
+publication API contract and idempotency semantics. These are source-only
+merges: no host/runtime deployment, Runtime 1 rollout, queue replay, or failed-
+candidate rehabilitation occurred. The worker deploy guard and infra verifier
+remain unfinished and frozen.
+
+The effective safety freeze remains until incident reconciliation and those
+unfinished guards are complete: no `nutsnews-worker` merge or ordinary deploy;
+no backend Ansible apply or generic publication/runtime mutation; no duplicate
+cutover or rollback rerun; no fetcher state-contract v2 migration or Runtime 1
+deployment; and no Grafana apply, synthetic rollout, web merge, queue replay,
+or reconciliation mutation. Rollback is complete; no cutover-control mutation
+is authorized. Read-only evidence collection does not remove these freezes.
+
+Every remaining hardening plan/apply sequence below is future-state procedure.
+Do not run another protected Grafana Cloud apply or synthetic drill while this
+freeze is active. The recorded live synthetic forecast acknowledgment does not
+override the incident freeze.
 
 There are two halves:
 
@@ -170,10 +222,12 @@ The infra implementation keeps observability useful without making Grafana Cloud
 - Logs are redacted, size-limited, and rate-limited before leaving the VPS.
 - Debug and trace logs are intentionally dropped.
 - Rotated compressed logs and stale logs are ignored.
-- The current source candidate requires five protected Synthetic Monitoring
-  targets, exactly two public probes, and a five-minute cadence. That cadence is
-  not approved yet; production plan/apply remains blocked by the protected
-  decision gate.
+- The live baseline has five protected Synthetic Monitoring targets, exactly
+  two public probes, and a five-minute cadence. Run 30708192621 applied that
+  shape before the freeze. The later hardening adds an explicit acknowledgment
+  gate for the already-live 86,400-execution forecast. The protected production
+  variable is now verified `true`, recording acceptance of the standing major;
+  the warning and hard ceiling remain in force.
 - Synthetic API checks must stay within Grafana's 10-second through 60-minute
   interval range.
 - A value-free validator and OpenTofu block plan/apply when projected API
@@ -184,13 +238,15 @@ The infra implementation keeps observability useful without making Grafana Cloud
   `ramideltoro/nutsnews-infra/terraform/grafana-cloud/catalog/worker-uplift-telemetry-scope.json`.
   Reconciliation between that catalog and producer metrics is a pre-apply
   acceptance gate; neither document can make the other live.
-- The latest retained control evidence is an uplift-owned `cutover_active`
-  state on the older candidate, with production writes enabled and legacy
-  dispatch and controller scheduling disabled. This control evidence is not
-  Grafana apply, synthetic, native-SLO, canary, or failure-drill evidence.
-- The newly published Runtime 1 image set remains undeployed. Backend PR #471
-  pins it, but the PR must first be reconciled with the active candidate and
-  rollback deadline before the observability rollout proceeds.
+- The latest retained control evidence is stable `shadow` generation 5: owner
+  `legacy_shards`, legacy dispatch and public scheduling true, uplift scheduler
+  true in shadow, uplift writes false, publication shadow, null observation
+  timestamps, and passing single-writer/DNS checks. This ingestion-control
+  evidence does not replace the separately retained pre-freeze Grafana apply
+  evidence and does not establish post-incident synthetic health, native SLOs,
+  notification receipts, or failure-drill results.
+- The newly published Runtime 1 image set remains undeployed. Conflicting PR
+  #471 must satisfy the blocker reconciliation described above before rollout.
 
 Grafana's current public free-tier assumptions used by the docs and module are:
 
@@ -405,11 +461,12 @@ performed.
 
 ## Synthetic Monitoring
 
-The production hardening contract requires exactly five enabled read-only HTTP
-checks and exactly two public probes. The current infra PR encodes a five-minute
-frequency, but issue #474 keeps that cadence unresolved because of its quota
-forecast. Targets and probe IDs remain protected inputs; their presence in code
-or a plan is not evidence that checks have executed.
+The live production baseline contains exactly five enabled read-only HTTP
+checks and exactly two public probes at a five-minute frequency. Pre-freeze run
+30708192621 applied and inventory-verified that shape. Targets and probe IDs
+remain protected values. The retained report proves configured resources and
+the bounded input shape; controlled status/body/header failures and fresh
+post-incident results from both probes remain acceptance work.
 
 Synthetic checks use a separate Grafana Synthetic Monitoring API token. The
 Grafana service account token manages folders, dashboards, and alert rules, but
@@ -444,7 +501,8 @@ four least-privilege inputs remain operator work:
 
 Production writer inputs, the two public probe IDs, the operations recipient,
 the Grafana UI/API origins, and the worker-terminal alerting state still require
-operator confirmation. No new synthetic checks or Grafana SLOs are live.
+operator confirmation for the next hardened apply. The five baseline synthetic
+checks are live; the four native Grafana SLOs are not.
 
 | Check | Required assertions |
 | --- | --- |
@@ -459,22 +517,19 @@ trigger, publication, OAuth callback, or other mutation routes. `/healthz`
 remains a compatibility route for older callers, while `/readyz` is the Grafana
 monitoring source.
 
-Five checks across two probes every five minutes project to exactly 86,400
+Five live checks across two probes every five minutes project to exactly 86,400
 executions in a 30-day month: `5 * 2 * (43,200 / 5)`. That is 86.4% of the
 100,000-execution allowance, above the 85,000 `major` band but below the 90,000
-hard operating ceiling. This is an unresolved rollout choice, not an accepted
-steady state. Before a production plan or apply, the operator must record one
-of these mutually exclusive decisions:
-
-1. change the source cadence to six minutes, approximately 72,000 executions;
-2. retain five minutes and set the protected major-forecast acknowledgment only
-   after explicitly accepting the standing major; or
-3. change the major threshold in source while retaining the 90,000 ceiling and
-   attach supporting quota evidence.
-
-Until then the acknowledgment remains false and production plan/apply fails
-closed. Acceptance still requires both probe series to pass and controlled
-body, header, and status mismatches to fail.
+hard operating ceiling. Run 30708192621 applied this shape before the explicit
+acknowledgment gate existed. At 2026-08-01 20:29:46 UTC, the protected
+production variable
+`NUTSNEWS_GRAFANA_SYNTHETIC_MAJOR_FORECAST_ACKNOWLEDGED=true` was set and
+verified, explicitly accepting the live standing-major forecast. The major
+warning remains active and the 90,000 ceiling is unchanged. A later reviewed
+change may instead reduce cadence/topology or change the major threshold while
+preserving that ceiling. The acknowledgment does not authorize a frozen apply.
+Post-incident acceptance still requires both probe series to pass and
+controlled body, header, and status mismatches to fail.
 
 ## Grafana SLOs
 
@@ -490,8 +545,8 @@ OpenTofu declares four low-cardinality, 30-day Grafana SLOs:
 Do not group SLOs by user, feed, article, message, or other unbounded identity.
 Worker burn alerts are controlled by the protected
 `worker_terminal_slo_alerting_enabled` boolean. Source defaults it to `false`;
-the protected live value must be confirmed during rollout. The successful
-ingestion cutover does not prove this Grafana-side value changed or that a
+the protected live value must be confirmed during rollout. The failed cutover
+and completed rollback do not prove this Grafana-side value changed or that a
 native SLO exists.
 Creating the declarations in a branch does not create SLOs in Grafana Cloud;
 the merged protected apply and post-apply report must confirm their UUIDs and
@@ -519,9 +574,9 @@ Readiness must be truthful:
 - the fetcher exposes its actual state-store mode, and a production fetcher
   cannot report ready while using in-memory state;
 - the source-staged qualification baseline sets non-owning services to
-  `nutsnews_worker_expected_active=0`, but the current live ownership is
-  `worker_uplift`/`cutover_active`; the observability deployment must reconcile
-  per-service ownership values with that live state. Regardless of ownership,
+  `nutsnews_worker_expected_active=0`; the observability deployment must
+  reconcile per-service ownership values with stable generation 5 shadow.
+  Regardless of ownership,
   all eight must be deployed, report `up == 1`, have scrape age below 180
   seconds, expose readiness series, and publish exact non-`unknown` build and
   deployment identity;
@@ -535,9 +590,9 @@ Readiness must be truthful:
 - the reader-visible durable feed-freshness SLO and its three-hour critical
   guardrail are global production-content signals. Source leaves them
   ownership-ungated regardless of the current ingestion implementation;
-- retained protected evidence, dated 2026-08-01 19:04 UTC, shows worker uplift
-  owns ingestion, production writes are enabled, and legacy dispatch plus
-  controller scheduling are disabled. It does not prove the new telemetry is
+- retained protected evidence shows the failed cutover and completed rollback
+  to stable generation 5 shadow with legacy ownership/dispatch/scheduling
+  restored and uplift writes disabled. It does not prove the new telemetry is
   deployed or visible in Grafana Cloud.
 
 Approval, translation, and persistence count accepted, duplicate, invalid,
@@ -548,12 +603,10 @@ order. All eight service PRs are now merged, and their immutable Runtime 1
 images have successful main-push publication, signature, provenance, SBOM,
 manifest, and revision evidence recorded in
 [`nutsnews-infra#474`](https://github.com/ramideltoro/nutsnews-infra/issues/474#issuecomment-5152934401).
-The newly published Runtime 1 images have not been deployed. Draft backend PR
-#471 pins them but remains undeployed, while the live cutover instead names the
-older candidate `71b0303705093ad398458083547a86e9e61f50458e8799ace38de4f2404859df`
-under rollback deadline `2026-08-03T21:00:00Z`. Reconcile that live
-cutover/observation state before qualifying or deploying PR #471. The active
-pre-Runtime-1 candidate may still expose `_duration_ms` summary families. Those
+The newly published Runtime 1 images have not been deployed. Conflicting
+backend PR #471 must complete the blocker reconciliation described above before
+any future qualification or deployment. The retained pre-Runtime-1 candidate
+may still expose `_duration_ms` summary families. Those
 summaries are not the new stage-latency SLI, and published Runtime 1 images are
 not proof that their metric schema is live. Event
 dimensions remain bounded to `service`, `stage`, `queue`, `outcome`,
@@ -650,9 +703,9 @@ off, and query strings and identifiers are excluded.
 | Layer | What branch validation can prove | What still requires production evidence |
 | --- | --- | --- |
 | Producer code | Syntax, tests, metric schemas, bounded labels, readiness logic | Merged deploy, fresh scrape series, current logs |
-| Grafana IaC | Resource declarations, ownership, alert metadata, quota math | Protected plan/apply, provider state, healthy rules and queries |
+| Grafana IaC | Resource declarations, ownership, alert metadata, quota math | Pre-freeze baseline apply is retained; PR #473 hardening and post-incident re-verification still require a protected plan/apply after the freeze |
 | Alert delivery | Contact and policy configuration | Canary firing and resolved emails received |
-| Synthetics and SLOs | Exact check/SLO contracts and budget calculation | Executions from both probes, assertion failures, SLO UUIDs and data |
+| Synthetics and SLOs | Five-check live inventory plus exact SLO contracts and budget calculation | Fresh post-incident executions from both probes, controlled assertion failures, and native SLO UUIDs/data |
 | Failure handling | Dry-run plans, bounded source controls, and expected alerts | Protected rollout prerequisites plus bounded live artifacts showing fire, route where applicable, recovery, and resolve |
 
 The package and worker-image publication steps are complete. Worker Contracts `1.0.0` was
@@ -668,23 +721,25 @@ complete, so image publication is still not a deployed revision.
 
 1. Land the remaining reviewed producer changes in the application and backend,
    pin the eight exact worker image digests in backend deployment source, and
-   complete the fresh fail-closed qualification without changing the legacy
-   ingestion owner.
+   after the incident freeze is lifted, complete a fresh fail-closed
+   qualification while preserving the stable legacy owner.
 2. Preserve the completed exact-`main` branch policies for `production-vps`,
    `cloudflare-admin`, and `grafana-observability-readonly`; complete the
    designated reviewer and self-review/bypass decisions, populate the four
    read-only synthetic-audit inputs, and add/confirm the
    protected Grafana management, email-recipient, datasource, Synthetic
    Monitoring, Alloy write, and backend drill inputs. Do not commit their values.
-3. Record the synthetic cadence/threshold decision. Leave the protected
-   five-minute acknowledgment false unless the standing-major option is chosen.
+3. Preserve evidence that the protected standing-major acknowledgment was set
+   and verified for the already-live five-minute forecast. Keep the major
+   warning and 90,000 ceiling; any cadence, topology, or threshold change needs
+   a new reviewed decision.
 4. Run `Grafana Cloud Plan` and review the normal plan, refresh-only drift
    check, and `grafana-cloud-read-only-evidence` artifact. The artifact must
    contain the value-free input report plus current dashboard, alert,
    Prometheus, and Loki proof, resource counts, ownership, and no unintended
    destroys.
 5. Merge the infra PR only after checks pass.
-6. Run `Grafana Cloud Apply` from `main` with
+6. After the incident freeze is lifted, run the next `Grafana Cloud Apply` from `main` with
    `confirm_apply=grafana-cloud`.
 7. Review the `grafana-cloud-post-apply-verification` artifact for the contact
    point, policies, five synthetics, four SLOs, rules, dashboards, live query
@@ -810,7 +865,7 @@ Production Synthetic Monitoring secrets and protected variables:
 | `NUTSNEWS_GRAFANA_SYNTHETIC_MONITORING_URL` | Stack-region Synthetic Monitoring API origin in the `synthetic-monitoring-api*.grafana.net` service family; required with the access token and mapped as `GRAFANA_SM_URL` |
 | `NUTSNEWS_GRAFANA_SYNTHETIC_PROBE_IDS_JSON` | JSON array of probe IDs |
 | `NUTSNEWS_GRAFANA_SYNTHETIC_HTTP_CHECKS_JSON` | JSON object of safe HTTP checks |
-| `NUTSNEWS_GRAFANA_SYNTHETIC_MAJOR_FORECAST_ACKNOWLEDGED` | Protected variable; keep false until the unresolved budget choice explicitly selects the standing-major five-minute topology |
+| `NUTSNEWS_GRAFANA_SYNTHETIC_MAJOR_FORECAST_ACKNOWLEDGED` | Protected variable; verified `true` on 2026-08-01 at 20:29:46 UTC to acknowledge the live standing-major five-minute topology; warning and 90,000 ceiling remain |
 | `NUTSNEWS_WORKER_TERMINAL_SLO_ALERTING_ENABLED` | Protected variable; source default is false, and the ingestion cutover does not prove the Grafana-side live value or SLO activation |
 
 The exact-`main`, no-reviewer `grafana-observability-readonly` environment is a
@@ -857,7 +912,7 @@ Logs:
 {deployment_environment="production", source="journal"}
 ```
 
-Synthetics when configured:
+Live baseline synthetics:
 
 ```promql
 count by (job) (probe_success{service_namespace="nutsnews",deployment_environment="production"})
