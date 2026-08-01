@@ -305,11 +305,11 @@
         171,
         170
       ],
-      "attempts": 2,
-      "blocked": false,
-      "lastFailedAt": "2026-08-01T12:48:58.325Z",
-      "workflowRun": "30700280633",
-      "runUrl": "https://github.com/ramideltoro/nutsnews-docs/actions/runs/30700280633"
+      "attempts": 3,
+      "blocked": true,
+      "lastFailedAt": "2026-08-01T14:22:40.185Z",
+      "workflowRun": "30703407365",
+      "runUrl": "https://github.com/ramideltoro/nutsnews-docs/actions/runs/30703407365"
     }
   }
 }
