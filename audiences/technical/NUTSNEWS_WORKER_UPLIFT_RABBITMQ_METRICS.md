@@ -15,7 +15,7 @@ wiki:
     publishing: allowed
     reviewed_by: pending
     reviewed_on: pending
-    technical_source_hash: 7ac4462a38c2de757f4555d9105080e4e4770bfc3ec3ba6fb63ad2babf9368c7
+    technical_source_hash: 49fbcb98a05b7d1a0dbb843f69865f043fce11cdf0d5a60f18d4ad7ee675fab3
 ---
 
 # NutsNews Worker-Uplift RabbitMQ Metrics
@@ -94,15 +94,40 @@ RabbitMQ metric names, keeps only declared queue names, and does not create or
 change Grafana dashboards, folders, alerts, contact points, synthetics, or
 quota guardrails.
 
-All eight split services remain shadow-only in the baseline with
-`nutsnews_worker_expected_active=0`. Shadow mode suppresses worker-local
-production paging, not structural qualification: every service must be
+The source-staged qualification baseline sets non-owning split services to
+`nutsnews_worker_expected_active=0`; it does not describe current live
+ownership. At 2026-08-01 19:04 UTC, protected backend run
+[`30713923790`](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30713923790)
+recorded `active_ingestion_owner=worker_uplift`, `state=cutover_active`,
+production writes enabled, and legacy dispatch disabled. Protected controller
+run
+[`30713955433`](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30713955433)
+then confirmed public legacy scheduling disabled. Ownership gating suppresses
+non-owner behavior paging, not structural qualification: every service must be
 deployed, report `up == 1`, remain scrape-fresh for less than 180 seconds,
 expose readiness series, and publish exact non-`unknown` build/deployment
-identity. Missing structural series are never ownership-gated. Only a service
-with `nutsnews_worker_expected_active=1` must additionally report successful
+identity. Missing structural series are never ownership-gated. A service with
+`nutsnews_worker_expected_active=1` must additionally report successful
 readiness, scheduler loop/cycle or delivery-stage activity as applicable, last
 success, and worker-local paging eligibility.
+
+That cutover uses the older candidate
+`71b0303705093ad398458083547a86e9e61f50458e8799ace38de4f2404859df`
+under rollback deadline `2026-08-03T21:00:00Z`, not the newly published Runtime
+1 image set. Draft backend PR
+[`#471`](https://github.com/ramideltoro/nutsnews-backend/pull/471) pins Runtime 1
+but remains undeployed. Reconcile the live cutover/observation state before its
+observability deployment. These control runs do not prove new RabbitMQ panels,
+Grafana resources, synthetics, SLOs, canaries, or drills.
+
+Temporary cutover safety freeze: until fail-closed deploy guards preserve the
+retained cutover state, `nutsnews-worker` merges are frozen because the ordinary
+main pipeline deploys the controller from base configuration where
+`INGESTION_SCHEDULING_ENABLED=true`. All mutating Backend Worker Runtime
+Operations are also frozen: the current deploy, scale, and rollback paths use
+base Compose and can recreate publication without the cutover overlay. Do not
+run the fetcher state-contract v2 migration while `state=cutover_active`.
+Read-only inspection does not remove these freezes.
 
 ## Grafana Dashboards
 
@@ -351,14 +376,14 @@ Dashboard SLIs and custom guardrails covered by the catalog:
 Worker-local activity, consumer, latency, freshness, and final-publication
 queries page only when the relevant production owner exports
 `nutsnews_worker_expected_active=1`. No Data may suppress an inappropriate
-shadow behavior page, but it does not prove health or qualify a cutover.
+non-owner behavior page, but it does not prove health or qualify a rollout.
 Required `up`, scrape freshness, exact build/deployment identity, and
 readiness-series presence for all eight workers are structural checks and are
 never ownership-gated or treated as healthy No Data. Broker and retry/DLQ custom
 rules use 5-minute and 1-hour windows. Worker-local threshold rules use
 15-minute evaluations. The global reader-visible durable feed-freshness SLO and
-its three-hour critical guardrail are separate and remain enabled regardless of
-whether legacy or split workers own ingestion.
+its three-hour critical guardrail are separate and source-defined without an
+ownership gate; Grafana activation remains unproved.
 
 The following is source-staged target state unless a protected apply and live
 query are separately evidenced. The four native, rolling 30-day Grafana SLOs are defined separately in
@@ -372,9 +397,10 @@ event-weighted outcomes across every canonical delivery stage. It counts
 `success|duplicate` over `success|duplicate|invalid|failure|dlq`, excludes
 intermediate `retry`, and leaves scheduler cycles outside the stage family.
 Source defaults `worker_terminal_slo_alerting_enabled` to `false`, so the
-candidate omits generated burn alerts while shadowed; the protected live value
-still needs rollout confirmation. Custom worker-local rules use the separate
-`nutsnews_worker_expected_active` ownership gate.
+candidate omits generated burn alerts; the protected Grafana-side live value
+still needs rollout confirmation. The successful ingestion cutover does not
+prove a native SLO or its burn alerts are active. Custom worker-local rules use
+the separate `nutsnews_worker_expected_active` ownership gate.
 
 The native API-latency SLO denominator contains only successful article/API
 observations. Failed status, body, or header assertions remain availability and

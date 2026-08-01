@@ -11,7 +11,7 @@
   },
   "source": {
     "path": "NUTSNEWS_WORKER_UPLIFT_TELEMETRY_SCOPE.md",
-    "sha256": "d341d430c7119ecc0c659c1f9fa09b0bc3dfbf7f1297a71bffe37f5081d2fb23"
+    "sha256": "c90054fa2375b045f873c14d2b3e6eb27c1d150523e3c16323c90df00458de13"
   },
   "artifacts": {
     "simple_markdown": "audiences/simple/NUTSNEWS_WORKER_UPLIFT_TELEMETRY_SCOPE.md",
@@ -20,11 +20,12 @@
   },
   "accessibility": {
     "title": "Staged worker-uplift observability activation flow",
-    "description": "The diagram shows the released Contracts and Runtime packages, eight published worker images awaiting backend pinning and deployment, private metrics and ownership gates, the unresolved synthetic budget choice, deferred signals, and the retained evidence required before activation."
+    "description": "The diagram shows the released Contracts and Runtime packages, eight published but undeployed Runtime 1 images, the active older cutover candidate, temporary mutation freezes, private metrics and ownership gates, the unresolved synthetic budget choice, deferred signals, and the retained evidence required before activation."
   },
   "review_notes": [
-    "The generated_at and generator fields record the original 2026-07-28 artifact generation; the 2026-08-01 rollout-state reconciliation was manual and does not constitute regeneration or approval.",
-    "Pin the eight verified immutable worker image digests in backend deployment source and complete a fresh fail-closed qualification before deployment.",
+    "The generated_at and generator fields record the original 2026-07-28 artifact generation; the 2026-08-01 rollout-state and cutover-safety reconciliation was manual and does not constitute regeneration or approval.",
+    "Reconcile backend PR #471's Runtime 1 digest pins with the active older candidate, cutover observation, and rollback deadline before a fresh fail-closed qualification or deployment.",
+    "Keep nutsnews-worker merges and mutating Backend Worker Runtime Operations frozen until fail-closed deploy guards preserve cutover state; do not run the fetcher state-contract v2 migration while cutover_active.",
     "Reconcile the companion infra policy JSON's old package source, approved status, exact buckets, health/value allowlists, and break-glass semantics before apply.",
     "Verify the complete histogram bucket set, bounded health checks, lease safety, and lifecycle outcomes against the final worker image revisions.",
     "Record one synthetic budget decision in issue #474: six-minute source cadence, accepted five-minute standing major, or a reviewed threshold change that preserves the 90,000 ceiling.",
@@ -36,6 +37,6 @@
     "publishing": "allowed",
     "reviewed_by": "pending",
     "reviewed_on": "pending",
-    "technical_source_hash": "d341d430c7119ecc0c659c1f9fa09b0bc3dfbf7f1297a71bffe37f5081d2fb23"
+    "technical_source_hash": "c90054fa2375b045f873c14d2b3e6eb27c1d150523e3c16323c90df00458de13"
   }
 }

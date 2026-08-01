@@ -15,7 +15,7 @@ wiki:
     publishing: allowed
     reviewed_by: pending
     reviewed_on: pending
-    technical_source_hash: 99d65c7a6ac5125e0fc3898395980258453c9a3a7a2929101596ffe196e0c176
+    technical_source_hash: ff04b067a5a9e352d565f61eba71227035e8e8027b193ec381f19e4368822b9a
 ---
 
 # NutsNews Backend Monitoring Baseline
@@ -63,6 +63,31 @@ monitoring check, `/livez` reports process liveness, and `/metrics` exposes
 bounded API RED telemetry. `/healthz` remains compatible for older callers but
 is no longer the target monitoring source. Deployment and fresh query evidence
 remain required.
+
+This endpoint rollout is distinct from the live ingestion cutover. At
+2026-08-01 19:04 UTC, protected backend run
+[`30713923790`](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30713923790)
+succeeded with `active_ingestion_owner=worker_uplift`,
+`state=cutover_active`, production writes enabled, and legacy dispatch disabled.
+Protected controller run
+[`30713955433`](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30713955433)
+then confirmed public legacy scheduling disabled. The active candidate is the
+older `71b0303705093ad398458083547a86e9e61f50458e8799ace38de4f2404859df`
+under rollback deadline `2026-08-03T21:00:00Z`, not the newly published Runtime
+1 images. Draft backend PR
+[`#471`](https://github.com/ramideltoro/nutsnews-backend/pull/471) pins Runtime 1
+but remains undeployed; reconcile it with the live cutover/observation state
+before rollout. Neither control run proves these monitoring endpoints, their
+scrapes, or any Grafana resource is live.
+
+Temporary cutover safety freeze: until fail-closed deploy guards preserve the
+retained cutover state, `nutsnews-worker` merges are frozen because the ordinary
+main pipeline deploys the controller from base configuration where
+`INGESTION_SCHEDULING_ENABLED=true`. All mutating Backend Worker Runtime
+Operations are also frozen: the current deploy, scale, and rollback paths use
+base Compose and can recreate publication without the cutover overlay. Do not
+run the fetcher state-contract v2 migration while `state=cutover_active`.
+Read-only inspection does not remove these freezes.
 
 ## Initial Thresholds
 
@@ -408,11 +433,13 @@ Host deployment path:
   restore-drill, sync-relay, and quota-state metrics every minute and overwrites
   stale output with an explicit unavailable state after collection failure.
 
-All eight split workers remain shadow-only in the baseline and export
-`nutsnews_worker_expected_active=0`. They must nevertheless be deployed, report
-`up == 1`, have a scrape age below 180 seconds, expose readiness series, and
-publish exact non-`unknown` build and deployment identity. Those structural
-requirements are never ownership-gated. Only a service changed to
+The source-staged qualification baseline sets non-owning split workers to
+`nutsnews_worker_expected_active=0`; it is not a description of the current
+uplift-owned live cutover. Before deployment, PR #471 must reconcile its
+per-service ownership signals with that state. Every worker must nevertheless
+be deployed, report `up == 1`, have a scrape age below 180 seconds, expose
+readiness series, and publish exact non-`unknown` build and deployment identity.
+Those structural requirements are never ownership-gated. A service with
 `nutsnews_worker_expected_active=1` must additionally report successful
 readiness, scheduler loop/cycle or delivery-stage activity as applicable, last
 success, and worker-local paging eligibility.

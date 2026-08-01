@@ -25,11 +25,14 @@ flowchart TD
   O --> P["Custom alert firing and recovery evidence"]
   G --> Q["Five descriptive dashboard SLIs, including\ncustom final-publication success"]
   Q --> R{"Worker owns production?"}
-  R -->|"No; shadow"| S["No behavior paging; still require all eight\ndeployed, up, fresh, identified, readiness series"]
+  R -->|"No"| S["No behavior paging; still require all eight\ndeployed, up, fresh, identified, readiness series"]
   R -->|"Yes"| T["Require readiness ok, activity and last success;\nworker-owned custom alerts eligible"]
+  Live["Live 2026-08-01 19:04 UTC: worker_uplift cutover_active;\nolder candidate 71b030 under rollback deadline"] --> Freeze["Temporary freeze: worker merges and runtime mutations;\nno fetcher v2 migration while cutover_active"]
+  Freeze --> Reconcile["PR 471 pins Runtime 1 but remains undeployed;\nreconcile before observability rollout"]
+  Reconcile --> B
   F --> U["Four native Grafana SLOs\nseparate 30-day resources"]
   U --> V["Global feed freshness pages\nregardless of worker ownership"]
-  U --> W["Native Worker terminal SLO uses all stages;\nsource defaults burns off, live value unconfirmed"]
+  U --> W["Native Worker terminal SLO uses all stages;\nsource defaults burns off; Grafana activation unproved"]
   L --> X["Backend outbox age only when availability is 1"]
   X --> Y["Worker pressure is distinct from\nRabbitMQ queue age and global feed freshness"]
   G --> Z["Ownership dashboard shows backend revision\nand all eight worker identities"]

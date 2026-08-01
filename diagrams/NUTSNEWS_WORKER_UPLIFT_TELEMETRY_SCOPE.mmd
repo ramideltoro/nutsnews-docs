@@ -5,10 +5,12 @@ flowchart TD
     metrics endpoints, truthful health and ownership gates, Grafana Cloud metrics and logs,
     quota safeguards, deferred signals, and the evidence required before the work is live.
   }
-  A["Staged contract: human review pending"] --> B["Merge service, backend, and infra changes"]
+  A["Staged contract: human review pending"] --> B["Reconcile and merge observability backend and infra changes"]
   A --> V0["Contracts and Runtime 1.0 released\nin required order"]
   V0 --> V1["Eight service sources merged; immutable\nimages published and verified"]
-  V1 --> V2["Pin exact digests in backend, qualify,\ndeploy, and verify fresh scrapes"]
+  V1 --> Live["Live 2026-08-01 19:04 UTC: worker_uplift cutover_active;\nwrites on, legacy dispatch and scheduling off;\nolder candidate 71b030 under rollback deadline"]
+  Live --> Freeze["Temporary freeze: worker merges and runtime mutations;\nno fetcher v2 migration while cutover_active"]
+  Freeze --> V2["PR 471 pins Runtime 1 but remains undeployed;\nreconcile, qualify, deploy, and verify fresh scrapes"]
   B --> B1["Verify final leases, lifecycle, health, identity,\nbuckets, labels, security, and workflow checks"]
   B1 --> C["Deploy eight worker images and apply reviewed GitOps changes"]
   C --> D["Backend Alloy scrapes 127.0.0.1:18081-18088"]
@@ -16,10 +18,10 @@ flowchart TD
   D --> F["Grafana Cloud Metrics"]
   D --> G["Grafana Cloud Logs"]
   D --> U["Alloy readiness, backlog, errors, drops, and freshness"]
-  E --> H{"Production ingestion owner?"}
-  H -->|"Legacy nutsnews-worker"| I["All eight shadow: expected_active 0"]
+  E --> H{"Reconciled production ownership?"}
+  H -->|"Non-owning service"| I["expected_active 0"]
   I --> I1["Still require deployed, up 1, scrape under 180s,\nexact identity and readiness series"]
-  H -->|"Separately approved cutover"| J["New owner exports expected_active 1"]
+  H -->|"Production owner"| J["expected_active 1"]
   J --> J1["Require readiness ok, loop or stage activity,\nlast success and worker-local paging"]
   F --> K["Seven delivery-stage seconds histograms,\nscheduler cycle and freshness"]
   F --> L["RabbitMQ depth, unacked, and consumers"]

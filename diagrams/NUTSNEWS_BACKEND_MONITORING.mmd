@@ -9,7 +9,10 @@ flowchart LR
   Owners["Backend owns deploy, Alloy and outbox; worker repos own service signals;\ninfra owns Grafana; meta repo coordinates"] --> Alloy
   API["Source-staged worker DB API\nlivez, readyz and metrics"] --> Alloy
   Workers["Source-staged private workers\nports 18081 through 18088"] --> Alloy
-  Workers --> Structural["Shadow qualification requires deployment, up 1,\nscrape under 180s, exact identity and readiness series"]
+  Workers --> Structural["Every ownership state requires deployment, up 1,\nscrape under 180s, exact identity and readiness series"]
+  Live["Live 2026-08-01 19:04 UTC: worker_uplift cutover_active;\nolder candidate 71b030, Runtime 1 PR 471 undeployed"] --> Freeze["Temporary freeze: worker merges and runtime mutations;\nno fetcher v2 migration while cutover_active"]
+  Freeze --> Reconcile["Reconcile live observation and rollback deadline\nbefore observability deployment"]
+  Reconcile --> Workers
   Data["PostgreSQL, sync relay\nand RabbitMQ"] --> Alloy
   Edge["Caddy RED and TLS"] --> Alloy
   Backup["Durable backup last-success state\nand 30-hour freshness"] --> Alloy

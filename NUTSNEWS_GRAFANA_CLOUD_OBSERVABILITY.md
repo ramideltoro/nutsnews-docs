@@ -5,7 +5,7 @@ wiki:
     publishing: allowed
     reviewed_by: pending
     reviewed_on: pending
-    technical_source_hash: 705115cc28927bcbb8538a2d3305e095296587b8e87416dfbb9a67bea26dfec2
+    technical_source_hash: 6f4eb5bf0c61c4419ee522b67e4304528952b5f71f8cabe69c7094fc4a35af98
 ---
 # NutsNews Grafana Cloud Observability
 
@@ -34,17 +34,39 @@ As of 2026-08-01:
   and install-smoke verified from merge commits
   `e86ea51814cb1b1d810e95b7971a59d90a2fce31` and
   `80bc2d1cc1ce2f089386c2653f9a69abe1ce9808` respectively;
-- the infrastructure, web, and backend changes remain open rollout work; all
-  eight worker-service PRs are merged and their immutable Runtime 1 images are
-  published and verified, while backend digest pinning, a fresh fail-closed
-  qualification, and deployment remain pending;
-- no production Grafana/Ansible apply, backend or worker deployment, alert
-  receipt, synthetic execution, native SLO activation, or failure drill has
-  been performed for this enhancement; and
+- the infrastructure, web, and observability backend changes remain open
+  rollout work; all eight worker-service PRs are merged and their immutable
+  Runtime 1 images are published and verified, and draft backend PR
+  [`#471`](https://github.com/ramideltoro/nutsnews-backend/pull/471) pins those
+  images but remains undeployed;
+- at 2026-08-01 19:04 UTC, protected backend cutover run
+  [`30713923790`](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30713923790)
+  succeeded with `active_ingestion_owner=worker_uplift`,
+  `state=cutover_active`, `uplift_production_writes_enabled=true`, and
+  `legacy_dispatch_enabled=false`; protected legacy scheduling run
+  [`30713955433`](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30713955433)
+  then confirmed public controller scheduling disabled;
+- that live cutover uses the older candidate
+  `71b0303705093ad398458083547a86e9e61f50458e8799ace38de4f2404859df`
+  under rollback deadline `2026-08-03T21:00:00Z`, not the newly published
+  Runtime 1 image set. Reconcile the live cutover/observation state and rollback
+  window with backend PR #471 before the observability rollout; and
+- no production Grafana hardening apply, observability backend/Runtime 1 image
+  deployment, alert receipt, synthetic execution, native SLO activation, or
+  failure drill has been performed for this enhancement;
 - the five-minute synthetic topology is a source candidate, not an approved
   operating choice. Its 86,400 monthly executions cross the 85,000 major band,
   so production plan/apply remains fail-closed until an operator records one of
   the allowed budget decisions below.
+
+Temporary cutover safety freeze: until fail-closed deploy guards preserve the
+retained cutover state, `nutsnews-worker` merges are frozen because the ordinary
+main pipeline deploys the controller from base configuration where
+`INGESTION_SCHEDULING_ENABLED=true`. All mutating Backend Worker Runtime
+Operations are also frozen: the current deploy, scale, and rollback paths use
+base Compose and can recreate publication without the cutover overlay. Do not
+run the fetcher state-contract v2 migration while `state=cutover_active`.
+Read-only inspection does not remove these freezes.
 
 There are two halves:
 
@@ -71,8 +93,8 @@ The worker-uplift telemetry scope is documented separately in
 [NutsNews Worker-Uplift Telemetry Scope](NUTSNEWS_WORKER_UPLIFT_TELEMETRY_SCOPE.md).
 All eight worker metrics endpoints are private backend scrape targets. RabbitMQ
 metrics, worker lifecycle metrics, fixed-bucket latency histograms, readiness,
-and structured logs are required. `expected_active` keeps shadow services from
-paging on production behavior, but it never suppresses missing scrape,
+and structured logs are required. `expected_active` keeps non-owning services
+from paging on production behavior, but it never suppresses missing scrape,
 freshness, identity, or readiness-series evidence. Full trace export, exemplars,
 and profiling remain
 deferred, and article/model payloads are forbidden in telemetry.
@@ -151,8 +173,13 @@ The infra implementation keeps observability useful without making Grafana Cloud
   `ramideltoro/nutsnews-infra/terraform/grafana-cloud/catalog/worker-uplift-telemetry-scope.json`.
   Reconciliation between that catalog and producer metrics is a pre-apply
   acceptance gate; neither document can make the other live.
-- The legacy `nutsnews-worker` remains the production ingestion owner. Split
-  workers remain shadow-only until a separately approved cutover.
+- The latest retained control evidence is an uplift-owned `cutover_active`
+  state on the older candidate, with production writes enabled and legacy
+  dispatch and controller scheduling disabled. This control evidence is not
+  Grafana apply, synthetic, native-SLO, canary, or failure-drill evidence.
+- The newly published Runtime 1 image set remains undeployed. Backend PR #471
+  pins it, but the PR must first be reconciled with the active candidate and
+  rollback deadline before the observability rollout proceeds.
 
 Grafana's current public free-tier assumptions used by the docs and module are:
 
@@ -447,13 +474,14 @@ OpenTofu declares four low-cardinality, 30-day Grafana SLOs:
 | Public availability | 99.5% | Canonical homepage success from two probes | Fast and slow |
 | API latency | 95% | Successful read-only article API checks within 750 ms divided by all successful article API checks | Fast and slow; correctness and availability failures remain separate signals |
 | Feed freshness | 99% | Durable published-feed age from the current production publication owner is no more than 15 minutes | Fast and slow; separate critical alert at 3 hours |
-| Worker terminal success | 99% | All canonical stage events: `success|duplicate` over `success|duplicate|invalid|failure|dlq`; `retry` is excluded | Dashboard-only while shadowed |
+| Worker terminal success | 99% | All canonical stage events: `success|duplicate` over `success|duplicate|invalid|failure|dlq`; `retry` is excluded | Source defaults generated burn alerts off; cutover evidence does not prove Grafana activation |
 
 Do not group SLOs by user, feed, article, message, or other unbounded identity.
 Worker burn alerts are controlled by the protected
-`worker_terminal_slo_alerting_enabled` boolean. Source defaults it to `false`
-while the uplift is shadowed; the protected live value must be confirmed during
-rollout and may be enabled only at a separately approved production cutover.
+`worker_terminal_slo_alerting_enabled` boolean. Source defaults it to `false`;
+the protected live value must be confirmed during rollout. The successful
+ingestion cutover does not prove this Grafana-side value changed or that a
+native SLO exists.
 Creating the declarations in a branch does not create SLOs in Grafana Cloud;
 the merged protected apply and post-apply report must confirm their UUIDs and
 queries.
@@ -479,10 +507,13 @@ Readiness must be truthful:
   dependency adapters;
 - the fetcher exposes its actual state-store mode, and a production fetcher
   cannot report ready while using in-memory state;
-- all eight split services remain shadow-only in the baseline with
-  `nutsnews_worker_expected_active=0`, but all eight must still be deployed,
-  report `up == 1`, have scrape age below 180 seconds, expose readiness series,
-  and publish exact non-`unknown` build and deployment identity;
+- the source-staged qualification baseline sets non-owning services to
+  `nutsnews_worker_expected_active=0`, but the current live ownership is
+  `worker_uplift`/`cutover_active`; the observability deployment must reconcile
+  per-service ownership values with that live state. Regardless of ownership,
+  all eight must be deployed, report `up == 1`, have scrape age below 180
+  seconds, expose readiness series, and publish exact non-`unknown` build and
+  deployment identity;
 - missing scrape, scrape-freshness, identity, and readiness-series conditions
   are structural and are never ownership-gated;
 - only a service with `nutsnews_worker_expected_active=1` must additionally
@@ -491,10 +522,12 @@ Readiness must be truthful:
   consumer, latency, publication, and worker-local freshness rules may use that
   production-ownership gate;
 - the reader-visible durable feed-freshness SLO and its three-hour critical
-  guardrail are global production-content signals. They remain enabled
-  regardless of whether legacy or split workers currently own ingestion;
-- legacy `nutsnews-worker` remains the production ingestion owner until the
-  protected cutover contract changes it.
+  guardrail are global production-content signals. Source leaves them
+  ownership-ungated regardless of the current ingestion implementation;
+- retained protected evidence, dated 2026-08-01 19:04 UTC, shows worker uplift
+  owns ingestion, production writes are enabled, and legacy dispatch plus
+  controller scheduling are disabled. It does not prove the new telemetry is
+  deployed or visible in Grafana Cloud.
 
 Approval, translation, and persistence count accepted, duplicate, invalid,
 retry, DLQ, and terminal outcomes exactly once. Service-owned fixed-bucket
@@ -504,11 +537,14 @@ order. All eight service PRs are now merged, and their immutable Runtime 1
 images have successful main-push publication, signature, provenance, SBOM,
 manifest, and revision evidence recorded in
 [`nutsnews-infra#474`](https://github.com/ramideltoro/nutsnews-infra/issues/474#issuecomment-5152934401).
-No image has been deployed; backend digest pinning and a fresh fail-closed
-qualification are still in progress. The currently deployed/legacy Runtime
-`0.5` and Contracts `0.4` baseline may therefore still expose `_duration_ms`
-summary families. Those summaries are not the new stage-latency SLI, and a
-published Runtime 1 image is not proof that its metric schema is live. Event
+The newly published Runtime 1 images have not been deployed. Draft backend PR
+#471 pins them but remains undeployed, while the live cutover instead names the
+older candidate `71b0303705093ad398458083547a86e9e61f50458e8799ace38de4f2404859df`
+under rollback deadline `2026-08-03T21:00:00Z`. Reconcile that live
+cutover/observation state before qualifying or deploying PR #471. The active
+pre-Runtime-1 candidate may still expose `_duration_ms` summary families. Those
+summaries are not the new stage-latency SLI, and published Runtime 1 images are
+not proof that their metric schema is live. Event
 dimensions remain bounded to `service`, `stage`, `queue`, `outcome`,
 `dependency`, `language`, `provider`, `probe`, and `check`; build and deployment
 identity belongs in bounded info metrics. RabbitMQ coverage includes queue
@@ -764,7 +800,7 @@ Production Synthetic Monitoring secrets and protected variables:
 | `NUTSNEWS_GRAFANA_SYNTHETIC_PROBE_IDS_JSON` | JSON array of probe IDs |
 | `NUTSNEWS_GRAFANA_SYNTHETIC_HTTP_CHECKS_JSON` | JSON object of safe HTTP checks |
 | `NUTSNEWS_GRAFANA_SYNTHETIC_MAJOR_FORECAST_ACKNOWLEDGED` | Protected variable; keep false until the unresolved budget choice explicitly selects the standing-major five-minute topology |
-| `NUTSNEWS_WORKER_TERMINAL_SLO_ALERTING_ENABLED` | Protected variable; keep false while the split workers are shadow-only |
+| `NUTSNEWS_WORKER_TERMINAL_SLO_ALERTING_ENABLED` | Protected variable; source default is false, and the ingestion cutover does not prove the Grafana-side live value or SLO activation |
 
 The exact-`main`, no-reviewer `grafana-observability-readonly` environment is a
 separate least-privilege audit boundary. It must contain only:
@@ -847,7 +883,7 @@ control and retain the resulting Grafana firing and recovery evidence:
 - failed readiness; and
 - synthetic body/header mismatch.
 
-Do not use a shadow service with `expected_active=0` to prove a production
+Do not use a non-owning service with `expected_active=0` to prove a production
 consumer alert. Restore the fixture after each drill and verify the alert
 resolves.
 
@@ -859,7 +895,7 @@ This layer does not:
 - enable browser Synthetic Monitoring
 - enable Grafana Cloud k6 runs
 - enable Tempo, exemplars, profiling, or Faro by default
-- change the legacy `nutsnews-worker` production-ingestion ownership
+- authorize or execute an ingestion-ownership cutover
 - expose the Ops Portal publicly
 - add portal mutation controls
 - add arbitrary SSH or workflow command execution

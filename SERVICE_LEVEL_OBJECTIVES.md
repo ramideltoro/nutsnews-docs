@@ -5,7 +5,7 @@ wiki:
     publishing: allowed
     reviewed_by: pending
     reviewed_on: pending
-    technical_source_hash: 405923ced57e4265f479783ac6cfddb4a4ec48f357ffe8af5a7782103d0acc66
+    technical_source_hash: e4396c6f602a61eb01ac7e94948e64700af9dd11ab1f8fe43909be1710c7971d
 ---
 # NutsNews Service Level Objectives
 
@@ -52,10 +52,10 @@ a rolling 30-day compliance window.
 
 | Native Grafana SLO | Objective | Good and eligible events | Alert behavior |
 | --- | ---: | --- | --- |
-| Public availability | 99.5% over 30 days | Successful canonical-homepage observations from both public probes divided by all canonical-homepage observations | Grafana-generated fast- and slow-burn alerts are enabled. |
-| API latency | 95% over 30 days | Successful read-only article API observations completed within 750 milliseconds divided by all successful article API observations | Grafana-generated fast- and slow-burn alerts are enabled. Status, body, and cache-header validation failures remain separate availability/correctness failures. |
-| Feed freshness | 99% over 30 days | Eligible intervals in which the durable published-feed age from the current production publication owner is no more than 15 minutes | Grafana-generated fast- and slow-burn alerts are enabled. A separate critical guardrail fires when feed age exceeds three hours. |
-| Worker terminal success | 99% over 30 days | Event-weighted outcomes across all canonical delivery stages: `success|duplicate` divided by `success|duplicate|invalid|failure|dlq`; intermediate `retry` outcomes are excluded | The SLO remains visible for shadow qualification, but generated burn alerts remain disabled until an approved production cutover. |
+| Public availability | 99.5% over 30 days | Successful canonical-homepage observations from both public probes divided by all canonical-homepage observations | Source enables Grafana-generated fast- and slow-burn alerts; activation remains unproved. |
+| API latency | 95% over 30 days | Successful read-only article API observations completed within 750 milliseconds divided by all successful article API observations | Source enables Grafana-generated fast- and slow-burn alerts; activation remains unproved. Status, body, and cache-header validation failures remain separate availability/correctness failures. |
+| Feed freshness | 99% over 30 days | Eligible intervals in which the durable published-feed age from the current production publication owner is no more than 15 minutes | Source enables Grafana-generated fast- and slow-burn alerts plus a separate three-hour critical guardrail; activation remains unproved. |
+| Worker terminal success | 99% over 30 days | Event-weighted outcomes across all canonical delivery stages: `success|duplicate` divided by `success|duplicate|invalid|failure|dlq`; intermediate `retry` outcomes are excluded | Source defaults generated burn alerts off; the live ingestion cutover does not prove this native SLO or its alerts are active. |
 
 `terminal` is an SLI classification, not an `outcome` label value. A zero
 eligible-event denominator is No Data, not a synthetic failure or proof of
@@ -65,27 +65,52 @@ other unbounded dimension.
 The Worker ratio is not publication-only or per-article success. One pipeline
 can contribute multiple eligible stage completions across the seven delivery
 processors; scheduler cycles are outside the stage-event family. Source defaults
-`worker_terminal_slo_alerting_enabled` to `false` while the uplift is shadowed,
-so the candidate omits the generated burn-alert block. The protected live value
-must still be confirmed during rollout. This native control is separate from the
-`nutsnews_worker_expected_active` joins used by custom worker-local rules and
-must change only during the same reviewed cutover.
+`worker_terminal_slo_alerting_enabled` to `false`, so the candidate omits the
+generated burn-alert block. The protected Grafana-side live value must still be
+confirmed during rollout. This native control is separate from the
+`nutsnews_worker_expected_active` joins used by custom worker-local rules; the
+successful ingestion cutover does not prove either Grafana activation or the
+deployed telemetry values.
 
 The Worker-Uplift Pipeline dashboard's five descriptive SLI entries and its
 hand-authored rules are compatibility metadata and operational guardrails, not
 five additional native Grafana SLOs. Their shorter 5-minute, 15-minute, and
 1-hour ranges are alert-evaluation windows rather than 30-day compliance
-windows. `nutsnews_worker_expected_active=0` keeps shadow-worker conditions
-visible without paging; missing required telemetry still blocks cutover. That
-ownership gate applies to worker-local signals and Worker terminal-success burn
-alerts, not to the global reader-visible feed-freshness SLO or its three-hour
-critical guardrail. Those feed signals remain enabled under either legacy or
-split-worker ownership.
+windows. The source-staged qualification baseline uses
+`nutsnews_worker_expected_active=0` for non-owning services so their behavior
+conditions stay visible without paging; missing required telemetry still
+blocks rollout. That ownership gate applies to worker-local signals, not to the
+global reader-visible feed-freshness SLO or its three-hour critical guardrail.
+Source leaves those feed signals ownership-ungated under either ingestion
+implementation; Grafana activation remains unproved.
 
-All eight split workers are shadow-only in the baseline. Each must still be
-deployed with `up == 1`, scrape age below 180 seconds, exact non-`unknown`
-build/deployment identity, and readiness series. These structural requirements
-are never ownership-gated. Only a service with
+At 2026-08-01 19:04 UTC, protected backend run
+[`30713923790`](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30713923790)
+recorded `active_ingestion_owner=worker_uplift`, `state=cutover_active`,
+production writes enabled, and legacy dispatch disabled. Protected controller
+run
+[`30713955433`](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30713955433)
+then confirmed public legacy scheduling disabled. The active candidate is the
+older `71b0303705093ad398458083547a86e9e61f50458e8799ace38de4f2404859df`
+under rollback deadline `2026-08-03T21:00:00Z`, not the newly published Runtime
+1 images. Draft backend PR
+[`#471`](https://github.com/ramideltoro/nutsnews-backend/pull/471) pins Runtime 1
+but remains undeployed; reconcile it with this live cutover/observation state
+before rollout. These runs are ingestion-control evidence, not Grafana apply,
+synthetic, SLO, canary, or drill evidence.
+
+Temporary cutover safety freeze: until fail-closed deploy guards preserve the
+retained cutover state, `nutsnews-worker` merges are frozen because the ordinary
+main pipeline deploys the controller from base configuration where
+`INGESTION_SCHEDULING_ENABLED=true`. All mutating Backend Worker Runtime
+Operations are also frozen: the current deploy, scale, and rollback paths use
+base Compose and can recreate publication without the cutover overlay. Do not
+run the fetcher state-contract v2 migration while `state=cutover_active`.
+Read-only inspection does not remove these freezes.
+
+Every split worker must be deployed with `up == 1`, scrape age below 180
+seconds, exact non-`unknown` build/deployment identity, and readiness series.
+These structural requirements are never ownership-gated. A service with
 `nutsnews_worker_expected_active=1` must additionally report a successful
 readiness outcome, scheduler loop/cycle or delivery-stage activity as
 applicable, last success, and worker-local paging eligibility.

@@ -15,7 +15,7 @@ wiki:
     publishing: allowed
     reviewed_by: pending
     reviewed_on: pending
-    technical_source_hash: 30a2c30823a02b2a55518489d3fd040919f0a8d3230c179b1db259b42e1f46cc
+    technical_source_hash: 2d0e095475d1dce0826b91572e5dff9d955346bf48cefc0f6030c553637f170d
 ---
 
 # Observability
@@ -264,20 +264,45 @@ two variables and two secrets are still absent. Production writer inputs and
 Environment reviewer/protection gates also remain operator work. Worker
 Contracts and Runtime `1.0.0` have been released in order; all eight worker
 service PRs are merged and verified immutable Runtime 1 images are published.
-Backend digest pinning, fail-closed qualification, deployment, and fresh scrape
-evidence remain pending, so image publication is not live telemetry.
+Draft backend PR
+[`#471`](https://github.com/ramideltoro/nutsnews-backend/pull/471) pins those
+images but remains undeployed, so image publication is not live telemetry.
+
+The current live ingestion state is no longer the old shadow baseline. At
+2026-08-01 19:04 UTC, protected backend run
+[`30713923790`](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30713923790)
+succeeded with `active_ingestion_owner=worker_uplift`,
+`state=cutover_active`, production writes enabled, and legacy dispatch disabled.
+Protected controller run
+[`30713955433`](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30713955433)
+then confirmed public legacy scheduling disabled. The active candidate is the
+older `71b0303705093ad398458083547a86e9e61f50458e8799ace38de4f2404859df`,
+under rollback deadline `2026-08-03T21:00:00Z`, not the newly published Runtime
+1 set. Reconcile that live cutover/observation state with PR #471 before the
+observability rollout. These control runs do not prove a Grafana apply,
+synthetic execution, native SLO, notification canary, or failure drill.
+
+Temporary cutover safety freeze: until fail-closed deploy guards preserve the
+retained cutover state, `nutsnews-worker` merges are frozen because the ordinary
+main pipeline deploys the controller from base configuration where
+`INGESTION_SCHEDULING_ENABLED=true`. All mutating Backend Worker Runtime
+Operations are also frozen: the current deploy, scale, and rollback paths use
+base Compose and can recreate publication without the cutover overlay. Do not
+run the fetcher state-contract v2 migration while `state=cutover_active`.
+Read-only inspection does not remove these freezes.
 
 Worker-uplift telemetry is governed by [NutsNews Worker-Uplift Telemetry Scope](NUTSNEWS_WORKER_UPLIFT_TELEMETRY_SCOPE.md). RabbitMQ metrics, worker service metrics, and structured logs are required; full traces and exemplars are deferred; article/model payload telemetry is forbidden.
 
-The legacy `nutsnews-worker` remains the production ingestion owner. All eight
-split services are shadow-only in the baseline with
-`nutsnews_worker_expected_active=0`. Shadow mode does not hide structural
-telemetry failures: scheduler, fetcher, canonicalizer, enrichment, approval,
-translation, persistence, and publication must all be deployed with `up == 1`,
-scrape age below 180 seconds, exact non-`unknown` build/deployment identity, and
-readiness series. Only a service with `expected_active=1` must additionally
-report successful readiness, loop/cycle or delivery-stage activity as
-applicable, last success, and worker-local paging eligibility.
+The source-staged qualification baseline uses
+`nutsnews_worker_expected_active=0` for non-owning services, but rollout must
+now reconcile each ownership signal with the uplift-owned live cutover. The
+ownership gate never hides structural telemetry failures: scheduler, fetcher,
+canonicalizer, enrichment, approval, translation, persistence, and publication
+must all be deployed with `up == 1`, scrape age below 180 seconds, exact
+non-`unknown` build/deployment identity, and readiness series. A service with
+`expected_active=1` must additionally report successful readiness, loop/cycle
+or delivery-stage activity as applicable, last success, and worker-local paging
+eligibility.
 
 Producer ownership is explicit. `nutsnews-backend` owns worker deployment,
 backend Alloy, and backend-hosted ownership and outbox gauges. Each split-worker

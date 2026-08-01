@@ -14,13 +14,13 @@ flowchart TD
   C --> G["Generated fast and slow burn alerts"]
   D --> G
   E --> G
-  F --> H["Source defaults worker SLO alerts off;\nprotected live value still unconfirmed"]
+  F --> H["Source defaults worker SLO alerts off;\nGrafana activation still unproved"]
   H --> I["Qualification only\nNo generated Worker burn pages"]
   A --> J["Legacy readiness and operational guardrails"]
   J --> K["/admin/readiness\ncurrent-state promotion and triage"]
   J --> L["Worker, translation, backup, performance, and fallback checks"]
   J --> N["Custom worker-local alerts use\nexpected_active ownership joins"]
-  N --> O["All eight shadow services still require up,\nfresh scrape, exact identity and readiness series"]
+  N --> O["Every ownership state still requires up,\nfresh scrape, exact identity and readiness series"]
   N --> P["Only expected_active 1 requires readiness ok,\nactivity, last success and worker paging"]
   E --> Q["Global 15m feed SLO is distinct from\navailability-guarded backend outbox age"]
   G --> M["Incident classification and evidence"]
@@ -31,4 +31,7 @@ flowchart TD
   P --> M
   Q --> M
   A --> R["Ownership dashboard: backend revision\nand all eight worker identities"]
+  Live["Live ingestion: worker_uplift cutover_active on older 71b030;\nRuntime 1 PR 471 remains undeployed"] --> Freeze["Temporary freeze: worker merges and runtime mutations;\nno fetcher v2 migration while cutover_active"]
+  Freeze --> Reconcile["Reconcile active observation and rollback deadline\nbefore observability rollout"]
+  Reconcile --> R
   R --> M

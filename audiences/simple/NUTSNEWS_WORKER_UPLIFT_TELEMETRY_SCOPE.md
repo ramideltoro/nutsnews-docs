@@ -5,7 +5,7 @@ wiki:
     publishing: allowed
     reviewed_by: pending
     reviewed_on: pending
-    technical_source_hash: d341d430c7119ecc0c659c1f9fa09b0bc3dfbf7f1297a71bffe37f5081d2fb23
+    technical_source_hash: c90054fa2375b045f873c14d2b3e6eb27c1d150523e3c16323c90df00458de13
   source_route: /technical/nutsnews-worker-uplift-telemetry-scope
   simple_route: /simple/nutsnews-worker-uplift-telemetry-scope
   primary_diagram:
@@ -31,8 +31,9 @@ This article explains the staged telemetry scope for the NutsNews worker-uplift
 pipeline. It covers metrics, logs, truthful health, ownership gates, volume
 budgets, guardrails, rollback switches, and privacy rules.
 
-Status: hardening changes are staged and awaiting human review, merge,
-deployment, a reviewed Grafana Cloud apply, and retained evidence.
+Status: the Runtime 1 producer and observability changes remain staged. Live
+ingestion was cut over on an older candidate and must be reconciled before the
+observability backend deployment and Grafana Cloud apply.
 
 Companion infra policy (must be reconciled in the same reviewed rollout):
 
@@ -43,18 +44,31 @@ ramideltoro/nutsnews-infra/terraform/grafana-cloud/catalog/worker-uplift-telemet
 The companion JSON now has the staged core labels, outcomes, quota, and
 ownership changes, but it still needs the exact bucket, health, SLO, Alloy
 break-glass, value-bound, and unreviewed-status rules below. Source changes alone
-do not make this telemetry live. Legacy `nutsnews-worker` remains the production
-ingestion owner; all eight uplift services stay shadow-only with
-`nutsnews_worker_expected_active=0` until a separate reviewed cutover changes
-ownership.
+do not make this telemetry live. At 2026-08-01 19:04 UTC, protected backend run
+[`30713923790`](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30713923790)
+recorded `active_ingestion_owner=worker_uplift`, `state=cutover_active`,
+production writes enabled, and legacy dispatch disabled. Protected controller
+run
+[`30713955433`](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30713955433)
+then confirmed public legacy scheduling disabled. These are ingestion-control
+facts, not evidence that this telemetry or its Grafana resources are live.
+
+Temporary cutover safety freeze: until fail-closed deploy guards preserve the
+retained cutover state, `nutsnews-worker` merges are frozen because the ordinary
+main pipeline deploys the controller from base configuration where
+`INGESTION_SCHEDULING_ENABLED=true`. All mutating Backend Worker Runtime
+Operations are also frozen: the current deploy, scale, and rollback paths use
+base Compose and can recreate publication without the cutover overlay. Do not
+run the fetcher state-contract v2 migration while `state=cutover_active`.
+Read-only inspection does not remove these freezes.
 
 `nutsnews-backend` owns worker deployment, backend Alloy, and backend-hosted
 ownership and outbox gauges. The scheduler, fetcher, canonicalizer, enrichment,
 approval, translation, persistence, and publication repositories each own that
 service's identity, health, lifecycle, and latency signals. `nutsnews-infra`
 alone owns Grafana resources. The `nutsnews-worker` meta-repository coordinates
-rollout, while the legacy worker keeps production ingestion ownership until
-cutover approval. These producer responsibilities are different from the
+rollout. Live production ingestion currently belongs to worker uplift; that
+runtime ownership is different from producer responsibilities and from the
 `owner` label that helps route an alert. The Current Production Ownership
 dashboard must show the backend revision and exact deployed identity for all
 eight split-worker services.
@@ -173,10 +187,14 @@ attested, and install-smoke verified in the required order from merge commits
 and each main push published a signed, attested immutable Runtime 1 image with
 provenance, SBOM, manifest, and baked-revision evidence recorded in
 [`nutsnews-infra#474`](https://github.com/ramideltoro/nutsnews-infra/issues/474#issuecomment-5152934401).
-Backend digest pinning and a fresh fail-closed qualification are still in
-progress, and no image has been deployed. The deployed Runtime `0.5` baseline
-may therefore still show legacy `_duration_ms` summaries; Grafana stage SLIs
-use only the new fixed-bucket seconds histograms.
+Those Runtime 1 images have not been deployed. Draft backend PR
+[`#471`](https://github.com/ramideltoro/nutsnews-backend/pull/471) pins them but
+remains undeployed. The live cutover instead uses the older candidate
+`71b0303705093ad398458083547a86e9e61f50458e8799ace38de4f2404859df`
+under rollback deadline `2026-08-03T21:00:00Z`. Reconcile that state before a
+fresh fail-closed qualification or deployment. The active older candidate may
+still show legacy `_duration_ms` summaries; Grafana stage SLIs use only the new
+fixed-bucket seconds histograms.
 
 Required operational signals include:
 
@@ -189,11 +207,12 @@ Required operational signals include:
 - backend-owned worker outbox pressure and global feed freshness as separate
   signals.
 
-All eight split services are shadow-only in the baseline and report
-`nutsnews_worker_expected_active=0`. They must still be deployed, report
-`up == 1`, have a scrape less than 180 seconds old, expose readiness series,
-and report exact non-`unknown` build and deployment identity. Missing structural
-series are never hidden by the ownership gate.
+The source-staged baseline reports `nutsnews_worker_expected_active=0` for
+non-owning services; it is not a description of the uplift-owned live cutover.
+PR #471 must reconcile those values before deployment. Every service must still
+be deployed, report `up == 1`, have a scrape less than 180 seconds old, expose
+readiness series, and report exact non-`unknown` build and deployment identity.
+Missing structural series are never hidden by the ownership gate.
 
 Only a service changed to `nutsnews_worker_expected_active=1` must also report a
 successful readiness outcome and become eligible for worker-local paging. An
@@ -208,26 +227,28 @@ projection data is a separate failure. This is not the global reader-visible
 15-minute feed-freshness SLO.
 
 Custom worker-local consumer, latency, publication, and freshness alerts join
-to `nutsnews_worker_expected_active`. The source-staged shadow deployment keeps
-that value at `0` so services remain visible without paging. Structural scrape, identity, and
+to `nutsnews_worker_expected_active`. The source-staged deployment keeps that
+value at `0` for non-owning services so they remain visible without paging.
+Structural scrape, identity, and
 readiness-series absence still alerts or blocks rollout. The native Worker
 terminal SLI does not use that join; its generated burn-alert resources are
 omitted because source defaults `worker_terminal_slo_alerting_enabled` to
-`false`. The protected live value still needs confirmation. Source does not
-couple those controls automatically, so both may change only during the same
-reviewed production cutover. The global reader-visible durable
-feed-freshness SLO and its three-hour critical guardrail are not ownership-gated
-and remain enabled regardless of which ingestion implementation owns
-production.
+`false`. The protected Grafana-side value still needs confirmation, and the
+successful ingestion cutover does not prove the deployed telemetry values.
+Source does not couple those controls automatically, so both must be reconciled
+against the same retained production-ownership evidence. Source leaves the
+global reader-visible durable feed-freshness SLO and its three-hour critical
+guardrail ownership-ungated; Grafana activation remains unproved.
 
 ## What Still Blocks Activation
 
 The repository work does not yet satisfy the whole target contract:
 
 - All eight endpoint implementations are merged and verified immutable images
-  are published. They are not yet pinned into backend deployment source,
-  qualified by a fresh fail-closed run, deployed, or scraped. Exact image
-  evidence is retained in
+  are published. Backend PR #471 pins them but remains undeployed; they have not
+  passed a fresh fail-closed qualification against the live cutover state or
+  produced fresh scrapes. The older active candidate and rollback deadline must
+  be reconciled first. Exact image evidence is retained in
   [`nutsnews-infra#474`](https://github.com/ramideltoro/nutsnews-infra/issues/474#issuecomment-5152934401).
 - The target latency buckets are `0.005`, `0.01`, `0.025`, `0.05`, `0.1`,
   `0.25`, `0.5`, `1`, `2.5`, `5`, `10`, `30`, `60`, `120`, and `300` seconds,
@@ -263,9 +284,9 @@ terminal success at 99%. Failed API probe assertions stay outside the latency
 denominator as availability/correctness failures.
 
 Feed freshness uses global reader-visible durable production-content age. Its
-burn alerts and three-hour critical guardrail stay enabled under either legacy
-or split-worker ownership. Only Worker terminal-success burn alerts stay off
-while uplift is shadowed.
+source remains ownership-ungated under either ingestion implementation. Worker
+terminal-success burn alerts remain absent from the source candidate because
+its alert boolean defaults to `false`.
 
 Worker success is an event-weighted ratio across every canonical delivery stage,
 not a publication-only or per-article rate; one pipeline can contribute several
@@ -274,10 +295,11 @@ and `duplicate`. The denominator counts `success`, `duplicate`, `invalid`,
 `failure`, and `dlq`; retry is intermediate and excluded, while `failure` is
 forward-compatible until producers converge. `terminal` is a category, not a
 metric value. Zero work is NoData, not failure. Source defaults the alert
-boolean to `false`, and the protected live value still needs confirmation, so
-Worker terminal-success burn alerts stay off while uplift is shadowed. The five SLI
-catalog entries are dashboard/custom-rule metadata, not five more native SLOs,
-and SLO count is not part of usage-quota ratios.
+boolean to `false`, and the protected Grafana-side live value still needs
+confirmation. The successful ingestion cutover does not prove the native SLO
+or its burn alerts exist. The five SLI catalog entries are
+dashboard/custom-rule metadata, not five more native SLOs, and SLO count is not
+part of usage-quota ratios.
 
 ## Topology Coverage
 
@@ -447,26 +469,28 @@ Retention follows the live Grafana Cloud `retention_period` limits reported by `
 
 Telemetry loss alerts are required for Alloy readiness, remote-write backlog and
 errors, Loki drops and retries, collector freshness, worker scrape absence, and
-RabbitMQ queue-depth absence. During shadow qualification, missing required
-worker metrics or logs blocks production traffic without paging the shadow
-deployment.
+RabbitMQ queue-depth absence. During non-owner qualification, missing required
+worker metrics or logs blocks production traffic even when behavior paging is
+suppressed.
 
 ## Activation And Evidence Gate
 
 This is source/image-prepared work, not proof of live Grafana Cloud coverage.
-It becomes complete only after the eight published image digests are pinned in
-backend source, pass a fresh fail-closed qualification, deploy, and reviewed
-backend and `nutsnews-infra` GitOps applies succeed.
+It becomes complete only after backend PR #471's Runtime 1 pins are reconciled
+with the active older candidate, `cutover_active` observation, and rollback
+deadline; the result must pass a fresh fail-closed qualification and deploy,
+and the reviewed backend and `nutsnews-infra` GitOps applies must succeed.
 Retained evidence must then show:
 
 - Alloy readiness/backlog/error/drop/freshness health; all eight workers
   deployed with `up == 1`, scrape age below 180 seconds, exact non-unknown
-  build/deployment identity, readiness series, and the shadow ownership value;
+  build/deployment identity, readiness series, and ownership values matching
+  the reconciled live production state;
 - successful readiness plus loop/cycle or stage activity, last success, and
   worker-local paging only for any service whose ownership value is `1`;
 - lifecycle counters, seconds histograms, RabbitMQ depth/unacked/consumers, and
   the backend outbox-age value guarded by its availability series;
-- shadow dashboards stay useful without paging;
+- non-owner dashboards stay useful without paging;
 - an isolated fixture or test-target drill proves the ownership alert gate,
   without changing production `nutsnews_worker_expected_active` to test it;
 - Loki uses only the six approved stream labels and keeps IDs as metadata;

@@ -7,7 +7,10 @@ flowchart LR
   }
   Services["Web, workers, backend and VPS"] --> Grafana["Grafana Cloud\nexisting host metrics and logs"]
   Owners["Backend owns deploy, Alloy and outbox; worker repos own service signals;\ninfra owns Grafana; meta repo coordinates"] --> Services
-  Services --> WorkerGate["All eight shadow workers still require deployed, up,\nfresh scrape, exact identity and readiness series"]
+  Services --> WorkerGate["Every worker ownership state still requires deployed, up,\nfresh scrape, exact identity and readiness series"]
+  Live["Live 2026-08-01 19:04 UTC: worker_uplift cutover_active;\nolder candidate 71b030, Runtime 1 PR 471 undeployed"] --> Freeze["Temporary freeze: worker merges and runtime mutations;\nno fetcher v2 migration while cutover_active"]
+  Freeze --> Reconcile["Reconcile observation and rollback deadline\nbefore observability rollout"]
+  Reconcile --> Services
   Staged["Draft source changes"] --> Pending["Staged application telemetry, email,\nfive synthetics and four SLOs"]
   Pending --> Choice["Cadence unresolved: six minutes,\nfive-minute standing major,\nor reviewed threshold change"]
   Readonly["Read-only audit Environment exists;\nall four inputs still absent"] --> Choice

@@ -7,7 +7,7 @@ flowchart LR
   }
   subgraph Producers["Telemetry producers"]
     Web["Web and content signals"]
-    Workers["Eight shadow worker services\nand RabbitMQ"]
+    Workers["Eight worker services\nand RabbitMQ"]
     Backend["Backend API, PostgreSQL,\nsync relay and Caddy"]
     VPS["VPS host, systemd,\ndocker stats and journals"]
   end
@@ -34,7 +34,7 @@ flowchart LR
   Grafana --> Evidence["Post-apply query report"]
   Grafana --> Canary["Firing and resolved\nemail canary receipts"]
   Grafana --> Drills["Source-wired failure drills\nlive proof pending"]
-  Workers --> Structural["Even shadowed: deployed, up 1, scrape under 180s,\nexact identity and readiness series"]
+  Workers --> Structural["Every owner state: deployed, up 1, scrape under 180s,\nexact identity and readiness series"]
   Structural --> Evidence
   Backend --> Pressure["Outbox age guarded by availability;\nseparate from global feed freshness"]
   Pressure --> Grafana
@@ -45,6 +45,8 @@ flowchart LR
   Capacity --> Ready
   Ready -->|"No"| Pending["Rollout remains pending"]
   Ready -->|"Yes"| Operate["Operate within free-tier\nand ownership guardrails"]
-  Legacy["Legacy nutsnews-worker\nproduction ingestion owner"] --> Operate
-  Packages["Contracts and Runtime 1.0 released;\neight worker images published and verified;\nbackend pin, qualification and deploy pending"] --> Workers
+  Live["Live 2026-08-01 19:04 UTC: worker_uplift cutover_active;\nwrites on, legacy dispatch and scheduling off;\nolder candidate 71b030 under rollback deadline"] --> Freeze["Temporary freeze: worker merges and runtime mutations;\nno fetcher v2 migration while cutover_active"]
+  Freeze --> Reconcile["Reconcile active observation and rollback state\nwith undeployed backend PR 471"]
+  Reconcile --> Workers
+  Packages["Contracts and Runtime 1.0 released;\neight worker images published and verified;\nPR 471 pins them but remains undeployed"] --> Reconcile
   Readonly["Read-only audit Environment exists,\nbut all four inputs are absent"] --> Prereq
