@@ -73,8 +73,9 @@ Docker, RabbitMQ administration, SQL, secret-copying, DNS, or replay commands.
 | Credential inventory and readiness | backend | `Backend Credential Readiness`; value changes remain restricted to environment owners |
 | Grafana dashboards, alerts, folders, quotas, and drift | infra | `Grafana Cloud Plan` and `Grafana Cloud Apply` |
 | DNS failover controller and DNS-write state | infra | `Cloudflare DNS Failover Apply` in `cloudflare-admin` |
+| Legacy ingestion scheduling and its retained failover-controller surfaces | legacy worker | `Controller Ingestion Scheduling Operations`; protected `apply` uses `production` |
 | Admin worker-uplift projection | web app | reviewed application deployment; no broker or Grafana management access |
-| Future ingestion cutover | not implemented yet | future controls in #150, #126, and #127 |
+| Future ingestion cutover | not authorized | reversible controls in #126, final readiness in #166, and execution in #127 |
 
 The existing backend workflow named `Backend Production Cutover` switches the
 **database provider**. It is not a worker-ingestion cutover workflow and must
@@ -90,9 +91,9 @@ not imply that the action mutates production.
 | Public or application read-only | No infrastructure change | public health, authenticated `/admin/shards`, immutable workflow artifacts |
 | Protected read-only | Fixed workflow reads host, broker, database, or telemetry state | runtime `status`, `logs`, queue inspection, recovery `status`, complete soak report |
 | Offline validation | Checks repository files only | docs validation, backend validators, Ansible syntax |
-| Dry run or plan | Builds and validates an intended operation without applying it | Ansible `check`, runtime `dry_run=true`, reconciliation plan, Grafana plan, DNS failover `plan` |
+| Dry run or plan | Builds and validates an intended operation without applying it | Ansible `check`, runtime `dry_run=true`, reconciliation plan, Grafana plan, DNS failover `plan`, ingestion-scheduling `plan` |
 | Protected mutation | Changes service, host, test fixture, backup, or managed cloud state | deploy, restart, scale, drain, rollback, smoke, canary drill, restore drill, Grafana apply |
-| Unavailable or blocked | No approved current apply path | worker cutover/promotion, generic DLQ replay, legacy-ingestion stop |
+| Unavailable or blocked | No approved current apply path | worker cutover/promotion, generic DLQ replay, legacy-ingestion disable before #166 and #127 |
 
 Every workflow invocation must use `--ref main`. Read the workflow summary and
 download the artifact; a green workflow conclusion without a reviewed artifact
@@ -125,9 +126,12 @@ These links pin the implementation this guide describes:
   and the merged
   [admin worker-uplift PR #518](https://github.com/ramideltoro/nutsnews/pull/518).
 - Legacy failover evidence contract at worker commit
-  [`22a2c4f33d8dacdf9fd2367de852ae29d3abaa85`](https://github.com/ramideltoro/nutsnews-worker/tree/22a2c4f33d8dacdf9fd2367de852ae29d3abaa85),
+  [`a073e351e5716a97e0759cca17096851cbb80261`](https://github.com/ramideltoro/nutsnews-worker/tree/a073e351e5716a97e0759cca17096851cbb80261),
   including
-  [Analytics Engine documentation](https://github.com/ramideltoro/nutsnews-worker/blob/22a2c4f33d8dacdf9fd2367de852ae29d3abaa85/docs/FAILOVER_ANALYTICS_ENGINE.md).
+  [Analytics Engine documentation](https://github.com/ramideltoro/nutsnews-worker/blob/a073e351e5716a97e0759cca17096851cbb80261/docs/FAILOVER_ANALYTICS_ENGINE.md),
+  [the ingestion-scheduling contract](https://github.com/ramideltoro/nutsnews-worker/blob/a073e351e5716a97e0759cca17096851cbb80261/controller/src/ingestionScheduling.mjs),
+  and the
+  [protected operations workflow](https://github.com/ramideltoro/nutsnews-worker/blob/a073e351e5716a97e0759cca17096851cbb80261/.github/workflows/controller-ingestion-scheduling-operations.yml).
 
 If one of these owners changes behavior, update this guide in the same reviewed
 change or record the mismatch as a readiness blocker.
@@ -658,8 +662,8 @@ This guide intentionally does not reproduce tokens or direct API commands.
 
 ## Future coexistence and cutover sequence
 
-The following is the required sequence for later issues. Steps marked
-“future control” cannot be executed today.
+The following is the required sequence. Completed phases remain documented so
+operators can distinguish the deployed baseline from later gated mutations.
 
 ### Phase 0: Current coexistence
 
@@ -672,19 +676,51 @@ The following is the required sequence for later issues. Steps marked
 
 ### Phase 1: Production-readiness review
 
-Issue #125 must disposition every residual security and operations risk,
-including action pinning, cache isolation, runtime image contents, SBOM
-attestations, fetcher connection binding, provider credential sharing,
-read-only host identity, reviewer posture, generic DLQ replay limitations, and
-the Analytics Engine binding state. Closing this guide does not begin or pass
-#125.
+Issue #125 recorded GO for guarded cutover-control implementation after
+dispositioning the residual security and operations risks. That GO authorized
+#150 and then #126 implementation only; it did not authorize cutover.
 
 ### Phase 2: Separate ingestion scheduling from DNS failover
 
-Future issue #150 must prove that legacy ingestion scheduling can stop without
-changing the DNS controller, Durable Object state, Analytics Engine evidence,
-alerts, status/actions, or manual failover. This is a hard dependency for
-cutover.
+Issue #150 implemented this separation without changing the active owner. The
+controller binding `INGESTION_SCHEDULING_ENABLED` defaults safely to enabled
+when absent. Scheduled and manual ingestion paths wake/check failover first;
+when the binding is explicitly false they do not send shard-refresh or
+translation-backlog requests. Health, status, actions, Durable Object alarms,
+DNS readback, live-origin readiness, alerts, and Analytics Engine reporting
+remain outside the ingestion gate.
+
+The value-free status signal is `GET` or `HEAD`
+`/ingestion-scheduling/status`. The fixed workflow is
+`Controller Ingestion Scheduling Operations` in `ramideltoro/nutsnews-worker`:
+
+```bash
+gh workflow run controller-ingestion-scheduling-operations.yml \
+  --repo ramideltoro/nutsnews-worker \
+  --ref main \
+  -f action=status \
+  -f ingestion_scheduling_enabled=true \
+  -f confirmation=inspect-ingestion-scheduling
+
+gh workflow run controller-ingestion-scheduling-operations.yml \
+  --repo ramideltoro/nutsnews-worker \
+  --ref main \
+  -f action=plan \
+  -f ingestion_scheduling_enabled=false \
+  -f confirmation=plan-ingestion-scheduling-false
+```
+
+`status` is read-only. `plan` runs focused tests, renders the exact controller
+configuration, and executes a Wrangler dry run without deploying. `apply` is
+a protected production mutation requiring the typed
+`set-ingestion-scheduling-<true|false>` confirmation. Until #166 approves the
+exact candidate and #127 executes the cutover, operators may apply only
+`true`. A false plan is evidence, not permission to disable ingestion.
+
+Rollback is configuration-only: protected apply of `true`, followed by the
+status artifact proving `observedIngestionSchedulingEnabled=true` and every
+retained failover surface. No Worker shard, route, cron, secret, binding, or
+Durable Object migration is removed by either rendered state.
 
 ### Phase 3: Add reversible controls
 
@@ -770,6 +806,9 @@ to cut over:
 | Service-owned reconciliation apply proof | [run 30213792420](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30213792420), two persistence items, new message IDs, no duplicate final effect, no production visibility |
 | Fresh protected security evidence | shadow model [30451802240](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30451802240), runtime status [30451804551](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30451804551), recovery status [30451806594](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30451806594), metrics [30451809064](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30451809064), logs [30451811517](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30451811517), value audit [30451813700](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30451813700) |
 | Security review merge and post-merge checks | backend [PR #444](https://github.com/ramideltoro/nutsnews-backend/pull/444), merge `b619cf91504eafca21f70c5d68888563f5fca7a9`, [Backend Checks 30484088483](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30484088483) |
+| Legacy scheduling separation | worker [PR #171](https://github.com/ramideltoro/nutsnews-worker/pull/171), merge `a073e351e5716a97e0759cca17096851cbb80261`; [post-merge Worker Pipeline 30690135595](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30690135595) deployed with scheduling enabled |
+| Protected enabled-state proof | [run 30690227183](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30690227183), apply artifact digest `sha256:c7910b8859cc8c41856bc7baa0b49b6161e5691f4df581388baa77ace2816e9c`; live status [run 30690250981](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30690250981), digest `sha256:493029f6e821e516b4a2626a26abcff7e26f4d96828294c459a92bbf0ee1b2a0` |
+| Disabled-state no-mutation proof | [plan run 30690250417](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30690250417), protected scope unchanged, artifact digest `sha256:f9e46d413b43e623b92ba7b20b834a66a87c98888fed8c34029f295b81bd8cbb` |
 
 For a new incident or readiness decision, record:
 

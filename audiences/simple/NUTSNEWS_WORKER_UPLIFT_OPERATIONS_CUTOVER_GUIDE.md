@@ -69,8 +69,9 @@ Use only fixed, reviewed workflows from `main`. Do not run improvised SSH, Docke
 | Credential inventory and readiness | backend | `Backend Credential Readiness` |
 | Grafana dashboards, alerts, folders, quotas, and drift | infra | `Grafana Cloud Plan` and `Grafana Cloud Apply` |
 | DNS failover controller and DNS-write state | infra | `Cloudflare DNS Failover Apply` in `cloudflare-admin` |
+| Legacy ingestion scheduling | legacy worker | `Controller Ingestion Scheduling Operations` |
 | Admin worker-uplift projection | web app | reviewed application deployment; no broker or Grafana management access |
-| Future ingestion cutover | not implemented yet | future controls in #150, #126, and #127 |
+| Future ingestion cutover | not authorized | #126 controls, #166 final gate, and #127 execution |
 
 The existing backend workflow named `Backend Production Cutover` switches the database provider. It is not a worker-ingestion cutover workflow and must not be used to promote the worker uplift.
 
@@ -83,7 +84,7 @@ The existing backend workflow named `Backend Production Cutover` switches the da
 | Offline validation | Checks repository files only | docs validation, backend validators, Ansible syntax |
 | Dry run or plan | Builds and validates an intended operation without applying it | Ansible `check`, runtime `dry_run=true`, reconciliation plan, Grafana plan, DNS failover `plan` |
 | Protected mutation | Changes service, host, test fixture, backup, or managed cloud state | deploy, restart, scale, drain, rollback, smoke, canary drill, restore drill, Grafana apply |
-| Unavailable or blocked | No approved current apply path | worker cutover/promotion, generic DLQ replay, legacy-ingestion stop |
+| Unavailable or blocked | No approved current apply path | worker cutover/promotion, generic DLQ replay, legacy-ingestion disable before the final gates |
 
 Every workflow invocation must use `--ref main`. Read the workflow summary and download the artifact. A green workflow conclusion without a reviewed artifact is not complete evidence.
 
@@ -95,6 +96,23 @@ This guide is pinned to specific source commits:
 - [Infra commit `ee61807a757fe087dbcecd60d5e0b7fe07f4115a`](https://github.com/ramideltoro/nutsnews-infra/tree/ee61807a757fe087dbcecd60d5e0b7fe07f4115a), including the [Grafana resource catalog](https://github.com/ramideltoro/nutsnews-infra/blob/ee61807a757fe087dbcecd60d5e0b7fe07f4115a/terraform/grafana-cloud/catalog/worker-uplift-rabbitmq-alerts.json) and [DNS failover runbook](https://github.com/ramideltoro/nutsnews-infra/blob/ee61807a757fe087dbcecd60d5e0b7fe07f4115a/runbooks/CLOUDFLARE_DNS_FAILOVER.md).
 - [Admin application commit `d339f40a6c29b41d18d5d977575274345c73941b`](https://github.com/ramideltoro/nutsnews/tree/d339f40a6c29b41d18d5d977575274345c73941b) and merged [admin worker-uplift PR #518](https://github.com/ramideltoro/nutsnews/pull/518).
 - [Legacy failover evidence contract at worker commit `22a2c4f33d8dacdf9fd2367de852ae29d3abaa85`](https://github.com/ramideltoro/nutsnews-worker/tree/22a2c4f33d8dacdf9fd2367de852ae29d3abaa85), including the [Analytics Engine documentation](https://github.com/ramideltoro/nutsnews-worker/blob/22a2c4f33d8dacdf9fd2367de852ae29d3abaa85/docs/FAILOVER_ANALYTICS_ENGINE.md).
+- [Legacy ingestion-scheduling separation at worker merge `a073e351e5716a97e0759cca17096851cbb80261`](https://github.com/ramideltoro/nutsnews-worker/tree/a073e351e5716a97e0759cca17096851cbb80261), including the safe status contract and protected scheduling operations workflow.
+
+## Legacy ingestion scheduling is now separate
+
+Worker issue #150 added `INGESTION_SCHEDULING_ENABLED`. It stays safely
+enabled when the setting is missing, so the current legacy production owner
+keeps scheduling. If a later approved cutover explicitly sets it to false,
+the controller still checks failover first and keeps health, status, actions,
+DNS checks, alarms, alerts, and analytics working; it skips only legacy shard
+and translation-backlog requests.
+
+Operators use `Controller Ingestion Scheduling Operations`. `status` only
+reads the safe public state. `plan` tests and dry-runs the exact requested
+configuration without deploying. `apply` is protected and reversible. The
+live state remains enabled, and a disabled plan does not authorize cutover.
+Runs 30690135595, 30690227183, 30690250417, and 30690250981 prove the deployed
+enabled state, protected apply, disabled dry run, and current status.
 
 If one of these owners changes behavior, update this guide in the same reviewed change or record the mismatch as a readiness blocker.
 

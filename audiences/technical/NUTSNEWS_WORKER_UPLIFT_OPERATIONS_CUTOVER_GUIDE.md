@@ -44,8 +44,9 @@ record, and completion checklist.
 | Credential readiness | `nutsnews-backend` | `Backend Credential Readiness` |
 | Grafana resources | `nutsnews-infra` | `Grafana Cloud Plan` and Apply |
 | Apex/www DNS failover | `nutsnews-infra` | `Cloudflare DNS Failover Apply` |
+| Legacy ingestion scheduling | `nutsnews-worker` | `Controller Ingestion Scheduling Operations` |
 | Admin projection | `nutsnews` | authenticated `/admin/shards` |
-| Worker cutover | not implemented | future #150, #126, and #127 controls |
+| Worker cutover | not authorized | #126 controls, #166 final gate, and #127 execution |
 
 The existing backend `Backend Production Cutover` workflow is for the database
 provider. It is not a worker-ingestion cutover.
@@ -60,8 +61,8 @@ provider. It is not a worker-ingestion cutover.
 - Protected mutations include deploy, restart, scale, drain, rollback,
   reconciliation apply, smoke, drills, backups, restore drills, and infra
   applies.
-- Worker promotion, worker cutover, legacy-ingestion stop, and generic DLQ
-  replay apply have no approved current path.
+- Worker promotion, worker cutover, legacy-ingestion disable, and generic DLQ
+  replay apply have no approved current path before their downstream gates.
 
 Use fixed workflows from `main`, inspect the workflow artifact, and record the
 run, commit, artifact digest, safety state, and verification. A green
@@ -170,13 +171,34 @@ block DNS failover.
 Stopping legacy ingestion in a future issue does not authorize controller
 retirement or DNS changes.
 
+## Legacy ingestion-scheduling control
+
+Worker PR #171 at merge `a073e351e5716a97e0759cca17096851cbb80261`
+separates shard dispatch from the retained failover controller. Missing
+`INGESTION_SCHEDULING_ENABLED` defaults to enabled. Scheduled and manual
+ingestion wake/check failover first, then skip only shard refresh and
+translation-backlog dispatch when explicitly disabled. The safe machine
+signal is `GET` or `HEAD /ingestion-scheduling/status`.
+
+Use `Controller Ingestion Scheduling Operations` from `main`. `status` is
+read-only; `plan` renders and Wrangler-dry-runs an exact state; protected
+`apply` deploys the exact controller configuration. The active state remains
+enabled. Until #166 and #127, only an enabled apply is authorized; a disabled
+plan is not cutover permission. Re-enable through the same protected workflow
+and verify the status artifact to roll back without editing code.
+
+Post-merge Worker Pipeline 30690135595, protected enabled apply 30690227183,
+disabled dry-run plan 30690250417, and live status 30690250981 all passed.
+Their artifacts prove that Worker identity, routes, cron, bindings, Durable
+Object migrations, and failover surfaces are retained.
+
 ## Future sequence
 
 1. Keep current coexistence: legacy production owner, uplift shadow-only, DNS
    failover independent.
-2. #125 reviews all residual security and operations risks.
-3. #150 separates ingestion scheduling from DNS failover and proves all
-   controller invariants.
+2. #125 recorded GO for guarded control implementation, not cutover.
+3. #150 has separated ingestion scheduling from DNS failover and preserved
+   the enabled legacy-owner baseline.
 4. #126 adds fixed reversible owner, scheduling, write, watermark, and rollback
    controls.
 5. #127 establishes the watermark, proves drain/reconciliation/backups, and
