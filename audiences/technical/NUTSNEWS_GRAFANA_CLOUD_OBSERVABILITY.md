@@ -239,14 +239,17 @@ Synthetic Monitoring is optional and configured through protected variables, not
 
 Synthetic checks use a separate Grafana Synthetic Monitoring API token. The Grafana service account token manages folders, dashboards, and alert rules, but the Terraform provider needs `GRAFANA_SM_ACCESS_TOKEN` for `grafana_synthetic_monitoring_check` resources. In GitHub this is stored as `NUTSNEWS_GRAFANA_SYNTHETIC_MONITORING_ACCESS_TOKEN`.
 
+The provider also needs the stack-region Synthetic Monitoring API endpoint as `GRAFANA_SM_URL`, stored in protected secret `NUTSNEWS_GRAFANA_SYNTHETIC_MONITORING_URL`. Copy it from **Testing & synthetics > Synthetics > Config > General**. The protected validator requires a bounded HTTPS `grafana.net` endpoint and maps it explicitly in plan, drift, and apply; a valid token sent to another region is rejected.
+
 Set `NUTSNEWS_GRAFANA_SYNTHETIC_HTTP_CHECKS_JSON` to `{}` to temporarily disable Synthetic Monitoring resources while still applying dashboards and quota alerts.
 
 The protected plan and apply workflows run the source-controlled input
 validator before OpenTofu. It enforces JSON shape, positive unique probe IDs,
 HTTPS targets, 10-second through 60-minute intervals, bounded timeouts, token
-presence, and the 90% execution-budget ceiling. Its report is deliberately
-value-free: it includes only counts, interval bounds, projected executions, and
-the configured ceiling. It never emits target URLs, check names, probe IDs, or
+and regional-endpoint presence, and the 90% execution-budget ceiling. Its
+report is deliberately value-free: it includes only counts, interval bounds,
+projected executions, endpoint-configured status, and the configured ceiling.
+It never emits target URLs, regional endpoints, check names, probe IDs, or
 credentials.
 
 Recommended first checks:
@@ -385,6 +388,7 @@ Optional Synthetic Monitoring secrets:
 | Secret | Purpose |
 | --- | --- |
 | `NUTSNEWS_GRAFANA_SYNTHETIC_MONITORING_ACCESS_TOKEN` | Synthetic Monitoring API token; required when probe IDs and enabled HTTP checks are configured |
+| `NUTSNEWS_GRAFANA_SYNTHETIC_MONITORING_URL` | Stack-region Synthetic Monitoring API endpoint; required with the access token and mapped as `GRAFANA_SM_URL` |
 | `NUTSNEWS_GRAFANA_SYNTHETIC_PROBE_IDS_JSON` | JSON array of probe IDs |
 | `NUTSNEWS_GRAFANA_SYNTHETIC_HTTP_CHECKS_JSON` | JSON object of safe HTTP checks |
 

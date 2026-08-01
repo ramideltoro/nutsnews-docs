@@ -1,7 +1,7 @@
 flowchart LR
   accTitle: NutsNews Grafana Cloud observability controls
   accDescr: Protected inputs pass through value-free validation and a read-only plan before reviewed Grafana changes can be applied.
-  inputs["Protected synthetic inputs"] --> validator["Value-free validator\nAPI bounds + quota ceiling"]
+  inputs["Protected synthetic inputs"] --> validator["Value-free validator\nregion endpoint + API bounds + quota ceiling"]
   source["Infra OpenTofu source"] --> plan["Protected read-only plan\nand drift check"]
   validator --> plan
   plan --> evidence["Immutable evidence\ninputs + dashboards + alerts\nPrometheus + Loki"]
