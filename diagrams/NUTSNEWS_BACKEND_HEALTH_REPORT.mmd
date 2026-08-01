@@ -1,7 +1,20 @@
-flowchart TB
-  accTitle: NutsNews Backend Health Report
+flowchart TD
+  accTitle: NutsNews backend health report failure and evidence flow
   accDescr {
-    NutsNews now has a daily backend checkup. It looks at the backend server, writes down what looks healthy or needs attention, and can email the report without changing the server.
+    The established workflow performs fixed read-only checks. Backend PR 471 stages
+    fail-on-critical behavior and one atomic write of bounded audit state, followed by
+    five-minute host metrics so Grafana can detect repeated failures or a missed schedule after
+    protected deployment and apply.
   }
-  A["NutsNews Backend Health Report"] --> B["NUTSNEWS_BACKEND_HEALTH_REPORT.md"]
-  B --> C["Auto-generated placeholder diagram"]
+  A["Scheduled or manual workflow"] --> B["Fixed read-only backend checks"]
+  B --> C["Sanitize and classify results"]
+  C --> D["Always write report, summary\nand optional email"]
+  C --> E{"Critical checks present?"}
+  E -->|"Yes"| F["Workflow fails after\nevidence is retained"]
+  E -->|"No"| G["Update last successful time"]
+  D --> H["Export conclusion, critical count\nand last-success age"]
+  F --> H
+  G --> H
+  H --> H1["Candidate atomically writes one bounded\naudit-state file; not deployed"]
+  H1 --> I["Staged five-minute host metrics\nrun/success ages and failure count"]
+  I --> J["Grafana: two failures or\nrun evidence older than 30 hours"]

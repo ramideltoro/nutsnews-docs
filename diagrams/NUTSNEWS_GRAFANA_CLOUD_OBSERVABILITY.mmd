@@ -1,12 +1,50 @@
 flowchart LR
-  accTitle: NutsNews Grafana Cloud observability controls
-  accDescr: Protected inputs pass through value-free validation and a read-only plan before reviewed Grafana changes can be applied.
-  inputs["Protected synthetic inputs"] --> validator["Value-free validator\nregion endpoint + API bounds + quota ceiling"]
-  source["Infra OpenTofu source"] --> plan["Protected read-only plan\nand drift check"]
-  validator --> plan
-  plan --> evidence["Immutable evidence\ninputs + dashboards + alerts\nPrometheus + Loki"]
-  plan --> review{"Reviewed mutation needed?"}
-  review -->|"No"| stop["Remain read-only"]
-  review -->|"Yes"| apply["Protected Grafana apply"]
-  apply --> grafana["Grafana folders, dashboards,\nalerts, quotas, synthetics"]
-  producers["VPS and backend Alloy"] --> grafana
+  accTitle: NutsNews Grafana Cloud observability hardening
+  accDescr {
+    Draft application, worker, backend, and VPS sources prepare bounded metrics and normalized
+    logs. Protected inputs, Environment policy, the synthetic cadence choice, GitOps apply, and
+    retained live evidence are all still required before the rollout is complete.
+  }
+  subgraph Producers["Telemetry producers"]
+    Web["Web and content signals"]
+    Workers["Eight shadow worker services\nand RabbitMQ"]
+    Backend["Backend API, PostgreSQL,\nsync relay and Caddy"]
+    VPS["VPS host, systemd,\ndocker stats and journals"]
+  end
+  Source["Backend owns deploy, Alloy and outbox; worker repos own service signals;\ninfra owns Grafana; meta repo coordinates"] --> Producers
+  Web --> Alloy["Backend and VPS Alloy\nbounded collection"]
+  Workers --> Alloy
+  Backend --> Alloy
+  VPS --> Alloy
+  Alloy --> Metrics["Grafana Cloud Metrics"]
+  Alloy --> Logs["Grafana Cloud Logs\nnormalized labels"]
+  Logs --> Drilldown["Query-time pipeline drilldown\nfield links; no Tempo"]
+  Infra["nutsnews-infra draft PR"] --> Prereq["Environment policy, protected inputs\nand synthetic budget decision"]
+  Prereq --> Validator["Value-free synthetic validator\nregion, API bounds and quota ceiling"]
+  Validator --> Plan["Protected read-only plan\nand drift check"]
+  Plan --> PlanEvidence["Read-only evidence\ninputs, dashboards, alerts,\nPrometheus and Loki"]
+  Plan --> Review{"Reviewed mutation approved?"}
+  Review -->|"No"| Pending
+  Review -->|"Yes"| Apply["Protected OpenTofu\nand Ansible apply"]
+  Apply --> Grafana["Dashboards, email policies,\nfive synthetics and four SLOs"]
+  Apply --> Ownership["Ownership dashboard: backend revision\nand exact identities for all eight workers"]
+  Apply --> Capacity["Cadence unresolved: six minutes about 72k,\nor five minutes 86.4k with standing major,\nor source-reviewed threshold change"]
+  Metrics --> Grafana
+  Logs --> Grafana
+  Grafana --> Evidence["Post-apply query report"]
+  Grafana --> Canary["Firing and resolved\nemail canary receipts"]
+  Grafana --> Drills["Source-wired failure drills\nlive proof pending"]
+  Workers --> Structural["Even shadowed: deployed, up 1, scrape under 180s,\nexact identity and readiness series"]
+  Structural --> Evidence
+  Backend --> Pressure["Outbox age guarded by availability;\nseparate from global feed freshness"]
+  Pressure --> Grafana
+  Ownership --> Evidence
+  Evidence --> Ready{"All required evidence present?"}
+  Canary --> Ready
+  Drills --> Ready
+  Capacity --> Ready
+  Ready -->|"No"| Pending["Rollout remains pending"]
+  Ready -->|"Yes"| Operate["Operate within free-tier\nand ownership guardrails"]
+  Legacy["Legacy nutsnews-worker\nproduction ingestion owner"] --> Operate
+  Packages["Contracts and Runtime 1.0 released;\neight worker repins still in progress"] --> Workers
+  Readonly["Read-only audit Environment exists,\nbut all four inputs are absent"] --> Prereq

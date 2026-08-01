@@ -1,7 +1,34 @@
-flowchart TB
-  accTitle: NutsNews Service Level Objectives
+flowchart TD
+  accTitle: NutsNews native SLO and readiness boundaries
   accDescr {
-    Issue: https://github.com/ramideltoro/nutsnews/issues/89
+    Four staged native Grafana SLOs use rolling 30-day windows and generated burn
+    alerts. Current-state readiness and older Worker, feed, translation, backup,
+    and performance thresholds remain separate operational guardrails.
   }
-  A["NutsNews Service Level Objectives"] --> B["SERVICE_LEVEL_OBJECTIVES.md"]
-  B --> C["Auto-generated placeholder diagram"]
+  A["Source-controlled observability contract"] --> B["Four native Grafana SLOs\nrolling 30-day windows"]
+  Owners["Backend owns deploy, Alloy and outbox; worker repos own service signals;\ninfra owns Grafana; meta repo coordinates"] --> A
+  B --> C["Public availability\n99.5%"]
+  B --> D["Successful article observations only\nwithin 750 ms: 95%; failures stay separate"]
+  B --> E["Feed age within 15 minutes\n99%; critical after 3 hours"]
+  B --> F["Worker terminal success across\nall canonical delivery stages: 99%"]
+  C --> G["Generated fast and slow burn alerts"]
+  D --> G
+  E --> G
+  F --> H["Source defaults worker SLO alerts off;\nprotected live value still unconfirmed"]
+  H --> I["Qualification only\nNo generated Worker burn pages"]
+  A --> J["Legacy readiness and operational guardrails"]
+  J --> K["/admin/readiness\ncurrent-state promotion and triage"]
+  J --> L["Worker, translation, backup, performance, and fallback checks"]
+  J --> N["Custom worker-local alerts use\nexpected_active ownership joins"]
+  N --> O["All eight shadow services still require up,\nfresh scrape, exact identity and readiness series"]
+  N --> P["Only expected_active 1 requires readiness ok,\nactivity, last success and worker paging"]
+  E --> Q["Global 15m feed SLO is distinct from\navailability-guarded backend outbox age"]
+  G --> M["Incident classification and evidence"]
+  K --> M
+  L --> M
+  N --> M
+  O --> M
+  P --> M
+  Q --> M
+  A --> R["Ownership dashboard: backend revision\nand all eight worker identities"]
+  R --> M

@@ -1,11 +1,11 @@
 ---
 wiki:
   approval:
-    state: approved
+    state: unreviewed
     publishing: allowed
-    reviewed_by: "ramideltoro"
-    reviewed_on: "2026-07-28T20:10:06.000Z"
-    technical_source_hash: d1be7421b376630459dedcfc396c73da3f6439a50b19bab17e2b7352da5257c9
+    reviewed_by: pending
+    reviewed_on: pending
+    technical_source_hash: 7ac4462a38c2de757f4555d9105080e4e4770bfc3ec3ba6fb63ad2babf9368c7
 ---
 # NutsNews Worker-Uplift RabbitMQ Metrics
 
@@ -33,6 +33,16 @@ The backend host is the RabbitMQ telemetry producer for the worker-uplift
 broker. Grafana Cloud resources remain owned by
 `ramideltoro/nutsnews-infra`; the backend repo only renders Alloy scrape and
 remote-write configuration.
+
+That producer boundary is broader than RabbitMQ: `nutsnews-backend` owns worker
+deployment, backend Alloy, and backend-hosted production-ownership and outbox
+gauges. The scheduler, fetcher, canonicalizer, enrichment, approval,
+translation, persistence, and publication repositories each own their service
+identity, health, lifecycle, and latency signals. `nutsnews-infra` alone owns
+Grafana resources, while the `nutsnews-worker` meta-repository coordinates the
+rollout. Source ownership must not be confused with an alert's `owner` routing
+label. The Current Production Ownership dashboard must show the backend
+revision and exact deployed identity for all eight split-worker services.
 
 RabbitMQ exposes the `rabbitmq_prometheus` plugin on the loopback-only listener
 `127.0.0.1:15692`. Backend Grafana Alloy scrapes that private endpoint and
@@ -72,6 +82,16 @@ Alloy sets RabbitMQ scrape sample and label limits, keeps only approved
 RabbitMQ metric names, keeps only declared queue names, and does not create or
 change Grafana dashboards, folders, alerts, contact points, synthetics, or
 quota guardrails.
+
+All eight split services remain shadow-only in the baseline with
+`nutsnews_worker_expected_active=0`. Shadow mode suppresses worker-local
+production paging, not structural qualification: every service must be
+deployed, report `up == 1`, remain scrape-fresh for less than 180 seconds,
+expose readiness series, and publish exact non-`unknown` build/deployment
+identity. Missing structural series are never ownership-gated. Only a service
+with `nutsnews_worker_expected_active=1` must additionally report successful
+readiness, scheduler loop/cycle or delivery-stage activity as applicable, last
+success, and worker-local paging eligibility.
 
 ## Grafana Dashboards
 
@@ -278,12 +298,14 @@ The canary writes the latest redacted JSON evidence to:
 /var/lib/nutsnews/rabbitmq-probes/last-canary-drill.json
 ```
 
-## Grafana Alerts And SLOs
+## Grafana Alerts And Dashboard SLIs
 
 Issue `ramideltoro/nutsnews-worker#90` tracks worker-uplift RabbitMQ alert and
-SLO resources in `ramideltoro/nutsnews-infra`. The source of truth is
+dashboard SLI resources in `ramideltoro/nutsnews-infra`. The source of truth is
 `terraform/grafana-cloud/catalog/worker-uplift-rabbitmq-alerts.json`, managed
-through the Grafana Cloud OpenTofu module.
+through the Grafana Cloud OpenTofu module. The catalog's legacy `slos` key and
+`slo_id` fields are compatibility metadata for panels and custom rules; they do
+not create native `grafana_slo` resources.
 
 Grafana objects:
 
@@ -296,28 +318,65 @@ The alert group covers broker down, private canary failure, Alloy scrape/write
 loss, no consumers while work exists, sustained backlog or oldest-age pressure,
 publish/ack imbalance, unacked growth, DLQs, retry/redelivery pressure,
 connection churn, broker memory/disk alarms, low disk, descriptor pressure,
-stale recovery proof, repeated restarts, and multi-window SLO burn-rate
+stale recovery proof, repeated restarts, and multi-window custom guardrail
 alerts.
 
-Every rule carries `deployment_environment`, `service`, `queue`, `severity`,
-`owner`, `route`, `threshold`, `runbook_url`, and recovery-window metadata.
-The contact route remains a label consumed by existing Grafana notification
-policies; the infra module does not commit contact-point secrets.
+Every rule must carry `severity`, `owner`, `route`, `service`,
+`deployment_environment`, a dashboard URL, and a runbook URL. Queue, threshold,
+and recovery-window metadata are added only where relevant. The route is
+consumed by the Terraform-managed operations-email notification policies; the
+recipient remains a protected secret rather than source-controlled plaintext.
 
-SLOs covered by the dashboard and alert catalog:
+Dashboard SLIs and custom guardrails covered by the catalog:
 
-| SLO | Target |
+| Dashboard SLI or custom guardrail | Target |
 | --- | --- |
 | Broker availability | 99.5% monthly availability |
 | Stage success and latency | 99% successful stage events and p95 under 30 seconds |
-| End-to-end feed freshness | freshness age under 30 minutes |
+| Worker-local diagnostic freshness | freshness age under 30 minutes |
 | Retry/DLQ rate | retry and DLQ budget ratio below 1% |
 | Final publication success | 99% successful final publication events |
 
-Stage, feed freshness, and final publication queries are intentionally
-`NoData=OK` until later worker service issues emit those metrics. Broker and
-retry/DLQ SLO alerts use 5-minute and 1-hour burn-rate windows where current
-RabbitMQ telemetry supports them.
+Worker-local activity, consumer, latency, freshness, and final-publication
+queries page only when the relevant production owner exports
+`nutsnews_worker_expected_active=1`. No Data may suppress an inappropriate
+shadow behavior page, but it does not prove health or qualify a cutover.
+Required `up`, scrape freshness, exact build/deployment identity, and
+readiness-series presence for all eight workers are structural checks and are
+never ownership-gated or treated as healthy No Data. Broker and retry/DLQ custom
+rules use 5-minute and 1-hour windows. Worker-local threshold rules use
+15-minute evaluations. The global reader-visible durable feed-freshness SLO and
+its three-hour critical guardrail are separate and remain enabled regardless of
+whether legacy or split workers own ingestion.
+
+The following is source-staged target state unless a protected apply and live
+query are separately evidenced. The four native, rolling 30-day Grafana SLOs are defined separately in
+`terraform/grafana-cloud/slos.tf` and documented in
+[Service Level Objectives](SERVICE_LEVEL_OBJECTIVES.md). The 30-minute
+worker-specific freshness warning here is diagnostic and ownership-gated; it
+does not replace the global native 99%-within-15-minutes feed objective or its
+ungated three-hour guardrail. The dashboard's “Final publication success” is a
+custom publication-only SLI; the native Worker terminal SLO instead aggregates
+event-weighted outcomes across every canonical delivery stage. It counts
+`success|duplicate` over `success|duplicate|invalid|failure|dlq`, excludes
+intermediate `retry`, and leaves scheduler cycles outside the stage family.
+Source defaults `worker_terminal_slo_alerting_enabled` to `false`, so the
+candidate omits generated burn alerts while shadowed; the protected live value
+still needs rollout confirmation. Custom worker-local rules use the separate
+`nutsnews_worker_expected_active` ownership gate.
+
+The native API-latency SLO denominator contains only successful article/API
+observations. Failed status, body, or header assertions remain availability and
+correctness signals and are not recast as slow successful requests.
+
+The canonical oldest worker-pressure gauge is backend-owned, not emitted by an
+individual service:
+`nutsnews_backend_worker_uplift_oldest_unconfirmed_outbox_age_seconds`. Query it
+only with
+`nutsnews_backend_worker_uplift_outbox_available == 1`; unavailable projection
+data is a separate telemetry failure. RabbitMQ broker queue age remains useful
+for queue diagnosis, but neither value replaces the global 15-minute
+reader-visible feed-freshness SLO.
 
 Use the backend `Backend RabbitMQ Canary` workflow from #91 to exercise
 deliberate firing and recovery without exposing private AMQP:

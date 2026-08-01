@@ -1,10 +1,27 @@
-flowchart TD
-  accTitle: NutsNews Backend Monitoring Baseline
+flowchart LR
+  accTitle: NutsNews backend Grafana telemetry flow
   accDescr {
-    This documents the initial monitoring, health check, and log-retention baseline for ramideltoro/nutsnews-backend and 65.75.201.18.
+    Backend PR 471 source-stages Alloy scrapes for the worker database API, eight private workers,
+    PostgreSQL, Caddy, TLS, RabbitMQ, and textfile signals. Deployment and fresh query evidence are
+    still required before those candidate signals can be called live.
   }
-  A[Backend host baseline run] --> B[Collect service and disk metrics]
-  B --> C[Check health endpoints and key process states]
-  C --> D[Record log/retention posture]
-  D --> E[Emit monitoring dashboard artifact]
-  E --> F[Alerting and drift path for anomalies]
+  Host["Backend host and Alloy self"] --> Alloy["Backend Alloy"]
+  Owners["Backend owns deploy, Alloy and outbox; worker repos own service signals;\ninfra owns Grafana; meta repo coordinates"] --> Alloy
+  API["Source-staged worker DB API\nlivez, readyz and metrics"] --> Alloy
+  Workers["Source-staged private workers\nports 18081 through 18088"] --> Alloy
+  Workers --> Structural["Shadow qualification requires deployment, up 1,\nscrape under 180s, exact identity and readiness series"]
+  Data["PostgreSQL, sync relay\nand RabbitMQ"] --> Alloy
+  Edge["Caddy RED and TLS"] --> Alloy
+  Backup["Durable backup last-success state\nand 30-hour freshness"] --> Alloy
+  Journals["Bounded normalized journals"] --> Alloy
+  Alloy --> Metrics["Grafana Cloud Metrics"]
+  Alloy --> Logs["Grafana Cloud Logs"]
+  Infra["nutsnews-infra protected apply"] --> Grafana["Dashboards, alerts and\noperations email routing"]
+  Infra --> Ownership["Ownership dashboard: backend revision\nand all eight worker identities"]
+  Data --> Outbox["Backend outbox availability and oldest age\nseparate from global feed freshness"]
+  Metrics --> Grafana
+  Logs --> Grafana
+  Structural --> Grafana
+  Outbox --> Grafana
+  Ownership --> Grafana
+  Drills["Protected telemetry-only failure drill\nsource; live proof pending"] --> Grafana

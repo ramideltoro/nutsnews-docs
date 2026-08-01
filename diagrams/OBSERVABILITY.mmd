@@ -1,7 +1,27 @@
-flowchart TB
-  accTitle: Observability
+flowchart LR
+  accTitle: NutsNews observability layers
   accDescr {
-    NutsNews is built with observability from the start.
+    NutsNews already has Grafana host metrics and logs. Draft application telemetry, managed
+    alert email, five public synthetics, and four SLOs still require protected inputs, a
+    synthetic cadence decision, apply, and live evidence. Sentry remains the exception store.
   }
-  A["Observability"] --> B["OBSERVABILITY.md"]
-  B --> C["Auto-generated placeholder diagram"]
+  Services["Web, workers, backend and VPS"] --> Grafana["Grafana Cloud\nexisting host metrics and logs"]
+  Owners["Backend owns deploy, Alloy and outbox; worker repos own service signals;\ninfra owns Grafana; meta repo coordinates"] --> Services
+  Services --> WorkerGate["All eight shadow workers still require deployed, up,\nfresh scrape, exact identity and readiness series"]
+  Staged["Draft source changes"] --> Pending["Staged application telemetry, email,\nfive synthetics and four SLOs"]
+  Pending --> Choice["Cadence unresolved: six minutes,\nfive-minute standing major,\nor reviewed threshold change"]
+  Readonly["Read-only audit Environment exists;\nall four inputs still absent"] --> Choice
+  Choice --> Apply["Protected apply and post-apply evidence"]
+  Apply --> Grafana
+  Apply --> Ownership["Ownership dashboard shows backend revision\nand all eight worker identities"]
+  Grafana --> Drilldown["Pipeline-run dashboard uses parsed metadata\nand bounded table field links"]
+  Drilldown --> Deferred["Hosted-Loki derived fields and Tempo\nremain deferred"]
+  Services --> Sentry["Sentry\nscrubbed exceptions and replays"]
+  Workflows["Scheduled health and release workflows"] --> Reports["Durable reports and\ndeployment annotations"]
+  Providers["Cloudflare, Vercel, Supabase\nand public uptime monitors"] --> Operator["Operator investigation"]
+  Grafana --> Operator
+  WorkerGate --> Operator
+  Ownership --> Operator
+  Drilldown --> Operator
+  Sentry --> Operator
+  Reports --> Operator

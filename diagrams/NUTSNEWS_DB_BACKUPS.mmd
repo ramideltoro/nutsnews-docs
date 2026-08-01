@@ -1,7 +1,16 @@
-flowchart TB
-  accTitle: NutsNews Supabase Backup Automation
+flowchart LR
+  accTitle: NutsNews daily database backup freshness
   accDescr {
-    This runbook documents the production Supabase backup automation for NutsNews.
+    The daily database job writes and verifies an encrypted off-machine backup. Grafana and
+    production readiness use one 30-hour freshness window. A missing, failed, or older result
+    blocks recovery confidence and sends the operator to the backup and restore runbooks.
   }
-  A["NutsNews Supabase Backup Automation"] --> B["NUTSNEWS_DB_BACKUPS.md"]
-  B --> C["Auto-generated placeholder diagram"]
+  Timer["Daily database backup timer"] --> Export["Create compressed database dump"]
+  Export --> Verify["Validate checksum and upload\nto encrypted remote"]
+  Verify --> Live["Live unmanaged exporter\nlast-run is not safe freshness"]
+  Verify --> Staged["Infra-staged hardened exporter\npreserves last success; not deployed"]
+  Staged --> Evidence["After protected deploy: export success\ntimestamp and unavailable state"]
+  Live --> Unavailable["Grafana age stays explicitly unavailable\nuntil fresh metric exists"]
+  Evidence --> Fresh{"Age below 30 hours?"}
+  Fresh -->|"Yes"| Ready["Backup evidence is fresh"]
+  Fresh -->|"No"| Stale["Grafana stale alert and\nrecovery blocker"]

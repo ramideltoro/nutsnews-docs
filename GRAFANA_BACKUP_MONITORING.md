@@ -1,11 +1,11 @@
 ---
 wiki:
   approval:
-    state: approved
+    state: unreviewed
     publishing: allowed
-    reviewed_by: "ramideltoro"
-    reviewed_on: "2026-07-28T20:10:06.000Z"
-    technical_source_hash: 533d56ec37549abbef61fd8a34cf5b24bcca41e53801a703a334554f97d1691a
+    reviewed_by: pending
+    reviewed_on: pending
+    technical_source_hash: 66e0d5a1b6a694d81fb23894f3c159bf039525191bfd00a797ab8cbcabdc7b4a
 ---
 # Grafana Cloud Backup Monitoring
 
@@ -227,7 +227,7 @@ Panel setup:
 | Visualization | Stat or Gauge |
 | Title | Backup Age |
 | Unit | Seconds, then display as duration |
-| Threshold idea | Green under 24h, amber over 24h, red over 48h |
+| Threshold | Fresh under 30h, stale at or above 30h |
 
 This panel is often more useful than the raw backup time because it immediately answers whether the backup is fresh.
 
@@ -362,18 +362,23 @@ Home server backup failed
 Alert condition if the last-success timestamp exists:
 
 ```promql
-time() - home_server_backup_last_success_timestamp_seconds{instance="chingadera", job="integrations/unix"} > 86400
+time() - home_server_backup_last_success_timestamp_seconds{instance="chingadera", job="integrations/unix"} > 108000
 ```
 
-This means the last successful backup is older than 24 hours.
+This means the last successful backup is older than the standardized 30-hour
+freshness window.
+
+Infra source now schedules `nutsnews-restic-verify.timer` daily at `05:15` with
+up to six hours of randomized delay and uses this same 30-hour overdue limit.
+The read-only live scan still showed the older weekly schedule and 192-hour
+threshold; the daily/30-hour contract is not live until protected apply and
+post-apply verification succeed.
 
 Recommended alert name:
 
 ```text
 Home server backup stale
 ```
-
-Use a larger threshold if the backup schedule is weekly instead of daily.
 
 ---
 
@@ -477,12 +482,25 @@ Discovery query:
 {__name__=~"nutsnews_db_backup_.*"}
 ```
 
-Useful panel queries:
+Live verification on 2026-07-31 found that the host-local exporter is
+unmanaged by the scanned repositories and does not yet emit
+`nutsnews_db_backup_last_success_timestamp_seconds`. Its
+`nutsnews_db_backup_last_run_timestamp_seconds` advances on failed attempts, so
+that attempt timestamp is not a safe freshness substitute. Infra now
+source-stages a tested hardened exporter that preserves durable last-success
+state, writes atomically, and overwrites stale/corrupt input with explicit
+unavailable metrics. It is not deployed or wired into the live job. The age
+panel and stale alert below therefore remain post-deploy queries and must render
+explicit unavailable state until fresh live evidence exists.
+
+Live and source-staged panel queries:
 
 | Panel | Query | Visualization |
 | --- | --- | --- |
 | NutsNews DB Backup Success | `nutsnews_db_backup_last_success` | Stat |
-| NutsNews DB Backup Age | `time() - nutsnews_db_backup_last_run_timestamp_seconds` | Stat or Gauge |
+| NutsNews DB Backup Age (source-staged; not live) | `time() - nutsnews_db_backup_last_success_timestamp_seconds` | Stat or Gauge |
+| NutsNews DB Backup Exporter Availability (source-staged; not live) | `nutsnews_db_backup_status_available` | Stat |
+| NutsNews DB Backup Exporter Collection (source-staged; not live) | `nutsnews_db_backup_metrics_collection_success` | Stat |
 | NutsNews DB Backup Duration | `nutsnews_db_backup_last_duration_seconds` | Stat |
 | NutsNews DB Backup Size | `nutsnews_db_backup_last_size_bytes` | Stat |
 | NutsNews DB Backup Files | `nutsnews_db_backup_last_file_count` | Stat |
@@ -501,7 +519,7 @@ Recommended success mapping:
 Recommended stale-backup alert:
 
 ```promql
-time() - nutsnews_db_backup_last_run_timestamp_seconds > 93600
+time() - nutsnews_db_backup_last_success_timestamp_seconds > 108000
 ```
 
 Recommended failed-backup alert:
@@ -510,7 +528,26 @@ Recommended failed-backup alert:
 nutsnews_db_backup_last_success == 0
 ```
 
-The database backup schedule is daily at 3:15 AM with up to 10 minutes of randomized delay, so a 26-hour freshness threshold gives the timer a reasonable grace window.
+The database backup schedule is daily at 3:15 AM with up to 10 minutes of
+randomized delay. The shared 30-hour threshold is the authoritative freshness
+window for Grafana, readiness, and incident handling. Failed attempts must not
+advance the last-success timestamp; if the hardened metric is unavailable, the
+panel shows an explicit unavailable state and the telemetry-loss rule handles
+the gap.
+
+### Backend Backup Freshness Source
+
+Backend source separately implements durable backup state in the managed
+textfile exporter. It emits
+`nutsnews_backend_backup_status_available`,
+`nutsnews_backend_backup_last_run_timestamp_seconds`,
+`nutsnews_backend_backup_last_run_age_seconds`,
+`nutsnews_backend_backup_last_success_timestamp_seconds`,
+`nutsnews_backend_backup_last_success_age_seconds`,
+`nutsnews_backend_backup_last_success_fresh`, and
+`nutsnews_backend_backup_stale_after_seconds=108000`. Failed attempts preserve
+the previous verified-success time. This is implemented source, not live proof;
+deployment and fresh Grafana queries remain required.
 
 ---
 

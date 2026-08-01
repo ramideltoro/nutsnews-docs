@@ -11,11 +11,11 @@ wiki:
   collection: platform-and-data
   section: Operations & Monitoring
   approval:
-    state: approved
+    state: unreviewed
     publishing: allowed
-    reviewed_by: "ramideltoro"
-    reviewed_on: "2026-07-28T20:10:06.000Z"
-    technical_source_hash: ed45a97403c9e945143f34be9c8d58e8a12390a2b012e7ad89d084cf809afc86
+    reviewed_by: pending
+    reviewed_on: pending
+    technical_source_hash: 2befcf402f4569c07f3be35413b46fd5e1731bb50a681dd756d91ac590b76904
 ---
 
 # Observability
@@ -40,7 +40,7 @@ NutsNews uses multiple observability layers:
 | UptimeRobot | Additional external availability, keyword, API, and public page monitoring |
 | Lighthouse CI | GitHub Actions quality checks for public web performance, accessibility, SEO, best practices, and Core Web Vitals-style regressions |
 | Better Stack Logs | Existing app/Worker structured log searches until those repos migrate |
-| Grafana Cloud | VPS infrastructure metrics, centralized Loki logs, Explore queries, dashboards, quota alerts, and backup alerts |
+| Grafana Cloud | Existing host/log visibility plus staged application metrics, managed alert email, five HTTP synthetics with an unresolved cadence choice, four SLOs, and quota guardrails pending protected apply evidence |
 | Backend Health Report | Daily read-only backend host report from GitHub Actions with JSON artifact and optional SMTP delivery |
 | Sentry | Application error monitoring |
 | Cloudflare | CDN and Worker visibility |
@@ -52,22 +52,32 @@ NutsNews uses multiple observability layers:
 
 ## Centralized Logging
 
-NutsNews infrastructure logs are centralized in Grafana Cloud Logs through Grafana Alloy on the VPS. The infra repo owns the host-side pipeline for systemd journal logs, auth/security logs, Caddy JSON access/error logs, Docker/Compose logs for NutsNews runtime containers, backup/reporting logs, and Ops Portal logs.
+NutsNews infrastructure logs are centralized in Grafana Cloud Logs through
+Grafana Alloy on the VPS. The infra repo owns the host-side pipeline for
+systemd journal logs, auth/security logs, Caddy JSON access/error logs,
+Docker/Compose logs for NutsNews runtime containers, backup/reporting logs, and
+Ops Portal logs. The exact normalization contract below is source-staged in the
+observability hardening work and still requires protected apply plus recent
+Loki evidence.
 
-Use low-cardinality Loki labels such as:
+The staged Alloy boundary normalizes indexed Loki labels to exactly:
 
 ```text
-env
-host
+deployment_environment
 service
-unit
-container
-compose_project
+service_version
+host
 source
-level
+severity
 ```
 
-Keep high-cardinality data such as request IDs, raw IP addresses, user IDs, full dynamic paths, and arbitrary error strings out of labels. Query those as parsed fields or structured metadata.
+Keep request, message, correlation, trace, article, feed, idempotency, raw IP,
+user, dynamic-path, and arbitrary-error values out of indexed labels. Query safe
+`pipelineRunId`, `correlationId`, and `traceparent` values as parsed fields or
+structured metadata. The source-controlled pipeline dashboard may use bounded
+table field links for its logs-only drilldown; true hosted-Loki datasource or
+per-row derived links remain deferred because taking ownership of the managed
+datasource could overwrite its connection settings. Tempo remains disabled.
 
 The older app/Worker Better Stack searches remain useful until those application repositories explicitly migrate their runtime logging. Do not treat an infra-only PR as an app logging migration.
 
@@ -83,11 +93,11 @@ Important log fields:
 
 | Field | Purpose |
 | --- | --- |
-| `level` | Severity such as info, warn, or error |
+| `severity` | Severity such as info, warning, error, or critical |
 | `service` | Which part of the platform created the log |
 | `event` | What happened |
 | `message` | Human-readable summary |
-| `environment` | Production, preview, or local |
+| `deployment_environment` | Production, preview, or local |
 | `shardIndex` | Which Worker shard produced the log |
 | `durationMs` | How long an operation took |
 | `status` | Request or operation status |
@@ -237,9 +247,51 @@ event:api.log_test.completed
 
 ## Grafana Cloud
 
-Grafana Cloud is used for Prometheus-style metrics, Loki logs, dashboards, alert rules, and low-frequency Synthetic Monitoring where time-series visibility is more useful than raw logs.
+Grafana Cloud currently provides Prometheus-style host metrics, Loki logs, and
+existing dashboards and alert rules. The source-controlled hardening stages
+normalized application telemetry, operations-email delivery, five Synthetic
+Monitoring checks, and four 30-day SLOs. The current infra candidate encodes a
+five-minute cadence, which projects to 86,400 monthly executions and crosses the
+85,000 major band. Issue
+[`ramideltoro/nutsnews-infra#474`](https://github.com/ramideltoro/nutsnews-infra/issues/474)
+keeps the choice unresolved: change source to six minutes, explicitly accept the
+standing major at five minutes, or change the major threshold in reviewed
+source while retaining the 90,000 ceiling. Those additions are not live until
+the choice, protected inputs, apply, and post-apply evidence all succeed.
+
+The exact-`main` `grafana-observability-readonly` Environment exists but its
+two variables and two secrets are still absent. Production writer inputs and
+Environment reviewer/protection gates also remain operator work. Worker
+Contracts and Runtime `1.0.0` have been released in order; the eight worker
+repin/conformance PRs remain in progress and are not deployed telemetry.
 
 Worker-uplift telemetry is governed by [NutsNews Worker-Uplift Telemetry Scope](NUTSNEWS_WORKER_UPLIFT_TELEMETRY_SCOPE.md). RabbitMQ metrics, worker service metrics, and structured logs are required; full traces and exemplars are deferred; article/model payload telemetry is forbidden.
+
+The legacy `nutsnews-worker` remains the production ingestion owner. All eight
+split services are shadow-only in the baseline with
+`nutsnews_worker_expected_active=0`. Shadow mode does not hide structural
+telemetry failures: scheduler, fetcher, canonicalizer, enrichment, approval,
+translation, persistence, and publication must all be deployed with `up == 1`,
+scrape age below 180 seconds, exact non-`unknown` build/deployment identity, and
+readiness series. Only a service with `expected_active=1` must additionally
+report successful readiness, loop/cycle or delivery-stage activity as
+applicable, last success, and worker-local paging eligibility.
+
+Producer ownership is explicit. `nutsnews-backend` owns worker deployment,
+backend Alloy, and backend-hosted ownership and outbox gauges. Each split-worker
+repository owns its own service identity, health, lifecycle, and latency
+signals. `nutsnews-infra` alone owns Grafana resources, and the
+`nutsnews-worker` meta-repository coordinates rollout. These boundaries are
+different from alert `owner` labels, which route and triage alerts.
+
+The backend-owned worker-pressure pair is
+`nutsnews_backend_worker_uplift_outbox_available` and
+`nutsnews_backend_worker_uplift_oldest_unconfirmed_outbox_age_seconds`. The age
+is valid only when availability is `1`. It is separate from the global
+reader-visible feed-freshness SLO, which stays at 99% within 15 minutes and is
+never split-worker ownership-gated. The API-latency SLO denominator includes
+only successful article/API observations; failures remain availability and
+correctness signals.
 
 The `ramideltoro/nutsnews-infra` Grafana Cloud dashboards are managed by OpenTofu. Dashboard variables that feed regex label matchers must keep their **All** value as `.*`; otherwise PromQL such as `deployment_environment=~"$environment"` and `instance=~"$instance"` can render as `=~""` and hide every real non-empty label value. Node-exporter panels must match the labels Grafana Cloud actually receives from the integration, currently `job=~"integrations/node_exporter"` and `instance=~"$instance"`, not `service_namespace="nutsnews"`. The `NutsNews CPU Load Processes` dashboard also uses Grafana's `$__rate_interval` for CPU rate windows and distinct 1m, 5m, and 15m load-average targets so legends stay clear.
 
@@ -266,9 +318,21 @@ Confirmed value meaning:
 
 The VPS observability layer is managed from `ramideltoro/nutsnews-infra`:
 
-- Ansible installs and configures Grafana Alloy on the VPS when explicitly enabled.
-- Alloy ships host/systemd/log/textfile telemetry and Docker/Compose logs for NutsNews runtime containers; cAdvisor/container metrics remain disabled by default until that separate privilege boundary is reviewed.
-- OpenTofu manages the Grafana Cloud folder, dashboards, quota guardrail alerts, log-pipeline alerts, and optional Synthetic Monitoring checks.
+- Ansible keeps Grafana Alloy enabled as production desired state; a disable
+  requires a typed protected-workflow confirmation.
+- Alloy ships independent host-exporter and Alloy-self metrics,
+  systemd/log/textfile telemetry, bounded `docker stats` metrics, and
+  Docker/Compose logs. cAdvisor/containerd access is not used.
+- OpenTofu owns existing folders, dashboards, and alert rules and stages the
+  protected operations-email contact point and policies, exactly five
+  production Synthetic Monitoring checks, and four Grafana SLOs. The five-minute
+  source cadence is still blocked on the issue #474 budget decision. A branch or
+  plan is not evidence that the staged resources exist in Grafana Cloud.
+- The source-staged Current Production Ownership dashboard is designed to show
+  the backend revision and exact deployed identities for all eight split-worker
+  services alongside web, database, ingestion-owner, write-gate, and
+  telemetry-freshness state. It is not live rollout evidence until protected
+  apply and populated-query verification pass.
 - Grafana Cloud telemetry write credentials and Grafana automation credentials are separate.
 - Real Grafana URLs, usernames, tokens, tenant IDs, Synthetic Monitoring targets, and backend config stay out of Git.
 
@@ -288,7 +352,9 @@ docs/GRAFANA_BACKUP_MONITORING.md
 
 ## Sentry
 
-Sentry tracks frontend, runtime, and Worker errors.
+Sentry is the canonical scrubbed exception and replay store for frontend,
+runtime, and Worker errors. Grafana links releases and safe correlation fields
+to operational context without copying sensitive Sentry payloads.
 
 Use it to answer:
 

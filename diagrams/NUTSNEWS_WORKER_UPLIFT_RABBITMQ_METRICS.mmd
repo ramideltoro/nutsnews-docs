@@ -1,14 +1,17 @@
-flowchart TB
-  accTitle: NutsNews Worker-Uplift RabbitMQ Metrics
+flowchart TD
+  accTitle: NutsNews Worker-Uplift RabbitMQ telemetry and guardrails
   accDescr {
-    Status: backend collection path completed for ramideltoro/nutsnews-worker#87
+    Backend Alloy collects bounded RabbitMQ and canary metrics. The Worker SLI
+    dashboard and custom rules remain separate from the four native Grafana SLOs,
+    and worker-owned paging is gated by production ownership.
   }
   A["Production system state update"] --> B["Backend deploy + apply"]
+  Owners["Backend owns deploy, Alloy and outbox; worker repos own service signals;\ninfra owns Grafana; meta repo coordinates"] --> B
   B --> C["RabbitMQ Prometheus listener on 127.0.0.1:15692"]
   C --> D["Grafana Alloy scrape /metrics and /metrics/detailed"]
   D --> E["Label and metric allowlist in Alloy"]
   E --> F["Remote write to Grafana Cloud Prometheus"]
-  F --> G["Backend RabbitMQ dashboard and alert catalog"]
+  F --> G["Backend RabbitMQ dashboard and custom alert catalog"]
   G --> H["Portal reads durability projection in /admin/shards"]
   H --> I["Operators read projection fields and DLQ/queue-age"]
 
@@ -19,4 +22,14 @@ flowchart TB
   M["Canary drill"] --> N["Backend collects textfile /var/lib/nutsnews/metrics/rabbitmq-canary.prom"]
   N --> O["Alloy remote-write of canary metrics"]
   O --> G
-  O --> P["Alert/SLO proof and evidence runs"]
+  O --> P["Custom alert firing and recovery evidence"]
+  G --> Q["Five descriptive dashboard SLIs, including\ncustom final-publication success"]
+  Q --> R{"Worker owns production?"}
+  R -->|"No; shadow"| S["No behavior paging; still require all eight\ndeployed, up, fresh, identified, readiness series"]
+  R -->|"Yes"| T["Require readiness ok, activity and last success;\nworker-owned custom alerts eligible"]
+  F --> U["Four native Grafana SLOs\nseparate 30-day resources"]
+  U --> V["Global feed freshness pages\nregardless of worker ownership"]
+  U --> W["Native Worker terminal SLO uses all stages;\nsource defaults burns off, live value unconfirmed"]
+  L --> X["Backend outbox age only when availability is 1"]
+  X --> Y["Worker pressure is distinct from\nRabbitMQ queue age and global feed freshness"]
+  G --> Z["Ownership dashboard shows backend revision\nand all eight worker identities"]

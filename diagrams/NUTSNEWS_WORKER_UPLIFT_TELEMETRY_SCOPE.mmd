@@ -1,19 +1,52 @@
 flowchart TD
-  accTitle: Worker-uplift telemetry scope decision flow
+  accTitle: Staged worker-uplift observability activation flow
   accDescr {
-    The diagram starts with the approved worker-uplift telemetry scope, splits it into
-    required metrics and logs, deferred traces and exemplars, and forbidden profiles and
-    payload telemetry, then shows that metrics and logs go to Grafana Cloud with bounded
-    labels, while the policy also enforces quota guardrails, rollback switches, and privacy
-    limits.
+    The diagram shows the staged worker-uplift observability contract, the eight private
+    metrics endpoints, truthful health and ownership gates, Grafana Cloud metrics and logs,
+    quota safeguards, deferred signals, and the evidence required before the work is live.
   }
-  A[Worker-uplift telemetry scope approved] --> B[Required: metrics and structured logs]
-  A --> C[Deferred: traces and exemplars]
-  A --> D[Forbidden: profiles and payload telemetry]
-  B --> E[Metrics to Grafana Cloud Metrics]
-  B --> F[Logs to Grafana Cloud Logs]
-  C --> G[No Tempo, OTLP, or trace credentials now]
-  D --> H[No article, model, or secret data in telemetry]
-  E --> I[Bounded labels and queue/service coverage]
-  F --> I
-  I --> J[Quota guardrails, rollback switches, and privacy boundary]
+  A["Staged contract: human review pending"] --> B["Merge service, backend, and infra changes"]
+  A --> V0["Contracts and Runtime 1.0 released\nin required order"]
+  V0 --> V1["Eight service repins and conformance\nreviews still in progress"]
+  V1 --> V2["Publish immutable worker images, pin,\ndeploy, and verify fresh scrapes"]
+  B --> B1["Verify final leases, lifecycle, health, identity,\nbuckets, labels, security, and workflow checks"]
+  B1 --> C["Deploy eight worker images and apply reviewed GitOps changes"]
+  C --> D["Backend Alloy scrapes 127.0.0.1:18081-18088"]
+  D --> E["Truthful liveness, startup, and readiness"]
+  D --> F["Grafana Cloud Metrics"]
+  D --> G["Grafana Cloud Logs"]
+  D --> U["Alloy readiness, backlog, errors, drops, and freshness"]
+  E --> H{"Production ingestion owner?"}
+  H -->|"Legacy nutsnews-worker"| I["All eight shadow: expected_active 0"]
+  I --> I1["Still require deployed, up 1, scrape under 180s,\nexact identity and readiness series"]
+  H -->|"Separately approved cutover"| J["New owner exports expected_active 1"]
+  J --> J1["Require readiness ok, loop or stage activity,\nlast success and worker-local paging"]
+  F --> K["Seven delivery-stage seconds histograms,\nscheduler cycle and freshness"]
+  F --> L["RabbitMQ depth, unacked, and consumers"]
+  F --> L1["Backend outbox age only when available 1;\ndistinct from global feed freshness"]
+  F --> M["70/85/95 quota alerts; cadence unresolved:\nabout 72k at six minutes, 86.4k standing major,\nor reviewed threshold change"]
+  F --> W["Exactly four native 30-day SLOs"]
+  W --> X["Worker 99% across all delivery stages;\nsource alert default false, live value unconfirmed"]
+  W --> Y["Global feed freshness: burn and 3-hour critical alerts always enabled"]
+  G --> N["Six Loki labels; pipelineRunId, correlationId,\nand traceparent stay structured metadata"]
+  N --> N1["Query-time dashboard drilldown;\ndatasource derived links deferred, no Tempo"]
+  A --> O["Sentry remains canonical for scrubbed exceptions"]
+  A --> P["Tempo, exemplars, and profiles remain deferred"]
+  A --> Q["Article/model bodies and secrets forbidden; identifiers never labels"]
+  A --> T["Backend owns deploy, Alloy and outbox; service repos own signals;\ninfra owns Grafana; meta repo coordinates"]
+  I --> R["Retain query, alert, privacy, and failure-drill evidence"]
+  I1 --> R
+  J --> R
+  J1 --> R
+  K --> R
+  L --> R
+  L1 --> R
+  M --> R
+  N --> R
+  N1 --> R
+  V2 --> R
+  U --> R
+  X --> R
+  Y --> R
+  Q --> R
+  R --> S["Only then describe observability as live"]
