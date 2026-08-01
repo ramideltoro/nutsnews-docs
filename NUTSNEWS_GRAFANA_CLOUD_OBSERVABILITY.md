@@ -90,7 +90,7 @@ The infra implementation keeps observability useful without making Grafana Cloud
 - Rotated compressed logs and stale logs are ignored.
 - Synthetic Monitoring checks are disabled until protected variables provide target URLs and probe IDs.
 - Synthetic API checks must stay within Grafana's 10-second through 60-minute interval range.
-- A value-free validator and OpenTofu both block plan/apply if configured API checks exceed 70% of the current free API execution assumption.
+- A value-free validator and OpenTofu both block plan/apply if configured API checks exceed 90% of the current free API execution assumption, preserving a 10% hard buffer.
 - Browser Synthetic Monitoring and Grafana Cloud k6 execution are not enabled by default.
 - Worker-uplift telemetry uses the approved scope in `ramideltoro/nutsnews-infra/terraform/grafana-cloud/catalog/worker-uplift-telemetry-scope.json`.
 
@@ -233,7 +233,7 @@ Set `NUTSNEWS_GRAFANA_SYNTHETIC_HTTP_CHECKS_JSON` to `{}` to temporarily disable
 The protected plan and apply workflows run the source-controlled input
 validator before OpenTofu. It enforces JSON shape, positive unique probe IDs,
 HTTPS targets, 10-second through 60-minute intervals, bounded timeouts, token
-presence, and the 70% execution-budget ceiling. Its report is deliberately
+presence, and the 90% execution-budget ceiling. Its report is deliberately
 value-free: it includes only counts, interval bounds, projected executions, and
 the configured ceiling. It never emits target URLs, check names, probe IDs, or
 credentials.
