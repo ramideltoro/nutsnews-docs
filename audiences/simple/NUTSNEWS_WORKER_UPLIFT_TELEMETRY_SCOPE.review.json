@@ -11,7 +11,7 @@
   },
   "source": {
     "path": "NUTSNEWS_WORKER_UPLIFT_TELEMETRY_SCOPE.md",
-    "sha256": "86868f914712911edff9329e2c37195b25971a731d01bf58f59592c44ad243f4"
+    "sha256": "d341d430c7119ecc0c659c1f9fa09b0bc3dfbf7f1297a71bffe37f5081d2fb23"
   },
   "artifacts": {
     "simple_markdown": "audiences/simple/NUTSNEWS_WORKER_UPLIFT_TELEMETRY_SCOPE.md",
@@ -20,11 +20,11 @@
   },
   "accessibility": {
     "title": "Staged worker-uplift observability activation flow",
-    "description": "The diagram shows the released Contracts and Runtime packages, eight service repins still under review, private metrics and ownership gates, the unresolved synthetic budget choice, deferred signals, and the retained evidence required before activation."
+    "description": "The diagram shows the released Contracts and Runtime packages, eight published worker images awaiting backend pinning and deployment, private metrics and ownership gates, the unresolved synthetic budget choice, deferred signals, and the retained evidence required before activation."
   },
   "review_notes": [
     "The generated_at and generator fields record the original 2026-07-28 artifact generation; the 2026-08-01 rollout-state reconciliation was manual and does not constitute regeneration or approval.",
-    "Confirm all eight worker PRs have final green heads pinned to Contracts and Runtime 1.0.0 before describing the producer schema as merged.",
+    "Pin the eight verified immutable worker image digests in backend deployment source and complete a fresh fail-closed qualification before deployment.",
     "Reconcile the companion infra policy JSON's old package source, approved status, exact buckets, health/value allowlists, and break-glass semantics before apply.",
     "Verify the complete histogram bucket set, bounded health checks, lease safety, and lifecycle outcomes against the final worker image revisions.",
     "Record one synthetic budget decision in issue #474: six-minute source cadence, accepted five-minute standing major, or a reviewed threshold change that preserves the 90,000 ceiling.",
@@ -36,6 +36,6 @@
     "publishing": "allowed",
     "reviewed_by": "pending",
     "reviewed_on": "pending",
-    "technical_source_hash": "86868f914712911edff9329e2c37195b25971a731d01bf58f59592c44ad243f4"
+    "technical_source_hash": "d341d430c7119ecc0c659c1f9fa09b0bc3dfbf7f1297a71bffe37f5081d2fb23"
   }
 }

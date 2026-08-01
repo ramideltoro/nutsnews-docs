@@ -7,8 +7,8 @@ flowchart TD
   }
   A["Staged contract: human review pending"] --> B["Merge service, backend, and infra changes"]
   A --> V0["Contracts and Runtime 1.0 released\nin required order"]
-  V0 --> V1["Eight service repins and conformance\nreviews still in progress"]
-  V1 --> V2["Publish immutable worker images, pin,\ndeploy, and verify fresh scrapes"]
+  V0 --> V1["Eight service sources merged; immutable\nimages published and verified"]
+  V1 --> V2["Pin exact digests in backend, qualify,\ndeploy, and verify fresh scrapes"]
   B --> B1["Verify final leases, lifecycle, health, identity,\nbuckets, labels, security, and workflow checks"]
   B1 --> C["Deploy eight worker images and apply reviewed GitOps changes"]
   C --> D["Backend Alloy scrapes 127.0.0.1:18081-18088"]

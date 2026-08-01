@@ -5,7 +5,7 @@ wiki:
     publishing: allowed
     reviewed_by: pending
     reviewed_on: pending
-    technical_source_hash: 86868f914712911edff9329e2c37195b25971a731d01bf58f59592c44ad243f4
+    technical_source_hash: d341d430c7119ecc0c659c1f9fa09b0bc3dfbf7f1297a71bffe37f5081d2fb23
   source_route: /technical/nutsnews-worker-uplift-telemetry-scope
   simple_route: /simple/nutsnews-worker-uplift-telemetry-scope
   primary_diagram:
@@ -158,9 +158,9 @@ cannot pass production readiness with an in-memory store.
 
 ## Worker Metric Contract
 
-All eight service repositories source-stage private-endpoint ownership,
-identity, health, and freshness telemetry. The seven delivery processors also
-stage `nutsnews_worker_uplift_stage_events_total` and the fixed-bucket
+Merged source in all eight service repositories implements private-endpoint
+ownership, identity, health, and freshness telemetry. The seven delivery
+processors also implement `nutsnews_worker_uplift_stage_events_total` and the fixed-bucket
 `nutsnews_worker_uplift_stage_latency_seconds` histogram. Scheduler instead
 exports its fixed-bucket cycle histogram and is outside the stage-event SLI.
 The stage histogram includes `_bucket`, `_sum`, `_count`, a 30-second boundary,
@@ -169,11 +169,14 @@ and `+Inf`.
 Worker Contracts `1.0.0` and Worker Runtime `1.0.0` are now published,
 attested, and install-smoke verified in the required order from merge commits
 `e86ea51814cb1b1d810e95b7971a59d90a2fce31` and
-`80bc2d1cc1ce2f089386c2653f9a69abe1ce9808`. The eight service candidates are
-being updated and retested against those packages, but they are not all merged,
-image-published, or deployed. The deployed Runtime `0.5` baseline may still
-show legacy `_duration_ms` summaries; Grafana stage SLIs use only the new
-fixed-bucket seconds histograms.
+`80bc2d1cc1ce2f089386c2653f9a69abe1ce9808`. All eight service PRs are merged,
+and each main push published a signed, attested immutable Runtime 1 image with
+provenance, SBOM, manifest, and baked-revision evidence recorded in
+[`nutsnews-infra#474`](https://github.com/ramideltoro/nutsnews-infra/issues/474#issuecomment-5152934401).
+Backend digest pinning and a fresh fail-closed qualification are still in
+progress, and no image has been deployed. The deployed Runtime `0.5` baseline
+may therefore still show legacy `_duration_ms` summaries; Grafana stage SLIs
+use only the new fixed-bucket seconds histograms.
 
 Required operational signals include:
 
@@ -205,8 +208,8 @@ projection data is a separate failure. This is not the global reader-visible
 15-minute feed-freshness SLO.
 
 Custom worker-local consumer, latency, publication, and freshness alerts join
-to `nutsnews_worker_expected_active`. Current shadow deployments stay at `0`
-and remain visible without paging. Structural scrape, identity, and
+to `nutsnews_worker_expected_active`. The source-staged shadow deployment keeps
+that value at `0` so services remain visible without paging. Structural scrape, identity, and
 readiness-series absence still alerts or blocks rollout. The native Worker
 terminal SLI does not use that join; its generated burn-alert resources are
 omitted because source defaults `worker_terminal_slo_alerting_enabled` to
@@ -221,22 +224,24 @@ production.
 
 The repository work does not yet satisfy the whole target contract:
 
-- All eight endpoint implementations remain source candidates until their final
-  PR heads are green, immutable images are published, and a protected
-  deployment produces fresh scrape evidence. Contracts and Runtime `1.0.0` are
-  released; the eight service repin/conformance reviews are still in progress.
+- All eight endpoint implementations are merged and verified immutable images
+  are published. They are not yet pinned into backend deployment source,
+  qualified by a fresh fail-closed run, deployed, or scraped. Exact image
+  evidence is retained in
+  [`nutsnews-infra#474`](https://github.com/ramideltoro/nutsnews-infra/issues/474#issuecomment-5152934401).
 - The target latency buckets are `0.005`, `0.01`, `0.025`, `0.05`, `0.1`,
   `0.25`, `0.5`, `1`, `2.5`, `5`, `10`, `30`, `60`, `120`, and `300` seconds,
-  plus `+Inf`. Current candidate worktrees use the complete set, but final PR
-  checks and live scrapes still must prove that every service agrees.
+  plus `+Inf`. Merged service source uses the complete set, but live scrapes
+  still must prove that every running service agrees.
 - Stage counters and histograms for the seven delivery processors, the scheduler
   cycle histogram, Runtime 1 probe/check health, and ownership gauges exist in
-  candidate source, but exact-once outcomes, safe duplicate handling, bounded
-  labels, truthful dependency health, identity, and last-success semantics
-  still need final repository checks and live queries.
+  merged source and published images. Repository merge and image evidence covers
+  the source artifacts, but live queries must still prove exact-once outcomes,
+  safe duplicate handling, bounded labels, truthful dependency health,
+  identity, and last-success semantics operationally.
 - Generic runtime `_duration_ms` summaries may remain on deployed Runtime `0.5`.
   Their absence is not operational until Runtime `1.0.0` worker images are
-  published, pinned, deployed, and scraped.
+  pinned in backend source, deployed, and scraped.
 - Staged infra now uses `nutsnews_worker_expected_active` consistently.
   Consumer, latency, worker-local freshness, publication, and active-worker
   activity/readiness outcomes are gated. Required scrape freshness, identity,
@@ -448,9 +453,10 @@ deployment.
 
 ## Activation And Evidence Gate
 
-This is staged source work, not proof of live Grafana Cloud coverage. It becomes
-complete only after service and backend changes merge, all eight worker images
-deploy, and reviewed backend and `nutsnews-infra` GitOps applies succeed.
+This is source/image-prepared work, not proof of live Grafana Cloud coverage.
+It becomes complete only after the eight published image digests are pinned in
+backend source, pass a fresh fail-closed qualification, deploy, and reviewed
+backend and `nutsnews-infra` GitOps applies succeed.
 Retained evidence must then show:
 
 - Alloy readiness/backlog/error/drop/freshness health; all eight workers

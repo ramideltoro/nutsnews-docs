@@ -5,7 +5,7 @@ wiki:
     publishing: allowed
     reviewed_by: pending
     reviewed_on: pending
-    technical_source_hash: 86868f914712911edff9329e2c37195b25971a731d01bf58f59592c44ad243f4
+    technical_source_hash: d341d430c7119ecc0c659c1f9fa09b0bc3dfbf7f1297a71bffe37f5081d2fb23
 ---
 # NutsNews Worker-Uplift Telemetry Scope
 
@@ -180,8 +180,8 @@ credentials, payload identifiers, or raw dependency errors.
 
 ## Worker Metric Contract
 
-All eight service repositories source-stage private-endpoint ownership, identity,
-health, and freshness telemetry. The seven delivery processors—fetcher,
+Merged source in all eight service repositories implements private-endpoint
+ownership, identity, health, and freshness telemetry. The seven delivery processors—fetcher,
 canonicalizer, enrichment, approval, translation, persistence, and
 publication—also stage the canonical
 `nutsnews_worker_uplift_stage_events_total` counter and fixed-bucket
@@ -195,12 +195,15 @@ message, or correlation identifiers as labels.
 Worker Contracts `1.0.0` and Worker Runtime `1.0.0` are now published,
 attested, and install-smoke verified in the required order from merge commits
 `e86ea51814cb1b1d810e95b7971a59d90a2fce31` and
-`80bc2d1cc1ce2f089386c2653f9a69abe1ce9808`. The eight service candidates are
-being repinned and reconformed against those immutable packages, but the full
-PR/CI/image/deployment chain is not complete. The deployed Runtime `0.5` and
-Contracts `0.4` baseline may still expose legacy `_duration_ms` summaries.
-The new stage SLI uses only fixed-bucket seconds histograms; a candidate pin does
-not prove the Runtime 1 image or metric schema is live.
+`80bc2d1cc1ce2f089386c2653f9a69abe1ce9808`. All eight service PRs are now
+merged, and each main push published a signed, attested immutable Runtime 1
+image with provenance, SBOM, manifest, and baked-revision evidence recorded in
+[`nutsnews-infra#474`](https://github.com/ramideltoro/nutsnews-infra/issues/474#issuecomment-5152934401).
+Backend digest pinning and a fresh fail-closed qualification are still in
+progress, and no image has been deployed. The deployed Runtime `0.5` and
+Contracts `0.4` baseline may therefore still expose legacy `_duration_ms`
+summaries. The new stage SLI uses only fixed-bucket seconds histograms; image
+publication does not prove the Runtime 1 metric schema is live.
 
 The terminal-success SLI counts accepted work and completed duplicates as
 successes. Its denominator contains only terminal outcomes; intermediate retry
@@ -241,7 +244,7 @@ consumers may use its value only when
 projection is its own telemetry failure. This pressure signal is also distinct
 from the global reader-visible 15-minute feed-freshness SLO.
 
-Current shadow deployment configuration keeps the non-owning services at
+The source-staged shadow deployment configuration keeps the non-owning services at
 `nutsnews_worker_expected_active=0`. Publication source may export `1` only
 under the protected production-write mode after an approved ownership change.
 Worker-local consumer, latency, publication, and freshness conditions remain
@@ -262,24 +265,26 @@ regardless of which ingestion implementation owns production.
 These are explicit unresolved acceptance blockers, not claims that the final
 producer contract is already satisfied:
 
-- All eight endpoint implementations remain source candidates, not
-  merged/image-published/deployed evidence. Contracts and Runtime `1.0.0` are
-  released, but the eight repin/conformance PRs must all reach final green heads
-  before their immutable worker images can be published and deployed.
+- All eight endpoint implementations are merged and verified immutable images
+  are published. They are not yet pinned into backend deployment source,
+  qualified by a fresh fail-closed run, deployed, or scraped. Exact image
+  evidence is retained in
+  [`nutsnews-infra#474`](https://github.com/ramideltoro/nutsnews-infra/issues/474#issuecomment-5152934401).
 - The canonical target histogram buckets are `0.005`, `0.01`, `0.025`, `0.05`,
   `0.1`, `0.25`, `0.5`, `1`, `2.5`, `5`, `10`, `30`, `60`, `120`, and `300`
-  seconds, plus `+Inf`. The current candidate worktrees use that full set, but
-  the final PR heads, complete service test suites, and post-deploy queries must
-  still prove cross-service schema convergence.
+  seconds, plus `+Inf`. The merged service sources use that full set; post-deploy
+  queries must still prove cross-service schema convergence in the running
+  images.
 - Stage counters and histograms for the seven delivery processors, the scheduler
   cycle histogram, Runtime 1 probe/check health, and ownership gauges are
-  present in candidate source. Exact-once lifecycle behavior,
+  present in merged source and the published images. Repository merge and image
+  evidence covers the source artifacts; exact-once lifecycle behavior,
   duplicate-as-success handling, bounded labels, truthful dependency health,
   build/deployment/adapter identity, and last-success semantics still require
-  final per-repository CI and post-deploy queries.
+  post-deploy queries for operational proof.
 - Generic runtime `_duration_ms` summaries may remain on the deployed Runtime
   `0.5` baseline. Their absence is not operational until the Runtime `1.0.0`
-  worker images are published, pinned immutably, deployed, and scraped.
+  worker images are pinned immutably in backend source, deployed, and scraped.
 - Staged infra queries and tests now use the producers' canonical
   `nutsnews_worker_expected_active` name. Consumer, latency, worker-local
   freshness, publication, and active-worker activity/readiness outcomes are
@@ -511,8 +516,8 @@ production traffic.
 This contract is staged repository work, not proof of live Grafana Cloud
 coverage. Do not mark it complete until all of the following evidence exists:
 
-1. service changes are merged and the eight expected worker image revisions are
-   deployed;
+1. the eight published image digests are pinned in backend deployment source,
+   pass a fresh fail-closed qualification, and are deployed;
 2. the backend GitOps apply enables Alloy and configures all eight loopback
    scrapes without exposing them publicly;
 3. the Grafana Cloud plan and apply from `ramideltoro/nutsnews-infra` complete

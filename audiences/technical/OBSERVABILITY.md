@@ -15,7 +15,7 @@ wiki:
     publishing: allowed
     reviewed_by: pending
     reviewed_on: pending
-    technical_source_hash: 2befcf402f4569c07f3be35413b46fd5e1731bb50a681dd756d91ac590b76904
+    technical_source_hash: 30a2c30823a02b2a55518489d3fd040919f0a8d3230c179b1db259b42e1f46cc
 ---
 
 # Observability
@@ -262,8 +262,10 @@ the choice, protected inputs, apply, and post-apply evidence all succeed.
 The exact-`main` `grafana-observability-readonly` Environment exists but its
 two variables and two secrets are still absent. Production writer inputs and
 Environment reviewer/protection gates also remain operator work. Worker
-Contracts and Runtime `1.0.0` have been released in order; the eight worker
-repin/conformance PRs remain in progress and are not deployed telemetry.
+Contracts and Runtime `1.0.0` have been released in order; all eight worker
+service PRs are merged and verified immutable Runtime 1 images are published.
+Backend digest pinning, fail-closed qualification, deployment, and fresh scrape
+evidence remain pending, so image publication is not live telemetry.
 
 Worker-uplift telemetry is governed by [NutsNews Worker-Uplift Telemetry Scope](NUTSNEWS_WORKER_UPLIFT_TELEMETRY_SCOPE.md). RabbitMQ metrics, worker service metrics, and structured logs are required; full traces and exemplars are deferred; article/model payload telemetry is forbidden.
 

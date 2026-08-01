@@ -46,5 +46,5 @@ flowchart LR
   Ready -->|"No"| Pending["Rollout remains pending"]
   Ready -->|"Yes"| Operate["Operate within free-tier\nand ownership guardrails"]
   Legacy["Legacy nutsnews-worker\nproduction ingestion owner"] --> Operate
-  Packages["Contracts and Runtime 1.0 released;\neight worker repins still in progress"] --> Workers
+  Packages["Contracts and Runtime 1.0 released;\neight worker images published and verified;\nbackend pin, qualification and deploy pending"] --> Workers
   Readonly["Read-only audit Environment exists,\nbut all four inputs are absent"] --> Prereq

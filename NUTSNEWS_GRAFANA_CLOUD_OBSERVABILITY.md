@@ -5,7 +5,7 @@ wiki:
     publishing: allowed
     reviewed_by: pending
     reviewed_on: pending
-    technical_source_hash: 14591ab26ec21046d02ee1ed7954a24e8f619f3b920398500e2d398baa3309cc
+    technical_source_hash: 705115cc28927bcbb8538a2d3305e095296587b8e87416dfbb9a67bea26dfec2
 ---
 # NutsNews Grafana Cloud Observability
 
@@ -34,8 +34,10 @@ As of 2026-08-01:
   and install-smoke verified from merge commits
   `e86ea51814cb1b1d810e95b7971a59d90a2fce31` and
   `80bc2d1cc1ce2f089386c2653f9a69abe1ce9808` respectively;
-- the infrastructure, web, backend, and eight worker-service changes remain
-  open rollout work, and the worker repin/conformance pass is still in progress;
+- the infrastructure, web, and backend changes remain open rollout work; all
+  eight worker-service PRs are merged and their immutable Runtime 1 images are
+  published and verified, while backend digest pinning, a fresh fail-closed
+  qualification, and deployment remain pending;
 - no production Grafana/Ansible apply, backend or worker deployment, alert
   receipt, synthetic execution, native SLO activation, or failure drill has
   been performed for this enhancement; and
@@ -497,13 +499,16 @@ Readiness must be truthful:
 Approval, translation, and persistence count accepted, duplicate, invalid,
 retry, DLQ, and terminal outcomes exactly once. Service-owned fixed-bucket
 histograms in seconds are the canonical stage-latency SLI source. Worker
-Contracts `1.0.0` and Worker Runtime `1.0.0` are now published and verified in
-that order. The eight service PRs are being repinned and reconformed against
-those immutable releases, but they are not all merged, image-published, or
-deployed. The currently deployed/legacy Runtime `0.5` and Contracts `0.4`
-baseline may still expose `_duration_ms` summary families; those summaries are
-not the new stage-latency SLI and must not be treated as proof that Runtime 1 is
-live. Event
+Contracts `1.0.0` and Worker Runtime `1.0.0` are published and verified in that
+order. All eight service PRs are now merged, and their immutable Runtime 1
+images have successful main-push publication, signature, provenance, SBOM,
+manifest, and revision evidence recorded in
+[`nutsnews-infra#474`](https://github.com/ramideltoro/nutsnews-infra/issues/474#issuecomment-5152934401).
+No image has been deployed; backend digest pinning and a fresh fail-closed
+qualification are still in progress. The currently deployed/legacy Runtime
+`0.5` and Contracts `0.4` baseline may therefore still expose `_duration_ms`
+summary families. Those summaries are not the new stage-latency SLI, and a
+published Runtime 1 image is not proof that its metric schema is live. Event
 dimensions remain bounded to `service`, `stage`, `queue`, `outcome`,
 `dependency`, `language`, `provider`, `probe`, and `check`; build and deployment
 identity belongs in bounded info metrics. RabbitMQ coverage includes queue
@@ -603,16 +608,21 @@ off, and query strings and identifiers are excluded.
 | Synthetics and SLOs | Exact check/SLO contracts and budget calculation | Executions from both probes, assertion failures, SLO UUIDs and data |
 | Failure handling | Dry-run plans, bounded source controls, and expected alerts | Protected rollout prerequisites plus bounded live artifacts showing fire, route where applicable, recovery, and resolve |
 
-The first two package-release steps are complete. Worker Contracts `1.0.0` was
+The package and worker-image publication steps are complete. Worker Contracts `1.0.0` was
 published, attested, and install-smoke verified from
 `e86ea51814cb1b1d810e95b7971a59d90a2fce31`; Worker Runtime `1.0.0` then locked
 to that immutable package and completed the same release evidence from
-`80bc2d1cc1ce2f089386c2653f9a69abe1ce9808`. Updating, reviewing, and validating
-the eight exact service pins remains in progress. A candidate branch or local
-pin is not a released worker image or deployed revision.
+`80bc2d1cc1ce2f089386c2653f9a69abe1ce9808`. All eight service PRs then merged
+and published verified immutable images; exact merge, run, digest, attestation,
+and Rekor evidence is retained in
+[`nutsnews-infra#474`](https://github.com/ramideltoro/nutsnews-infra/issues/474#issuecomment-5152934401).
+Backend digest pinning, fail-closed qualification, and deployment are not
+complete, so image publication is still not a deployed revision.
 
-1. Land reviewed producer changes in the application, backend, worker-service,
-   and worker-runtime repositories without changing the legacy ingestion owner.
+1. Land the remaining reviewed producer changes in the application and backend,
+   pin the eight exact worker image digests in backend deployment source, and
+   complete the fresh fail-closed qualification without changing the legacy
+   ingestion owner.
 2. Preserve the completed exact-`main` branch policies for `production-vps`,
    `cloudflare-admin`, and `grafana-observability-readonly`; complete the
    designated reviewer and self-review/bypass decisions, populate the four
