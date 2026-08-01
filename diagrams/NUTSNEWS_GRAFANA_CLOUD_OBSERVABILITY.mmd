@@ -1,7 +1,12 @@
-flowchart TB
-  accTitle: NutsNews Grafana Cloud Observability
-  accDescr {
-    Architecture status: Grafana Cloud resources are centralized in
-  }
-  A["NutsNews Grafana Cloud Observability"] --> B["NUTSNEWS_GRAFANA_CLOUD_OBSERVABILITY.md"]
-  B --> C["Auto-generated placeholder diagram"]
+flowchart LR
+  accTitle: NutsNews Grafana Cloud observability controls
+  accDescr: Protected inputs pass through value-free validation and a read-only plan before reviewed Grafana changes can be applied.
+  inputs["Protected synthetic inputs"] --> validator["Value-free validator\nAPI bounds + quota ceiling"]
+  source["Infra OpenTofu source"] --> plan["Protected read-only plan\nand drift check"]
+  validator --> plan
+  plan --> evidence["Immutable evidence\ninputs + dashboards + alerts\nPrometheus + Loki"]
+  plan --> review{"Reviewed mutation needed?"}
+  review -->|"No"| stop["Remain read-only"]
+  review -->|"Yes"| apply["Protected Grafana apply"]
+  apply --> grafana["Grafana folders, dashboards,\nalerts, quotas, synthetics"]
+  producers["VPS and backend Alloy"] --> grafana

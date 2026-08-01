@@ -26,7 +26,7 @@ they do not own Grafana resource provisioning. The same boundary is reflected
 in [Architecture](ARCHITECTURE.md) and
 [Worker-Uplift Operation Map](NUTSNEWS_WORKER_UPLIFT_OPERATION_MAP.md).
 
-This explains the Grafana Cloud observability layer for NutsNews hosts: Alloy on hosts, Grafana-managed dashboards and alerts, low-frequency Synthetic Monitoring, and free-tier guardrails.
+This explains the Grafana Cloud observability layer for NutsNews hosts: Alloy on hosts, Grafana-managed dashboards and alerts, bounded Synthetic Monitoring, and free-tier guardrails.
 
 ## Easy Summary
 
@@ -100,8 +100,8 @@ The infra implementation keeps observability useful without making Grafana Cloud
 - Debug and trace logs are intentionally dropped.
 - Rotated compressed logs and stale logs are ignored.
 - Synthetic Monitoring checks are disabled until protected variables provide target URLs and probe IDs.
-- Synthetic checks must run every 15 minutes or slower.
-- OpenTofu blocks apply if configured API checks exceed 70% of the current free API execution assumption.
+- Synthetic API checks must stay within Grafana's 10-second through 60-minute interval range.
+- A value-free validator and OpenTofu both block plan/apply if configured API checks exceed 70% of the current free API execution assumption.
 - Browser Synthetic Monitoring and Grafana Cloud k6 execution are not enabled by default.
 - Worker-uplift telemetry uses the approved scope in `ramideltoro/nutsnews-infra/terraform/grafana-cloud/catalog/worker-uplift-telemetry-scope.json`.
 
@@ -241,6 +241,14 @@ Synthetic checks use a separate Grafana Synthetic Monitoring API token. The Graf
 
 Set `NUTSNEWS_GRAFANA_SYNTHETIC_HTTP_CHECKS_JSON` to `{}` to temporarily disable Synthetic Monitoring resources while still applying dashboards and quota alerts.
 
+The protected plan and apply workflows run the source-controlled input
+validator before OpenTofu. It enforces JSON shape, positive unique probe IDs,
+HTTPS targets, 10-second through 60-minute intervals, bounded timeouts, token
+presence, and the 70% execution-budget ceiling. Its report is deliberately
+value-free: it includes only counts, interval bounds, projected executions, and
+the configured ceiling. It never emits target URLs, check names, probe IDs, or
+credentials.
+
 Recommended first checks:
 
 | Check type | What to verify |
@@ -265,7 +273,7 @@ Example safe shape:
 1 probe x 4 checks x 1 minute x (43200 / 30 minutes) = 5,760 executions/month
 ```
 
-That is comfortably under the current 100,000 API execution free assumption. Adding more probes, more checks, browser checks, or faster intervals changes the math and must be reviewed before apply.
+That is comfortably under the current 100,000 API execution free assumption. Adding more probes, more checks, browser checks, or faster intervals changes the math. The protected validator fails closed when the resulting projection exceeds the source-controlled ceiling; changing that ceiling requires a reviewed infra change rather than an ad hoc workflow override.
 
 ## k6 Policy
 
@@ -283,7 +291,7 @@ Grafana states that the free tier and trial are limited to 500 VUh per month. Ke
 
 1. Add Grafana Cloud OpenTofu state backend config to the protected `production-vps` Environment.
 2. Add the Grafana service account token and datasource UIDs to the same protected Environment.
-3. Run `Grafana Cloud Plan` and review both the normal plan and refresh-only drift check.
+3. Run `Grafana Cloud Plan` and review the normal plan, refresh-only drift check, and `grafana-cloud-read-only-evidence` artifact. The artifact must contain the value-free input report plus current dashboard, alert, Prometheus, and Loki proof.
 4. Merge the infra PR after checks pass.
 5. Run `Grafana Cloud Apply` from `main` with `confirm_apply=grafana-cloud`.
 6. Review the `grafana-cloud-post-apply-verification` artifact.
