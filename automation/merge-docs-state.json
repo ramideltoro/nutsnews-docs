@@ -362,16 +362,17 @@
       "runUrl": "https://github.com/ramideltoro/nutsnews-docs/actions/runs/30715843089"
     },
     "ramideltoro/nutsnews-worker": {
-      "headSha": "da1794f8b8d58dfa8fe926c3dbedf1dbb321ba61",
+      "headSha": "4cb6602ea7860f5e3e9e972c9e389ddfea3f2240",
       "pullNumbers": [
         171,
-        170
+        170,
+        176
       ],
-      "attempts": 3,
-      "blocked": true,
-      "lastFailedAt": "2026-08-01T14:22:40.185Z",
-      "workflowRun": "30703407365",
-      "runUrl": "https://github.com/ramideltoro/nutsnews-docs/actions/runs/30703407365"
+      "attempts": 1,
+      "blocked": false,
+      "lastFailedAt": "2026-08-02T06:34:43.291Z",
+      "workflowRun": "30735923305",
+      "runUrl": "https://github.com/ramideltoro/nutsnews-docs/actions/runs/30735923305"
     }
   }
 }
