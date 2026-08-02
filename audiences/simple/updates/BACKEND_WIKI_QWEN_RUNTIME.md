@@ -17,7 +17,7 @@ wiki:
     publishing: allowed
     reviewed_by: pending
     reviewed_on: pending
-    technical_source_hash: e308adf96fb0fd33b5901603a98fda15dc8b82cb4ce1a0cf91e59163765ed621
+    technical_source_hash: 52682a8c89c67a475bf3c9ce972efd67462dd629beb073288e2e4dbc468e6d6b
 ---
 # Backend Wiki Qwen Runtime
 
@@ -68,6 +68,11 @@ The wiki job runs every 30 minutes and handles no more than the oldest three
 pending pull requests in one event. Runs are serialized and each job has a
 60-minute timeout. Qwen can see only bounded merge evidence and the five files
 allowed by the existing isolated bundle.
+
+The job turns off Qwen's long thinking trace for this file-editing task. Qwen
+can still use its editing tools, but it spends less server time narrating hidden
+reasoning. The normal content and build checks still decide whether its work is
+safe to publish.
 
 Nothing is committed until the content, links, diagram, secret checks, and full
 wiki build pass. The cursor advances only after a successful validated push.
