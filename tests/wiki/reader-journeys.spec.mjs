@@ -168,6 +168,19 @@ test('NutsNews menu and footer preserve cross-site navigation', async ({
 
   let panel = page.locator('[data-nutsnews-menu-panel]');
   await expect(panel).toBeVisible();
+  await panel.evaluate(async (element) => {
+    await Promise.all(element.getAnimations({ subtree: true }).map((animation) => animation.finished));
+  });
+  const panelBox = await panel.boundingBox();
+  expect(panelBox).not.toBeNull();
+  expect(panelBox.x).toBe(0);
+  expect(panelBox.y).toBe(0);
+  expect(panelBox.height).toBe(testInfo.project.use.viewport.height);
+  expect(panelBox.width).toBeLessThan(testInfo.project.use.viewport.width);
+
+  const backdrop = page.locator('[data-nutsnews-menu-backdrop]');
+  await expect(backdrop).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await expect(backdrop).toHaveCSS('backdrop-filter', 'none');
   await expect(panel.getByRole('link', { name: 'NutsNews Home', exact: true })).toHaveAttribute(
     'href',
     'https://www.nutsnews.com/',
@@ -189,7 +202,7 @@ test('NutsNews menu and footer preserve cross-site navigation', async ({
   await toggle.click();
   panel = page.locator('[data-nutsnews-menu-panel]');
   await expect(panel).toBeVisible();
-  await page.locator('[data-nutsnews-menu-backdrop]').click({ force: true, position: { x: 4, y: 4 } });
+  await page.mouse.click(testInfo.project.use.viewport.width - 4, 200);
   await expect(panel).toBeHidden();
 
   await toggle.click();

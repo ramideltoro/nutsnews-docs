@@ -83,9 +83,11 @@ async function run() {
   assert.match(siteNavigation, /handlePointerDown/);
   assert.match(siteNavigation, /handleLinkClick/);
   assert.match(siteNavigation, /this\.button\?\.focus\(\{ preventScroll: true \}\)/);
-  assert.match(siteNavigation, /top:\s*50%/);
-  assert.match(siteNavigation, /left:\s*50%/);
-  assert.match(siteNavigation, /nutsnews-menu-panel-in/);
+  assert.match(siteNavigation, /inset:\s*0 auto 0 0/);
+  assert.match(siteNavigation, /height:\s*100dvh/);
+  assert.match(siteNavigation, /background:\s*transparent/);
+  assert.match(siteNavigation, /nutsnews-menu-drawer-in/);
+  assert.doesNotMatch(siteNavigation, /nutsnews-menu-option-in/);
   assert.doesNotMatch(siteNavigation, /tabindex=["']?[1-9]/i);
   assert.match(siteFooter, /data-nutsnews-site-footer/);
   assert.match(siteFooter, /aria-label="NutsNews navigation"/);
