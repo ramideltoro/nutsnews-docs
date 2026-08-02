@@ -200,46 +200,48 @@ const links = [NUTSNEWS_HOME_LINK, ...nutsNewsNavigationLinks];
         position: fixed;
         z-index: 10000;
         inset: 0;
-        background: rgb(3 3 4 / 62%);
-        backdrop-filter: blur(8px);
-        animation: nutsnews-menu-backdrop-in 220ms ease-out both;
+        background: transparent;
       }
 
       .nutsnews-menu-panel {
         position: fixed;
         z-index: 10001;
-        top: 50%;
-        left: 50%;
-        display: grid;
+        inset: 0 auto 0 0;
+        display: flex;
+        flex-direction: column;
         box-sizing: border-box;
-        width: min(22rem, calc(100vw - 2rem));
-        max-height: min(34rem, calc(100dvh - 6rem));
+        width: min(20rem, calc(100vw - 3.75rem));
+        height: 100dvh;
         gap: var(--wiki-space-1);
         overflow-y: auto;
-        padding: var(--wiki-space-3);
-        border: 1px solid var(--wiki-color-border);
-        border-radius: var(--wiki-radius-lg);
+        overscroll-behavior: contain;
+        padding: 0 var(--wiki-space-3) max(var(--wiki-space-4), env(safe-area-inset-bottom));
+        border-right: 1px solid var(--wiki-color-border);
         color: var(--wiki-color-text);
-        background: color-mix(in srgb, var(--wiki-color-surface) 96%, black);
-        box-shadow: 0 1.5rem 4.5rem rgb(0 0 0 / 64%);
-        transform: translate(-50%, -50%);
-        animation: nutsnews-menu-panel-in 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+        background: color-mix(in srgb, var(--wiki-color-surface) 99%, black);
+        box-shadow: 0.875rem 0 2.625rem rgb(0 0 0 / 46%);
+        animation: nutsnews-menu-drawer-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
       }
 
       .nutsnews-menu-panel p {
+        display: flex;
+        flex: 0 0 auto;
+        box-sizing: border-box;
+        min-height: calc(4.5rem + env(safe-area-inset-top));
+        align-items: center;
         margin: 0;
-        padding: var(--wiki-space-2) var(--wiki-space-3);
-        color: var(--wiki-color-text-muted);
+        padding: env(safe-area-inset-top) 0 0 4.1rem;
+        color: var(--wiki-color-text);
         font-size: var(--wiki-type-xs);
-        font-weight: 800;
-        letter-spacing: 0.1em;
-        text-align: center;
+        font-weight: 900;
+        letter-spacing: 0.12em;
         text-transform: uppercase;
       }
 
       .nutsnews-menu-panel a {
         display: grid;
-        grid-template-columns: 1fr auto 1fr;
+        grid-template-columns: minmax(0, 1fr) auto;
+        flex: 0 0 auto;
         min-height: var(--wiki-touch-target);
         align-items: center;
         gap: var(--wiki-space-3);
@@ -249,16 +251,15 @@ const links = [NUTSNEWS_HOME_LINK, ...nutsNewsNavigationLinks];
         font-size: var(--wiki-type-sm);
         font-weight: 750;
         text-decoration: none;
-        animation: nutsnews-menu-option-in 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
       }
 
       .nutsnews-menu-panel a span:first-child {
-        grid-column: 2;
-        white-space: nowrap;
+        grid-column: 1;
+        overflow-wrap: anywhere;
       }
 
       .nutsnews-menu-panel a span:last-child {
-        grid-column: 3;
+        grid-column: 2;
         justify-self: end;
         color: var(--wiki-color-link);
       }
@@ -284,30 +285,12 @@ const links = [NUTSNEWS_HOME_LINK, ...nutsNewsNavigationLinks];
       touch-action: none;
     }
 
-    @keyframes nutsnews-menu-backdrop-in {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-
-    @keyframes nutsnews-menu-panel-in {
+    @keyframes nutsnews-menu-drawer-in {
       from {
-        opacity: 0;
-        transform: translate(-50%, -46%) scale(0.9);
+        transform: translateX(-100%);
       }
       to {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(1);
-      }
-    }
-
-    @keyframes nutsnews-menu-option-in {
-      from {
-        opacity: 0;
-        transform: translateY(0.5rem) scale(0.97);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
+        transform: translateX(0);
       }
     }
 
@@ -319,9 +302,7 @@ const links = [NUTSNEWS_HOME_LINK, ...nutsNewsNavigationLinks];
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .nutsnews-menu-backdrop,
-      .nutsnews-menu-panel,
-      .nutsnews-menu-panel a {
+      .nutsnews-menu-panel {
         animation: none;
       }
     }
