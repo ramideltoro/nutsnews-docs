@@ -20,13 +20,12 @@ wiki:
   status: active
   collection: platform-and-data
   section: core-platform
-  order: 233
   approval:
     state: unreviewed
     publishing: allowed
     reviewed_by: pending
     reviewed_on: pending
-    technical_source_hash: c869f2661581f86752771fd84906c307c40a92b6a8e31f1cc69b543b639ab27b
+    technical_source_hash: f157b4d037a9d7da2677fdfa2b4e74c6edddaf1b6542a8642d3b39a808a8c40f
 ---
 # NutsNews Worker-Uplift Operations and Cutover Guide
 

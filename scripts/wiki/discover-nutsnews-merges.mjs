@@ -10,6 +10,7 @@ const OWNER = 'ramideltoro';
 const DOCS_REPOSITORY = `${OWNER}/nutsnews-docs`;
 const REPOSITORY_PATTERN = /^nutsnews(?:-[a-z0-9-]+)?$/;
 export const MAX_AUTOMATION_ATTEMPTS = 3;
+export const MAX_PULLS_PER_EVENT = 3;
 
 async function ghJson(endpoint, { paginate = false } = {}) {
   const args = ['api'];
@@ -58,7 +59,8 @@ function cursorFromPull(pull, initializedAt = new Date().toISOString()) {
 export function buildMergeEvent(repository, cursor, pulls) {
   const pending = pulls
     .filter((pull) => pull.merged_at && pull.merge_commit_sha && compareCursor(pull, cursor) > 0)
-    .sort(comparePulls);
+    .sort(comparePulls)
+    .slice(0, MAX_PULLS_PER_EVENT);
   if (pending.length === 0) return null;
   const latest = pending.at(-1);
   return {

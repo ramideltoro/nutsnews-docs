@@ -1,0 +1,19 @@
+flowchart LR
+  accTitle: Backend-hosted Qwen wiki generation flow
+  accDescr {
+    A serialized GitHub Actions job sends an authenticated Responses API request through Caddy
+    and a bounded proxy to loopback Ollama, then validates the generated documentation before
+    publication.
+  }
+  merge["Up to three merged PRs"] --> bundle["Isolated five-file bundle"]
+  bundle --> action["GitHub-hosted Codex Action"]
+  action --> caddy["backend.nutsnews.com /wiki-ai/v1/responses"]
+  caddy --> auth{"Bearer key and request valid?"}
+  auth -->|"No"| reject["Reject without publishing"]
+  auth -->|"Yes"| proxy["Loopback bounded proxy"]
+  proxy --> ollama["Loopback Ollama"]
+  ollama --> qwen["nutsnews-wiki-qwen"]
+  qwen --> files["Generated wiki artifacts"]
+  files --> gates{"All deterministic gates pass?"}
+  gates -->|"No"| retry["Keep current wiki and bounded retry state"]
+  gates -->|"Yes"| publish["Advance cursor and publish validated wiki"]

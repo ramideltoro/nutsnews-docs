@@ -172,8 +172,8 @@ export function validateWorkflow(source) {
 
 export function validateMergeWorkflow(source) {
   const errors = [];
-  if (!/cron: "\*\/5 \* \* \* \*"/.test(source) || !/workflow_dispatch:/.test(source)) {
-    errors.push('merge documentation must run every five minutes and support manual dispatch');
+  if (!/cron: "\*\/30 \* \* \* \*"/.test(source) || !/workflow_dispatch:/.test(source)) {
+    errors.push('merge documentation must run every thirty minutes and support manual dispatch');
   }
   if (/pull_request_target:|pull_request:/.test(source)) {
     errors.push('untrusted pull request events must not trigger merge documentation');
@@ -184,8 +184,11 @@ export function validateMergeWorkflow(source) {
   const codexStep = source.match(
     /- name: Generate complete wiki documentation\n([\s\S]*?)(?=\n      - name:)/,
   )?.[1] || '';
-  if (!/openai-api-key: \$\{\{ secrets\.OPENAI_API_KEY \}\}/.test(codexStep)) {
-    errors.push('Codex must receive the dedicated repository secret');
+  if (!/openai-api-key: \$\{\{ secrets\.WIKI_AI_API_KEY \}\}/.test(codexStep)) {
+    errors.push('Codex must receive the dedicated local-Qwen repository secret');
+  }
+  if (!/responses-api-endpoint: https:\/\/backend\.nutsnews\.com\/wiki-ai\/v1\/responses/.test(codexStep)) {
+    errors.push('Codex must use the authenticated backend Wiki AI Responses endpoint');
   }
   if (/GH_TOKEN|github\.token/.test(codexStep)) {
     errors.push('Codex must not receive a GitHub write token');
@@ -193,7 +196,7 @@ export function validateMergeWorkflow(source) {
   for (const setting of [
     'working-directory: _automation-work/agent',
     'sandbox: workspace-write',
-    'model: gpt-5.6-terra',
+    'model: nutsnews-wiki-qwen',
     'effort: low',
     'safety-strategy: drop-sudo',
     'allow-users: ramideltoro',
@@ -210,7 +213,7 @@ export function validateMergeWorkflow(source) {
   const documentJob = source.match(
     /\n  document:\n([\s\S]*?)(?=\n  [a-z][a-z0-9_-]+:\n|\s*$)/,
   )?.[1] || '';
-  if (!/timeout-minutes: 20/.test(documentJob)) {
+  if (!/timeout-minutes: 60/.test(documentJob)) {
     errors.push('merge documentation must have a bounded job timeout');
   }
   if (!/max-parallel: 1/.test(source) || !/cancel-in-progress: false/.test(source)) {
@@ -219,6 +222,7 @@ export function validateMergeWorkflow(source) {
   const orderedSteps = [
     'Prepare bounded merge evidence',
     'Prepare isolated documentation bundle',
+    'Verify local Qwen readiness',
     'Generate complete wiki documentation',
     'Import isolated documentation bundle',
     'Enforce automated documentation change boundary',
