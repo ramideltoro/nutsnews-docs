@@ -11,11 +11,11 @@ wiki:
   collection: platform-and-data
   section: Operations & Monitoring
   approval:
-    state: approved
+    state: unreviewed
     publishing: allowed
-    reviewed_by: "ramideltoro"
-    reviewed_on: "2026-07-28T20:10:06.000Z"
-    technical_source_hash: 01d462a0d4750796c0365338110b0d5d006a5ce4ace69e0792e74ca2ec712569
+    reviewed_by: pending
+    reviewed_on: pending
+    technical_source_hash: 5d00bbce381e3082706db85e00172f5757e474b14c52a60615fcd162aa1c864c
 ---
 
 # NutsNews Service Level Objectives
@@ -24,25 +24,159 @@ Issue: https://github.com/ramideltoro/nutsnews/issues/89
 
 App PR: https://github.com/ramideltoro/nutsnews/pull/241
 
-This runbook defines the first explicit NutsNews SLOs, error budgets, alert thresholds, and incident classes for reader, API, Worker, feed freshness, translation, and backup health.
+This runbook defines the NutsNews native Grafana SLOs, supplementary readiness
+guardrails, alert thresholds, and incident classes for reader, API, Worker,
+feed freshness, translation, and backup health.
 
 ## Simple Summary
 
-NutsNews now has promises for what "healthy" means. If the site, API, Worker, translations, or backups fall outside those promises, admins can see how serious it is and what to check next.
+NutsNews has four staged, 30-day Grafana SLOs for public availability, API
+latency, feed freshness, and Worker terminal success. Existing readiness checks
+remain useful operational guardrails, but they are not additional native SLOs.
 
 ## Intermediate Summary
 
-The target is a stable reader experience with clear operating limits. Homepage and `/api/articles` availability use a 99.5% monthly target, Worker ingestion needs recent successful runs, the public feed must stay fresh enough for readers, translations should be mostly complete for recent stories, and backup restore checks must stay current. The admin readiness dashboard now includes an "SLO and error budgets" card that rolls up existing readiness signals and links back to this policy.
+The target is a stable reader experience with clear operating limits. Four
+source-controlled Grafana SLO resources use rolling 30-day windows, while the
+admin readiness dashboard continues to roll up current-state checks for public
+API health, graceful degradation, Worker/controller freshness, feed growth,
+translation coverage, backups, CI, and configuration. The Grafana resources
+are staged until a protected apply and post-apply evidence confirm their UUIDs,
+queries, recording rules, dashboards, and notifications.
 
 ## Expert Summary
 
-Issue #89 adds an SLO/error-budget operating layer over existing NutsNews observability. The application repository adds a derived `/admin/readiness` signal in `web/lib/adminProductionReadiness.ts`; it does not create a new table, credential, external monitor, or provider mutation. The signal maps the existing readiness inputs for public API health, graceful degradation, Worker/controller freshness, DB growth/feed freshness, translation coverage, backup freshness, CI status, and configuration into a green/yellow/red SLO budget status. Historical availability and latency remain measured by external uptime, Lighthouse CI, Vercel, Cloudflare, and Grafana rather than by a new app-side metrics store.
+Issue #89 added a derived `/admin/readiness` signal in
+`web/lib/adminProductionReadiness.ts`; it does not create a table, credential,
+external monitor, or provider mutation. The Grafana hardening adds exactly four
+native SLO resources in `ramideltoro/nutsnews-infra`, backed by public synthetic
+checks and durable production telemetry. The native rolling error budgets and
+the readiness card have different jobs: Grafana measures history and burn,
+while `/admin/readiness` supports promotion and incident triage at the current
+point in time.
 
-## SLO Targets
+## Native Grafana SLOs
+
+The following source-controlled contract becomes live only after a protected
+Grafana Cloud apply and successful post-apply verification. Each native SLO uses
+a rolling 30-day compliance window.
+
+| Native Grafana SLO | Objective | Good and eligible events | Alert behavior |
+| --- | ---: | --- | --- |
+| Public availability | 99.5% over 30 days | Successful canonical-homepage observations from both public probes divided by all canonical-homepage observations | Source enables Grafana-generated fast- and slow-burn alerts; activation remains unproved. |
+| API latency | 95% over 30 days | Successful read-only article API observations completed within 750 milliseconds divided by all successful article API observations | Source enables Grafana-generated fast- and slow-burn alerts; activation remains unproved. Status, body, and cache-header validation failures remain separate availability/correctness failures. |
+| Feed freshness | 99% over 30 days | Eligible intervals in which the durable published-feed age from the current production publication owner is no more than 15 minutes | Source enables Grafana-generated fast- and slow-burn alerts plus a separate three-hour critical guardrail; activation remains unproved. |
+| Worker terminal success | 99% over 30 days | Event-weighted outcomes across all canonical delivery stages: `success|duplicate` divided by `success|duplicate|invalid|failure|dlq`; intermediate `retry` outcomes are excluded | Source defaults generated burn alerts off; the completed rollback does not prove this native SLO or its alerts are active. |
+
+`terminal` is an SLI classification, not an `outcome` label value. A zero
+eligible-event denominator is No Data, not a synthetic failure or proof of
+health. No SLO may group by user, feed, article, correlation identifier, or
+other unbounded dimension.
+
+The Worker ratio is not publication-only or per-article success. One pipeline
+can contribute multiple eligible stage completions across the seven delivery
+processors; scheduler cycles are outside the stage-event family. Source defaults
+`worker_terminal_slo_alerting_enabled` to `false`, so the candidate omits the
+generated burn-alert block. The protected Grafana-side live value must still be
+confirmed during rollout. This native control is separate from the
+`nutsnews_worker_expected_active` joins used by custom worker-local rules; the
+completed rollback does not prove either Grafana activation or the deployed
+telemetry values.
+
+The Worker-Uplift Pipeline dashboard's five descriptive SLI entries and its
+hand-authored rules are compatibility metadata and operational guardrails, not
+five additional native Grafana SLOs. Their shorter 5-minute, 15-minute, and
+1-hour ranges are alert-evaluation windows rather than 30-day compliance
+windows. The source-staged qualification baseline uses
+`nutsnews_worker_expected_active=0` for non-owning services so their behavior
+conditions stay visible without paging; missing required telemetry still
+blocks rollout. That ownership gate applies to worker-local signals, not to the
+global reader-visible feed-freshness SLO or its three-hour critical guardrail.
+Source leaves those feed signals ownership-ungated under either ingestion
+implementation; Grafana activation remains unproved.
+
+The cutover used older Runtime 0.x candidate
+`71b0303705093ad398458083547a86e9e61f50458e8799ace38de4f2404859df`
+and met publication/freshness abort criteria before observation started.
+Rollback prepare ran in backend run 30715252632. Legacy scheduling is verified
+true by worker runs
+[30715590990](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30715590990)
+and [30715611673](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30715611673).
+[Backend run 30715566651](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30715566651)
+completed finalize. The authoritative row is stable `shadow` generation 5,
+owner `legacy_shards`, legacy dispatch true, uplift scheduler true in shadow,
+uplift writes false, publication shadow, observation timestamps null, and
+single-writer/DNS checks passing. Backend PR #471 is `DIRTY`/conflicting with
+current main and undeployed. It must resolve the PR #483 Worker API conflict,
+derive ownership/`expected_active` from the authoritative generation 5 row, and
+add a separate runtime-container recreation path so exact-eight identity can
+converge. These runs are ingestion-control evidence. Separately, pre-freeze
+Grafana apply 30708192621 proves the five-check synthetic baseline and populated
+host/RabbitMQ/Loki queries, but not native SLOs, post-incident synthetic health,
+notification receipts, or controlled drills.
+
+Retained
+[abort-threshold evidence](https://github.com/ramideltoro/nutsnews-infra/issues/474#issuecomment-5153075316)
+records 28 publication messages, 84 `handler-error` retries, no publication
+success, 28 ready messages in the 30-minute retry queue, and no post-cutover
+public freshness. The observation window never started. Rollback completed
+through the protected finalize run; no automatic rollback, recovery replay, or
+operator queue replay ran. The failed candidate is disqualified and
+quarantined.
+
+Backend source hardening is partly complete. Backend
+[`PR #482`](https://github.com/ramideltoro/nutsnews-backend/pull/482), merge
+`510b775d7962e2e66d430fb6d458c3c88d60cdd3`, records the immutable incident
+receipt, consumes the historical cutover authority, and fail-closes protected
+Ansible and generic runtime mutations against the exact maintenance-safe shadow
+row. Backend [`PR #483`](https://github.com/ramideltoro/nutsnews-backend/pull/483),
+merge `5531014000f52fd6101f8617463d5f2c887d0788`, hardens the forward
+publication API contract and idempotency semantics. These are source-only
+merges: no host/runtime deployment, Runtime 1 rollout, queue replay, or failed-
+candidate rehabilitation occurred. The worker deploy guard and infra verifier
+remain unfinished and frozen.
+
+The effective safety freeze remains until incident reconciliation and those
+unfinished guards are complete: no `nutsnews-worker` merge or ordinary deploy;
+no backend Ansible apply or generic publication/runtime mutation; no duplicate
+cutover/rollback/finalize; no fetcher state-contract v2 migration or Runtime 1
+deployment; and no Grafana apply, synthetic rollout, web merge, queue replay,
+or reconciliation mutation. Rollback is complete; no cutover-control mutation
+is authorized. Read-only evidence collection does not remove these freezes.
+
+Every split worker must be deployed with `up == 1`, scrape age below 180
+seconds, exact non-`unknown` build/deployment identity, and readiness series.
+These structural requirements are never ownership-gated. A service with
+`nutsnews_worker_expected_active=1` must additionally report a successful
+readiness outcome, scheduler loop/cycle or delivery-stage activity as
+applicable, last success, and worker-local paging eligibility.
+
+Oldest worker pressure is the backend-owned
+`nutsnews_backend_worker_uplift_oldest_unconfirmed_outbox_age_seconds` gauge,
+used only when `nutsnews_backend_worker_uplift_outbox_available == 1`. It is
+not the global feed-freshness SLI. That SLI continues to measure reader-visible
+durable content against the 15-minute objective regardless of which ingestion
+implementation owns production.
+
+Producer/source ownership is separate from alert-routing `owner` labels:
+`nutsnews-backend` owns worker deployment, backend Alloy, and backend-hosted
+ownership/outbox gauges; the eight service repositories each own their service
+identity, health, lifecycle, and latency; `nutsnews-infra` alone owns Grafana;
+and the `nutsnews-worker` meta-repository coordinates rollout. The Current
+Production Ownership dashboard must show the backend revision plus exact
+identities for scheduler, fetcher, canonicalizer, enrichment, approval,
+translation, persistence, and publication.
+
+## Legacy Readiness And Operational Guardrails
+
+The following established thresholds remain useful for current-state readiness,
+release gates, and incident classification. Unless explicitly mapped to one of
+the four native resources above, they do not create or reset a Grafana error
+budget.
 
 | Surface | Target | Green evidence | Error budget / warning | Critical breach |
 | --- | --- | --- | --- | --- |
-| Homepage availability | 99.5% monthly availability for public reader entry points | `/healthz` and homepage checks pass; admin readiness has no red reader signal | Any confirmed downtime burns the monthly 216-minute budget; repeated yellow readiness states need review | Homepage or `/healthz` confirmed timeout/5xx for 5 minutes or more |
+| Homepage availability | 99.5% monthly availability for public reader entry points | Canonical homepage and `/readyz` checks pass; admin readiness has no red reader signal | Any confirmed downtime burns the monthly 216-minute budget; repeated yellow readiness states need review | Homepage or `/readyz` confirmed timeout/5xx for 5 minutes or more |
 | Homepage latency | p95 public document response under 2.5 seconds and Lighthouse performance budget passing | Lighthouse CI and preview smoke pass; Vercel/Cloudflare do not show sustained slow responses | p95 over target for 30 minutes or two consecutive CI quality regressions | Sustained slow responses make the reader unusable or timeout-prone |
 | `/api/articles` success | 99.5% monthly success rate for read-only article API calls | `/api/articles?limit=1` and `/api/articles?home=1` return valid JSON; public-feed fallback is available | 5xx, timeout, invalid JSON, or maintenance-mode responses burn API budget | API timeout/5xx or invalid JSON for 10 minutes, especially without a feed fallback |
 | `/api/articles` latency | p95 under 1.5 seconds for read-only API calls | Preview smoke and public reader smoke pass; no sustained runtime slowness | p95 over target for 30 minutes or repeated preview-smoke latency regressions | Latency causes client errors, timeouts, or homepage reader breakage |
@@ -51,7 +185,7 @@ Issue #89 adds an SLO/error-budget operating layer over existing NutsNews observ
 | Translation completion | At least 90% recent non-English summary rows available for the sampled recent articles | Translation coverage card is green | Coverage below 90% or missing quality evidence | Coverage below 75% while multilingual content is being promoted |
 | Backup freshness | Latest Supabase backup and disposable restore fire drill completed successfully within 30 hours | Backup freshness card is green and links to a successful workflow run/report artifact | Token/API unavailable, run pending, skipped, neutral, missing, or stale without active mutation | Failed/stale backup while a production mutation, incident recovery, or restore decision needs it |
 
-## Error Budget Rules
+## Legacy Manual Error Budget Rules
 
 | Rule | Value |
 | --- | --- |
@@ -61,9 +195,18 @@ Issue #89 adds an SLO/error-budget operating layer over existing NutsNews observ
 | Critical-burn threshold | 50% of the monthly budget consumed, about 108 minutes, or any active reader/data/recovery risk |
 | Review window | Monthly, with immediate review for critical incidents |
 
-Budget burn is tracked from external uptime evidence, GitHub Actions failures, admin readiness history, provider dashboards, and incident notes. Until NutsNews has a dedicated time-series SLO store, the readiness dashboard is the live status surface and this runbook is the source of truth for target thresholds.
+After a protected Grafana Cloud apply confirms the four SLO UUIDs and live
+queries, native Grafana SLOs own their rolling 30-day error budgets and generated
+fast- and slow-burn alerts. `/admin/readiness` remains a current-state promotion
+and incident-triage surface; it does not calculate or reset native error
+budgets. Legacy Worker/controller, translation, backup, homepage-performance,
+API-success, feed-availability, and fallback-growth thresholds remain
+supplementary operational guardrails unless they are explicitly mapped to one
+of the four native SLOs. Until that apply is verified, external uptime evidence,
+workflows, provider dashboards, and incident notes remain the historical
+evidence source.
 
-## Alert Thresholds
+## Supplementary Alert Thresholds
 
 | Signal | Medium | High | Critical |
 | --- | --- | --- | --- |
@@ -101,24 +244,30 @@ The application readiness dashboard now includes an `SLO and error budgets` sign
 - `ci-status`
 - `configuration`
 
-Green means the core live signals are inside the current budget. Yellow means one or more watch signals should be verified and classified as High or Medium. Red means at least one critical readiness signal is burning error budget and should be triaged against this runbook before promotion.
+Green means the core current-state signals pass. Yellow means one or more watch
+signals should be verified and classified as High or Medium. Red means at least
+one critical readiness signal requires triage before promotion; it does not by
+itself prove that a native Grafana error budget is burning. Only the native SLI
+query and its recording/burn rules determine that historical budget state.
 
 ## Operating Flow
 
 ```mermaid
 flowchart TD
-  A[Monitor, workflow, dashboard, or report detects a symptom] --> B[Open /admin/readiness]
-  B --> C[SLO and error budgets card]
-  C --> D{Red signal?}
-  D -->|Yes| E[Classify Critical or High]
-  D -->|No| F{Yellow signal?}
-  F -->|Yes| G[Classify High or Medium]
-  F -->|No| H[Within budget]
-  E --> I[Follow incident response policy]
-  G --> J[Create follow-up issue or maintenance task]
-  I --> K[Record budget burn and validation evidence]
-  J --> K
-  H --> L[Continue monthly SLO review]
+  A["Native Grafana SLO or operational guardrail detects a symptom"] --> B{"Historical burn or current-state failure?"}
+  B -->|"Historical burn"| C["Open the native Grafana SLO dashboard"]
+  B -->|"Current state"| D["Open /admin/readiness and the linked evidence"]
+  C --> E{"Fast or slow burn alert active?"}
+  D --> F{"Red or yellow signal?"}
+  E -->|"Yes"| G["Classify Critical or High"]
+  E -->|"No"| H["Continue 30-day SLO review"]
+  F -->|"Red"| G
+  F -->|"Yellow"| I["Classify High or Medium"]
+  F -->|"No"| H
+  G --> J["Follow incident response policy"]
+  I --> K["Create a follow-up issue or maintenance task"]
+  J --> L["Record budget burn and validation evidence"]
+  K --> L
 ```
 
 ## Operational Steps
@@ -137,21 +286,36 @@ No new environment variable, secret, database migration, provider credential, or
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `ACTIONS_READ_TOKEN` for server-side GitHub Actions status reads
 
+The later Grafana hardening rollout is separate from issue #89 and does require
+protected provider, Synthetic Monitoring, SLO, and telemetry inputs. As of
+2026-08-01 its read-only synthetic-audit Environment exists but all four scoped
+inputs are absent and its writer/reviewer prerequisites are incomplete. The
+five-check, two-probe, 300-second synthetic baseline is already live from
+pre-freeze apply 30708192621, projecting 86,400 monthly executions. The
+protected standing-major acknowledgment was set and verified `true` at
+2026-08-01 20:29:46 UTC; the major warning and 90,000 ceiling remain. PR #473
+hardening and all four native Grafana SLOs remain unapplied and frozen.
+
 External uptime, Grafana, Sentry, Vercel, Cloudflare, and Supabase dashboards remain provider-owned. Do not paste secrets, private URLs, tokens, raw environment files, or credential values into SLO notes.
 
 ## Risks And Mitigations
 
 | Risk | Mitigation |
 | --- | --- |
-| The app signal looks like a complete historical SLO store | The dashboard copy and this runbook state that historical budget burn still comes from external uptime, provider dashboards, workflows, and incident notes. |
+| The readiness card looks like a complete historical SLO store | Keep the four native rolling budgets distinct from current-state readiness and legacy guardrails. |
 | Targets drift from code thresholds | Update this file, `PRODUCTION_READINESS_DASHBOARD.md`, and `web/lib/adminProductionReadiness.ts` together when thresholds change. |
 | Every yellow signal becomes urgent | Yellow signals must be classified as High or Medium by reader, data, and recovery impact. |
 | A backup warning is under-prioritized | Escalate backup freshness to Critical whenever recovery or a production mutation depends on it. |
-| Latency evidence is incomplete | Use Lighthouse CI, preview smoke, Vercel, Cloudflare, and Grafana together until a dedicated latency SLO store exists. |
+| Native SLO resources are mistaken for live before rollout | Keep the bundle unreviewed and require protected apply, query health, UUID, burn-rule, and notification evidence before calling it live. |
+| API latency accidentally counts failed probes as slow successes | The SLI denominator must contain only successful article API observations; availability and response-validation failures remain separate signals. |
 
 ## Rollback
 
-Revert the app PR that adds the `SLO and error budgets` readiness signal, then revert this documentation file and the related production-readiness documentation updates. No database, secret, provider, Cloudflare, Vercel, Supabase, Grafana, or Sentry rollback is required.
+Roll back an individual native SLO or its burn notifications through
+`nutsnews-infra` without disabling the telemetry pipeline or unrelated alerts.
+If the application readiness card itself must be removed, revert the app PR that
+added it and the related production-readiness documentation. Never delete live
+SLO history merely to clear a breach.
 
 ## Related
 

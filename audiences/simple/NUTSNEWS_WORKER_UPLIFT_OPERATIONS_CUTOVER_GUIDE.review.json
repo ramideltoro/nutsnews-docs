@@ -11,7 +11,7 @@
   },
   "source": {
     "path": "NUTSNEWS_WORKER_UPLIFT_OPERATIONS_CUTOVER_GUIDE.md",
-    "sha256": "c869f2661581f86752771fd84906c307c40a92b6a8e31f1cc69b543b639ab27b"
+    "sha256": "83e12961d48fd31be6bced1e342b2c369de67a3ae7fa31f6a02b51c0ac503ea6"
   },
   "artifacts": {
     "simple_markdown": "audiences/simple/NUTSNEWS_WORKER_UPLIFT_OPERATIONS_CUTOVER_GUIDE.md",
@@ -19,13 +19,16 @@
     "review_manifest": "audiences/simple/NUTSNEWS_WORKER_UPLIFT_OPERATIONS_CUTOVER_GUIDE.review.json"
   },
   "accessibility": {
-    "title": "Worker uplift operating state and future cutover gates",
-    "description": "The diagram shows that legacy ingestion remains the production owner while operators gather read-only evidence and keep the uplift shadow-only. Future cutover can only happen after separate approved controls are added, the DNS failover system stays independent, and a reversible watermark-based switch is proven."
+    "title": "Worker uplift cutover incident and completed rollback",
+    "description": "The diagram shows the pre-freeze Grafana baseline, failed older cutover, publication and freshness abort, completed rollback to stable generation 5 shadow, quarantined candidate, merged backend safeguards, unfinished worker and infra guards, and post-rollback mutation freeze."
   },
   "review_notes": [
     "Resolved for this draft: the issue sequence, repository commits, workflow names and inputs, provider-credential mapping, Grafana catalog, evidence runs, and artifact digest were checked against the refreshed 2026-07-29 GitHub state.",
     "Resolved for this draft: Backend Production Cutover is database-provider automation and is explicitly excluded from worker-ingestion promotion.",
     "Resolved for this draft: the pinned infra controller config has the Durable Object binding but no FAILOVER_ANALYTICS binding; the guide records proof, migration, or residual-risk acceptance as a #125 gate.",
-    "Recheck these time-sensitive baselines whenever an owning repository changes; a mismatch is a readiness blocker until the guide is updated."
+    "Recheck these time-sensitive baselines whenever an owning repository changes; a mismatch is a readiness blocker until the guide is updated.",
+    "The 2026-08-01 rollback-finalize artifact proves stable generation 5 shadow; backend PRs #482 and #483 are merged source-only safeguards, while the worker deploy guard, infra verifier, and incident reconciliation remain frozen blockers.",
+    "Pre-freeze Grafana apply 30708192621 is live baseline evidence; it must not be confused with the still-frozen PR #473 hardening, native SLO, notification canary, controlled-drill, or post-incident verification work.",
+    "Backend PR #471 is conflicting and undeployed; reconcile PR #483, authoritative generation 5 ownership, and the separate exact-eight runtime-container recreation step before qualification."
   ]
 }

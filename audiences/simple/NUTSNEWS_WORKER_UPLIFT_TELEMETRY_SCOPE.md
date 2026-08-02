@@ -1,22 +1,21 @@
 ---
 wiki:
   approval:
-    state: approved
+    state: unreviewed
     publishing: allowed
-    reviewed_by: "ramideltoro"
-    reviewed_on: "2026-07-29T04:17:53.484Z"
-    technical_source_hash: 2db7b312e4925abe9bad8cc79abcb3501053d558dba4be4a132084f9d7348807
+    reviewed_by: pending
+    reviewed_on: pending
+    technical_source_hash: b14a8c6492e9d56a4c5951ba9e6b8e80b5d636950aa993094dd1c5ddb7e9d98c
   source_route: /technical/nutsnews-worker-uplift-telemetry-scope
   simple_route: /simple/nutsnews-worker-uplift-telemetry-scope
   primary_diagram:
     file: diagrams/NUTSNEWS_WORKER_UPLIFT_TELEMETRY_SCOPE.mmd
-    accTitle: Worker-uplift telemetry scope decision flow
+    accTitle: Staged worker-uplift observability activation flow
     accDescr: >-
-      The diagram starts with the approved worker-uplift telemetry scope, splits
-      it into required metrics and logs, deferred traces and exemplars, and
-      forbidden profiles and payload telemetry, then shows that metrics and logs
-      go to Grafana Cloud with bounded labels, while the policy also enforces
-      quota guardrails, rollback switches, and privacy limits.
+      The diagram shows the staged worker-uplift observability contract, its
+      eight private metrics endpoints, truthful health and ownership gates,
+      Grafana Cloud metrics and logs, quota safeguards, deferred signals, and
+      the evidence required before the work can be called live.
   status: active
   collection: start-here
   section: overview
@@ -28,17 +27,65 @@ description: >-
 ---
 # NutsNews Worker-Uplift Telemetry Scope
 
-This article explains the approved telemetry scope for the NutsNews worker-uplift pipeline. It covers what metrics and logs are allowed, what is deferred or forbidden, the label boundaries, queue and service coverage, volume budgets, guardrails, credentials, rollback switches, and privacy rules.
+This article explains the staged telemetry scope for the NutsNews worker-uplift
+pipeline. It covers metrics, logs, truthful health, ownership gates, volume
+budgets, guardrails, rollback switches, and privacy rules.
 
-Status: approved for `ramideltoro/nutsnews-worker#144` on 2026-07-23.
+Status: the Runtime 1 producer and worker-uplift/PR #473 observability changes
+remain staged. A separate pre-freeze Grafana baseline apply is live, including
+five synthetics. The failed cutover returned to stable shadow and must be
+reconciled before any further observability deployment or Grafana apply.
 
-Canonical infra policy:
+Companion infra policy (must be reconciled in the same reviewed rollout):
 
 ```text
 ramideltoro/nutsnews-infra/terraform/grafana-cloud/catalog/worker-uplift-telemetry-scope.json
 ```
 
-This decision approves the telemetry the worker-uplift pipeline may emit before runtime telemetry work begins. It does not enable the uplift production path.
+The companion JSON now has the staged core labels, outcomes, quota, and
+ownership changes, but it still needs the exact bucket, health, SLO, Alloy
+break-glass, value-bound, and unreviewed-status rules below. Source changes alone
+do not make this telemetry live. The failed Runtime 0.x cutover rolled back in
+[backend run 30715566651](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30715566651).
+The current row is stable `shadow` generation 5 with owner `legacy_shards`,
+legacy dispatch true, uplift scheduler true in shadow, uplift writes false,
+publication shadow, null observation timestamps, and single-writer/DNS checks
+passing. Legacy scheduling is verified true by worker runs
+[30715590990](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30715590990)
+and [30715611673](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30715611673).
+These are ingestion-control facts, not evidence that this worker-uplift/PR #473
+telemetry or the native SLOs are live. Separately, pre-freeze apply 30708192621
+proves the five-check synthetic baseline and populated host/RabbitMQ/Loki
+queries, not this final producer contract.
+
+Retained
+[abort-threshold evidence](https://github.com/ramideltoro/nutsnews-infra/issues/474#issuecomment-5153075316)
+records 28 messages, 84 retries, zero publication success, and stale public
+content. The observation window never started. Rollback completed through the
+protected finalize run; no automatic rollback, recovery replay, or operator
+queue replay ran. The failed candidate is disqualified and quarantined.
+
+Backend PRs [#482](https://github.com/ramideltoro/nutsnews-backend/pull/482)
+and [#483](https://github.com/ramideltoro/nutsnews-backend/pull/483) are merged
+source safeguards. They consumed old transition authority and repaired the
+forward publication contract, but did not deploy or replay anything. The worker
+deploy guard and infra verifier remain unfinished and frozen.
+
+The effective freeze remains until incident reconciliation and those guards
+are complete: no worker merge/ordinary deploy, backend Ansible/runtime
+mutation, duplicate transition, Runtime 1/fetcher v2, further Grafana apply or
+synthetic mutation, web merge, queue replay, or reconciliation mutation.
+
+`nutsnews-backend` owns worker deployment, backend Alloy, and backend-hosted
+ownership and outbox gauges. The scheduler, fetcher, canonicalizer, enrichment,
+approval, translation, persistence, and publication repositories each own that
+service's identity, health, lifecycle, and latency signals. `nutsnews-infra`
+alone owns Grafana resources. The `nutsnews-worker` meta-repository coordinates
+rollout. Stable generation 5 assigns production ingestion to `legacy_shards`;
+runtime ownership is different from producer responsibilities and from the
+`owner` label that helps route an alert. The Current Production Ownership
+dashboard must show the backend revision and exact deployed identity for all
+eight split-worker services.
 
 ## Signal Matrix
 
@@ -49,23 +96,47 @@ This decision approves the telemetry the worker-uplift pipeline may emit before 
 | Structured logs | Required | Grafana Cloud Logs | JSON service logs and RabbitMQ service logs after redaction, size limits, rate limits, and buffering. |
 | Traces | Deferred | None | No Tempo export, OTLP endpoint, or traces credential is provisioned now. |
 | Exemplars | Deferred | None | No exemplars until traces are separately approved. |
-| Profiles | Forbidden | None | No profiling signal is approved for worker uplift. |
+| Profiles | Deferred | None | No profiling backend, credential, or sampling policy is approved now. |
+| Scrubbed exceptions and replays | Existing canonical path | Sentry | Sentry remains the canonical scrubbed exception/replay store. |
 | Article/model payload telemetry | Forbidden | None | Article bodies, summaries, model prompts, model outputs, secrets, and production token material must not enter telemetry. |
 
-Full trace export is not a runtime dependency. The envelope still carries W3C trace context, and services may include `traceparent`, `tracestate`, `correlationId`, `causationId`, `messageId`, and `idempotencyKey` as structured log fields. Those fields must not become metric labels or Loki stream labels.
+Full trace export is not a runtime dependency. Services may keep safe
+`pipelineRunId`, `correlationId`, and `traceparent` fields as structured
+metadata, but identifiers must never become metric labels or Loki stream
+labels.
 
-## Labels
+## Labels And Correlation
 
-Allowed metric labels and Loki stream labels for worker-uplift telemetry:
+Application event metrics use only the bounded dimensions that apply:
 
 ```text
-environment
-host
-service
-version
-queue
-outcome
+service, stage, queue, outcome, dependency, language, provider, probe, check
 ```
+
+For lifecycle events, `stage` means the message route (`fetch` through
+`publication`), not the worker process name. Existing compatibility series may
+carry other bounded scrape labels while they are migrated; those labels are not
+approved as new event dimensions.
+
+Prometheus and Alloy may add bounded scrape labels such as
+`deployment_environment`, `host`, `job`, and `instance`; histogram buckets also
+use `le`. Build revision, service version, deployment mode, adapter mode, and
+the canonical `nutsnews_worker_expected_active` ownership signal belong in
+one-valued info/state gauges instead of every event series.
+
+Loki stream labels are exactly:
+
+```text
+deployment_environment, service, service_version, host, source, severity
+```
+
+Values are bounded too: lifecycle/health/consumer outcomes use reviewed finite
+sets; dependencies and checks use per-service allowlists; languages are `fr`,
+`ja`, `de-CH`, `de`, or `el`; provider is `local_ai`; probes are `liveness`,
+`startup`, or `readiness`; Loki source is `file`, `journal`, or `container`; and
+severity normalizes to `critical`, `error`, `warning`, `info`, or `unknown`.
+Missing values become `unknown`; unrecognized supplied values become `other` or
+are dropped. `service_version` comes only from the deployment inventory.
 
 Forbidden in metric labels and Loki stream labels:
 
@@ -74,7 +145,10 @@ article, feed, message, idempotency, trace, span, correlation, causation,
 payload, url, path, user, ip, token, secret, prompt, model_output
 ```
 
-The `queue` value is bounded to the contract-defined RabbitMQ queue names. The `service` value is bounded to the eight worker-uplift services. The `outcome` value is bounded to `success`, `retry`, `dlq`, `dropped`, `timeout`, `validation_error`, `dependency_error`, and `canceled`.
+The lifecycle vocabulary is accepted, duplicate, invalid, retry, DLQ, and
+terminal. The stage counter records accepted work as `outcome="success"`.
+"Terminal" is the final DLQ completion class, not an extra runtime event that
+would double-count a message.
 
 Consumer lifecycle telemetry uses the same approved label boundary. Runtime `0.5.0` exposes:
 
@@ -82,7 +156,168 @@ Consumer lifecycle telemetry uses the same approved label boundary. Runtime `0.5
 - `nutsnews_worker_consumer_events_total`, a counter for bounded outcomes such as `active`, `cancelled`, `channel-dropped`, `recovering`, and `closed`;
 - `runtime.broker.consumer_state_changed`, a structured JSON event carrying stage, queue, previous state, current state, and a bounded reason.
 
-Consumer cancellation and dropped-channel events must never include RabbitMQ URLs, credentials, message bodies, or article/model payloads. Grafana Cloud alert ownership remains in `ramideltoro/nutsnews-infra`; the per-main-queue consumer-loss rule alerts even when the affected queue is empty.
+Consumer events must never include RabbitMQ URLs, credentials, message bodies,
+or article/model payloads. Grafana Cloud alert ownership remains in
+`ramideltoro/nutsnews-infra`; consumer-loss rules page only when the affected
+deployment owns production.
+
+## Private Metrics And Truthful Health
+
+Backend Alloy must be the only scraper. These loopback endpoints may not be
+published through Caddy or the public firewall. The eight-target configuration
+is staged in source and still needs merge, deployment, and fresh-scrape proof:
+
+| Service | Port |
+| --- | ---: |
+| scheduler | `18081` |
+| fetcher | `18082` |
+| canonicalizer | `18083` |
+| enrichment | `18084` |
+| approval | `18085` |
+| translation | `18086` |
+| persistence | `18087` |
+| publication | `18088` |
+
+The target requires every service to report liveness, startup, and readiness
+with separate state metrics. Scheduler
+readiness in production requires an active scheduling loop and healthy
+production adapters. Fetcher readiness exposes its real state-store mode and
+cannot pass production readiness with an in-memory store.
+
+## Worker Metric Contract
+
+Merged source in all eight service repositories implements private-endpoint
+ownership, identity, health, and freshness telemetry. The seven delivery
+processors also implement `nutsnews_worker_uplift_stage_events_total` and the fixed-bucket
+`nutsnews_worker_uplift_stage_latency_seconds` histogram. Scheduler instead
+exports its fixed-bucket cycle histogram and is outside the stage-event SLI.
+The stage histogram includes `_bucket`, `_sum`, `_count`, a 30-second boundary,
+and `+Inf`.
+
+Worker Contracts `1.0.0` and Worker Runtime `1.0.0` are now published,
+attested, and install-smoke verified in the required order from merge commits
+`e86ea51814cb1b1d810e95b7971a59d90a2fce31` and
+`80bc2d1cc1ce2f089386c2653f9a69abe1ce9808`. All eight service PRs are merged,
+and each main push published a signed, attested immutable Runtime 1 image with
+provenance, SBOM, manifest, and baked-revision evidence recorded in
+[`nutsnews-infra#474`](https://github.com/ramideltoro/nutsnews-infra/issues/474#issuecomment-5152934401).
+Those Runtime 1 images have not been deployed. Backend PR
+[`#471`](https://github.com/ramideltoro/nutsnews-backend/pull/471) pins them but
+is `DIRTY`/conflicting with current main and undeployed. It must resolve the
+PR #483 Worker API conflict, derive ownership from the authoritative generation
+5 row, and add a separate runtime-container recreation path so exact-eight
+identity can converge. The failed cutover used the older candidate
+`71b0303705093ad398458083547a86e9e61f50458e8799ace38de4f2404859df`
+and rolled back to stable shadow. Reconcile the incident evidence before a
+fresh fail-closed qualification or deployment. The retained older candidate may
+still show legacy `_duration_ms` summaries; Grafana stage SLIs use only the new
+fixed-bucket seconds histograms.
+
+Required operational signals include:
+
+- the canonical `nutsnews_worker_expected_active` ownership gauge, deployment
+  and adapter modes, build revision, and service version;
+- per-service `up`, scrape freshness, scheduler loop state, and last-success
+  time;
+- fetcher durable-state readiness and actual/expected store mode;
+- RabbitMQ ready depth, unacknowledged depth, and consumers by bounded queue;
+- backend-owned worker outbox pressure and global feed freshness as separate
+  signals.
+
+The source-staged baseline reports `nutsnews_worker_expected_active=0` for
+non-owning services; it is not a description of stable generation 5 shadow.
+Conflicting PR #471 must replace those mutable ownership values with the
+authoritative control-row projection before deployment. Every service must
+still be deployed, report `up == 1`, have a scrape less than 180 seconds old, expose
+readiness series, and report exact non-`unknown` build and deployment identity.
+Missing structural series are never hidden by the ownership gate.
+
+Only a service changed to `nutsnews_worker_expected_active=1` must also report a
+successful readiness outcome and become eligible for worker-local paging. An
+active scheduler must show loop/cycle activity and last success; an active
+delivery worker must show stage activity and last success. Consumer, latency,
+publication, and worker-local freshness alerts may use the ownership gate.
+
+The backend owns the oldest worker-pressure value:
+`nutsnews_backend_worker_uplift_oldest_unconfirmed_outbox_age_seconds`. Use it
+only when `nutsnews_backend_worker_uplift_outbox_available == 1`; unavailable
+projection data is a separate failure. This is not the global reader-visible
+15-minute feed-freshness SLO.
+
+Custom worker-local consumer, latency, publication, and freshness alerts join
+to `nutsnews_worker_expected_active`. The source-staged deployment keeps that
+value at `0` for non-owning services so they remain visible without paging.
+Structural scrape, identity, and
+readiness-series absence still alerts or blocks rollout. The native Worker
+terminal SLI does not use that join; its generated burn-alert resources are
+omitted because source defaults `worker_terminal_slo_alerting_enabled` to
+`false`. The protected Grafana-side value still needs confirmation, and the
+completed ingestion-control transition does not prove the deployed telemetry values.
+Source does not couple those controls automatically, so both must be reconciled
+against the same retained production-ownership evidence. Source leaves the
+global reader-visible durable feed-freshness SLO and its three-hour critical
+guardrail ownership-ungated; Grafana activation remains unproved.
+
+## What Still Blocks Activation
+
+The repository work does not yet satisfy the whole target contract:
+
+- All eight endpoint implementations are merged and verified immutable images
+  are published. Backend PR #471 is conflicting and undeployed. It must resolve
+  the PR #483 file conflict, authoritative ownership projection, and separate
+  runtime-container recreation needed for exact-eight identity before fresh
+  qualification and scrapes. Exact image evidence is retained in
+  [`nutsnews-infra#474`](https://github.com/ramideltoro/nutsnews-infra/issues/474#issuecomment-5152934401).
+- The target latency buckets are `0.005`, `0.01`, `0.025`, `0.05`, `0.1`,
+  `0.25`, `0.5`, `1`, `2.5`, `5`, `10`, `30`, `60`, `120`, and `300` seconds,
+  plus `+Inf`. Merged service source uses the complete set, but live scrapes
+  still must prove that every running service agrees.
+- Stage counters and histograms for the seven delivery processors, the scheduler
+  cycle histogram, Runtime 1 probe/check health, and ownership gauges exist in
+  merged source and published images. Repository merge and image evidence covers
+  the source artifacts, but live queries must still prove exact-once outcomes,
+  safe duplicate handling, bounded labels, truthful dependency health,
+  identity, and last-success semantics operationally.
+- Generic runtime `_duration_ms` summaries may remain on deployed Runtime `0.5`.
+  Their absence is not operational until Runtime `1.0.0` worker images are
+  pinned in backend source, deployed, and scraped.
+- Staged infra now uses `nutsnews_worker_expected_active` consistently.
+  Consumer, latency, worker-local freshness, publication, and active-worker
+  activity/readiness outcomes are gated. Required scrape freshness, identity,
+  and readiness-series presence are not. The global feed-freshness SLO and
+  three-hour guardrail are intentionally not gated. The changes remain
+  unapplied, so post-apply query and drill evidence is still required.
+- The companion JSON has the core corrections but still lacks the exact bucket,
+  health, native-SLO, Alloy break-glass, and value-bound semantics; its approved
+  status also conflicts with this unreviewed bundle.
+- The package release order is complete, but it does not close service-specific
+  lease, health, identity, lifecycle, label, security, or workflow reviews.
+
+## Native Grafana SLOs
+
+The overall rollout has exactly four native 30-day SLOs: public availability at
+99.5%; API latency with 95% of successful `canonical_articles_api` synthetic
+observations within 750 ms; feed freshness at 99% within 15 minutes; and worker
+terminal success at 99%. Failed API probe assertions stay outside the latency
+denominator as availability/correctness failures.
+
+Feed freshness uses global reader-visible durable production-content age. Its
+source remains ownership-ungated under either ingestion implementation. Worker
+terminal-success burn alerts remain absent from the source candidate because
+its alert boolean defaults to `false`.
+
+Worker success is an event-weighted ratio across every canonical delivery stage,
+not a publication-only or per-article rate; one pipeline can contribute several
+stage completions, and scheduler cycles are excluded. Success counts `success`
+and `duplicate`. The denominator counts `success`, `duplicate`, `invalid`,
+`failure`, and `dlq`; retry is intermediate and excluded, while `failure` is
+forward-compatible until producers converge. `terminal` is a category, not a
+metric value. Zero work is NoData, not failure. Source defaults the alert
+boolean to `false`, and the protected Grafana-side live value still needs
+confirmation. The completed ingestion-control transition does not prove the native SLO
+or its burn alerts exist. The five SLI catalog entries are
+dashboard/custom-rule metadata, not five more native SLOs, and SLO count is not
+part of usage-quota ratios.
 
 ## Topology Coverage
 
@@ -159,12 +394,28 @@ Required ratios:
 
 | Guardrail | Live ratio |
 | --- | --- |
-| Metrics active series | `grafanacloud_instance_metrics_usage / grafanacloud_instance_metrics_limits{limit_name="max_global_series_per_user"}` |
+| Metrics active series | `max(grafanacloud_instance_active_series / on(id) grafanacloud_instance_metrics_limits{limit_name="max_global_series_per_user"})` |
 | Logs active streams | `grafanacloud_logs_instance_active_streams / grafanacloud_logs_instance_limits{limit_name="max_global_streams_per_user"}` |
 | Logs ingestion rate | `grafanacloud_logs_instance_bytes_received_per_second / (grafanacloud_logs_instance_limits{limit_name="ingestion_rate_mb"} * 1024 * 1024)` |
 | Traces ingestion rate | `grafanacloud_traces_instance_bytes_received_per_second / grafanacloud_traces_instance_limits{limit_name="ingestion_rate_limit_bytes"}` |
 
-Alert thresholds are 70%, 85%, and 95%.
+Alert thresholds are 70%, 85%, and 95%. Those threshold alerts treat missing
+data as OK so a telemetry gap cannot look like high usage. A separate alert
+reports an absent active-series numerator or limit denominator. The staged rule
+does not yet prove staleness, so collector last-seen age still needs an alert and
+post-apply test.
+
+The 5,000-series worker/host engineering budget, 7,000-series global operating
+ceiling, and 90,000 monthly synthetic-execution ceiling are separate. The
+70/85/95% thresholds apply independently to provider limits; SLO count is not
+part of those ratios.
+
+Pre-freeze apply 30708192621 made five checks across two probes every five
+minutes live, projecting 86,400 executions. That is above the 85,000 `major`
+band and below the 90,000 hard ceiling. The protected standing-major
+acknowledgment was set and verified `true` at 2026-08-01 20:29:46 UTC. The
+warning and ceiling remain, and the acknowledgment does not authorize another
+frozen apply.
 
 No-surprise-spend response:
 
@@ -177,25 +428,47 @@ No-surprise-spend response:
 
 ## Alloy Pipeline And Credentials
 
+Keeping Alloy enabled is the production desired state. Turning it off is
+protected break glass that requires explicit confirmation and an incident
+record, not a normal metrics/log rollback.
+
 Metrics:
 
-- worker services expose private Prometheus metrics endpoints;
+- worker services expose all eight loopback `/metrics` endpoints on ports 18081
+  through 18088;
+- Alloy must scrape all eight with stable service, bounded scrape-role,
+  deployment-mode, and ownership identity; scrape-role labels are distinct from
+  lifecycle route-stage labels; this remains staged until post-apply evidence
+  proves every target fresh;
 - RabbitMQ metrics come from a private scrape/exporter path on the backend host;
 - Alloy scrapes and writes through `prometheus.remote_write`;
+- Alloy readiness, remote-write backlog/errors, and collector freshness are
+  exported and alerted;
 - credentials are `NUTSNEWS_GRAFANA_CLOUD_METRICS_URL`, `NUTSNEWS_GRAFANA_CLOUD_METRICS_USERNAME`, and `NUTSNEWS_GRAFANA_CLOUD_ACCESS_POLICY_TOKEN`.
 
 Logs:
 
 - service JSON logs and RabbitMQ logs flow through Alloy `loki.source`;
-- `loki.process` applies redaction, label allow-listing, size limits, and rate limits;
+- `loki.process` applies redaction, canonical label normalization, size limits,
+  and rate limits;
+- only `deployment_environment`, `service`, `service_version`, `host`, `source`,
+  and `severity` are indexed stream labels; request, message, correlation,
+  trace, article, feed, and idempotency IDs remain structured metadata;
 - `loki.write` sends to Grafana Cloud Logs;
+- Loki drops and write retries are exported and alerted;
 - credentials are `NUTSNEWS_GRAFANA_CLOUD_LOGS_URL`, `NUTSNEWS_GRAFANA_CLOUD_LOGS_USERNAME`, and `NUTSNEWS_GRAFANA_CLOUD_ACCESS_POLICY_TOKEN`.
 
-Backend issue `ramideltoro/nutsnews-worker#88` implements the approved log scope by collecting only explicitly tagged Docker journald streams on `backend.nutsnews.com`. RabbitMQ uses the `nutsnews-worker-uplift-rabbitmq` tag. Worker services use one stable tag per service: `nutsnews-worker-uplift-scheduler`, `nutsnews-worker-uplift-fetcher`, `nutsnews-worker-uplift-canonicalizer`, `nutsnews-worker-uplift-enrichment`, `nutsnews-worker-uplift-approval`, `nutsnews-worker-uplift-translation`, `nutsnews-worker-uplift-persistence`, and `nutsnews-worker-uplift-publication`. Backend verification is through the protected `Backend Worker-Uplift Logs Check` workflow, which reports only safe metadata: Alloy health, bounded source count, trace export absence, and Loki query result counts.
+Backend issue `ramideltoro/nutsnews-worker#88` defines the staged source
+configuration for collecting explicitly tagged Docker journald streams on
+`backend.nutsnews.com`. RabbitMQ and each worker use stable service tags. After
+merge and deploy, the protected `Backend Worker-Uplift Logs Check` workflow must
+report only safe metadata: Alloy health, bounded source count, trace-export
+absence, and Loki query-result counts.
 
-Traces and exemplars:
+Traces, exemplars, and profiles:
 
-- no Tempo, OTLP, traces, or exemplar write credentials are approved now;
+- no Tempo, OTLP, trace, exemplar, or profiling write credentials are approved
+  now;
 - future trace enablement requires a new reviewed infra PR, green quota alerts for seven consecutive days, `WORKER_TELEMETRY_TRACES_ENABLED=true`, `WORKER_TELEMETRY_TRACE_SAMPLE_RATIO<=0.01`, and a scoped `traces:write` credential.
 
 Retention follows the live Grafana Cloud `retention_period` limits reported by `grafanacloud_logs_instance_limits` and `grafanacloud_traces_instance_limits`. Do not request custom retention or Cloud Logs Export for worker uplift.
@@ -204,12 +477,45 @@ Retention follows the live Grafana Cloud `retention_period` limits reported by `
 
 | Signal | Switch |
 | --- | --- |
-| Metrics | `WORKER_TELEMETRY_METRICS_ENABLED=false` or `enable_grafana_alloy=false` |
-| Logs | `WORKER_TELEMETRY_LOG_LEVEL=warn`, `WORKER_TELEMETRY_LOGS_ENABLED=false`, or `enable_grafana_alloy=false` |
+| Worker metrics | `WORKER_TELEMETRY_METRICS_ENABLED=false`; this creates a visible telemetry-loss condition. |
+| Worker logs | `WORKER_TELEMETRY_LOG_LEVEL=warn` or `WORKER_TELEMETRY_LOGS_ENABLED=false`. |
+| Alloy | `enable_grafana_alloy=false` only through confirmed, incident-recorded break glass. |
 | Traces | `WORKER_TELEMETRY_TRACES_ENABLED=false` and `WORKER_TELEMETRY_TRACE_SAMPLE_RATIO=0` |
 | Exemplars | `WORKER_TELEMETRY_EXEMPLARS_ENABLED=false` |
+| Profiles | No approved enable switch; keep profiling unconfigured. |
 
-Telemetry loss alerts are required for Alloy Loki dropped entries, Alloy Loki write retries, worker metrics scrape absence, and RabbitMQ queue depth metric absence. During shadow qualification, missing required worker metrics or structured logs blocks production traffic.
+Telemetry loss alerts are required for Alloy readiness, remote-write backlog and
+errors, Loki drops and retries, collector freshness, worker scrape absence, and
+RabbitMQ queue-depth absence. During non-owner qualification, missing required
+worker metrics or logs blocks production traffic even when behavior paging is
+suppressed.
+
+## Activation And Evidence Gate
+
+This is source/image-prepared worker-uplift work, not proof that its Grafana
+coverage is live. It becomes complete only after conflicting backend PR #471 is
+reconciled with stable generation 5, PR #483, and the exact-eight recreation
+requirement; the result must pass a fresh fail-closed qualification and deploy,
+and the reviewed backend and `nutsnews-infra` GitOps applies must succeed.
+Retained evidence must then show:
+
+- Alloy readiness/backlog/error/drop/freshness health; all eight workers
+  deployed with `up == 1`, scrape age below 180 seconds, exact non-unknown
+  build/deployment identity, readiness series, and ownership values matching
+  the reconciled live production state;
+- successful readiness plus loop/cycle or stage activity, last success, and
+  worker-local paging only for any service whose ownership value is `1`;
+- lifecycle counters, seconds histograms, RabbitMQ depth/unacked/consumers, and
+  the backend outbox-age value guarded by its availability series;
+- non-owner dashboards stay useful without paging;
+- an isolated fixture or test-target drill proves the ownership alert gate,
+  without changing production `nutsnews_worker_expected_active` to test it;
+- Loki uses only the six approved stream labels and keeps IDs as metadata;
+- quota numerator, denominator, ratio, rule health, and the separate
+  missing-telemetry alert work as designed.
+
+Until that evidence exists, call the work staged or configured in source—not
+live, applied, operational, or complete.
 
 ## Privacy Boundary
 

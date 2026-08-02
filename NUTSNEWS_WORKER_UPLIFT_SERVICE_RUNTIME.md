@@ -1,15 +1,58 @@
 ---
 wiki:
   approval:
-    state: approved
+    state: unreviewed
     publishing: allowed
-    reviewed_by: "ramideltoro"
-    reviewed_on: "2026-07-29T04:17:53.311Z"
-    technical_source_hash: d0de67f2d72af5b6d3bda6d8385d69f8df4f966a089c2c41934789ded501ab2f
+    reviewed_by: pending
+    reviewed_on: pending
+    technical_source_hash: 92a67f2bf9c83fde4580db067ac5bb24a529be8e81f1c21f174419f1dcb4e2f4
 ---
 # NutsNews Worker-Uplift Service Runtime
 
 Status: implemented for `ramideltoro/nutsnews-worker#85` on 2026-07-23.
+
+> **Current incident override (2026-08-01).** The cutover on older Runtime 0.x
+> candidate
+> `71b0303705093ad398458083547a86e9e61f50458e8799ace38de4f2404859df`
+> failed publication and freshness before observation started. [Backend run
+> 30715252632](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30715252632)
+> completed rollback prepare but failed before finalize. [Worker run
+> 30715293972](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30715293972)
+> deployed legacy scheduling true; later runs
+> [30715590990](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30715590990)
+> and [30715611673](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30715611673)
+> verified it. [Backend run 30715566651](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30715566651)
+> completed finalize. The authoritative row is stable `shadow` generation 5,
+> owner `legacy_shards`, legacy dispatch true, uplift scheduler true in shadow,
+> uplift writes false, publication shadow, observation timestamps null, and
+> single-writer/DNS checks passing. Runtime 1 is published and pinned in draft
+> backend PR #471, but that PR is `DIRTY`/conflicting with current main and
+> undeployed. It must resolve the PR #483 Worker API conflict, derive
+> ownership/`expected_active` from the authoritative generation 5 row, and add
+> a separate runtime-container recreation path so exact-eight identity can
+> converge.
+
+> **Backend source hardening.** Backend
+> [`PR #482`](https://github.com/ramideltoro/nutsnews-backend/pull/482), merge
+> `510b775d7962e2e66d430fb6d458c3c88d60cdd3`, records the immutable rollback
+> receipt, consumes historical apply/rollback/resume authority, and guards
+> protected Ansible and generic runtime mutations against the exact stable
+> shadow row. Backend
+> [`PR #483`](https://github.com/ramideltoro/nutsnews-backend/pull/483), merge
+> `5531014000f52fd6101f8617463d5f2c887d0788`, repairs the forward publication
+> API contract. Both are source-only merges: no host/runtime deployment,
+> Runtime 1 rollout, queue replay, or failed-candidate rehabilitation occurred.
+> The worker deploy guard and infra verifier remain unfinished and frozen.
+
+> **Freeze.** The static runtime manifest/status can still show top-level
+> shadow/write-disabled and is not authoritative for owner or rollback
+> completion. Use read-only status, logs, and queue inspection only. Do not run
+> backend Ansible, deploy, promote, restart, scale, generic runtime rollback,
+> drain, replay, reconciliation, smoke, Runtime 1/fetcher v2 deployment,
+> further Grafana mutation, synthetic drills, or web merge. Rollback is complete: do not rerun
+> cutover, rollback, or finalize. The failed Runtime 0.x publication candidate
+> is disqualified and quarantined. No automatic rollback or recovery replay ran.
+> See the [central incident evidence](https://github.com/ramideltoro/nutsnews-infra/issues/474#issuecomment-5153075316).
 
 Canonical backend runbook:
 
@@ -33,7 +76,9 @@ a host-managed, disabled-by-default runtime manager and service manifest path
 for future independent worker images. The legacy Cloudflare Worker checkout and
 pipeline remain unchanged.
 
-The runtime is shadow-first:
+The original source-default runtime contract was shadow-first. These settings
+describe the implementation baseline, not the current authoritative control
+row:
 
 - `NUTSNEWS_BACKEND_WORKER_RUNTIME_ENABLED=true` installs the backend-managed
   framework.
@@ -49,7 +94,8 @@ The backend Worker DB API remains the write boundary for uplift services.
 Scoped commands are available only on `/api/worker/db/*`; scoped tokens are not
 accepted on `/api/app/db/*` and cannot call unrelated legacy Worker commands.
 
-Protected apply keeps scoped credentials disabled until rollout:
+The original protected-apply baseline kept scoped credentials disabled before
+rollout:
 
 - `NUTSNEWS_BACKEND_WORKER_UPLIFT_SCOPED_TOKENS_ENABLED=false` keeps
   persistence/publication tokens optional.
@@ -71,17 +117,22 @@ may also upsert `worker_uplift_final.article_shadow_aggregates`. Shadow scoped
 commands must not update `public.articles` visibility or refresh the live public
 feed snapshot.
 
-Production scoped commands require all cutover gates:
+Production scoped commands require all cutover gates. This contract explains
+the guard; it does not authorize a new production command during the freeze:
 
 - `providerMode=backend_postgres_primary`;
 - `NUTSNEWS_WORKER_UPLIFT_CUTOVER_STATE=cutover-approved`;
 - `NUTSNEWS_WORKER_UPLIFT_PRODUCTION_WRITES_ENABLED=true`;
 - the existing Worker API write guard enabled.
 
-Duplicate requests with the same idempotency key and payload digest return the
-recorded response. Reusing an idempotency key with a different payload returns a
-conflict. Do not enable production-write scope while legacy ingestion is still
-the production owner.
+Duplicate requests with the same idempotency key and stable business-command
+digest return the recorded response. Regenerated delivery identifiers are not
+part of that digest; a changed article command still conflicts. PR #483 also
+requires an uplift publication command to contain exactly one real HTTP(S)
+article URL, `published` state, the protected five-language scope, and an exact
+one-row semantic confirmation before success is recorded. This contract is
+merged source but is not deployed. Do not enable production-write scope while
+legacy ingestion is still the production owner.
 
 ## Runtime Guardrails
 
@@ -96,7 +147,7 @@ outside the declared service boundary, production writes before
 `cutover_state=cutover-approved`, and service-specific actions before their
 future implementation is present.
 
-## Protected Operations
+## Protected Operations Capability
 
 Operators use the backend `Backend Worker Runtime Operations` workflow. The
 workflow dispatches only fixed manager actions:
@@ -118,13 +169,14 @@ reconciliation
 smoke
 ```
 
-Mutating actions require `confirm_target=backend.nutsnews.com` and the
-protected `production-backend` approval gate. Status and check actions are
-expected to pass when no services are configured.
+The workflow exposes these fixed capabilities, but every mutating action is
+currently frozen. Generic runtime `rollback` is not the cutover rollback. Use
+only read-only status, logs, and queue inspection; the completed cutover
+rollback must not be rerun.
 
 ## Zero-Consumer Readiness And Recovery
 
-Every consuming shadow service treats its contracted main queue as part of
+Every consuming service treats its contracted main queue as part of
 readiness. The scheduler is producer-only and does not require a consumer.
 `/ready` returns unhealthy when the service has zero active consumers.
 Backend `status` reports the HTTP readiness result and RabbitMQ consumer count
@@ -138,7 +190,9 @@ exports `nutsnews_worker_consumers` and
 `nutsnews_worker_consumer_events_total` with only the approved
 environment/host/service/version/queue/outcome label set.
 
-Use the protected restart path when the reviewed image and configuration are
+The following restart and deployment procedures are historical capability
+references and are frozen during the post-rollback hold. Outside the freeze, the
+protected restart path applies when the reviewed image and configuration are
 still correct and only the live consumer was lost:
 
 1. Run `status`, `queue-inspect`, and bounded `logs` through `Backend Worker
@@ -154,9 +208,10 @@ and then use the fixed `deploy` operation for the affected service. Apply the
 same readiness, consumer-count, DLQ, log, and drain verification. Do not use
 ad hoc SSH or Compose commands for either recovery path.
 
-Both paths preserve `production_writes_enabled=false`, keep legacy ingestion as
-the production owner, and leave DNS and failover behavior unchanged. Grafana
-rules stay owned and applied by `ramideltoro/nutsnews-infra`.
+Those pre-cutover paths preserved `production_writes_enabled=false` and legacy
+ownership. The authoritative generation 5 finalize artifact now proves stable
+shadow. Grafana rules remain owned by
+`ramideltoro/nutsnews-infra`, but Grafana apply is frozen during this incident.
 
 ## Runtime Logs
 
@@ -180,6 +235,8 @@ Backend implementation PRs:
 | --- | --- | --- |
 | `ramideltoro/nutsnews-backend#309` | Worker runtime framework and RabbitMQ metrics | `1433c3aed6fd36307524288d75a5ba048c74dd83` |
 | `ramideltoro/nutsnews-backend#310` | Protected apply environment wiring fix | `f5d0de06675b7222c67701ba87922b849224a4e9` |
+| [`ramideltoro/nutsnews-backend#482`](https://github.com/ramideltoro/nutsnews-backend/pull/482) | Consume historical cutover authority and guard backend runtime mutations | `510b775d7962e2e66d430fb6d458c3c88d60cdd3` |
+| [`ramideltoro/nutsnews-backend#483`](https://github.com/ramideltoro/nutsnews-backend/pull/483) | Harden forward publication semantics and stable command idempotency | `5531014000f52fd6101f8617463d5f2c887d0788` |
 
 Local and PR validation:
 
@@ -187,8 +244,10 @@ Local and PR validation:
 | --- | --- |
 | PR #309 checks | <https://github.com/ramideltoro/nutsnews-backend/actions/runs/30013690867> |
 | PR #310 checks | <https://github.com/ramideltoro/nutsnews-backend/actions/runs/30013958989> |
+| PR #482 checks | <https://github.com/ramideltoro/nutsnews-backend/actions/runs/30716472983> |
+| PR #483 checks | <https://github.com/ramideltoro/nutsnews-backend/actions/runs/30716608432> |
 
-Production proof:
+Historical implementation proof:
 
 | Surface | Run |
 | --- | --- |
@@ -198,7 +257,8 @@ Production proof:
 | Backend drift check after apply | <https://github.com/ramideltoro/nutsnews-backend/actions/runs/30017885344> |
 | Backend health report after apply | <https://github.com/ramideltoro/nutsnews-backend/actions/runs/30017885364> |
 
-Runtime proof result:
+Historical runtime proof result from the initial framework rollout; this is not
+current owner or rollback-completion evidence:
 
 ```text
 mode=shadow

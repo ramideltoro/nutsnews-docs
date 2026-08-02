@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "state": "approved",
+  "state": "unreviewed",
   "publishing": "allowed",
   "generated_at": "2026-07-28T21:20:44.036Z",
   "generator": {
@@ -11,7 +11,7 @@
   },
   "source": {
     "path": "NUTSNEWS_WORKER_UPLIFT_SERVICE_RUNTIME.md",
-    "sha256": "d0de67f2d72af5b6d3bda6d8385d69f8df4f966a089c2c41934789ded501ab2f"
+    "sha256": "92a67f2bf9c83fde4580db067ac5bb24a529be8e81f1c21f174419f1dcb4e2f4"
   },
   "artifacts": {
     "simple_markdown": "audiences/simple/NUTSNEWS_WORKER_UPLIFT_SERVICE_RUNTIME.md",
@@ -19,22 +19,23 @@
     "review_manifest": "audiences/simple/NUTSNEWS_WORKER_UPLIFT_SERVICE_RUNTIME.review.json"
   },
   "accessibility": {
-    "title": "Worker runtime guardrail flow",
-    "description": "The diagram shows the backend installing the worker runtime in shadow mode, validating manifests, restricting scoped Worker DB commands, and only allowing production actions after cutover gates are met. If the gates are not met, production writes stay off and legacy ingestion remains the owner."
+    "title": "Worker uplift completed rollback and runtime boundary",
+    "description": "The diagram shows completed rollback to stable generation 5 shadow, restored legacy ownership and scheduling, disabled uplift writes, quarantined failed candidate, merged backend safeguards, conflicting PR #471, and frozen generic runtime mutations."
   },
   "review_notes": [
-    "Verify the approval metadata in the canonical source is not to be published verbatim if publication rules require a fresh review despite the source marking itself approved.",
+    "A substantive incident-state edit invalidated the previous approval; require fresh human review before approval metadata changes.",
     "Confirm the canonical backend runbook path and all GitHub Actions run URLs are still valid and intended for reader-facing publication.",
     "Check whether the implementation status wording should remain \"implemented for ramideltoro/nutsnews-worker#85 on 2026-07-23\" or be updated by editorial policy.",
     "Verify the exact set of protected manager actions and environment variable names against the live backend runbook before publishing.",
     "Confirm the telemetry restrictions and the deferred Tempo/OTLP wording still match current backend policy.",
-    "Review whether the Recovery section's operational steps and gate names match the current production procedures exactly."
+    "Review whether the Recovery section's operational steps and gate names match the current production procedures exactly.",
+    "Treat backend PRs #482 and #483 as merged source-only safeguards and PR #471 as conflicting and undeployed pending PR #483, authoritative generation 5 ownership, and exact-eight runtime recreation reconciliation."
   ],
   "approval": {
-    "state": "approved",
+    "state": "unreviewed",
     "publishing": "allowed",
-    "reviewed_by": "ramideltoro",
-    "reviewed_on": "2026-07-29T04:17:53.311Z",
-    "technical_source_hash": "d0de67f2d72af5b6d3bda6d8385d69f8df4f966a089c2c41934789ded501ab2f"
+    "reviewed_by": "pending",
+    "reviewed_on": "pending",
+    "technical_source_hash": "92a67f2bf9c83fde4580db067ac5bb24a529be8e81f1c21f174419f1dcb4e2f4"
   }
 }

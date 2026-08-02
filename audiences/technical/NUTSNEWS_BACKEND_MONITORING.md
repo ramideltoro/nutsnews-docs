@@ -11,11 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    state: approved
+    state: unreviewed
     publishing: allowed
-    reviewed_by: "ramideltoro"
-    reviewed_on: "2026-07-28T20:10:06.000Z"
-    technical_source_hash: 7b2531e6fe8d86fb2546cdbe60017014ef4065b0ec3f384bb14a4bf96492c327
+    reviewed_by: pending
+    reviewed_on: pending
+    technical_source_hash: f3a1be4cf8b20aa27f9c9ffa58beb95e928448ea3162b77e7bc72fb5f5e1bd13
 ---
 
 # NutsNews Backend Monitoring Baseline
@@ -49,13 +49,79 @@ Read-only remote check:
 ssh -i ~/.ssh/servercheap_65_75_201_18 rami@65.75.201.18 'hostname && systemctl --failed --no-pager && ss -tulpen 2>/dev/null || ss -tulpn'
 ```
 
-Backend app health endpoint:
+Backend PR #471 source-stages these monitoring endpoints, but the PR is
+`DIRTY`/conflicting with current main and undeployed. It must resolve the PR
+#483 `worker_db_api.py` conflict, derive ownership/`expected_active` from the
+authoritative generation 5 row, and add a separate runtime-container recreation
+path so exact-eight identity can converge. The endpoints below are not a claim
+about the currently deployed API:
 
 ```text
-/healthz
+/livez
+/readyz
+/metrics
 ```
 
-Until the backend app exists, application status is `not_deployed`.
+After that source is deployed, `/readyz` performs the PostgreSQL-aware
+monitoring check, `/livez` reports process liveness, and `/metrics` exposes
+bounded API RED telemetry. `/healthz` remains compatible for older callers but
+is no longer the target monitoring source. Deployment and fresh query evidence
+remain required.
+
+This endpoint rollout is distinct from the ingestion incident. The cutover used
+older Runtime 0.x candidate
+`71b0303705093ad398458083547a86e9e61f50458e8799ace38de4f2404859df`
+and met publication/freshness abort criteria before observation started.
+[Backend run 30715252632](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30715252632)
+completed rollback prepare but failed before finalize. Legacy scheduling was
+verified true by worker runs
+[30715590990](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30715590990)
+and [30715611673](https://github.com/ramideltoro/nutsnews-worker/actions/runs/30715611673).
+Backend run
+[30715566651](https://github.com/ramideltoro/nutsnews-backend/actions/runs/30715566651)
+completed finalize. The authoritative row is stable `shadow` generation 5,
+owner `legacy_shards`, legacy dispatch true, uplift scheduler true in shadow,
+uplift writes false, publication shadow, observation timestamps null, and
+single-writer/DNS checks passing.
+Runtime 1 in conflicting backend PR
+[`#471`](https://github.com/ramideltoro/nutsnews-backend/pull/471) remains
+undeployed. None of this proves the staged endpoints or worker scrapes are live.
+
+Retained
+[abort-threshold evidence](https://github.com/ramideltoro/nutsnews-infra/issues/474#issuecomment-5153075316)
+records 28 publication messages, 84 `handler-error` retries, no publication
+success, 28 ready messages in the 30-minute retry queue, and no post-cutover
+public freshness. The observation window never started. Rollback completed
+through the protected finalize run. No automatic rollback, recovery replay, or
+operator queue replay ran. The failed Runtime 0.x candidate is disqualified and
+quarantined.
+
+Backend source hardening is partly complete. Backend
+[`PR #482`](https://github.com/ramideltoro/nutsnews-backend/pull/482), merge
+`510b775d7962e2e66d430fb6d458c3c88d60cdd3`, records the immutable incident
+receipt, consumes the historical cutover authority, and fail-closes protected
+Ansible and generic runtime mutations against the exact maintenance-safe shadow
+row. Backend [`PR #483`](https://github.com/ramideltoro/nutsnews-backend/pull/483),
+merge `5531014000f52fd6101f8617463d5f2c887d0788`, hardens the forward
+publication API contract and idempotency semantics. These are source-only
+merges: no host/runtime deployment, Runtime 1 rollout, queue replay, or failed-
+candidate rehabilitation occurred. The worker deploy guard and infra verifier
+remain unfinished and frozen.
+
+The effective safety freeze remains until incident reconciliation and those
+unfinished guards are complete: no worker merge/ordinary deploy, backend
+Ansible or generic runtime mutation, duplicate cutover/rollback/finalize,
+Runtime 1/fetcher v2, Grafana apply, synthetic rollout, web merge, queue replay,
+or reconciliation mutation. Rollback is complete; no cutover-control mutation
+is authorized. Read-only evidence collection does not remove these freezes.
+
+Separately, pre-freeze Grafana Cloud Apply
+[`30708192621`](https://github.com/ramideltoro/nutsnews-infra/actions/runs/30708192621)
+verified the live baseline: 28 dashboards, 11 backend alerts, 20 worker alerts,
+five synthetics on two probes every 300 seconds, and populated host, RabbitMQ,
+and Loki queries. It does not prove the conflicting PR #471 endpoint changes,
+PR #473 hardening, native SLOs, notification receipts, controlled drills, or
+post-incident health.
 
 ## Initial Thresholds
 
@@ -205,8 +271,11 @@ respective repositories.
 
 ## Grafana Cloud Logs
 
-Backend issue #36 adds Grafana Cloud Loki log shipping through the backend
-Grafana Alloy deployment in `ramideltoro/nutsnews-backend`.
+Backend issue #36 established Grafana Cloud Loki log shipping through the
+backend Grafana Alloy deployment in `ramideltoro/nutsnews-backend`. Conflicting
+backend PR #471 source-stages the expanded source coverage and normalized label
+boundary described below. Those additions require reconciliation, deployment,
+and recent Loki evidence; the earlier baseline apply does not make them live.
 
 Secret names in the GitHub `production-backend` environment:
 
@@ -216,8 +285,10 @@ Secret names in the GitHub `production-backend` environment:
 
 Collected sources:
 
-- filtered systemd journal units for Caddy, Alloy, backup/restore verification,
-  NutsNews timers, SSH, UFW, fail2ban, unattended-upgrades, and apt timers;
+- filtered systemd journal units for Caddy, Alloy, the worker DB API,
+  PostgreSQL, sync relay, RabbitMQ canary, backup/restore verification,
+  related NutsNews timers, SSH, UFW, fail2ban, unattended-upgrades, and apt
+  timers;
 - `/var/log/auth.log` and `/var/log/fail2ban.log` through the host `adm` group;
 - `/var/log/caddy/access.log`, `/var/log/caddy/error.log`, and
   `/var/log/nutsnews/*.log` when those files exist;
@@ -234,11 +305,14 @@ worker service.
 Before logs are shipped, Alloy drops private-key markers and oversized lines,
 redacts authorization headers, cookies, token/password/API-key style values,
 query strings, and email addresses, drops JSON debug/trace lines, truncates long
-lines, and keeps only stable labels:
+lines, and keeps exactly these indexed labels:
 
 ```text
-environment, host, source, service, unit, severity, filename, job, version, queue, outcome
+deployment_environment, service, service_version, host, source, severity
 ```
+
+Request, message, correlation, trace, article, feed, and idempotency IDs remain
+structured metadata rather than indexed labels.
 
 Grafana objects:
 
@@ -253,13 +327,19 @@ datasource because that stores alert history, not backend host logs.
 
 ## Grafana Alert Guardrails
 
-Backend issue #25 adds a repo-managed Grafana alert group named
+Backend issue #25 established a repo-managed Grafana alert group named
 `NutsNews Backend Guardrails` in the `NutsNews Backend Ops` folder.
+
+Conflicting backend PR #471 source-stages the PostgreSQL-aware `/readyz` signal and the
+expanded label-aware rules below. Centralized operations-email routing is also
+staged in infra PR #473. The 2026-07-31 live audit still found the root route
+pointing to `empty`; neither draft PR proves the new route or readiness rule is
+live.
 
 Initial alert rules cover:
 
 - missing backend host metrics;
-- unhealthy `/healthz` endpoint;
+- unhealthy PostgreSQL-aware `/readyz` endpoint;
 - failed systemd units;
 - unhealthy backup, verification, or restore-drill stages;
 - root disk warning above 80%;
@@ -270,28 +350,39 @@ Initial alert rules cover:
 - fail2ban SSH ban events.
 
 The rules use the backend textfile metrics and explicit `noDataState` settings
-so intentionally not-configured services do not page as failures. Notification
-routing, deduplication, cooldowns, and recovery messages are managed by the
-backend report artifacts described below.
+so intentionally not-configured services do not page as failures. The staged
+target in `ramideltoro/nutsnews-infra` will manage Grafana notification routing,
+grouping, cooldowns, and resolved messages through the protected operations-email
+contact point and severity policies. The live root route remains `empty`, and no
+receipt canary has proved delivery.
 
 The abuse-detection rules added for backend issue #40 are report-only. They do
 not mutate UFW, Caddy, Cloudflare, fail2ban, or host firewall policy. Their Loki
-queries are scoped to stable `security` labels and avoid IP, path, user, request
-ID, and raw-message labels.
+queries use canonical indexed labels such as `service="security"`,
+`source="journal"`, and bounded `severity` values. Event details remain parsed
+fields; IP, path, user, request ID, and raw-message values never become labels.
 
 ## Off-Box Synthetic Monitoring
 
-Backend issue #30 adds `.github/workflows/backend-synthetic-monitor.yml` in
-`ramideltoro/nutsnews-backend`.
+Backend issue #30 established `.github/workflows/backend-synthetic-monitor.yml`
+in `ramideltoro/nutsnews-backend`. The current `main` workflow still checks
+`/healthz`. Conflicting backend PR #471 source-stages its replacement with the truthful
+PostgreSQL-aware `/readyz` assertion described below; that replacement is not
+live until the PR is merged and deployed.
 
-The workflow runs hourly from GitHub-hosted runners and checks public endpoints
-without authentication or production mutation:
+The source candidate continues to run hourly from GitHub-hosted runners and
+checks public endpoints without authentication or production mutation:
 
 - `https://www.nutsnews.com/`
 - `https://nutsnews.com/` redirect behavior
-- `https://backend.nutsnews.com/healthz`
+- `https://backend.nutsnews.com/readyz` as the PostgreSQL-aware monitoring
+  source
 - `https://backend.nutsnews.com/` expected current `404`
 - Supabase public status API as the auth-provider availability signal
+
+The conflicting PR #471 source retains `/healthz` for older callers but removes it from this
+scheduled synthetic inventory; compatibility is not treated as a reliability
+signal.
 
 Each run uploads `backend-synthetic-report.json`, writes a GitHub step summary,
 and sends email only on unsuppressed alert notifications through the existing
@@ -354,6 +445,12 @@ the previous artifact is absent from the current run.
 Backend issue #35 adds the repo-managed Grafana Cloud metrics path from
 `ramideltoro/nutsnews-backend`.
 
+The following is source-staged target state unless a protected deployment and
+fresh query are separately evidenced. Previously verified RabbitMQ dashboards
+remain live where cited below; the new worker scrapes, API/PostgreSQL/Caddy
+coverage, backup freshness, and failure-drill hook are not live merely because
+their source exists.
+
 Host deployment path:
 
 - Protected Ansible apply installs Grafana Alloy from the Grafana apt repository.
@@ -363,8 +460,49 @@ Host deployment path:
   - `GRAFANA_CLOUD_PROMETHEUS_USERNAME`
   - `GRAFANA_CLOUD_PROMETHEUS_PASSWORD`
 - Alloy scrapes local exporter targets only. No Prometheus scrape port is exposed publicly.
+- Alloy scrapes the backend API `/metrics`, all eight worker-uplift endpoints on
+  ports `18081` through `18088`, PostgreSQL exporter metrics, Caddy metrics, and
+  a local TLS/certificate blackbox target.
 - `/usr/local/bin/nutsnews-metrics-textfile` writes low-cardinality NutsNews metrics into `/var/lib/nutsnews/metrics/nutsnews.prom`.
-- `nutsnews-metrics-textfile.timer` refreshes endpoint, service, update, backup, restore-drill, and quota-state metrics every minute.
+- `nutsnews-metrics-textfile.timer` refreshes endpoint, service, update, backup,
+  restore-drill, sync-relay, and quota-state metrics every minute and overwrites
+  stale output with an explicit unavailable state after collection failure.
+
+The source-staged qualification baseline sets non-owning split workers to
+`nutsnews_worker_expected_active=0`; it must be reconciled with stable
+generation 5 shadow before deployment. Every worker must nevertheless
+be deployed, report `up == 1`, have a scrape age below 180 seconds, expose
+readiness series, and publish exact non-`unknown` build and deployment identity.
+Those structural requirements are never ownership-gated. A service with
+`nutsnews_worker_expected_active=1` must additionally report successful
+readiness, scheduler loop/cycle or delivery-stage activity as applicable, last
+success, and worker-local paging eligibility.
+
+The backend owns the worker deployment and Alloy pipeline plus the hosted
+ownership and outbox gauges. Each of the scheduler, fetcher, canonicalizer,
+enrichment, approval, translation, persistence, and publication repositories
+owns its service identity, health, lifecycle, and latency producers.
+`nutsnews-infra` alone owns Grafana resources; the `nutsnews-worker`
+meta-repository coordinates rollout. This producer/source ownership is separate
+from the bounded `owner` label used for alert routing.
+
+```promql
+nutsnews_backend_worker_uplift_outbox_available
+nutsnews_backend_worker_uplift_oldest_unconfirmed_outbox_age_seconds
+```
+
+The age is usable only while the availability gauge is `1`. Missing projection
+data is its own telemetry failure. This worker outbox pressure is distinct from
+both RabbitMQ broker queue age and the global reader-visible 15-minute
+feed-freshness SLO.
+
+The backend exporter source now keeps last-run and last-success backup state
+separately. It emits `nutsnews_backend_backup_status_available`, last-run
+timestamp/age, last-success timestamp/age,
+`nutsnews_backend_backup_last_success_fresh`, and
+`nutsnews_backend_backup_stale_after_seconds=108000`. Failed attempts preserve
+the previous verified-success timestamp. The single daily backup-freshness
+threshold is 30 hours; deployment and live Grafana values remain pending.
 
 Grafana provisioning path:
 
@@ -374,7 +512,20 @@ Grafana provisioning path:
 - `nutsnews-backend` remains the telemetry producer and keeps only
   Prometheus/Loki write credentials for backend Alloy.
 - The managed folder is `NutsNews Backend Ops` with UID `nutsnews-backend-ops`.
+- The Current Production Ownership dashboard includes the backend revision and
+  exact deployed identities for scheduler, fetcher, canonicalizer, enrichment,
+  approval, translation, persistence, and publication.
 - Managed dashboards cover host resources, Docker/runtime state, Caddy/edge health, service health, backups, OS updates, metrics quota guardrails, and alert/synthetic health.
+- Backend API coverage includes request rate, error rate, and fixed-bucket
+  request duration by bounded operation, method, and status class.
+- The native API-latency SLO counts only successful article/API observations in
+  its denominator; failed status, body, or header assertions remain separate
+  availability/correctness signals.
+- PostgreSQL coverage includes connections, transactions, locks/deadlocks,
+  cache, checkpoints, autovacuum, storage/WAL growth, and replication.
+- Sync-relay coverage includes availability, actual lag, failed-table count,
+  and last-success age. Caddy coverage includes request rate, 4xx/5xx/429
+  ratios, p95/p99 latency, upstream errors, and certificate expiry.
 - Worker-uplift RabbitMQ dashboards from `ramideltoro/nutsnews-worker#89` are
   `NutsNews Worker-Uplift RabbitMQ Overview`
   (`nutsnews-worker-uplift-rabbitmq-overview`),
@@ -392,6 +543,15 @@ Grafana provisioning path:
   #91 to exercise firing and recovery without exposing AMQP or publishing
   production articles.
 
+Backend source also stages a dry-run-by-default, protected failure-drill
+workflow and fail-safe host hook for unavailable worker, zero-consumer fixture,
+growing-DLQ fixture, sync-relay-lag fixture, and failed-readiness fixture. These
+fixtures alter telemetry only; they do not stop a production consumer, mutate
+RabbitMQ, or prove real queue growth. The infra workflow can dispatch them only
+after this backend workflow and hook are merged and deployed. No live drill has
+been executed, so firing, recovery, routing, and retained evidence remain
+protected-rollout acceptance work.
+
 Operator verification:
 
 ```bash
@@ -401,16 +561,10 @@ gh workflow run protected-backend-ansible-apply.yml \
   -f run_mode=apply \
   -f confirm_apply=backend.nutsnews.com
 
-gh workflow run backend-grafana-metrics.yml \
-  --repo ramideltoro/nutsnews-backend \
+gh workflow run grafana-cloud-apply.yml \
+  --repo ramideltoro/nutsnews-infra \
   --ref main \
-  -f action=apply \
-  -f confirm_apply=backend.nutsnews.com
-
-gh workflow run backend-grafana-metrics.yml \
-  --repo ramideltoro/nutsnews-backend \
-  --ref main \
-  -f action=verify
+  -f confirm_apply=grafana-cloud
 ```
 
 Expected live evidence:
@@ -421,6 +575,15 @@ Expected live evidence:
 - `ss -tuln` does not show public listeners on `9100`, `9090`, `9091`, or `12345`.
 - Grafana verification returns data for:
   - `up{job="nutsnews-backend-host"}`
+  - `count by (service) (up{job="nutsnews-worker-uplift"})`
+  - `nutsnews_worker_expected_active`
+  - `nutsnews_worker_build_info` and `nutsnews_worker_deployment_info`
+  - `nutsnews_worker_health{probe="readiness"}`
+  - `nutsnews_backend_worker_uplift_outbox_available`
+  - `nutsnews_backend_worker_uplift_oldest_unconfirmed_outbox_age_seconds`
+  - `nutsnews_backend_api_up`
+  - `nutsnews_backend_api_dependency_ready{dependency="postgresql"}`
+  - `nutsnews_backend_sync_relay_healthy`
   - `nutsnews_backend_backup_stage_healthy{stage="backup"}`
   - `nutsnews_backend_public_endpoint_healthy`
   - `{host="backend.nutsnews.com",source="journal"}`

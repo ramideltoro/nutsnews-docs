@@ -1,39 +1,82 @@
 ---
 wiki:
   approval:
-    state: approved
+    state: unreviewed
     publishing: allowed
-    reviewed_by: "ramideltoro"
-    reviewed_on: "2026-07-28T20:10:06.000Z"
-    technical_source_hash: aeef737aabb69aa0718288838fd5c3dce7f0a1bde24a8bdb53f964bf2373ed5b
+    reviewed_by: pending
+    reviewed_on: pending
+    technical_source_hash: facca87977493b67936b1989c513b1b77c0c77a48d46d51925cde5f44f972210
 ---
 # NutsNews Backend Health Report
 
 ## Simple Summary
 
-NutsNews now has a daily backend checkup. It looks at the backend server, writes down what looks healthy or needs attention, and can email the report without changing the server.
+NutsNews has a daily backend checkup. Its checks are read-only and it can email
+the result. Backend PR #471 separately stages one bounded write of sanitized
+audit state for Grafana; that change is not deployed yet and does not remediate
+the server.
 
 ## Intermediate Summary
 
-The `ramideltoro/nutsnews-backend` repository owns a scheduled GitHub Actions workflow named `Backend Health Report`. It uses read-only SSH to inspect `65.75.201.18`, generates a sanitized JSON report artifact, writes a GitHub run summary, and sends email when SMTP secrets are configured. It reports host resources, service state, backup tooling, update/reboot state, failed units, timers, listeners, and recent critical errors. The workflow is fixed-purpose and does not accept arbitrary commands or perform host mutation.
+The `ramideltoro/nutsnews-backend` repository owns a scheduled GitHub Actions
+workflow named `Backend Health Report`. The established workflow uses a
+restricted SSH session for read-only checks, generates a sanitized JSON
+artifact, writes a GitHub run summary, and sends email when SMTP secrets are
+configured. Backend PR #471 stages fail-on-critical behavior and one tightly
+scoped host mutation: it atomically publishes sanitized audit state to
+`/var/lib/nutsnews/health-audit/last-run.json`. It does not accept arbitrary
+commands or mutate packages, services, firewall policy, or application data.
 
 ## Expert Summary
 
-Backend issue `ramideltoro/nutsnews-backend#38` adds `scripts/backend_health_report.py`, `.github/workflows/backend-health-report.yml`, tests, and `runbooks/BACKEND_HEALTH_REPORT.md`. The reporter executes a closed set of read-only SSH commands, redacts common token/private-key/URL-password/email patterns, classifies checks as `healthy`, `warning`, `critical`, `unknown`, or `not_configured`, and records `last_report_run_at`, `next_report_run_at`, `last_report_success_at`, `last_error`, and delivery status in JSON. SMTP delivery uses repository secrets by name only and degrades to `not_configured` when optional reporting credentials are absent. The workflow does not use the protected Ansible apply path, does not call `sudo` except for the non-mutating `sudo -n true` readiness check, and does not restart, install, or edit anything on the backend host.
+Backend issue `ramideltoro/nutsnews-backend#38` adds
+`scripts/backend_health_report.py`, `.github/workflows/backend-health-report.yml`,
+tests, and `runbooks/BACKEND_HEALTH_REPORT.md`. The reporter executes a closed
+set of read-only SSH commands, redacts common sensitive patterns, and classifies
+checks as `healthy`, `warning`, `critical`, `unknown`, or `not_configured`.
+Backend PR #471 stages scheduled execution with `--fail-on-critical`: any
+critical result records a failed workflow conclusion and returns nonzero after
+the report is written.
+SMTP delivery uses repository secrets by name only and degrades to
+`not_configured` when optional reporting credentials are absent.
+
+The candidate report exports `workflow.conclusion`, `critical_check_count`,
+`last_success_at`, and `last_success_age_seconds`. A failed run carries forward
+the prior successful timestamp rather than resetting freshness. This lets a
+host textfile exporter and Grafana alert on repeated failures or a missed
+schedule. Artifact upload and the job summary use an always-run path so failure
+evidence is not lost.
+
+The candidate workflow first atomically publishes the bounded audit-state JSON
+through its restricted SSH/sudo contract. Backend source then stages host
+textfile publication every five minutes for
+`nutsnews_backend_health_audit_available`, bounded
+`nutsnews_backend_health_audit_conclusion{conclusion=...}`, last-run timestamp
+and live age, last-success timestamp and live age, consecutive failures,
+critical-check count, and the 24-hour expected interval. Grafana source rules
+alert after at least two consecutive failures and when valid run evidence is
+missing or older than 30 hours. These additions remain unapplied until the
+backend deploy and protected Grafana apply produce retained live-query and
+firing/recovery evidence.
 
 ## Control Flow
 
 ```mermaid
 flowchart TD
     A[GitHub schedule or manual trigger] --> B[Checkout backend repo]
-    B --> C[Load read-only SSH and SMTP secrets]
+    B --> C[Load restricted SSH and SMTP secrets]
     C --> D[Run fixed-command health reporter]
     D --> E[Read-only SSH checks on 65.75.201.18]
     E --> F[Sanitize and classify results]
-    F --> G[Upload JSON artifact and step summary]
+    F --> G[Always upload JSON artifact and step summary]
     F --> H{SMTP configured?}
     H -->|yes| I[Send report email]
     H -->|no| J[Mark delivery not_configured]
+    F --> K{Critical checks present?}
+    K -->|yes| L[Mark workflow failed]
+    K -->|no| M[Record successful run time]
+    F --> N[Atomically publish bounded audit state]
+    N --> O[Five-minute textfile exporter and Grafana]
 ```
 
 ## Report Contents
@@ -57,6 +100,8 @@ The generated report includes:
 - public listener inventory;
 - recent critical journal entries visible to the read-only audit user;
 - delivery status without recipient or credential values.
+- workflow conclusion, critical-check count, prior last-success time, and
+  last-success age for Grafana freshness alerts.
 
 Backend services that are intentionally absent, such as Docker or PostgreSQL in
 the current phase, appear as `not_configured` rather than failed production
@@ -74,7 +119,7 @@ Repository secrets in `ramideltoro/nutsnews-backend`:
 
 | Secret | Purpose |
 | --- | --- |
-| `NUTSNEWS_BACKEND_SSH_PRIVATE_KEY` | Read-only SSH key for the backend audit session |
+| `NUTSNEWS_BACKEND_SSH_PRIVATE_KEY` | Restricted SSH key for read-only checks and the candidate's single allowlisted audit-state publication |
 | `NUTSNEWS_BACKEND_KNOWN_HOSTS` | Verified known_hosts entry for `65.75.201.18` |
 | `NUTSNEWS_REPORT_SMTP_HOST` | SMTP host for report delivery |
 | `NUTSNEWS_REPORT_SMTP_USERNAME` | SMTP username |
@@ -93,7 +138,11 @@ Optional variables:
 
 ## Operational Impact
 
-The report improves visibility while the backend host is still in the early bootstrap phase. It shows known blockers such as package updates, missing fail2ban deployment, missing restic, and lack of noninteractive sudo without making any of those changes itself.
+The report improves visibility while the backend host is still in the early
+bootstrap phase. It shows known blockers such as package updates, missing
+fail2ban deployment, missing restic, and lack of noninteractive sudo without
+remediating any of them. If PR #471 is deployed, its only host write is the
+bounded audit-state file described above.
 
 The workflow runs daily at `12:17 UTC`. Manual runs can disable email delivery for validation.
 
@@ -125,7 +174,8 @@ The live no-email report on July 16, 2026 showed `0` critical checks, `3` warnin
 | Report output could include sensitive data | Reporter redacts common token, private-key, URL-password, and email patterns before writing output |
 | Email could become noisy | Manual runs can disable email, and future alert-deduplication work can add cooldown state |
 | Scheduled workflow could fail if repository secrets are missing | Missing SSH secrets fail early by name only; missing SMTP secrets degrade to `not_configured` |
-| A read-only report could be mistaken for remediation | Runbook states that no package, firewall, service, or Ansible apply mutation happens in this workflow |
+| A health audit could be mistaken for remediation | Checks remain read-only; the candidate write is limited to one sanitized audit-state file and never changes packages, firewall policy, services, or application data |
+| A critical report could still look green because an artifact exists | `--fail-on-critical` fails the workflow while the always-run upload retains evidence; Grafana watches conclusion and last-success age |
 
 ## Rollback
 

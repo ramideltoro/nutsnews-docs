@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "state": "approved",
+  "state": "unreviewed",
   "publishing": "allowed",
   "generated_at": "2026-07-28T21:21:04.554Z",
   "generator": {
@@ -11,7 +11,7 @@
   },
   "source": {
     "path": "NUTSNEWS_WORKER_UPLIFT_TELEMETRY_SCOPE.md",
-    "sha256": "2db7b312e4925abe9bad8cc79abcb3501053d558dba4be4a132084f9d7348807"
+    "sha256": "b14a8c6492e9d56a4c5951ba9e6b8e80b5d636950aa993094dd1c5ddb7e9d98c"
   },
   "artifacts": {
     "simple_markdown": "audiences/simple/NUTSNEWS_WORKER_UPLIFT_TELEMETRY_SCOPE.md",
@@ -19,23 +19,24 @@
     "review_manifest": "audiences/simple/NUTSNEWS_WORKER_UPLIFT_TELEMETRY_SCOPE.review.json"
   },
   "accessibility": {
-    "title": "Worker-uplift telemetry scope decision flow",
-    "description": "The diagram starts with the approved worker-uplift telemetry scope, splits it into required metrics and logs, deferred traces and exemplars, and forbidden profiles and payload telemetry, then shows that metrics and logs go to Grafana Cloud with bounded labels, while the policy also enforces quota guardrails, rollback switches, and privacy limits."
+    "title": "Staged worker-uplift observability activation flow",
+    "description": "The diagram shows the live pre-freeze five-synthetic baseline, failed older cutover, completed rollback to stable generation 5 shadow, quarantined candidate, active mutation freeze, conflicting PR #471, private metrics and ownership gates, accepted standing-major forecast, deferred signals, and retained evidence required before activation."
   },
   "review_notes": [
-    "The source YAML frontmatter says approval state is approved and publishing is allowed; verify whether that status should be preserved verbatim in the wiki article or simplified for readers.",
-    "The canonical infra policy path and issue references (`ramideltoro/nutsnews-infra/...`, `ramideltoro/nutsnews-worker#88`, `ramideltoro/nutsnews-worker#144`) should be checked against current repository naming and issue status before publication.",
-    "The article states runtime `0.5.0` exposes specific consumer metrics and events; confirm these names and bounded outcomes are still exact.",
-    "Verify the quoted service coverage list, host coverage, queue counts, and label bounds against the current contracts package and telemetry implementation.",
-    "The document includes operational credentials and environment variable names; ensure publication policy allows these names to appear in the wiki and that no secret values are exposed.",
-    "Check that the future trace-enablement prerequisites, quota ratios, and budget thresholds match the current infra policy and Grafana Cloud limits.",
-    "Confirm the protected workflow name `Backend Worker-Uplift Logs Check` and its reported metadata remain accurate."
+    "The generated_at and generator fields record the original 2026-07-28 artifact generation; the 2026-08-01 rollout-state and cutover-safety reconciliation was manual and does not constitute regeneration or approval.",
+    "Reconcile conflicting backend PR #471 with PR #483, authoritative generation 5 ownership, the separate exact-eight runtime-container recreation requirement, the quarantined failed candidate, and retained incident evidence before a fresh qualification or deployment.",
+    "Keep worker merges, backend mutations, replay, reconciliation, Grafana apply, synthetics, Runtime 1/fetcher v2, and web merge frozen until source hardening and incident reconciliation complete.",
+    "Reconcile the companion infra policy JSON's old package source, approved status, exact buckets, health/value allowlists, and break-glass semantics before apply.",
+    "Verify the complete histogram bucket set, bounded health checks, lease safety, and lifecycle outcomes against the final worker image revisions.",
+    "Retain evidence that the live five-check, two-probe, 300-second topology projects 86,400 monthly executions and that the protected standing-major acknowledgment was verified true; keep the warning and 90,000 ceiling.",
+    "Confirm the four read-only Synthetic Monitoring Environment inputs and every production writer/reviewer prerequisite without publishing values.",
+    "Require deployed scrape, Loki label-boundary, quota, SLO, and firing/recovery evidence before changing staged wording to live."
   ],
   "approval": {
-    "state": "approved",
+    "state": "unreviewed",
     "publishing": "allowed",
-    "reviewed_by": "ramideltoro",
-    "reviewed_on": "2026-07-29T04:17:53.484Z",
-    "technical_source_hash": "2db7b312e4925abe9bad8cc79abcb3501053d558dba4be4a132084f9d7348807"
+    "reviewed_by": "pending",
+    "reviewed_on": "pending",
+    "technical_source_hash": "b14a8c6492e9d56a4c5951ba9e6b8e80b5d636950aa993094dd1c5ddb7e9d98c"
   }
 }

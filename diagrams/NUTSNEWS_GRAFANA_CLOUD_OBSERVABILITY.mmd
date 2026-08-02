@@ -1,12 +1,59 @@
 flowchart LR
-  accTitle: NutsNews Grafana Cloud observability controls
-  accDescr: Protected inputs pass through value-free validation and a read-only plan before reviewed Grafana changes can be applied.
-  inputs["Protected synthetic inputs"] --> validator["Value-free validator\nregion endpoint + API bounds + quota ceiling"]
-  source["Infra OpenTofu source"] --> plan["Protected read-only plan\nand drift check"]
-  validator --> plan
-  plan --> evidence["Immutable evidence\ninputs + dashboards + alerts\nPrometheus + Loki"]
-  plan --> review{"Reviewed mutation needed?"}
-  review -->|"No"| stop["Remain read-only"]
-  review -->|"Yes"| apply["Protected Grafana apply"]
-  apply --> grafana["Grafana folders, dashboards,\nalerts, quotas, synthetics"]
-  producers["VPS and backend Alloy"] --> grafana
+  accTitle: NutsNews Grafana Cloud observability hardening
+  accDescr {
+    A pre-freeze apply made five synthetics and the verified dashboard, alert, host, RabbitMQ,
+    and log baseline live. PR 473 hardening, four native SLOs, notification receipts, controlled
+    drills, worker deployment, and post-incident verification remain frozen and incomplete.
+  }
+  subgraph Producers["Telemetry producers"]
+    Web["Web and content signals"]
+    Workers["Eight worker services\nand RabbitMQ"]
+    Backend["Backend API, PostgreSQL,\nsync relay and Caddy"]
+    VPS["VPS host, systemd,\ndocker stats and journals"]
+  end
+  Source["Backend owns deploy, Alloy and outbox; worker repos own service signals;\ninfra owns Grafana; meta repo coordinates"] --> Producers
+  Web --> Alloy["Backend and VPS Alloy\nbounded collection"]
+  Workers --> Alloy
+  Backend --> Alloy
+  VPS --> Alloy
+  Alloy --> Metrics["Grafana Cloud Metrics"]
+  Alloy --> Logs["Grafana Cloud Logs\nnormalized labels"]
+  Logs --> Drilldown["Query-time pipeline drilldown\nfield links; no Tempo"]
+  Baseline["Pre-freeze apply 30708192621\ncommit c23403e"] --> Live["Live: five checks, two probes, 300s\n28 dashboards, 11 backend alerts,\n20 worker alerts and populated queries"]
+  Live --> Capacity["86.4k monthly standing major acknowledged\nwarning and 90k ceiling remain"]
+  Infra["PR 473 hardening after freeze"] --> Prereq["Environment policy and protected inputs\nfor remaining hardening"]
+  Prereq --> Validator["Value-free synthetic validator\nregion, API bounds and quota ceiling"]
+  Validator --> Plan["Protected read-only plan\nand drift check"]
+  Plan --> PlanEvidence["Read-only evidence\ninputs, dashboards, alerts,\nPrometheus and Loki"]
+  Plan --> Review{"Reviewed mutation approved?"}
+  Review -->|"No"| Pending
+  Review -->|"Yes"| Apply["Protected OpenTofu\nand Ansible apply"]
+  Apply --> Grafana["PR 473 telemetry and email policies,\nfour native SLOs and re-verification"]
+  Apply --> Ownership["Ownership dashboard: backend revision\nand exact identities for all eight workers"]
+  Metrics --> Grafana
+  Logs --> Grafana
+  Grafana --> Evidence["Post-apply query report"]
+  Grafana --> Canary["Firing and resolved\nemail canary receipts"]
+  Grafana --> Drills["Source-wired failure drills\nlive proof pending"]
+  Workers --> Structural["Every owner state: deployed, up 1, scrape under 180s,\nexact identity and readiness series"]
+  Structural --> Evidence
+  Backend --> Pressure["Outbox age guarded by availability;\nseparate from global feed freshness"]
+  Pressure --> Grafana
+  Ownership --> Evidence
+  Evidence --> Ready{"All required evidence present?"}
+  Canary --> Ready
+  Drills --> Ready
+  Capacity --> Ready
+  Ready -->|"No"| Pending["Rollout remains pending"]
+  Ready -->|"Yes"| Operate["Operate within free-tier\nand ownership guardrails"]
+  Incident["Historical Runtime 0.x cutover"] --> Failure["28 publication messages, 84 handler-error retries;\nretry-30m depth 28; no publication; freshness over 15m"]
+  Failure --> Prepare["Observation never started;\nrollback prepare completed"]
+  Prepare --> Scheduling["Legacy scheduling verified true"]
+  Scheduling --> Finalize["Rollback finalize succeeded\nrun 30715566651"]
+  Finalize --> Stable["Stable shadow generation 5; legacy owner, dispatch and scheduling true;\nuplift scheduler shadow, writes false; single-writer and DNS pass"]
+  Stable --> Freeze["Post-rollback hold; failed candidate quarantined;\nno cutover or rollback rerun and no unrelated mutations"]
+  Freeze --> Guards["Backend PRs 482 and 483 merged source-only;\nworker deploy guard and infra verifier unfinished"]
+  Guards --> Reconcile["PR 471 is conflicting: reconcile PR 483,\ngeneration 5 ownership and exact-eight recreation"]
+  Reconcile --> Workers
+  Packages["Contracts and Runtime 1.0 released;\neight worker images published and verified;\nPR 471 remains conflicting and undeployed"] --> Reconcile
+  Readonly["Read-only audit Environment exists,\nbut all four inputs are absent"] --> Prereq

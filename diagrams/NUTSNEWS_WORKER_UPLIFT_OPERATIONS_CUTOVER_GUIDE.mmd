@@ -1,19 +1,23 @@
 flowchart TD
-  accTitle: Worker uplift operating state and future cutover gates
+  accTitle: Worker uplift cutover incident and completed rollback
   accDescr {
-    The diagram shows that legacy ingestion remains the production owner while operators
-    gather read-only evidence and keep the uplift shadow-only. Future cutover can only
-    happen after the implemented controls pass the separate final gate, while DNS failover stays
-    independent, and a reversible watermark-based switch is proven.
+    The diagram shows the older Runtime 0.x cutover, publication and freshness abort,
+    rollback prepare and scheduling restoration, completed rollback finalize to stable
+    generation 5 shadow, and the post-rollback hold that quarantines the failed candidate
+    and forbids rerunning cutover, rollback, finalize, or unrelated mutations.
   }
-  A[Current coexistence: legacy worker owns production ingestion] --> B[Collect read-only evidence\nruntime, queues, DLQ, metrics, backups, credentials]
-  B --> C[Shadow uplift services remain active\nproduction_writes_enabled=false]
-  C --> D[#150 control deployed enabled\ningestion scheduling separate from DNS failover]
-  D --> E[#126 controls deployed safe and fail closed]
-  E --> L[#166 final exact-candidate gate]
-  L --> F{Exact cutover candidate approved?}
-  F -- No --> G[Stay shadow-only\nlegacy scheduling enabled\nDNS failover independent]
-  F -- Yes --> H[Establish cutover watermark\nkeep DNS unchanged]
-  H --> I[Switch owner and gates through protected workflow]
-  I --> J[Prove consumers, queues, DLQs, parity, and rollback evidence]
-  J --> K[Observe or roll back with watermark preserved]
+  A[Older Runtime 0.x cutover executed] --> B[Publication abort\n28 messages\n84 retries\nzero success\nfreshness breached]
+  B --> C[Observation never started]
+  C --> D[Rollback prepare\ngeneration 4 rollback_pending]
+  D --> E[Legacy scheduling verified true\nruns 30715590990 and 30715611673]
+  E --> F[Rollback finalize succeeded\nrun 30715566651]
+  F --> G[Stable shadow generation 5\nowner legacy_shards\nlegacy dispatch true]
+  F --> H[Uplift scheduler true in shadow\nproduction writes false\npublication shadow]
+  F --> I[Observation timestamps null\nsingle-writer and DNS checks pass]
+  G --> J[Failed Runtime 0.x candidate\ndisqualified and quarantined]
+  H --> J
+  I --> J
+  J --> K[Post-rollback hold\nread-only evidence only]
+  K --> Guards[Backend PRs 482 and 483 merged source-only\nworker deploy guard and infra verifier unfinished]
+  Guards --> L[Do not rerun cutover\nrollback or finalize\nno unrelated mutations]
+  Baseline[Pre-freeze Grafana apply 30708192621\nfive synthetics and populated baseline queries] --> K

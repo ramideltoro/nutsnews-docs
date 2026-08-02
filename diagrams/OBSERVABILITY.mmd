@@ -1,7 +1,35 @@
-flowchart TB
-  accTitle: Observability
+flowchart LR
+  accTitle: NutsNews observability layers
   accDescr {
-    NutsNews is built with observability from the start.
+    NutsNews has live Grafana host and log visibility plus five synthetics from a pre-freeze
+    apply. PR 473 telemetry and email hardening, four native SLOs, controlled drills, and
+    post-incident verification remain frozen. Sentry remains the exception store.
   }
-  A["Observability"] --> B["OBSERVABILITY.md"]
-  B --> C["Auto-generated placeholder diagram"]
+  Services["Web, workers, backend and VPS"] --> Grafana["Grafana Cloud\nexisting host metrics and logs"]
+  Owners["Backend owns deploy, Alloy and outbox; worker repos own service signals;\ninfra owns Grafana; meta repo coordinates"] --> Services
+  Services --> WorkerGate["Every worker ownership state still requires deployed, up,\nfresh scrape, exact identity and readiness series"]
+  Incident["Historical Runtime 0.x cutover"] --> Failure["28 publication messages, 84 handler-error retries;\nno publication; freshness over 15m"]
+  Failure --> Prepare["Observation never started;\nrollback prepare completed"]
+  Prepare --> Finalize["Legacy scheduling verified true;\nrollback finalize succeeded"]
+  Finalize --> Stable["Stable shadow generation 5; legacy owner, dispatch and scheduling true;\nuplift writes false; single-writer and DNS pass"]
+  Stable --> Freeze["Post-rollback hold; failed candidate quarantined;\nno cutover or rollback rerun and no unrelated mutations"]
+  Freeze --> Reconcile["Reconcile stable shadow and incident evidence\nbefore observability rollout"]
+  Reconcile --> Services
+  Baseline["Pre-freeze apply 30708192621"] --> Live["Five live synthetics: two probes, 300s;\n86.4k standing major acknowledged"]
+  Live --> Grafana
+  Staged["PR 473 and producer source changes"] --> Pending["Staged application telemetry, email,\nfour native SLOs and drills"]
+  Readonly["Read-only audit Environment exists;\nall four inputs still absent"] --> Pending
+  Pending --> Apply["Future protected apply and post-incident evidence\nafter freeze"]
+  Apply --> Grafana
+  Apply --> Ownership["Ownership dashboard shows backend revision\nand all eight worker identities"]
+  Grafana --> Drilldown["Pipeline-run dashboard uses parsed metadata\nand bounded table field links"]
+  Drilldown --> Deferred["Hosted-Loki derived fields and Tempo\nremain deferred"]
+  Services --> Sentry["Sentry\nscrubbed exceptions and replays"]
+  Workflows["Scheduled health and release workflows"] --> Reports["Durable reports and\ndeployment annotations"]
+  Providers["Cloudflare, Vercel, Supabase\nand public uptime monitors"] --> Operator["Operator investigation"]
+  Grafana --> Operator
+  WorkerGate --> Operator
+  Ownership --> Operator
+  Drilldown --> Operator
+  Sentry --> Operator
+  Reports --> Operator

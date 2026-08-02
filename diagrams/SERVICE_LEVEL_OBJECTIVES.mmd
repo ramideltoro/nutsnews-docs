@@ -1,7 +1,44 @@
-flowchart TB
-  accTitle: NutsNews Service Level Objectives
+flowchart TD
+  accTitle: NutsNews native SLO and readiness boundaries
   accDescr {
-    Issue: https://github.com/ramideltoro/nutsnews/issues/89
+    Four staged native Grafana SLOs use rolling 30-day windows and generated burn
+    alerts. Current-state readiness and older Worker, feed, translation, backup,
+    and performance thresholds remain separate operational guardrails.
   }
-  A["NutsNews Service Level Objectives"] --> B["SERVICE_LEVEL_OBJECTIVES.md"]
-  B --> C["Auto-generated placeholder diagram"]
+  A["Source-controlled observability contract"] --> B["Four native Grafana SLOs\nrolling 30-day windows"]
+  Baseline["Pre-freeze apply 30708192621\nfive live synthetics, two probes, 300s"] --> C
+  Baseline --> D
+  Baseline --> Budget["86.4k monthly standing major acknowledged\nwarning and 90k ceiling remain"]
+  Owners["Backend owns deploy, Alloy and outbox; worker repos own service signals;\ninfra owns Grafana; meta repo coordinates"] --> A
+  B --> C["Public availability\n99.5%"]
+  B --> D["Successful article observations only\nwithin 750 ms: 95%; failures stay separate"]
+  B --> E["Feed age within 15 minutes\n99%; critical after 3 hours"]
+  B --> F["Worker terminal success across\nall canonical delivery stages: 99%"]
+  C --> G["Source enables fast and slow burn alerts;\nGrafana activation unproved"]
+  D --> G
+  E --> G
+  F --> H["Source defaults worker SLO alerts off;\nGrafana activation still unproved"]
+  H --> I["Qualification only\nNo generated Worker burn pages"]
+  A --> J["Legacy readiness and operational guardrails"]
+  J --> K["/admin/readiness\ncurrent-state promotion and triage"]
+  J --> L["Worker, translation, backup, performance, and fallback checks"]
+  J --> N["Custom worker-local alerts use\nexpected_active ownership joins"]
+  N --> O["Every ownership state still requires up,\nfresh scrape, exact identity and readiness series"]
+  N --> P["Only expected_active 1 requires readiness ok,\nactivity, last success and worker paging"]
+  E --> Q["Global 15m feed SLO is distinct from\navailability-guarded backend outbox age"]
+  G --> M["Incident classification and evidence"]
+  K --> M
+  L --> M
+  N --> M
+  O --> M
+  P --> M
+  Q --> M
+  A --> R["Ownership dashboard: backend revision\nand all eight worker identities"]
+  Incident["Historical Runtime 0.x cutover"] --> Failure["28 publication messages, 84 handler-error retries;\nno publication; freshness over 15m"]
+  Failure --> Prepare["Observation never started;\nrollback prepare completed"]
+  Prepare --> Finalize["Legacy scheduling verified true;\nrollback finalize succeeded"]
+  Finalize --> Stable["Stable shadow generation 5; legacy owner, dispatch and scheduling true;\nuplift writes false; single-writer and DNS pass"]
+  Stable --> Freeze["Post-rollback hold; failed candidate quarantined;\nno cutover or rollback rerun and no unrelated mutations"]
+  Freeze --> Reconcile["PR 471 conflicting; reconcile PR 483, generation 5\nownership and exact-eight recreation before rollout"]
+  Reconcile --> R
+  R --> M

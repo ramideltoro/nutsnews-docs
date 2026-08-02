@@ -1,7 +1,15 @@
-flowchart TB
-  accTitle: Grafana Cloud Backup Monitoring
+flowchart LR
+  accTitle: Grafana Cloud backup freshness monitoring
   accDescr {
-    NutsNews uses Grafana Cloud Explore and Prometheus/PromQL to inspect home-server backup metrics before turning them into a dashboard.
+    Backend source implements durable backup success and 30-hour freshness metrics. Infra source
+    stages the same safe last-success behavior for the home-server exporter, but the live home
+    exporter remains unmanaged until protected deployment. Grafana never substitutes last-run age.
   }
-  A["Grafana Cloud Backup Monitoring"] --> B["GRAFANA_BACKUP_MONITORING.md"]
-  B --> C["Auto-generated placeholder diagram"]
+  HomeLive["Live home exporter: unmanaged\nlast-success timestamp unavailable"] --> Grafana["Grafana Cloud dashboard"]
+  HomeStaged["Infra-staged home exporter\nnot deployed"] --> Grafana
+  Backend["Backend source: durable last success\nand 30-hour freshness"] --> Grafana
+  Grafana --> Evaluate{"Last run succeeded AND\nlast success age under 30 hours?"}
+  Evaluate -->|"No or unavailable"| Alert["Operations backup alert"]
+  Evaluate -->|"Yes"| Healthy["Fresh successful evidence"]
+  Healthy --> Resolve["Resolve prior alert"]
+  HomeStaged --> Apply["Protected deploy and fresh query\nstill required"]

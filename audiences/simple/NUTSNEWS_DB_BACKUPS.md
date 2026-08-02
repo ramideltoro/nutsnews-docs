@@ -11,11 +11,11 @@ wiki:
   collection: platform-and-data
   section: core-platform
   approval:
-    state: approved
+    state: unreviewed
     publishing: allowed
-    reviewed_by: "ramideltoro"
-    reviewed_on: "2026-07-28T20:10:06.000Z"
-    technical_source_hash: e13b6bf63cbecc4592476dc7d3c16dec7589a21de28fbb02c167be63e190cde3
+    reviewed_by: pending
+    reviewed_on: pending
+    technical_source_hash: 93c10604355dae3d5ce076484b3cd4d4e38f68818ee08f4301f903b13e0b8320
 ---
 
 # NutsNews Supabase Backup Automation
@@ -292,12 +292,30 @@ The backup script writes Prometheus textfile metrics to:
 
 Grafana Alloy already reads the textfile collector directory and remote-writes metrics to Grafana Cloud.
 
-Useful metrics:
+Live verification on 2026-07-31 found that the host-local backup script is
+unmanaged by the scanned repositories. Its textfile currently emits the
+last-result and last-run families below, but it does **not** emit
+`nutsnews_db_backup_last_success_timestamp_seconds`. A failed attempt advances
+`nutsnews_db_backup_last_run_timestamp_seconds`, so last-run time is attempt
+time and must never be used as successful-backup freshness.
+
+`nutsnews-infra` now source-stages a hardened exporter and focused tests. It
+stores last-run and last-success separately, preserves the previous success
+across failed attempts, writes atomically, and overwrites stale or corrupt input
+with explicit unavailable signals. It is not deployed or wired into the live
+backup job, so this source change does not alter the unmanaged live exporter or
+make the missing last-success metric queryable yet.
+
+Live and source-staged metrics:
 
 | Metric | Meaning |
 | --- | --- |
 | `nutsnews_db_backup_last_success` | `1` when the last DB backup succeeded, `0` when it failed |
 | `nutsnews_db_backup_last_run_timestamp_seconds` | Unix timestamp of the last DB backup run |
+| `nutsnews_db_backup_last_success_timestamp_seconds` | **Source-staged, not live:** Unix timestamp of the most recent successful DB backup; failed runs preserve the prior value |
+| `nutsnews_db_backup_status_available` | **Source-staged, not live:** `1` only when the latest bounded backup result is available |
+| `nutsnews_db_backup_metrics_collection_success` | **Source-staged, not live:** `1` when exporter collection and state parsing succeeded |
+| `nutsnews_db_backup_status_metrics_last_update_timestamp_seconds` | **Source-staged, not live:** Unix timestamp of the current exporter refresh |
 | `nutsnews_db_backup_last_duration_seconds` | Last DB backup duration |
 | `nutsnews_db_backup_last_size_bytes` | Size of the local backup folder before upload cleanup |
 | `nutsnews_db_backup_last_file_count` | Number of files generated for the last backup |
@@ -324,7 +342,7 @@ nutsnews_db_backup_last_success
 ```
 
 ```promql
-time() - nutsnews_db_backup_last_run_timestamp_seconds
+time() - nutsnews_db_backup_last_success_timestamp_seconds
 ```
 
 ```promql
@@ -348,10 +366,15 @@ nutsnews_db_backup_last_success == 0
 Recommended stale-backup alert:
 
 ```promql
-time() - nutsnews_db_backup_last_run_timestamp_seconds > 93600
+time() - nutsnews_db_backup_last_success_timestamp_seconds > 108000
 ```
 
-`93600` seconds is 26 hours. That gives the daily 3:15 AM timer a little grace window.
+`108000` seconds is 30 hours. This is the single freshness threshold for daily
+backup and restore-verification evidence across Grafana, readiness, and incident
+documentation. A failed attempt updates the last-run/result signals but must not
+advance the last-success timestamp. Until the source-staged exporter is wired
+and deployed, the age panel must show an explicit unavailable state rather than
+falling back to the last-run timestamp.
 
 ---
 

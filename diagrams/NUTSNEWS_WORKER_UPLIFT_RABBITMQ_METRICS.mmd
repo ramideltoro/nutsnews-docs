@@ -1,14 +1,17 @@
-flowchart TB
-  accTitle: NutsNews Worker-Uplift RabbitMQ Metrics
+flowchart TD
+  accTitle: NutsNews Worker-Uplift RabbitMQ telemetry and guardrails
   accDescr {
-    Status: backend collection path completed for ramideltoro/nutsnews-worker#87
+    Backend Alloy collects bounded RabbitMQ and canary metrics. The Worker SLI
+    dashboard and custom rules remain separate from the four native Grafana SLOs,
+    and worker-owned paging is gated by production ownership.
   }
   A["Production system state update"] --> B["Backend deploy + apply"]
+  Owners["Backend owns deploy, Alloy and outbox; worker repos own service signals;\ninfra owns Grafana; meta repo coordinates"] --> B
   B --> C["RabbitMQ Prometheus listener on 127.0.0.1:15692"]
   C --> D["Grafana Alloy scrape /metrics and /metrics/detailed"]
   D --> E["Label and metric allowlist in Alloy"]
   E --> F["Remote write to Grafana Cloud Prometheus"]
-  F --> G["Backend RabbitMQ dashboard and alert catalog"]
+  F --> G["Backend RabbitMQ dashboard and custom alert catalog"]
   G --> H["Portal reads durability projection in /admin/shards"]
   H --> I["Operators read projection fields and DLQ/queue-age"]
 
@@ -16,7 +19,26 @@ flowchart TB
   K --> L["Backend durable projection"]
   L --> H
 
-  M["Canary drill"] --> N["Backend collects textfile /var/lib/nutsnews/metrics/rabbitmq-canary.prom"]
+  M["Future authorized canary drill after freeze"] --> N["Backend collects textfile /var/lib/nutsnews/metrics/rabbitmq-canary.prom"]
   N --> O["Alloy remote-write of canary metrics"]
   O --> G
-  O --> P["Alert/SLO proof and evidence runs"]
+  O --> P["Custom alert firing and recovery evidence"]
+  G --> Q["Five descriptive dashboard SLIs, including\ncustom final-publication success"]
+  Q --> R{"Worker owns production?"}
+  R -->|"No"| S["No behavior paging; still require all eight\ndeployed, up, fresh, identified, readiness series"]
+  R -->|"Yes"| T["Require readiness ok, activity and last success;\nworker-owned custom alerts eligible"]
+  Incident["Historical Runtime 0.x cutover"] --> Failure["28 publication messages, 84 handler-error retries;\nretry-30m depth 28; no publication; freshness over 15m"]
+  Failure --> Prepare["Observation never started;\nrollback prepare completed"]
+  Prepare --> Finalize["Legacy scheduling verified true;\nrollback finalize succeeded"]
+  Finalize --> Stable["Stable shadow generation 5; legacy owner, dispatch and scheduling true;\nuplift writes false; single-writer and DNS pass"]
+  Stable --> Freeze["Post-rollback hold; failed candidate quarantined;\nno cutover or rollback rerun and no unrelated mutations"]
+  Freeze --> Guards["Backend PRs 482 and 483 merged source-only;\nworker deploy guard and infra verifier unfinished"]
+  Guards --> Reconcile["PR 471 conflicting: reconcile PR 483, generation 5\nownership and exact-eight runtime recreation"]
+  Reconcile --> B
+  F --> U["Four native Grafana SLOs\nseparate 30-day resources"]
+  U --> V["Global feed freshness paging is source-only;\nnative Grafana activation unproved"]
+  U --> W["Native Worker terminal SLO uses all stages;\nsource defaults burns off; Grafana activation unproved"]
+  L --> X["Backend outbox age only when availability is 1"]
+  X --> Y["Worker pressure is distinct from\nRabbitMQ queue age and global feed freshness"]
+  G --> Z["Ownership dashboard shows backend revision\nand all eight worker identities"]
+  Baseline["Pre-freeze Grafana apply 30708192621\nverified 35 queue results, logs and 20 worker alerts"] --> G

@@ -1,10 +1,36 @@
-flowchart TD
-  accTitle: NutsNews Backend Monitoring Baseline
+flowchart LR
+  accTitle: NutsNews backend Grafana telemetry flow
   accDescr {
-    This documents the initial monitoring, health check, and log-retention baseline for ramideltoro/nutsnews-backend and 65.75.201.18.
+    Backend PR 471 source-stages expanded telemetry but is conflicting and undeployed. A separate
+    pre-freeze Grafana apply verified the existing dashboard, alert, host, RabbitMQ, log, and
+    five-synthetic baseline; later PR 471 and PR 473 signals still need deployment and proof.
   }
-  A[Backend host baseline run] --> B[Collect service and disk metrics]
-  B --> C[Check health endpoints and key process states]
-  C --> D[Record log/retention posture]
-  D --> E[Emit monitoring dashboard artifact]
-  E --> F[Alerting and drift path for anomalies]
+  Host["Backend host and Alloy self"] --> Alloy["Backend Alloy"]
+  Owners["Backend owns deploy, Alloy and outbox; worker repos own service signals;\ninfra owns Grafana; meta repo coordinates"] --> Alloy
+  API["Source-staged worker DB API\nlivez, readyz and metrics"] --> Alloy
+  Workers["Source-staged private workers\nports 18081 through 18088"] --> Alloy
+  Workers --> Structural["Every ownership state requires deployment, up 1,\nscrape under 180s, exact identity and readiness series"]
+  Incident["Historical Runtime 0.x cutover"] --> Failure["28 publication messages, 84 handler-error retries;\nretry-30m depth 28; no publication; freshness over 15m"]
+  Failure --> Prepare["Observation never started;\nrollback prepare completed"]
+  Prepare --> Finalize["Legacy scheduling verified true;\nrollback finalize succeeded"]
+  Finalize --> Stable["Stable shadow generation 5; legacy owner, dispatch and scheduling true;\nuplift writes false; single-writer and DNS pass"]
+  Stable --> Freeze["Post-rollback hold; failed candidate quarantined;\nno cutover or rollback rerun and no unrelated mutations"]
+  Freeze --> Guards["Backend PRs 482 and 483 merged source-only;\nworker deploy guard and infra verifier unfinished"]
+  Guards --> Reconcile["PR 471 conflicting: reconcile PR 483,\ngeneration 5 ownership and exact-eight recreation"]
+  Reconcile --> Workers
+  Data["PostgreSQL, sync relay\nand RabbitMQ"] --> Alloy
+  Edge["Caddy RED and TLS"] --> Alloy
+  Backup["Durable backup last-success state\nand 30-hour freshness"] --> Alloy
+  Journals["Bounded normalized journals"] --> Alloy
+  Alloy --> Metrics["Grafana Cloud Metrics"]
+  Alloy --> Logs["Grafana Cloud Logs"]
+  Baseline["Pre-freeze Grafana apply 30708192621"] --> Grafana["Live baseline dashboards, alerts, logs\nand five synthetics"]
+  Infra["Future PR 473 protected apply after freeze"] --> Grafana
+  Infra --> Ownership["Ownership dashboard: backend revision\nand all eight worker identities"]
+  Data --> Outbox["Backend outbox availability and oldest age\nseparate from global feed freshness"]
+  Metrics --> Grafana
+  Logs --> Grafana
+  Structural --> Grafana
+  Outbox --> Grafana
+  Ownership --> Grafana
+  Drills["Protected telemetry-only failure drill\nsource; live proof pending"] --> Grafana

@@ -1,16 +1,24 @@
 flowchart TD
-  accTitle: Worker runtime guardrail flow
+  accTitle: Worker uplift completed rollback and runtime boundary
   accDescr {
-    The diagram shows the backend installing the worker runtime in shadow mode, validating
-    manifests, restricting scoped Worker DB commands, and only allowing production actions
-    after cutover gates are met. If the gates are not met, production writes stay off and
-    legacy ingestion remains the owner.
+    The diagram shows rollback finalize restoring stable generation 5 shadow with legacy
+    ownership, dispatch, and scheduling enabled; uplift writes disabled; publication
+    shadow; and single-writer and DNS checks passing. Generic runtime mutations remain
+    frozen and the failed Runtime 0.x publication candidate is quarantined.
   }
-  A[Backend enables worker runtime framework] --> B[Shadow mode default with production writes disabled]
-  B --> C[Service manifests validated by runtime manager]
-  C --> D[Scoped Worker DB commands allowed only on /api/worker/db/*]
-  D --> E[Shadow commands record receipts and avoid live publication]
-  C --> F{Cutover gates met?}
-  F -- No --> G[Keep production writes off and legacy ingestion as owner]
-  F -- Yes --> H[Production scoped commands can proceed with guards]
-  H --> I[Operators use protected workflow actions for deploy, restart, recovery]
+  A[Failed Runtime 0.x cutover\npublication and freshness abort] --> B[Rollback prepare\ngeneration 4 rollback_pending]
+  B --> C[Legacy scheduling verified true\nruns 30715590990 and 30715611673]
+  C --> D[Rollback finalize succeeded\nrun 30715566651]
+  D --> E[Stable shadow generation 5\nowner legacy_shards\nlegacy dispatch true]
+  D --> F[Uplift scheduler true in shadow\nproduction writes false\npublication shadow]
+  D --> G[Observation timestamps null\nsingle-writer and DNS checks pass]
+  H[Static runtime manifest/status] --> I[Supporting service evidence\nfinalize artifact is authoritative]
+  I --> E
+  E --> J[Failed Runtime 0.x candidate\ndisqualified and quarantined]
+  F --> J
+  G --> J
+  J --> K[Post-rollback hold\nread-only status logs queues]
+  K --> Guards[Backend PRs 482 and 483 merged source-only\nworker deploy guard and infra verifier unfinished]
+  Guards --> L[No Ansible deploy restart scale\nruntime rollback replay reconciliation\nfurther Grafana mutation Runtime 1 or web merge]
+  Conflict[PR 471 conflicting\nPR 483 plus generation 5 ownership\nand exact-eight recreation unresolved] --> L
+  L --> M[Do not rerun cutover\nrollback or finalize]
