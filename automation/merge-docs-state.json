@@ -117,11 +117,11 @@
         544,
         545
       ],
-      "attempts": 2,
-      "blocked": false,
-      "lastFailedAt": "2026-08-02T21:42:38.439Z",
-      "workflowRun": "30767443259",
-      "runUrl": "https://github.com/ramideltoro/nutsnews-docs/actions/runs/30767443259"
+      "attempts": 3,
+      "blocked": true,
+      "lastFailedAt": "2026-08-02T23:50:37.043Z",
+      "workflowRun": "30772220459",
+      "runUrl": "https://github.com/ramideltoro/nutsnews-docs/actions/runs/30772220459"
     },
     "ramideltoro/nutsnews-android": {
       "headSha": "f57deae7fdcaf7cf3a8588ff1d5ca20c4afef576",
