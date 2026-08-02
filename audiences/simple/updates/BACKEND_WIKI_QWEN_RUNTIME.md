@@ -17,7 +17,7 @@ wiki:
     publishing: allowed
     reviewed_by: pending
     reviewed_on: pending
-    technical_source_hash: 8981bb4d85efa3b87fdcf6925e7d38b5cc28a97833acd0e71adcd3c3b6a213dc
+    technical_source_hash: cc2020a579ac0739e261a887776f9ec47b47eebf961d7c821151eeabc698d8dd
 ---
 # Backend Wiki Qwen Runtime
 
@@ -68,7 +68,7 @@ model. Later runs reuse the same verified files and model layers.
 
 The wiki job runs every 30 minutes and handles no more than the oldest three
 pending pull requests in one event. Runs are serialized and each job has a
-60-minute timeout. Qwen can see only bounded merge evidence and the five files
+90-minute timeout. Qwen can see only bounded merge evidence and the five files
 allowed by the existing isolated bundle.
 
 The job turns off Qwen's long thinking trace for this file-editing task. Qwen

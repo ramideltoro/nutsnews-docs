@@ -17,7 +17,7 @@ wiki:
     publishing: allowed
     reviewed_by: pending
     reviewed_on: pending
-    technical_source_hash: 8981bb4d85efa3b87fdcf6925e7d38b5cc28a97833acd0e71adcd3c3b6a213dc
+    technical_source_hash: cc2020a579ac0739e261a887776f9ec47b47eebf961d7c821151eeabc698d8dd
 ---
 # Backend Wiki Qwen Runtime
 
@@ -100,7 +100,7 @@ and records only request ID, route, status, and duration metadata.
 ## Wiki automation limits
 
 `.github/workflows/automated-merge-docs.yml` runs every 30 minutes, serializes
-workflow runs and repository jobs, and has a 60-minute job timeout. Each event
+workflow runs and repository jobs, and has a 90-minute job timeout. Each event
 contains the oldest three pending pull requests at most. The cursor advances
 only after the generated bundle passes all deterministic gates and is pushed.
 
