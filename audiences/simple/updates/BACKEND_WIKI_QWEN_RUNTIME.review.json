@@ -4,7 +4,7 @@
   "publishing": "allowed",
   "source": {
     "path": "updates/BACKEND_WIKI_QWEN_RUNTIME.md",
-    "sha256": "e308adf96fb0fd33b5901603a98fda15dc8b82cb4ce1a0cf91e59163765ed621"
+    "sha256": "52682a8c89c67a475bf3c9ce972efd67462dd629beb073288e2e4dbc468e6d6b"
   },
   "artifacts": {
     "canonical_expert": "updates/BACKEND_WIKI_QWEN_RUNTIME.md",

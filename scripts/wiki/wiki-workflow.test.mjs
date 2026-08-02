@@ -197,7 +197,7 @@ export function validateMergeWorkflow(source) {
     'working-directory: _automation-work/agent',
     'sandbox: workspace-write',
     'model: nutsnews-wiki-qwen',
-    'effort: low',
+    'effort: none',
     'safety-strategy: drop-sudo',
     'allow-users: ramideltoro',
     'allow-bots: true',

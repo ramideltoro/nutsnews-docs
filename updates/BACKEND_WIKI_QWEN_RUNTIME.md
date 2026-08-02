@@ -17,7 +17,7 @@ wiki:
     publishing: allowed
     reviewed_by: pending
     reviewed_on: pending
-    technical_source_hash: e308adf96fb0fd33b5901603a98fda15dc8b82cb4ce1a0cf91e59163765ed621
+    technical_source_hash: 52682a8c89c67a475bf3c9ce972efd67462dd629beb073288e2e4dbc468e6d6b
 ---
 # Backend Wiki Qwen Runtime
 
@@ -100,6 +100,11 @@ and records only request ID, route, status, and duration metadata.
 workflow runs and repository jobs, and has a 60-minute job timeout. Each event
 contains the oldest three pending pull requests at most. The cursor advances
 only after the generated bundle passes all deterministic gates and is pushed.
+
+The job requests reasoning effort `none`. Ollama maps that value to disabled
+Qwen thinking traces, which preserves tool calling while avoiding long hidden
+reasoning generations on the CPU-only backend. Content quality remains guarded
+by the same deterministic bundle, provenance, contract, and build checks.
 
 The existing isolation contract remains unchanged: Qwen receives bounded merge
 evidence and exactly five allowlisted wiki artifacts, cannot access GitHub or
