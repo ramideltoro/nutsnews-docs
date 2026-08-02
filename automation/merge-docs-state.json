@@ -142,11 +142,11 @@
         24,
         25
       ],
-      "attempts": 1,
+      "attempts": 2,
       "blocked": false,
-      "lastFailedAt": "2026-08-02T21:45:03.649Z",
-      "workflowRun": "30767443259",
-      "runUrl": "https://github.com/ramideltoro/nutsnews-docs/actions/runs/30767443259"
+      "lastFailedAt": "2026-08-02T23:52:17.935Z",
+      "workflowRun": "30772220459",
+      "runUrl": "https://github.com/ramideltoro/nutsnews-docs/actions/runs/30772220459"
     },
     "ramideltoro/nutsnews-worker-article-canonicalizer": {
       "headSha": "d6bfe689c7aa5f625bd1204e73fef908ec528366",
