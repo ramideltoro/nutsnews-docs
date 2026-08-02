@@ -14,6 +14,7 @@ import { automateWikiSource } from './docs-auto-approve.mjs';
 import {
   buildMergeEvent,
   MAX_AUTOMATION_ATTEMPTS,
+  MAX_PULLS_PER_EVENT,
   retryIsBlocked,
 } from './discover-nutsnews-merges.mjs';
 import { importAutomatedMergeBundle } from './import-automated-merge-bundle.mjs';
@@ -113,6 +114,28 @@ test('merge discovery aggregates every pending pull request in cursor order', ()
   ]);
   assert.deepEqual(event.pull_numbers, [11, 12]);
   assert.equal(event.previous_merge_commit, '1'.repeat(40));
+  assert.equal(event.head_sha, '3'.repeat(40));
+});
+
+test('merge discovery bounds local-Qwen batches and advances from the oldest pending pulls', () => {
+  const repository = {
+    full_name: 'ramideltoro/nutsnews-backend',
+    default_branch: 'main',
+  };
+  const cursor = {
+    lastMergedAt: '2026-07-28T10:00:00Z',
+    lastPullNumber: 10,
+    lastMergeCommit: '0'.repeat(40),
+  };
+  const pulls = Array.from({ length: 6 }, (_, index) => ({
+    number: 11 + index,
+    merged_at: `2026-07-28T1${index + 1}:00:00Z`,
+    merge_commit_sha: `${index + 1}`.repeat(40),
+    html_url: `https://github.com/ramideltoro/nutsnews-backend/pull/${11 + index}`,
+  }));
+  const event = buildMergeEvent(repository, cursor, pulls);
+  assert.equal(MAX_PULLS_PER_EVENT, 3);
+  assert.deepEqual(event.pull_numbers, [11, 12, 13]);
   assert.equal(event.head_sha, '3'.repeat(40));
 });
 

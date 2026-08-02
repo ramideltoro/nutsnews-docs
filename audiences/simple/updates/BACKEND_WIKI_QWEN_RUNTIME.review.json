@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "state": "unreviewed",
+  "publishing": "allowed",
+  "source": {
+    "path": "updates/BACKEND_WIKI_QWEN_RUNTIME.md",
+    "sha256": "e308adf96fb0fd33b5901603a98fda15dc8b82cb4ce1a0cf91e59163765ed621"
+  },
+  "artifacts": {
+    "canonical_expert": "updates/BACKEND_WIKI_QWEN_RUNTIME.md",
+    "simple_markdown": "audiences/simple/updates/BACKEND_WIKI_QWEN_RUNTIME.md",
+    "technical_mirror": "audiences/technical/updates/BACKEND_WIKI_QWEN_RUNTIME.md",
+    "primary_diagram": "diagrams/updates/BACKEND_WIKI_QWEN_RUNTIME.mmd",
+    "review_manifest": "audiences/simple/updates/BACKEND_WIKI_QWEN_RUNTIME.review.json"
+  },
+  "accessibility": {
+    "title": "Backend-hosted Qwen wiki generation flow",
+    "description": "A serialized GitHub Actions job sends an authenticated Responses API request through Caddy and a bounded proxy to loopback Ollama, then validates the generated documentation before publication."
+  },
+  "review_notes": [
+    "Verify the protected backend apply run and real Qwen tool-call proof remain linked from the deployment record.",
+    "Benchmark output quality and latency before increasing the batch size, model context, or output ceiling.",
+    "Review generated documentation after every pinned Ollama or Qwen model upgrade."
+  ],
+  "next_commands": [
+    "npm run validate:content",
+    "npm run validate:wiki-contracts",
+    "npm run validate:links",
+    "npm run validate:mermaid",
+    "npm run build"
+  ]
+}
