@@ -17,7 +17,7 @@ wiki:
     publishing: allowed
     reviewed_by: pending
     reviewed_on: pending
-    technical_source_hash: 52682a8c89c67a475bf3c9ce972efd67462dd629beb073288e2e4dbc468e6d6b
+    technical_source_hash: 8981bb4d85efa3b87fdcf6925e7d38b5cc28a97833acd0e71adcd3c3b6a213dc
 ---
 # Backend Wiki Qwen Runtime
 
@@ -38,8 +38,10 @@ Responses API route. A small proxy checks the dedicated key, request size, and
 approved model before sending the request to Ollama over the server's private
 loopback connection.
 
-Ollama and its management port are not public. The model can handle only one
-wiki request at a time so it cannot consume all backend resources.
+Ollama and its management port are not public. The model handles only one wiki
+request at a time so it cannot consume all backend resources. One authenticated
+request may wait for that slot for up to 10 minutes; any additional overlap is
+rejected.
 
 ## Model and server limits
 
@@ -74,6 +76,11 @@ can still use its editing tools, but it spends less server time narrating hidden
 reasoning. The normal content and build checks still decide whether its work is
 safe to publish.
 
+Long requests receive a small keep-alive message every 15 seconds while they
+wait for Qwen. These messages keep GitHub's connection open without pretending
+that Qwen has produced content. When Qwen begins responding, the proxy forwards
+the real stream as it arrives.
+
 Nothing is committed until the content, links, diagram, secret checks, and full
 wiki build pass. The cursor advances only after a successful validated push.
 
@@ -90,9 +97,9 @@ merge documentation and should not be used when avoiding OpenAI charges.
 
 ## When something fails
 
-Bad keys, wrong models, oversized requests, concurrent jobs, or an unavailable
-model are rejected before publication. The current wiki and merge cursor stay
-unchanged. If the new model is too slow or produces poor documentation, disable
-the wiki job first and roll back both repositories through their normal pull
-request and protected deployment paths. Never expose Ollama directly or repair
-the production server by hand.
+Bad keys, wrong models, oversized requests, excess concurrent jobs, or an
+unavailable model are rejected before publication. The current wiki and merge
+cursor stay unchanged. If the new model is too slow or produces poor
+documentation, disable the wiki job first and roll back both repositories
+through their normal pull request and protected deployment paths. Never expose
+Ollama directly or repair the production server by hand.
