@@ -17,7 +17,7 @@ wiki:
     publishing: allowed
     reviewed_by: pending
     reviewed_on: pending
-    technical_source_hash: 52682a8c89c67a475bf3c9ce972efd67462dd629beb073288e2e4dbc468e6d6b
+    technical_source_hash: 8981bb4d85efa3b87fdcf6925e7d38b5cc28a97833acd0e71adcd3c3b6a213dc
 ---
 # Backend Wiki Qwen Runtime
 
@@ -41,9 +41,9 @@ path on `65.75.201.18`:
 1. Caddy accepts only `/wiki-ai/health` and `/wiki-ai/v1/responses`.
 2. The Responses route forwards to an authenticated Python proxy on
    `127.0.0.1:18089`.
-3. The proxy accepts one request at a time, requires the dedicated bearer key,
-   enforces the request-size and model allowlists, and strips authentication
-   before forwarding.
+3. The proxy runs one inference at a time, permits one authenticated request to
+   wait for that slot for up to 600 seconds, enforces the request-size and model
+   allowlists, and strips authentication before forwarding.
 4. Ollama listens only on `127.0.0.1:11434` and serves the
    `nutsnews-wiki-qwen` alias.
 5. The GitHub-hosted wiki job imports only the generated five-file bundle and
@@ -60,7 +60,10 @@ The backend Ansible role pins:
 - Qwen base model `qwen3.5:4b-q4_K_M` with expected model ID `2a654d98e6fb`
 - model alias `nutsnews-wiki-qwen`
 - a 65,536-token context and an 8,192-token per-response output ceiling
-- one active inference request and one loaded model
+- one active inference request, one bounded authenticated waiter, and one
+  loaded model
+- 15-second Server-Sent Events (SSE) heartbeat comments while a streaming
+  request waits for the inference slot or for Ollama output
 - systemd CPU, task, and memory limits sized for the four-core, 9.7 GiB backend
 
 The 4B quantized model is deliberate. Larger Qwen3-Coder images do not fit the
@@ -106,6 +109,12 @@ Qwen thinking traces, which preserves tool calling while avoiding long hidden
 reasoning generations on the CPU-only backend. Content quality remains guarded
 by the same deterministic bundle, provenance, contract, and build checks.
 
+Streaming requests receive an immediate SSE response and a `: keep-alive`
+comment at least every 15 seconds while the proxy is waiting. The proxy relays
+Ollama's SSE output line by line once generation begins. This keeps long
+CPU-only generations alive through the public edge without inventing model
+events or allowing a second inference to run concurrently.
+
 The existing isolation contract remains unchanged: Qwen receives bounded merge
 evidence and exactly five allowlisted wiki artifacts, cannot access GitHub or
 the network, and must change the canonical, Simple, Technical, and Mermaid
@@ -119,7 +128,8 @@ must not be used when avoiding OpenAI API charges.
 
 - Missing or invalid authentication returns `401` and writes no documentation.
 - An unapproved model or malformed request returns `400`; an oversized request
-  returns `413`; a concurrent request returns `429`.
+  returns `413`. The first overlapping authenticated request may wait for up to
+  600 seconds; additional overlap returns `429`.
 - An unavailable Ollama upstream returns `502`; an unready model makes health
   return `503`.
 - Model, timeout, content, or validation failures leave the wiki cursor and

@@ -10,7 +10,8 @@ flowchart LR
   action --> caddy["backend.nutsnews.com /wiki-ai/v1/responses"]
   caddy --> auth{"Bearer key and request valid?"}
   auth -->|"No"| reject["Reject without publishing"]
-  auth -->|"Yes"| proxy["Loopback bounded proxy"]
+  auth -->|"Yes"| proxy["One active inference plus one bounded waiter"]
+  proxy -. "15-second SSE keep-alive" .-> action
   proxy --> ollama["Loopback Ollama"]
   ollama --> qwen["nutsnews-wiki-qwen"]
   qwen --> files["Generated wiki artifacts"]
