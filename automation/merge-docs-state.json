@@ -194,11 +194,11 @@
         27,
         28
       ],
-      "attempts": 1,
+      "attempts": 2,
       "blocked": false,
-      "lastFailedAt": "2026-08-02T21:45:53.364Z",
-      "workflowRun": "30767443259",
-      "runUrl": "https://github.com/ramideltoro/nutsnews-docs/actions/runs/30767443259"
+      "lastFailedAt": "2026-08-03T05:56:06.493Z",
+      "workflowRun": "30785733644",
+      "runUrl": "https://github.com/ramideltoro/nutsnews-docs/actions/runs/30785733644"
     },
     "ramideltoro/nutsnews-worker-contracts": {
       "headSha": "e86ea51814cb1b1d810e95b7971a59d90a2fce31",
