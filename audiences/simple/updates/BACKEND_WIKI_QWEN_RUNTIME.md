@@ -17,7 +17,7 @@ wiki:
     publishing: allowed
     reviewed_by: pending
     reviewed_on: pending
-    technical_source_hash: cc2020a579ac0739e261a887776f9ec47b47eebf961d7c821151eeabc698d8dd
+    technical_source_hash: 86754e64bdb9e50cf70b17d5166e8f0d6290c071b8a997886f057eeba41b3a68
 ---
 # Backend Wiki Qwen Runtime
 
@@ -47,12 +47,17 @@ rejected.
 
 The protected backend pipeline installs Ollama `0.32.5` and the pinned
 `qwen3.5:4b-q4_K_M` model. GitHub refers to the model as
-`nutsnews-wiki-qwen`. It has a 65,536-token context, an 8,192-token response
+`nutsnews-wiki-qwen`. It has a 49,152-token context, a 6,144-token response
 limit, and systemd CPU and memory ceilings.
 
 This smaller model fits the four-core, 9.7 GiB server. The larger Qwen3-Coder
 model would not leave safe capacity for the database, queues, proxy, and Worker
 services.
+
+These limits still give Qwen enough room for the five-file wiki bundle while
+preventing the known slowest case: an 8,192-token production response exceeded
+the server's 55-minute request limit. The normal validation checks remain the
+publication authority.
 
 ## Safe deployment
 

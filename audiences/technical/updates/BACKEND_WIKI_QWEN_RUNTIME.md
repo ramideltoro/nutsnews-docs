@@ -17,7 +17,7 @@ wiki:
     publishing: allowed
     reviewed_by: pending
     reviewed_on: pending
-    technical_source_hash: cc2020a579ac0739e261a887776f9ec47b47eebf961d7c821151eeabc698d8dd
+    technical_source_hash: 86754e64bdb9e50cf70b17d5166e8f0d6290c071b8a997886f057eeba41b3a68
 ---
 # Backend Wiki Qwen Runtime
 
@@ -59,7 +59,7 @@ The backend Ansible role pins:
 - Ollama `0.32.5` and the reviewed amd64 archive SHA-256 checksum
 - Qwen base model `qwen3.5:4b-q4_K_M` with expected model ID `2a654d98e6fb`
 - model alias `nutsnews-wiki-qwen`
-- a 65,536-token context and an 8,192-token per-response output ceiling
+- a 49,152-token context and a 6,144-token per-response output ceiling
 - one active inference request, one bounded authenticated waiter, and one
   loaded model
 - 15-second Server-Sent Events (SSE) heartbeat comments while a streaming
@@ -69,6 +69,12 @@ The backend Ansible role pins:
 The 4B quantized model is deliberate. Larger Qwen3-Coder images do not fit the
 backend host while preserving capacity for PostgreSQL, RabbitMQ, Caddy, and the
 Worker services.
+
+The context and output ceilings leave enough room for the isolated five-file
+editing bundle while bounding CPU generation time. A production 8,192-token
+turn exceeded the proxy's 55-minute upstream limit on this host; the lower
+6,144-token ceiling prevents that known overrun without weakening the existing
+validation gates.
 
 ## Protected deployment
 
