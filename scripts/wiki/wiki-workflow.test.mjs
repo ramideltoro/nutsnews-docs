@@ -213,7 +213,7 @@ export function validateMergeWorkflow(source) {
   const documentJob = source.match(
     /\n  document:\n([\s\S]*?)(?=\n  [a-z][a-z0-9_-]+:\n|\s*$)/,
   )?.[1] || '';
-  if (!/timeout-minutes: 90/.test(documentJob)) {
+  if (!/timeout-minutes: 180/.test(documentJob)) {
     errors.push('merge documentation must have a bounded job timeout');
   }
   if (!/max-parallel: 1/.test(source) || !/cancel-in-progress: false/.test(source)) {

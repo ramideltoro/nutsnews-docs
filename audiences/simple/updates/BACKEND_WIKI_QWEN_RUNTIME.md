@@ -17,7 +17,7 @@ wiki:
     publishing: allowed
     reviewed_by: pending
     reviewed_on: pending
-    technical_source_hash: 86754e64bdb9e50cf70b17d5166e8f0d6290c071b8a997886f057eeba41b3a68
+    technical_source_hash: 7ae651f19e516861b4d7c9c5a6ee1f1bf146f071439c839e6e37fc9465aaaa87
 ---
 # Backend Wiki Qwen Runtime
 
@@ -73,8 +73,16 @@ model. Later runs reuse the same verified files and model layers.
 
 The wiki job runs every 30 minutes and handles no more than the oldest three
 pending pull requests in one event. Runs are serialized and each job has a
-90-minute timeout. Qwen can see only bounded merge evidence and the five files
-allowed by the existing isolated bundle.
+180-minute timeout. Qwen can see only bounded merge evidence and the five files
+allowed by the existing isolated bundle. Patch text is limited to 30,000
+characters across a batch and 10,000 characters for any one pull request, so a
+single large changed file cannot crowd out the other merges.
+
+Qwen is instructed to read the bounded inputs once, edit the five files with
+direct patches, avoid shell-redirection writes, and perform only one narrow
+final check. The longer overall window allows a CPU-only multi-turn edit to
+finish; each individual model request still has its 55-minute limit, and all
+normal publication checks remain mandatory.
 
 The job turns off Qwen's long thinking trace for this file-editing task. Qwen
 can still use its editing tools, but it spends less server time narrating hidden
