@@ -14,6 +14,13 @@ Efficiency and isolation
 
 - This workspace contains all evidence and editable files needed for the task.
 - Read only the three JSON files above and the five files named by `target-bundle.json`.
+- Use no more than two read-only shell calls before editing: one to read the three JSON
+  files together, then one to read the five allowlisted files together.
+- Start editing immediately after those reads. Use the `apply_patch` tool for every change.
+  Do not use shell redirection, command substitution, temporary files, or generated scripts
+  to write documentation.
+- Patch the five allowlisted files directly. Do not narrate a plan or repeatedly reread
+  complete files between patches.
 - Do not inspect parent directories, search the filesystem, run broad Git commands, or use
   the network.
 - Do not run tests, builds, package managers, generators, or validation commands. Fixed
@@ -57,6 +64,7 @@ Strict change boundary
 - Do not delete or rename files.
 - Do not commit, push, open pull requests, call GitHub, or access the network.
 
-Before finishing, reread the five target files and ensure the canonical, Simple, Technical,
-and Mermaid files all changed and agree. The workflow will reject unchanged, incomplete,
-scaffolded, or unsupported output.
+Before finishing, use one narrow `rg` command across the five target paths to confirm every
+pull-request number is present and no scaffold or TODO remains. Do not reread the complete
+files. Ensure the canonical, Simple, Technical, and Mermaid files all changed and agree. The
+workflow will reject unchanged, incomplete, scaffolded, or unsupported output.

@@ -143,6 +143,19 @@ test('isolated Codex workspaces are outside the canonical wiki inventory', () =>
   assert.equal(wikiContract.exclusions.ignoreDirs.has('_automation-work'), true);
 });
 
+test('local-Qwen evidence and editing instructions are efficiency bounded', async () => {
+  const [contextSource, prompt] = await Promise.all([
+    fs.readFile(new URL('./prepare-merge-doc-context.mjs', import.meta.url), 'utf8'),
+    fs.readFile(new URL('./prompts/automated-merge-docs.md', import.meta.url), 'utf8'),
+  ]);
+  assert.match(contextSource, /MAX_PATCH_CHARACTERS = 30_000/);
+  assert.match(contextSource, /MAX_PATCH_CHARACTERS_PER_PULL = 10_000/);
+  assert.match(prompt, /Use no more than two read-only shell calls before editing/);
+  assert.match(prompt, /Use the `apply_patch` tool for every change/);
+  assert.match(prompt, /Do not use shell redirection, command substitution, temporary files/);
+  assert.match(prompt, /use one narrow `rg` command across the five target paths/);
+});
+
 test('automated approvals require complete immutable merge provenance', () => {
   const source = sourceMarkdown();
   const hash = expertSourceHash(source);

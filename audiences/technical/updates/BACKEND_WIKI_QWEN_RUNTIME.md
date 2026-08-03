@@ -17,7 +17,7 @@ wiki:
     publishing: allowed
     reviewed_by: pending
     reviewed_on: pending
-    technical_source_hash: 86754e64bdb9e50cf70b17d5166e8f0d6290c071b8a997886f057eeba41b3a68
+    technical_source_hash: 7ae651f19e516861b4d7c9c5a6ee1f1bf146f071439c839e6e37fc9465aaaa87
 ---
 # Backend Wiki Qwen Runtime
 
@@ -106,9 +106,18 @@ and records only request ID, route, status, and duration metadata.
 ## Wiki automation limits
 
 `.github/workflows/automated-merge-docs.yml` runs every 30 minutes, serializes
-workflow runs and repository jobs, and has a 90-minute job timeout. Each event
-contains the oldest three pending pull requests at most. The cursor advances
-only after the generated bundle passes all deterministic gates and is pushed.
+workflow runs and repository jobs, and has a 180-minute job timeout. Each event
+contains the oldest three pending pull requests at most. Patch evidence is
+limited to 30,000 characters overall and 10,000 characters per pull request so
+one large file cannot consume the complete Qwen evidence budget. The cursor
+advances only after the generated bundle passes all deterministic gates and is
+pushed.
+
+The editing prompt permits two initial read calls, requires direct
+`apply_patch` edits, forbids shell-redirection writes, and permits one narrow
+final `rg` check. The longer job window reflects the measured multi-turn
+CPU-only workload; it does not relax the 55-minute per-request upstream limit,
+the three-pull batch limit, or any publication gate.
 
 The job requests reasoning effort `none`. Ollama maps that value to disabled
 Qwen thinking traces, which preserves tool calling while avoiding long hidden
