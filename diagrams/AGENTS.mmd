@@ -5,9 +5,10 @@ title: AGENTS migration governance flow
 flowchart TD
   accTitle: AGENTS.md (Technical)
   accDescr {
-    A contribution is classified as manual documentation, merge-triggered documentation, or site-code work. Manual documentation receives human review. The merge workflow gives Codex no write token, rejects prohibited paths, records immutable merge provenance, and publishes only a complete validated bundle. Site-code or mixed work uses a checked and approved pull request.
+    Each contribution starts in a fresh task branch inside a disposable clone or isolated worktree. It is then classified as manual documentation, merge-triggered documentation, or site-code work. Manual documentation receives human review. The merge workflow publishes only a complete validated bundle. Site-code or mixed work uses an approved pull request. After publication, cleanup removes the disposable checkout only when remote work is preserved and the checkout is clean; otherwise it reports the blocker.
   }
-  request["Contribution request"] --> automated{"Trusted merged-PR workflow?"}
+  request["Contribution request"] --> checkout["Create fresh task branch in disposable clone or isolated worktree"]
+  checkout --> automated{"Trusted merged-PR workflow?"}
   automated -->|Yes| codex["Codex drafts complete bundle without GitHub write access"]
   codex --> boundary{"Only allowed documentation paths changed?"}
   boundary -->|No| incident["Block publication and report failure"]
@@ -24,3 +25,6 @@ flowchart TD
   pr --> checks["Require passing checks and explicit merge approval"]
   checks --> publish["Merge and publish"]
   direct --> publish
+  publish --> safe{"Remote work preserved and checkout clean?"}
+  safe -->|Yes| cleanup["Remove disposable checkout and prune worktree metadata"]
+  safe -->|No| blocker["Keep checkout and report exact cleanup blocker"]

@@ -67,3 +67,11 @@ npm run build
 ```
 
 Keep secrets and local environment files out of documents and generated artifacts. Preserve unrelated work and every existing safety boundary.
+
+## Work in a Fresh, Temporary Checkout
+
+- Start every task from the latest remote default branch, using a new task branch in a disposable clone or isolated `git worktree`. Do not edit a shared checkout or work directly on `main` or `master`.
+- Give every task its own branch and directory. Do not reuse an old task checkout, and preserve any work that was already there.
+- After the changes and validation are safely recorded on GitHub, remove the disposable local clone or worktree so it does not consume disk space.
+- Before removing anything, confirm the checkout is clean and every required commit is on the remote. For a worktree, use `git worktree remove <exact-path>` and then `git worktree prune`.
+- Never delete a shared clone, the current directory, an uncertain path, or a checkout with uncommitted, untracked, unpushed, or unrelated work. If cleanup is not clearly safe, keep it and report the exact path and reason.
