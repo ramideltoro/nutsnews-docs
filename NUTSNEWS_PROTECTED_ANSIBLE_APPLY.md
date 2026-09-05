@@ -1,11 +1,11 @@
 ---
 wiki:
   approval:
-    state: approved
+    state: unreviewed
     publishing: allowed
-    reviewed_by: "ramideltoro"
-    reviewed_on: "2026-07-28T20:10:06.000Z"
-    technical_source_hash: 48a6300998fc7d488615ae2b56cae2534ddee52f0b32f6859650b9e7bfbcc7d3
+    reviewed_by: "pending"
+    reviewed_on: "pending"
+    technical_source_hash: 9624780df99b69b066fba7f6bd8cc61fab62a91c364b43b4ea863c21b311d1c2
 ---
 # NutsNews Protected Ansible Apply Workflow
 
@@ -84,10 +84,15 @@ Optional email reporting Environment secrets:
 | `NUTSNEWS_SMTP_STARTTLS` | `true` unless the provider explicitly says otherwise |
 | `NUTSNEWS_EMAIL_FROM` | Sender address |
 | `NUTSNEWS_EMAIL_TO` | Comma-separated recipient list |
-| `NUTSNEWS_ALERT_COOLDOWN_SECONDS` | Duplicate alert cooldown, default `21600` |
+| `NUTSNEWS_ALERT_COOLDOWN_SECONDS` | Duplicate alert cooldown, default `86400` (24 hours) |
 | `NUTSNEWS_REPORT_SUBJECT_PREFIX` | Optional subject prefix, default `NutsNews VPS` |
 
 If these are absent, the VPS still applies safely and the portal reports email as disabled. That is intentional. A server that sends mail before being asked is not observability; it is a newsletter with root privileges.
+
+The protected workflow, the Ansible role default, and the reporter fallback all
+use the same 24-hour cooldown. Keep those three runtime layers synchronized so
+an omitted Environment override cannot silently restore a shorter reminder
+interval.
 
 Optional encrypted VPS backup Environment secrets:
 
