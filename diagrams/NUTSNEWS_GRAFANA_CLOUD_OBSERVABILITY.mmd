@@ -1,6 +1,6 @@
 flowchart LR
   accTitle: NutsNews Grafana Cloud observability controls
-  accDescr: Protected inputs pass through value-free validation and a read-only plan before reviewed Grafana changes can be applied.
+  accDescr: Protected source changes feed Grafana and host telemetry controls; bounded notification repeats and selected logs preserve useful alerts while real backup failures remain visible.
   inputs["Protected synthetic inputs"] --> validator["Value-free validator\nregion endpoint + API bounds + quota ceiling"]
   source["Infra OpenTofu source"] --> plan["Protected read-only plan\nand drift check"]
   validator --> plan
@@ -9,4 +9,9 @@ flowchart LR
   review -->|"No"| stop["Remain read-only"]
   review -->|"Yes"| apply["Protected Grafana apply"]
   apply --> grafana["Grafana folders, dashboards,\nalerts, quotas, synthetics"]
-  producers["VPS and backend Alloy"] --> grafana
+  grafana --> notify["Prompt firing and recovery mail\n4h critical, 12h major, 24h warning"]
+  notify --> operator["Operator investigates actionable signal"]
+  producers["VPS and backend Alloy"] --> selected["Selected metrics and logs\ncanary metrics, broker logs"]
+  selected --> grafana
+  backup["VPS backup provider write failure"] --> realAlert["Failed, unverified, and stale\nbackup alerts stay active"]
+  realAlert --> notify

@@ -11,11 +11,11 @@ wiki:
   collection: platform-and-data
   section: Operations & Monitoring
   approval:
-    state: approved
+    state: unreviewed
     publishing: allowed
-    reviewed_by: "ramideltoro"
-    reviewed_on: "2026-07-28T20:10:06.000Z"
-    technical_source_hash: 88d5f9c0bfe8c7295c8547ac8b96212772c30c68aa9510584494dabd543bc531
+    reviewed_by: "pending"
+    reviewed_on: "pending"
+    technical_source_hash: 1d76948818322070c4fd959fa31054f7b6a52ed2c09f2c11912b56531febedf7
 ---
 
 # NutsNews Grafana Cloud Observability
@@ -187,6 +187,30 @@ Intentionally excluded:
 - secrets, authorization headers, tokens, passwords, API keys, and credentials
 
 This is a practical observability feed, not a copy of every byte the server has ever muttered.
+
+## Alert Delivery And Noise Policy
+
+Alert notifications preserve prompt first delivery and recovery messages while limiting reminders for an unchanged condition:
+
+| Severity | Initial group wait | Update grouping | Unchanged reminder |
+| --- | ---: | ---: | ---: |
+| critical | 30 seconds | 5 minutes | 4 hours |
+| major | 2 minutes | 10 minutes | 12 hours |
+| warning, minor, or low | 5 minutes | 15 minutes | 24 hours |
+| unmatched | 5 minutes | 15 minutes | 24 hours |
+
+The scheduled health audit has two non-overlapping signals. `NutsNews scheduled health audit non-success` means the report ran and found a critical condition or delivery problem. `NutsNews scheduled health audit run overdue` means no report execution was observed within 30 hours or reporting telemetry is unavailable. A completed report with a critical backup result must not also be described as a missed schedule.
+
+The local VPS email reporter uses the same 24-hour unchanged-alert cooldown. Swap consumption below the 25% warning threshold remains visible in the Ops Portal but does not send email merely because more than 64 MiB is in use. Optimized-image cache age also remains visible without email while the cache stays within its 10 GB capacity bound. Swap threshold breaches, kernel OOM evidence, and cache capacity breaches still alert.
+
+The one-minute RabbitMQ canary remains active and keeps its dedicated Prometheus health metrics and alerts. Its routine service and timer journal entries are excluded from backend Loki ingestion because those entries duplicated the metric signal and accounted for roughly 1,300 log lines per hour. RabbitMQ broker logs remain collected. The backend log-volume alert keeps its existing 10,000-lines-per-hour threshold so a new volume increase remains visible instead of being hidden by a raised threshold.
+
+Noise tuning never suppresses failed, unverified, or stale backup alerts. On 2026-09-05 the VPS Restic repository could still be read, but Microsoft Graph rejected even a tiny diagnostic write with HTTP 507 `quotaLimitReached` while the same drive reported a normal quota state and roughly 347 GiB free. The latest VPS backup snapshot remained from 2026-08-08. Treat this as a real backup-provider write incident: restore Microsoft account write capability or migrate to a reviewed encrypted off-server destination, then run backup and verification before closing the alerts.
+
+### 2026-09-05 break-glass reconciliation record
+
+During the alert-noise investigation, the VPS collector, reporter, and reporter cooldown were synchronized over SSH to the reviewed source change so false-positive mail would stop immediately. The prior files were retained as `/usr/local/bin/nutsnews-ops-portal-collector.pre-noise-tuning-20260905`, `/usr/local/bin/nutsnews-ops-portal-reporter.pre-noise-tuning-20260905`, and `/etc/nutsnews/ops-reporter.env.pre-noise-tuning-20260905`. The collector and alert-check services both completed successfully afterward; the live alert list contained only the genuine backup failure, verification failure, and stale snapshot. Infra pull request `ramideltoro/nutsnews-infra#567` is the source-of-truth reconciliation and must be followed by the protected Grafana and Ansible applies.
+
 
 ## Grafana Assets Managed As Code
 
