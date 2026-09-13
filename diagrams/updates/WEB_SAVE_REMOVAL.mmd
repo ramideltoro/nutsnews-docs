@@ -1,0 +1,13 @@
+flowchart TD
+  accTitle: Website Save Functionality Removal authoring flow
+  accDescr {
+    The expert source and primary diagram feed a Simple draft, which then passes automated
+    quality checks before it can become public wiki content. If publication requirements are
+    not met, it remains an unreviewed draft.
+  }
+  A[Expert source: Website Save Functionality Removal] --> B[Primary diagram and technical details]
+  B --> C[Simple draft article]
+  C --> D[Automated quality checks]
+  D --> E{Publication requirements met?}
+  E -->|No| F[Remain unreviewed draft]
+  E -->|Yes| G[Public wiki content]
