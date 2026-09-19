@@ -1,0 +1,9 @@
+flowchart LR
+  accTitle: NutsNews central observability telemetry flow
+  accDescr: Server and worker metrics reach Grafana Cloud, then approved public dashboards in Observe. Private diagnostics require owner authentication. Shadow worker ownership is unchanged.
+  hosts["NutsNews servers and Cloudflare workers"] --> cloud["Grafana Cloud metrics"]
+  shadow["Eight shadow stages: ownership unchanged"] --> cloud
+  cloud --> public["Observe approved numeric dashboards"]
+  logs["Private journal logs"] --> owner["Google-protected owner diagnostics"]
+  source["GitHub and container revision audit"] --> inventory["Dated deployment evidence"]
+  inventory --> public
