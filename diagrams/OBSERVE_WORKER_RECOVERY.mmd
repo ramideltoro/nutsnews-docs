@@ -1,0 +1,20 @@
+flowchart TD
+  accTitle: Observe Worker Recovery flow
+  accDescr {
+    An encrypted archive is authenticated, restored in an isolated disposable namespace, and
+    used to start workers, verify readiness, replay a test carrier, and confirm duplicate
+    recognition while preserving records and inbox counts. Nonempty queues block
+    verification.
+  }
+  A[Encrypted cloud archive] --> B[Authenticate archive]
+  B --> C[Restore in disposable namespace]
+  C --> D[Restore roles, permissions, worker tables, broker topology, app]
+  D --> E[Rewrite dependency addresses and broker test credentials]
+  E --> F[Start real worker and restored dependencies]
+  F --> G[Require readiness]
+  G --> H[Replay schema-valid test carrier]
+  H --> I[Verify duplicate recognition]
+  I --> J[Preserve original record and inbox count]
+  J --> K[Recovery and replay safety confirmed]
+  A -. if queues nonempty .-> L[Verification blocked]
+  C -. loopback only / no prod sockets .-> M[Isolation enforced]
