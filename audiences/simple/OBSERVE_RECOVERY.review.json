@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "state": "unreviewed",
+  "publishing": "allowed",
+  "generated_at": "2026-09-20T04:53:52.914Z",
+  "generator": {
+    "provider": "openai",
+    "api": "responses",
+    "model": "gpt-5.4-mini-2026-03-17",
+    "store": false
+  },
+  "source": {
+    "path": "OBSERVE_RECOVERY.md",
+    "sha256": "369563e234b0ce93cd1e43c5305e6ea73b12f11bbd1fdde7eda5afc0ea49fcd8"
+  },
+  "artifacts": {
+    "simple_markdown": "audiences/simple/OBSERVE_RECOVERY.md",
+    "primary_diagram": "diagrams/OBSERVE_RECOVERY.mmd",
+    "review_manifest": "audiences/simple/OBSERVE_RECOVERY.review.json"
+  },
+  "accessibility": {
+    "title": "Observe isolated recovery flow",
+    "description": "Backups are exported, encrypted, downloaded, and restored in a disposable isolated environment. Verification then decides whether recovery evidence is published; otherwise the failure is reported and rollback revokes export access while preserving evidence."
+  },
+  "review_notes": [
+    "Verify the exact meaning of \"public fleet score\" and whether readers need more context about where it is displayed.",
+    "Confirm the date and result for snapshot `9b3b0868` and whether the backup verification wording should mention the 03:17 and 04:17 timing.",
+    "Check the current status of the `observe-recovery-export` forced-command key, sudo rule, and any revocation procedure details.",
+    "Verify the names and locations of `observe-verification.conf`, the backup service drop-in directory, and the saved Caddy configuration.",
+    "Confirm whether \"Fantasy\" should remain as the application name throughout the Simple article or be explained elsewhere.",
+    "Verify the exact acceptance gate wording, including the 70 percent threshold, two readings fifteen minutes apart, and any additional checks.",
+    "Check whether the OneDrive destination, Alloy-readable access file, and pinned SSH details should be described with the same precision in the final article.",
+    "Confirm that the statement about no password changes applies to all covered procedures and not only rollback."
+  ]
+}

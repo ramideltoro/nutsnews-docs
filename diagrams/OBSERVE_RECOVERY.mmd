@@ -1,0 +1,18 @@
+flowchart TD
+  accTitle: Observe isolated recovery flow
+  accDescr {
+    Backups are exported, encrypted, downloaded, and restored in a disposable isolated
+    environment. Verification then decides whether recovery evidence is published; otherwise
+    the failure is reported and rollback revokes export access while preserving evidence.
+  }
+  A[Start: Observe recovery review] --> B[Export fixed app/config/data or Fantasy backup]
+  B --> C[Pinned SSH to local server]
+  C --> D[Encrypt and copy to cloud destination]
+  D --> E[Download backup for restore]
+  E --> F[Restore in disposable isolated environment]
+  F --> G[Apply verification and check deployed revision]
+  G --> H{Acceptance met?}
+  H -->|Yes| I[Publish recovery evidence]
+  H -->|No| J[Report failure honestly and preserve evidence]
+  J --> K[Rollback if needed]
+  K --> L[Reload systemd and Caddy, revoke export access]
