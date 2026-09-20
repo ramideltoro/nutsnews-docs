@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "state": "unreviewed",
+  "publishing": "blocked",
+  "source": {
+    "path": "OBSERVE_FLEET_AUDIT_2026_09.md",
+    "sha256": "7e913eccb54c6e71bf47c40e226bee5bfb0bf702f47829c3922bab77698e8fef"
+  },
+  "artifacts": {
+    "canonical_expert": "OBSERVE_FLEET_AUDIT_2026_09.md",
+    "simple_markdown": "audiences/simple/OBSERVE_FLEET_AUDIT_2026_09.md",
+    "technical_mirror": "audiences/technical/OBSERVE_FLEET_AUDIT_2026_09.md",
+    "primary_diagram": "diagrams/OBSERVE_FLEET_AUDIT_2026_09.mmd",
+    "review_manifest": "audiences/simple/OBSERVE_FLEET_AUDIT_2026_09.review.json"
+  },
+  "accessibility": {
+    "title": "Observe fleet enrollment and deployment audit authoring flow",
+    "description": "The expert source and primary diagram feed a Simple draft that passes automated quality checks before publication."
+  },
+  "review_notes": [
+    "Operational audit authored from GitHub, SSH and Grafana evidence. Publication remains pending human review under repository policy."
+  ],
+  "next_commands": [
+    "Review source, both audience versions and diagram before publication."
+  ]
+}
