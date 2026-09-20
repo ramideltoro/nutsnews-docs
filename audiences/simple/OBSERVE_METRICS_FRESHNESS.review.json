@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "state": "approved",
+  "publishing": "allowed",
+  "source": {
+    "path": "OBSERVE_METRICS_FRESHNESS.md",
+    "sha256": "1f905f5eb95b1aa3f43d8064d2a313d4b69afca0d700457919c144069d257e0d"
+  },
+  "artifacts": {
+    "canonical_expert": "OBSERVE_METRICS_FRESHNESS.md",
+    "simple_markdown": "audiences/simple/OBSERVE_METRICS_FRESHNESS.md",
+    "technical_mirror": "audiences/technical/OBSERVE_METRICS_FRESHNESS.md",
+    "primary_diagram": "diagrams/OBSERVE_METRICS_FRESHNESS.mmd",
+    "review_manifest": "audiences/simple/OBSERVE_METRICS_FRESHNESS.review.json"
+  },
+  "accessibility": {
+    "title": "Observe Metrics Freshness authoring flow",
+    "description": "The expert source and primary diagram feed a Simple draft that passes automated quality checks before publication."
+  },
+  "review_notes": [
+    "Replace every TODO marker.",
+    "Verify facts, links, commands, warnings, and operational status.",
+    "Review the Simple draft and primary diagram for accuracy."
+  ],
+  "next_commands": [
+    "npm run docs:prepare -- OBSERVE_METRICS_FRESHNESS.md --force",
+    "npm run validate:content"
+  ],
+  "approval": {
+    "state": "approved",
+    "publishing": "allowed",
+    "reviewed_by": "ramideltoro",
+    "reviewed_on": "2026-09-20T16:37:33.137Z",
+    "technical_source_hash": "720dd286624160056806845c251a03d87e692999290ee82edd4200478087a446"
+  }
+}

@@ -1,0 +1,12 @@
+flowchart TD
+  accTitle: Observe monitoring and isolated recovery
+  accDescr: Reviewed changes improve telemetry freshness and log coverage. Encrypted backups are restored in a private resource-limited environment, with recovery credit only after real application checks pass.
+  review["Reviewed change"] --> check["Protected preflight"]
+  check --> timer["One-minute metrics timer"]
+  timer --> verify["Fresh timestamps and healthy applications"]
+  logs["Recent logs from all three production shards"] --> sanitize["Publish only scope and timestamps"]
+  backup["Deployed app, configuration and actual data"] --> encrypted["Encrypted backup cloud round trip"]
+  encrypted --> private["Sequential private restore: 2 CPUs, 8 GiB"]
+  private --> behavior["Scheduler leases and messages; translation inference and replay"]
+  behavior --> outcome["Record genuine pass or failure with revision and expiry"]
+  verify --> rollback["Protected rollback if needed"]

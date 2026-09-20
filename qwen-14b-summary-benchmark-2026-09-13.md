@@ -1,3 +1,25 @@
+---
+title: "NutsNews 3B versus 14B summary screening"
+description: "Historical screening results and their production limitations."
+wiki:
+  source_route: "/technical/qwen-14b-summary-benchmark-2026-09-13"
+  simple_route: "/simple/qwen-14b-summary-benchmark-2026-09-13"
+  slug: "qwen-14b-summary-benchmark-2026-09-13"
+  primary_diagram:
+    file: "diagrams/qwen-14b-summary-benchmark-2026-09-13.mmd"
+    accTitle: "NutsNews 3B versus 14B summary screening decision"
+    accDescr: "A small controlled model screening provides observations, but production stays unchanged until representative repeated chat tests and human review support a change."
+  status: draft
+  collection: platform-and-data
+  section: core-platform
+  order: 992
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-09-20T16:46:49.465Z"
+    technical_source_hash: d0da882d60575828b3d158457a5d87c511d620f3ecac0c555bff4b42df6f4dcb
+---
 # NutsNews 3B versus 14B summary screening
 
 September 13, 2026. Same three source-checked story digests and deployed buildPrompt as the [7B screening](qwen-summary-benchmark-2026-09-13.md). Same limitations apply: one run per story, generate API rather than production chat, no additional production system message or normalization, two inference threads, temperature 0, seed 42, 8192 context capacity, 220 output tokens. These are small controlled writing tests, not exact production replays or publishing-throughput benchmarks.

@@ -1,0 +1,8 @@
+flowchart TD
+  accTitle: NutsNews 3B versus 14B summary screening decision
+  accDescr: A small controlled model screening provides observations, but production stays unchanged until representative repeated chat tests and human review support a change.
+  inputs["Three source-checked story digests"] --> test["One controlled run per story and model"]
+  test --> results["Record speed, length and factual observations"]
+  results --> limits["Small sample; not the production chat workflow"]
+  limits --> decision["Keep production unchanged"]
+  decision --> future["Repeated representative chat tests and human review"]

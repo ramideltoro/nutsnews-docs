@@ -1,3 +1,25 @@
+---
+title: "NutsNews 3B versus 32B: summaries and resource utilization"
+description: "Historical screening results and their production limitations."
+wiki:
+  source_route: "/technical/qwen-32b-summary-benchmark-2026-09-13"
+  simple_route: "/simple/qwen-32b-summary-benchmark-2026-09-13"
+  slug: "qwen-32b-summary-benchmark-2026-09-13"
+  primary_diagram:
+    file: "diagrams/qwen-32b-summary-benchmark-2026-09-13.mmd"
+    accTitle: "NutsNews 3B versus 32B: summaries and resource utilization decision"
+    accDescr: "A small controlled model screening provides observations, but production stays unchanged until representative repeated chat tests and human review support a change."
+  status: draft
+  collection: platform-and-data
+  section: core-platform
+  order: 993
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-09-20T16:46:49.615Z"
+    technical_source_hash: adf422bbda67fbd7a109421f8e439cf4e0f7f1831a9a5417f7e30b029e198168
+---
 # NutsNews 3B versus 32B: summaries and resource utilization
 
 September 13, 2026. Production remains on 3B. Same three factual digests and deployed buildPrompt as the [earlier screening](qwen-summary-benchmark-2026-09-13.md). One run per story and model, JSON generate API, temperature 0, seed 42, 8192 context capacity, 220 output-token cap, two inference threads. This is not an exact production chat replay: the extra system message, production sampling and normalization are excluded. No concurrent load test or publishing-queue benchmark was performed. The model download required a retry; download time is excluded.

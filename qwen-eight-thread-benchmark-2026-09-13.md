@@ -1,3 +1,25 @@
+---
+title: "Eight-thread NutsNews benchmark"
+description: "Historical screening results and their production limitations."
+wiki:
+  source_route: "/technical/qwen-eight-thread-benchmark-2026-09-13"
+  simple_route: "/simple/qwen-eight-thread-benchmark-2026-09-13"
+  slug: "qwen-eight-thread-benchmark-2026-09-13"
+  primary_diagram:
+    file: "diagrams/qwen-eight-thread-benchmark-2026-09-13.mmd"
+    accTitle: "Eight-thread NutsNews benchmark decision"
+    accDescr: "A small controlled model screening provides observations, but production stays unchanged until representative repeated chat tests and human review support a change."
+  status: draft
+  collection: platform-and-data
+  section: core-platform
+  order: 994
+  approval:
+    state: approved
+    publishing: allowed
+    reviewed_by: "ramideltoro"
+    reviewed_on: "2026-09-20T16:46:49.760Z"
+    technical_source_hash: 5ecc7d71d77a5611943b19a398f6cdbf90ca7e02f36e8483da7eaa4f7efd60f4
+---
 # Eight-thread NutsNews benchmark
 
 September 13, 2026. Rerun of the [two-thread benchmark](qwen-32b-summary-benchmark-2026-09-13.md), changing only num_thread to 8. Same three digests, JSON generate API, temperature 0, seed 42, context capacity 8192 and output cap 220. Production configuration unchanged. This is one run per prompt, not a statistically controlled capacity test. Same source, sampling and production-chat limitations as the earlier report apply.
