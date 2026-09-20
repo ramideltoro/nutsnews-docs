@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "state": "unreviewed",
+  "publishing": "allowed",
+  "generated_at": "2026-09-20T13:33:27.986Z",
+  "generator": {
+    "provider": "openai",
+    "api": "responses",
+    "model": "gpt-5.4-mini-2026-03-17",
+    "store": false
+  },
+  "source": {
+    "path": "OBSERVE_WORKER_RECOVERY.md",
+    "sha256": "9fa5126bbf27924dc16338e3f8cadebae56c4cdaeec4f71a3513edb52c947afc"
+  },
+  "artifacts": {
+    "simple_markdown": "audiences/simple/OBSERVE_WORKER_RECOVERY.md",
+    "primary_diagram": "diagrams/OBSERVE_WORKER_RECOVERY.mmd",
+    "review_manifest": "audiences/simple/OBSERVE_WORKER_RECOVERY.review.json"
+  },
+  "accessibility": {
+    "title": "Observe Worker Recovery flow",
+    "description": "An encrypted archive is authenticated, restored in an isolated disposable namespace, and used to start workers, verify readiness, replay a test carrier, and confirm duplicate recognition while preserving records and inbox counts. Nonempty queues block verification."
+  },
+  "review_notes": [
+    "Verify whether \"six deployed NutsNews workers\" and the listed worker roles still match current production terminology.",
+    "Confirm the backup age limit of \"no older than eight days\" and the evidence expiration rule remain current.",
+    "Check that backend PR 545 is still the correct change reference and that its preflight/apply status has not changed.",
+    "Verify the acceptance threshold of \"at least 76 percent across two fresh fleet checks fifteen minutes apart\".",
+    "Confirm the isolation details: 2 CPUs, 8 GiB RAM, no swap, loopback-only networking, and no production sockets.",
+    "Review whether the Qwen dependency isolation note for approval is still accurate and should remain public in simple documentation.",
+    "Verify that public health is intended to expose only sanitized outcomes, scope, and timestamps.",
+    "Confirm that the shared backup protection behavior and excluded directories are still correct."
+  ]
+}
