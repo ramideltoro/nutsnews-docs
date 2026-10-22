@@ -1,0 +1,12 @@
+flowchart TD
+  accTitle: Language changes keep the newest article feed
+  accDescr {
+    Selecting a language cancels older feed and pagination requests. Only the current request may update articles. Selecting English restores the initial English feed.
+  }
+  select["Reader selects a language"] --> cancel["Cancel previous feed and pagination requests"]
+  cancel --> english{"English selected?"}
+  english -->|Yes| restore["Restore initial English feed"]
+  english -->|No| load["Request translated home feed"]
+  load --> current{"Request still current?"}
+  current -->|Yes| apply["Update articles and sections"]
+  current -->|No| ignore["Ignore obsolete response or error"]
