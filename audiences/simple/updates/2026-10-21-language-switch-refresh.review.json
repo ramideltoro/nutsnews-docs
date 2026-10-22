@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "state": "unreviewed",
+  "publishing": "blocked",
+  "source": {
+    "path": "updates/2026-10-21-language-switch-refresh.md",
+    "sha256": "976785af7f152ec41054b89d7b7b34eb1d15edc3a1d7e8e4cd6f8c556e119c5f"
+  },
+  "artifacts": {
+    "canonical_expert": "updates/2026-10-21-language-switch-refresh.md",
+    "simple_markdown": "audiences/simple/updates/2026-10-21-language-switch-refresh.md",
+    "technical_mirror": "audiences/technical/updates/2026-10-21-language-switch-refresh.md",
+    "primary_diagram": "diagrams/updates/2026-10-21-language-switch-refresh.mmd",
+    "review_manifest": "audiences/simple/updates/2026-10-21-language-switch-refresh.review.json"
+  },
+  "accessibility": {
+    "title": "Language changes keep the newest article feed",
+    "description": "Selecting a language cancels older feed and pagination requests. Only the current request may update articles. Selecting English restores the initial English feed."
+  },
+  "review_notes": [
+    "Review the Technical source, Simple mirror, Technical mirror, and accessible diagram.",
+    "Verify final production release evidence before publication."
+  ],
+  "next_commands": [
+    "npm run validate:content",
+    "Human review is required before manual publication."
+  ]
+}
