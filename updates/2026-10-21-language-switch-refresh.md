@@ -23,7 +23,7 @@ wiki:
     publishing: blocked
     reviewed_by: pending
     reviewed_on: pending
-    technical_source_hash: 976785af7f152ec41054b89d7b7b34eb1d15edc3a1d7e8e4cd6f8c556e119c5f
+    technical_source_hash: 3758ea9d0e66b46a1c7286651051b35f7172d61fa346cfb9864e20f00c599ce5
 ---
 # Language switching updates the homepage automatically
 
@@ -57,8 +57,12 @@ The first preview check failed because archive search returned HTTP 500. Vercel 
 
 Post-merge security checks reported existing dependency findings and Snyk authentication failure. The app change did not modify dependency manifests, workflows, or security credentials. These findings are tracked separately in [dependency issue #646](https://github.com/ramideltoro/nutsnews/issues/646) and [Snyk issue #647](https://github.com/ramideltoro/nutsnews/issues/647).
 
-The [manual merge-docs run](https://github.com/ramideltoro/nutsnews-docs/actions/runs/39719130187) discovered no processable updates because the app documentation cursor is blocked on an older three-PR batch after three failures. This complete manual bundle is pending human review under the repository contribution contract.
+The [manual merge-docs run](https://github.com/ramideltoro/nutsnews-docs/actions/runs/39719130187) discovered no processable updates because the app documentation cursor is blocked on an older three-PR batch after three failures. The cursor problem is tracked in [docs issue #408](https://github.com/ramideltoro/nutsnews-docs/issues/408). This complete manual bundle is pending human review under the repository contribution contract.
 
 ## Release tracking
 
-The [production container workflow](https://github.com/ramideltoro/nutsnews/actions/runs/39719125563) tracks the exact merged commit. Production deployment and final browser verification are being monitored; this draft will record the outcome before review.
+The [production container workflow](https://github.com/ramideltoro/nutsnews/actions/runs/39719125563), [staging qualification](https://github.com/ramideltoro/nutsnews-infra/actions/runs/39719762817), [protected VPS apply](https://github.com/ramideltoro/nutsnews-infra/actions/runs/39720316960), [Vercel production deployment](https://github.com/ramideltoro/nutsnews/actions/runs/39721075643), and [final promotion workflow](https://github.com/ramideltoro/nutsnews-infra/actions/runs/39719926644) all succeeded. Production reports source commit `b9439ab3c59cfae05cd0071bf787cd44a4605a4f` and build `39719125563-1`.
+
+After the release cache update, Chrome DevTools MCP verified the canonical public homepage. Selecting French loaded the French lead article without refreshing. A deliberately delayed French response followed by English selection left the document language and article title in English, and the earlier request signal was confirmed aborted. During deployment, the runtime endpoint updated before the cached homepage; the final browser check was therefore repeated after the complete release and cache promotion.
+
+The manual documentation bundle passed source, mirror, link, diagram, and standalone build checks. Its unchanged combined route suite exceeded the existing 120-second parent time limit locally after the custom-base case passed; the draft PR's hosted source-validation check passed. Human review remains required before manual publication.

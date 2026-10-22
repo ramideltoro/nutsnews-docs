@@ -23,7 +23,7 @@ wiki:
     publishing: blocked
     reviewed_by: pending
     reviewed_on: pending
-    technical_source_hash: 976785af7f152ec41054b89d7b7b34eb1d15edc3a1d7e8e4cd6f8c556e119c5f
+    technical_source_hash: 3758ea9d0e66b46a1c7286651051b35f7172d61fa346cfb9864e20f00c599ce5
 ---
 # Language switching updates the homepage automatically
 
@@ -43,4 +43,4 @@ All 178 local tests, code checks, and the production build passed. The pull requ
 
 A paused staging database initially made preview search fail. The existing database was resumed, search recovered, and the unchanged browser checks passed. [Issue #645](https://github.com/ramideltoro/nutsnews/issues/645) records this recovery.
 
-Separate security maintenance findings were recorded for existing dependencies and Snyk account access. Production release verification is being monitored, and this draft is awaiting human review.
+Separate security maintenance findings were recorded for existing dependencies and Snyk account access. The production release completed successfully. The final live-browser check confirmed that French stories appear without refreshing and that switching back to English cancels an older French request. This draft is awaiting human review.
