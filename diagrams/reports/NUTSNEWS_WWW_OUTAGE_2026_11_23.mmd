@@ -1,0 +1,9 @@
+flowchart TD
+  accTitle: NutsNews public website outage on November 23, 2026 recovery
+  accDescr: Public DNS led to disabled Vercel hosting; readiness checks confirmed the VPS was healthy, and the controller restored proxied VPS routing.
+  dns["Public DNS pointed to Vercel"] --> disabled["Vercel CPU allowance exceeded: HTTP 402"]
+  probe["Direct VPS readiness healthy"] --> controller["Authenticated manual failback"]
+  disabled --> controller
+  controller --> restored["Apex and www proxied to VPS"]
+  restored --> verify["HTTPS homepage, readiness, API and asset checks"]
+  verify --> wait["Confirm DNS cache convergence"]
