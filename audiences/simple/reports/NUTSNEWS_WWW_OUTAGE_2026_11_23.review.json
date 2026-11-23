@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "state": "unreviewed",
+  "publishing": "blocked",
+  "source": {
+    "path": "reports/NUTSNEWS_WWW_OUTAGE_2026_11_23.md",
+    "sha256": "1a362ea901e95ad3a29d95ab2b60a81bae21f132099c9b7844d29ae35f84e209"
+  },
+  "artifacts": {
+    "canonical_expert": "reports/NUTSNEWS_WWW_OUTAGE_2026_11_23.md",
+    "simple_markdown": "audiences/simple/reports/NUTSNEWS_WWW_OUTAGE_2026_11_23.md",
+    "technical_mirror": "audiences/technical/reports/NUTSNEWS_WWW_OUTAGE_2026_11_23.md",
+    "primary_diagram": "diagrams/reports/NUTSNEWS_WWW_OUTAGE_2026_11_23.mmd",
+    "review_manifest": "audiences/simple/reports/NUTSNEWS_WWW_OUTAGE_2026_11_23.review.json"
+  },
+  "accessibility": {
+    "title": "NutsNews public website outage on November 23, 2026 recovery",
+    "description": "Public DNS led to disabled Vercel hosting; readiness checks confirmed the VPS was healthy, and the controller restored proxied VPS routing."
+  },
+  "review_notes": [
+    "Review the incident evidence and remaining fallback limitation before wiki publication.",
+    "Independent backend-server normal-DNS verification passed by 06:49:48 EST.",
+    "Prepared manually; no external AI authoring request was made."
+  ],
+  "next_commands": [
+    "npm run validate:content",
+    "npm run validate:links",
+    "npm run validate:mermaid"
+  ]
+}
